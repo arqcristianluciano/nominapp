@@ -1,0 +1,179 @@
+import { useEffect, useState } from 'react'
+import { FileText } from 'lucide-react'
+import { useProjectStore } from '@/stores/projectStore'
+import { transactionService } from '@/services/transactionService'
+import { budgetCategoryService } from '@/services/budgetCategoryService'
+import {
+  calcTotalIncurrido,
+  calcTotalCxP,
+  calcCashDisponible,
+} from '@/utils/financialCalculations'
+import { formatRD } from '@/utils/currency'
+
+interface ProjectReport {
+  id: string
+  name: string
+  code: string
+  totalIncurrido: number
+  presupuesto: number
+  cxp: number
+  cashDisponible: number
+  avance: number
+}
+
+export default function Reportes() {
+  const { projects, fetchProjects } = useProjectStore()
+  const [reports, setReports] = useState<ProjectReport[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchProjects()
+  }, [fetchProjects])
+
+  useEffect(() => {
+    async function loadReports() {
+      const activeProjects = projects.filter((p) => p.status === 'active')
+      if (activeProjects.length === 0) {
+        setLoading(false)
+        return
+      }
+
+      try {
+        const results: ProjectReport[] = []
+
+        for (const project of activeProjects) {
+          const [transactions, categories] = await Promise.all([
+            transactionService.getByProject(project.id),
+            budgetCategoryService.getByProject(project.id),
+          ])
+
+          const totalIncurrido = calcTotalIncurrido(transactions)
+          const presupuesto = categories.reduce((sum, c) => sum + c.budgeted_amount, 0)
+          const cxp = calcTotalCxP(transactions)
+          const cashDisponible = calcCashDisponible(transactions)
+          const avance = presupuesto > 0 ? (totalIncurrido / presupuesto) * 100 : 0
+
+          results.push({
+            id: project.id,
+            name: project.name,
+            code: project.code,
+            totalIncurrido,
+            presupuesto,
+            cxp,
+            cashDisponible,
+            avance: Math.min(avance, 100),
+          })
+        }
+
+        setReports(results)
+      } catch {
+      } finally {
+        setLoading(false)
+      }
+    }
+    if (projects.length > 0) loadReports()
+  }, [projects])
+
+  const totals = reports.reduce(
+    (acc, r) => ({
+      totalIncurrido: acc.totalIncurrido + r.totalIncurrido,
+      presupuesto: acc.presupuesto + r.presupuesto,
+      cxp: acc.cxp + r.cxp,
+      cashDisponible: acc.cashDisponible + r.cashDisponible,
+    }),
+    { totalIncurrido: 0, presupuesto: 0, cxp: 0, cashDisponible: 0 }
+  )
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold text-gray-900">Resumen Financiero</h1>
+        <p className="text-sm text-gray-500 mt-1">Reporte consolidado de todos los proyectos activos</p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <p className="text-xs text-gray-500">Total incurrido</p>
+          <p className="text-xl font-semibold text-gray-900 mt-1">{formatRD(totals.totalIncurrido)}</p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <p className="text-xs text-gray-500">Presupuesto total</p>
+          <p className="text-xl font-semibold text-gray-900 mt-1">{formatRD(totals.presupuesto)}</p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <p className="text-xs text-gray-500">CxP pendientes</p>
+          <p className="text-xl font-semibold text-red-700 mt-1">{formatRD(totals.cxp)}</p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <p className="text-xs text-gray-500">Cash disponible</p>
+          <p className={`text-xl font-semibold mt-1 ${totals.cashDisponible >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+            {formatRD(totals.cashDisponible)}
+          </p>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="text-sm text-gray-500">Generando reporte...</div>
+      ) : reports.length === 0 ? (
+        <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+          <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+          <p className="text-gray-500">No hay datos de proyectos para reportar</p>
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-200">
+                <th className="px-4 py-3 text-left text-[10px] font-semibold text-gray-500 uppercase">Proyecto</th>
+                <th className="px-4 py-3 text-right text-[10px] font-semibold text-gray-500 uppercase">Total incurrido</th>
+                <th className="px-4 py-3 text-right text-[10px] font-semibold text-gray-500 uppercase hidden sm:table-cell">Presupuesto</th>
+                <th className="px-4 py-3 text-center text-[10px] font-semibold text-gray-500 uppercase">% Avance</th>
+                <th className="px-4 py-3 text-right text-[10px] font-semibold text-gray-500 uppercase hidden md:table-cell">CxP</th>
+                <th className="px-4 py-3 text-right text-[10px] font-semibold text-gray-500 uppercase hidden lg:table-cell">Cash</th>
+              </tr>
+            </thead>
+            <tbody>
+              {reports.map((r) => (
+                <tr key={r.id} className="border-b border-gray-100 hover:bg-gray-50">
+                  <td className="px-4 py-3">
+                    <p className="text-sm font-medium text-gray-900">{r.name}</p>
+                    <p className="text-xs text-gray-400">{r.code}</p>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-700 text-right">{formatRD(r.totalIncurrido)}</td>
+                  <td className="px-4 py-3 text-sm text-gray-700 text-right hidden sm:table-cell">{formatRD(r.presupuesto)}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2 justify-center">
+                      <div className="w-16 h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full ${r.avance > 90 ? 'bg-red-500' : r.avance > 70 ? 'bg-amber-500' : 'bg-green-500'}`}
+                          style={{ width: `${r.avance}%` }}
+                        />
+                      </div>
+                      <span className="text-xs text-gray-600 w-10 text-right">{r.avance.toFixed(0)}%</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-red-600 font-medium text-right hidden md:table-cell">{formatRD(r.cxp)}</td>
+                  <td className={`px-4 py-3 text-sm font-medium text-right hidden lg:table-cell ${r.cashDisponible >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {formatRD(r.cashDisponible)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="bg-gray-50 border-t-2 border-gray-300">
+                <td className="px-4 py-3 text-sm font-bold text-gray-900">TOTALES</td>
+                <td className="px-4 py-3 text-sm font-bold text-gray-900 text-right">{formatRD(totals.totalIncurrido)}</td>
+                <td className="px-4 py-3 text-sm font-bold text-gray-900 text-right hidden sm:table-cell">{formatRD(totals.presupuesto)}</td>
+                <td className="px-4 py-3"></td>
+                <td className="px-4 py-3 text-sm font-bold text-red-700 text-right hidden md:table-cell">{formatRD(totals.cxp)}</td>
+                <td className={`px-4 py-3 text-sm font-bold text-right hidden lg:table-cell ${totals.cashDisponible >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                  {formatRD(totals.cashDisponible)}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      )}
+    </div>
+  )
+}

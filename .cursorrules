@@ -1,0 +1,79 @@
+# ObraPRO - Cursor Rules
+# Sistema de administración de construcción
+# THE HOUSE & CO LUCIANO SARKIS, S.R.L.
+
+## IDENTIDAD DEL PROYECTO
+ObraPRO es un sistema de administración de construcción multi-empresa y multi-proyecto. Gestiona el ciclo completo de obra: presupuesto → nóminas de campo → cubicación → facturación → pago → conciliación. Diseñado para fusionarse con estatePRO (gestión de ventas inmobiliarias) en el futuro.
+
+## STACK TÉCNICO
+- React 18 + TypeScript + Vite 5
+- Tailwind CSS v4 (utility-first, sin CSS custom salvo excepciones justificadas)
+- Supabase (PostgreSQL + Auth + RLS + Realtime + Storage)
+- Zustand para estado global (stores por dominio)
+- React Router v6 para routing
+- Lucide React para iconos
+- date-fns para fechas
+- PWA con soporte offline
+
+## ARQUITECTURA Y FLUJO DE DATOS
+```
+User Input → React Component → Custom Hook → Service → Supabase → Zustand Store → Component re-render
+```
+
+### Reglas de arquitectura
+- Componentes: solo presentación y manejo de eventos. NO queries directas a Supabase.
+- Hooks (`/hooks`): orquestan lógica entre stores y services. Prefijo `use`.
+- Services (`/services`): toda interacción con Supabase. Sufijo `Service`.
+- Stores (`/stores`): estado global con Zustand. Un store por dominio.
+- Types (`/types`): interfaces y tipos. Usar tipos generados de Supabase como base.
+- Utils (`/utils`): funciones puras sin side effects.
+- Constants (`/constants`): valores fijos, tasas, configuración. NUNCA hardcodear.
+
+## LÍMITES DE CALIDAD
+- Máximo 200 líneas por archivo
+- Componentes grandes → dividir en subcarpeta con subcomponentes
+- Un componente = una responsabilidad
+- No repetir lógica → extraer a hooks o utils
+
+## FORMATOS DOMINICANOS
+- Cédula: XXX-XXXXXXX-X (validar con módulo 10)
+- RNC: X-XX-XXXXX-X
+- ITBIS: 18%
+- Moneda principal: RD$ (DOP), secundaria: US$ (USD)
+- Formato de fecha: dd/MM/yyyy
+
+## REGLAS DE NEGOCIO DE CONSTRUCCIÓN
+- Unidades de medida: M2, ML, UD, PA, M3, MT2, MT3, DIA, SEMANAS
+- Sistema de avances: AVANCE como pago a cuenta, deducción con -1 en nómina siguiente
+- Comisión bancaria: 0.15% sobre pagos por cheque
+- Dirección Técnica: se divide 50/50 entre Director y Campo
+- Gastos indirectos calculados sobre (mano de obra + materiales)
+- Estados de nómina: draft → submitted → approved → paid
+
+## CONTEXTO DE NEGOCIO
+- Multi-empresa: THE HOUSE & CO, Playa Alicia Holdings, WFRONT S.R.L., Corporación Suertepas
+- Proyectos activos: The Shore (Sosúa), Arthouse Tower (Santiago), El Spot (Sosúa), Nomad (Sosúa), Torre Grid 7 (Santiago)
+- Bancos: Popular, Banreservas, BHD, Santa Cruz
+- Proveedores clave: Ferretería Llibre, Ferretería Luciano, Linares, SC Concretos, Concreto del Cibao
+
+## SEGURIDAD
+- No guardar passwords en cliente
+- RLS en todas las tablas
+- Sanitizar inputs antes de queries
+- No exponer IDs internos en URLs cuando sea posible
+
+## PERFORMANCE
+- Lazy loading de rutas pesadas
+- Paginación en listados
+- React.memo/useMemo para componentes costosos
+- Selectors específicos en Zustand
+
+## IDIOMA
+- UI y mensajes al usuario: Español (República Dominicana)
+- Código, variables, funciones: Inglés
+- Comentarios: Español o Inglés (consistente por archivo)
+- Nombres de campos de DB: Inglés
+
+## MODELO AI
+- Usar Sonnet como default
+- Usar Opus para arquitectura compleja, schemas de DB, y refactoring grande
