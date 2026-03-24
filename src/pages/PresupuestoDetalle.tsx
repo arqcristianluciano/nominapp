@@ -185,9 +185,15 @@ export default function PresupuestoDetalle() {
         <PriceListPanel
           projectId={projectId}
           items={budgetItems.priceList}
-          onAdd={budgetItems.addPriceListItem}
-          onUpdate={budgetItems.updatePriceListItem}
-          onDelete={budgetItems.deletePriceListItem}
+          onAdd={async (item) => {
+            await budgetItems.addPriceListItem(item)
+          }}
+          onUpdate={async (id, changes) => {
+            await budgetItems.updatePriceListItem(id, changes)
+          }}
+          onDelete={async (id) => {
+            await budgetItems.deletePriceListItem(id)
+          }}
         />
       )}
 
@@ -215,7 +221,9 @@ export default function PresupuestoDetalle() {
       {showImport && (
         <ExcelImportModal
           categories={budget.rows.map((r) => r.category)}
-          onImport={budgetItems.bulkImport}
+          onImport={async (items) => {
+            await budgetItems.bulkImport(items)
+          }}
           onClose={() => setShowImport(false)}
         />
       )}

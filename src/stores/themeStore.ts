@@ -3,8 +3,15 @@ import { persist } from 'zustand/middleware'
 
 export type ThemeMode = 'light' | 'dark'
 
-function applyDomTheme(mode: ThemeMode) {
-  document.documentElement.classList.toggle('dark', mode === 'dark')
+const META_THEME_LIGHT = '#1e40af'
+const META_THEME_DARK = '#030712'
+
+export function applyDomTheme(mode: ThemeMode) {
+  const root = document.documentElement
+  root.classList.toggle('dark', mode === 'dark')
+  root.style.colorScheme = mode === 'dark' ? 'dark' : 'light'
+  const meta = document.querySelector('meta[name="theme-color"]')
+  if (meta) meta.setAttribute('content', mode === 'dark' ? META_THEME_DARK : META_THEME_LIGHT)
 }
 
 function readDomTheme(): ThemeMode {
@@ -40,3 +47,7 @@ export const useThemeStore = create<ThemeStore>()(
     },
   ),
 )
+
+export function syncThemeFromStore() {
+  applyDomTheme(useThemeStore.getState().theme)
+}

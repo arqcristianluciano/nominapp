@@ -43,9 +43,9 @@ export function ProjectForm({ initial, onSubmit, onCancel, saving }: Props) {
 
   useEffect(() => {
     if (isEditing) return
-    supabase.from('companies').select('*').order('name').then(({ data }) => {
+    supabase.from('companies').select('*').order('name').then(({ data }: { data: Company[] | null }) => {
       if (data && data.length > 0) {
-        setCompanies(data as Company[])
+        setCompanies(data)
         setCompanyId((prev) => prev || data[0].id)
       }
     })

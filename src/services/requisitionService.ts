@@ -31,7 +31,7 @@ export const requisitionService = {
       .eq('requisition_id', id)
 
     const quotes: PurchaseQuote[] = await Promise.all(
-      (quotesData || []).map(async (q) => {
+      (quotesData || []).map(async (q: PurchaseQuote) => {
         const { data: items } = await supabase
           .from('purchase_quote_items')
           .select('*')

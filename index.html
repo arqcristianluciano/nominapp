@@ -13,7 +13,13 @@
           if (!raw) return
           var p = JSON.parse(raw)
           var t = p.state && p.state.theme
-          if (t === 'dark') document.documentElement.classList.add('dark')
+          if (t !== 'dark' && t !== 'light') return
+          if (t === 'dark') {
+            document.documentElement.classList.add('dark')
+            document.documentElement.style.colorScheme = 'dark'
+          } else {
+            document.documentElement.style.colorScheme = 'light'
+          }
         } catch (e) {}
       })()
     </script>

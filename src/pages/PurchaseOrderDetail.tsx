@@ -230,7 +230,9 @@ export default function PurchaseOrderDetail() {
       <Modal open={addQuote} onClose={() => setAddQuote(false)} title="Agregar cotización" width="max-w-2xl">
         <QuoteForm
           suppliers={suppliers}
-          onSubmit={handleAddQuote}
+          onSubmit={async (payload) => {
+            await handleAddQuote({ ...payload, requisition_id: orderId! })
+          }}
           onCancel={() => setAddQuote(false)}
           saving={savingQuote}
         />
