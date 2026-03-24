@@ -5,6 +5,7 @@ import type { BankAccount } from '@/types/database'
 import { PAYMENT_CONDITIONS } from '@/constants/indirectCosts'
 import { DEFAULT_BUDGET_CATEGORIES } from '@/constants/budgetCategories'
 import { DOMINICAN_BANKS } from '@/constants/banks'
+import { ThemeToggle } from '@/components/layout/ThemeToggle'
 
 type SettingsTab = 'bancos' | 'condiciones' | 'categorias' | 'sistema'
 
@@ -186,6 +187,12 @@ export default function Settings() {
       )}
 
       {activeTab === 'sistema' && (
+        <>
+        <div className="bg-app-surface rounded-xl border border-app-border p-6 space-y-3">
+          <h2 className="font-medium text-app-text">Apariencia</h2>
+          <p className="text-sm text-app-muted">Modo claro u oscuro. Se guarda en este navegador.</p>
+          <ThemeToggle showLabelAlways />
+        </div>
         <div className="bg-app-surface rounded-xl border border-app-border p-6 space-y-4">
           <h2 className="font-medium text-app-text">Información del sistema</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
@@ -207,6 +214,7 @@ export default function Settings() {
             </div>
           </div>
         </div>
+        </>
       )}
     </div>
   )

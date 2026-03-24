@@ -15,6 +15,7 @@ import {
   ScrollText,
 } from 'lucide-react'
 import { usePendingApprovals } from '@/hooks/usePendingApprovals'
+import { ThemeToggle } from '@/components/layout/ThemeToggle'
 
 interface NavSection {
   label: string
@@ -85,12 +86,13 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       <aside
         className={`
           fixed top-0 left-0 z-50 h-full w-64 bg-app-surface border-r border-app-border
+          flex flex-col
           transform transition-transform duration-200 ease-in-out
           lg:translate-x-0 lg:static lg:z-auto
           ${open ? 'translate-x-0' : '-translate-x-full'}
         `}
       >
-        <div className="flex items-center justify-between h-16 px-4 border-b border-app-border">
+        <div className="flex items-center justify-between h-16 px-4 border-b border-app-border shrink-0">
           <div className="flex items-center gap-2">
             <ClipboardList className="w-7 h-7 text-blue-600" />
             <span className="text-lg font-semibold text-app-text">NominaAPP</span>
@@ -100,7 +102,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           </button>
         </div>
 
-        <nav className="p-3 space-y-4 overflow-y-auto h-[calc(100%-4rem)]">
+        <nav className="p-3 space-y-4 overflow-y-auto flex-1 min-h-0">
           {NAV_SECTIONS.map((section) => (
             <div key={section.label}>
               <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-wider text-app-subtle">
@@ -134,6 +136,13 @@ export function Sidebar({ open, onClose }: SidebarProps) {
             </div>
           ))}
         </nav>
+
+        <div className="border-t border-app-border p-3 shrink-0 bg-app-bg/50">
+          <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-wider text-app-subtle">
+            Tema
+          </p>
+          <ThemeToggle showLabelAlways />
+        </div>
       </aside>
     </>
   )
