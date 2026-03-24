@@ -1,5 +1,7 @@
 import { createBrowserRouter } from 'react-router-dom'
+import { RequireAuth } from '@/components/auth/RequireAuth'
 import { AppLayout } from '@/components/layout/AppLayout'
+import Login from '@/pages/Login'
 import Dashboard from '@/pages/Dashboard'
 import Projects from '@/pages/Projects'
 import ProjectDetail from '@/pages/ProjectDetail'
@@ -25,34 +27,40 @@ import ContractorDetail from '@/pages/ContractorDetail'
 import ReportesObra from '@/pages/ReportesObra'
 
 export const router = createBrowserRouter([
-  // Página de impresión fuera del layout — sin sidebar ni header
-  { path: '/nominas/:periodId/imprimir', element: <PayrollPrint /> },
+  { path: '/login', element: <Login /> },
   {
     path: '/',
-    element: <AppLayout />,
+    element: <RequireAuth />,
     children: [
-      { index: true, element: <Dashboard /> },
-      { path: 'proyectos', element: <Projects /> },
-      { path: 'proyectos/:projectId', element: <ProjectDetail /> },
-      { path: 'proyectos/:projectId/nominas', element: <PayrollList /> },
-      { path: 'proyectos/:projectId/control', element: <ControlFinanciero /> },
-      { path: 'proyectos/:projectId/presupuesto', element: <PresupuestoDetalle /> },
-      { path: 'proyectos/:projectId/calidad', element: <QualityControlPage /> },
-      { path: 'proyectos/:projectId/cubicaciones', element: <CubicacionesPage /> },
-      { path: 'nominas', element: <ReportesObra /> },
-      { path: 'nominas/:periodId', element: <PayrollEditor /> },
-      { path: 'finanzas', element: <FinanzasHub /> },
-      { path: 'presupuesto', element: <PresupuestoHub /> },
-      { path: 'cxp', element: <CxPHub /> },
-      { path: 'cxp/consolidado', element: <CxPConsolidadoTodos /> },
-      { path: 'cxp/:projectId', element: <CxPDetalle /> },
-      { path: 'reportes', element: <Reportes /> },
-      { path: 'contratistas', element: <Contractors /> },
-      { path: 'contratistas/:contractorId', element: <ContractorDetail /> },
-      { path: 'suplidores', element: <Suppliers /> },
-      { path: 'configuracion', element: <Settings /> },
-      { path: 'ordenes-compra', element: <PurchaseOrders /> },
-      { path: 'ordenes-compra/:orderId', element: <PurchaseOrderDetail /> },
+      // Impresión sin sidebar — requiere sesión
+      { path: 'nominas/:periodId/imprimir', element: <PayrollPrint /> },
+      {
+        element: <AppLayout />,
+        children: [
+          { index: true, element: <Dashboard /> },
+          { path: 'proyectos', element: <Projects /> },
+          { path: 'proyectos/:projectId', element: <ProjectDetail /> },
+          { path: 'proyectos/:projectId/nominas', element: <PayrollList /> },
+          { path: 'proyectos/:projectId/control', element: <ControlFinanciero /> },
+          { path: 'proyectos/:projectId/presupuesto', element: <PresupuestoDetalle /> },
+          { path: 'proyectos/:projectId/calidad', element: <QualityControlPage /> },
+          { path: 'proyectos/:projectId/cubicaciones', element: <CubicacionesPage /> },
+          { path: 'nominas', element: <ReportesObra /> },
+          { path: 'nominas/:periodId', element: <PayrollEditor /> },
+          { path: 'finanzas', element: <FinanzasHub /> },
+          { path: 'presupuesto', element: <PresupuestoHub /> },
+          { path: 'cxp', element: <CxPHub /> },
+          { path: 'cxp/consolidado', element: <CxPConsolidadoTodos /> },
+          { path: 'cxp/:projectId', element: <CxPDetalle /> },
+          { path: 'reportes', element: <Reportes /> },
+          { path: 'contratistas', element: <Contractors /> },
+          { path: 'contratistas/:contractorId', element: <ContractorDetail /> },
+          { path: 'suplidores', element: <Suppliers /> },
+          { path: 'configuracion', element: <Settings /> },
+          { path: 'ordenes-compra', element: <PurchaseOrders /> },
+          { path: 'ordenes-compra/:orderId', element: <PurchaseOrderDetail /> },
+        ],
+      },
     ],
   },
 ])

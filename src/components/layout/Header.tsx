@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Menu, Search, X } from 'lucide-react'
+import { LogOut, Menu, Search, X } from 'lucide-react'
+import { useAuthStore } from '@/stores/authStore'
 import { useProjectStore } from '@/stores/projectStore'
 import { supplierService } from '@/services/supplierService'
 import { contractorService } from '@/services/contractorService'
@@ -19,8 +20,16 @@ interface SearchResult {
   url: string
 }
 
+function userInitials(displayName: string): string {
+  const parts = displayName.trim().split(/\s+/)
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
+  return displayName.slice(0, 2).toUpperCase() || '?'
+}
+
 export function Header({ onMenuClick }: HeaderProps) {
   const navigate = useNavigate()
+  const user = useAuthStore((s) => s.user)
+  const logout = useAuthStore((s) => s.logout)
   const { projects } = useProjectStore()
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
@@ -150,9 +159,30 @@ export function Header({ onMenuClick }: HeaderProps) {
       <div className="flex items-center gap-1 sm:gap-2">
         <ThemeToggle />
         <NotificationDropdown />
-        <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-medium">
-          CL
-        </div>
+        {user && (
+          <>
+            <div
+              className="hidden sm:flex max-w-[10rem] items-center truncate text-xs text-app-muted"
+              title={user.displayName}
+            >
+              {user.displayName}
+            </div>
+            <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-medium shrink-0">
+              {userInitials(user.displayName)}
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                logout()
+                navigate('/login', { replace: true })
+              }}
+              className="p-2 rounded-lg text-app-muted hover:bg-app-hover hover:text-app-text"
+              title="Cerrar sesión"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </>
+        )}
       </div>
     </header>
   )

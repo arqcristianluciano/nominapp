@@ -19,6 +19,7 @@ Para conectar Supabase real: copiar `.env.example` → `.env` con credenciales.
 src/
   pages/            ← 17 páginas (incl. CxPHub, CxPDetalle, CxPConsolidadoTodos)
   components/
+    auth/           ← RequireAuth (rutas protegidas)
     layout/         ← AppLayout, Sidebar, Header, ThemeToggle
     features/
       payroll/      ← AddLaborItemForm, AddMaterialForm, CreatePayrollForm
@@ -31,11 +32,11 @@ src/
       payments/     ← PaymentDistributionsSection
       quality/      ← QualityControlForm
     ui/             ← Modal
-  services/         ← 10 servicios
-  stores/           ← projectStore, payrollStore, themeStore (claro/oscuro, localStorage)
+  services/         ← authService + servicios de dominio (ver tabla)
+  stores/           ← projectStore, payrollStore, themeStore, authStore (sesión demo, localStorage)
   hooks/            ← usePayroll, useTransactions, useBudgetDetail, useBudgetItems
   utils/            ← currency, calculations, financialCalculations
-  constants/        ← budgetCategories, indirectCosts, measureUnits, banks
+  constants/        ← budgetCategories, indirectCosts, measureUnits, banks, demoUsers (login demo)
   types/            ← database.ts (14 interfaces)
   lib/              ← supabase, mockSupabase, mockData, router
 ```
@@ -46,6 +47,7 @@ src/
 
 | Ruta | Página | Estado |
 |---|---|---|
+| `/login` | Login | ✅ Completo (usuarios demo en `constants/demoUsers`) |
 | `/` | Dashboard | ✅ Completo |
 | `/proyectos` | Projects | ✅ Completo |
 | `/proyectos/:id` | ProjectDetail | ✅ Completo |
@@ -73,6 +75,7 @@ src/
 
 | Archivo | Responsabilidad |
 |---|---|
+| `authService` | Validación de credenciales demo (cliente) |
 | `projectService` | CRUD proyectos y empresas |
 | `contractorService` | CRUD contratistas |
 | `supplierService` | CRUD proveedores |
@@ -134,6 +137,6 @@ src/
 
 ## Pendiente / Roadmap
 
-- [ ] Autenticación (Supabase Auth)
+- [ ] Autenticación real (Supabase Auth); hoy: login demo en cliente (`authStore` + `demoUsers`)
 - [ ] Notificaciones (ensayos fallidos, CxP vencidos)
 - [ ] Multi-empresa con permisos por usuario
