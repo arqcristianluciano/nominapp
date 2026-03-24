@@ -6,6 +6,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#1e40af" />
     <title>NominaAPP</title>
+    <script>
+      (function () {
+        try {
+          var raw = localStorage.getItem('nominaapp-theme')
+          if (!raw) return
+          var p = JSON.parse(raw)
+          var t = p.state && p.state.theme
+          if (t === 'dark') document.documentElement.classList.add('dark')
+        } catch (e) {}
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

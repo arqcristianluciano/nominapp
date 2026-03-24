@@ -69,11 +69,11 @@ export const REQ_STATUS_LABEL: Record<RequisitionStatus, string> = {
 }
 
 export const REQ_STATUS_COLOR: Record<RequisitionStatus, string> = {
-  draft: 'bg-gray-100 text-gray-700',
-  quoting: 'bg-blue-100 text-blue-700',
-  pending_approval: 'bg-yellow-100 text-yellow-700',
-  needs_revision: 'bg-orange-100 text-orange-700',
-  approved: 'bg-green-100 text-green-700',
-  ordered: 'bg-purple-100 text-purple-700',
-  rejected: 'bg-red-100 text-red-700',
+  draft: 'bg-app-chip text-app-muted',
+  quoting: 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300',
+  pending_approval: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950/40 dark:text-yellow-300',
+  needs_revision: 'bg-orange-100 text-orange-800 dark:bg-orange-950/40 dark:text-orange-300',
+  approved: 'bg-green-100 text-green-800 dark:bg-green-950/40 dark:text-green-300',
+  ordered: 'bg-purple-100 text-purple-800 dark:bg-purple-950/40 dark:text-purple-300',
+  rejected: 'bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-300',
 }

@@ -4,9 +4,9 @@ import { Bell, AlertTriangle, AlertCircle, X, CheckCircle } from 'lucide-react'
 import { notificationService, type AppNotification } from '@/services/notificationService'
 
 const LEVEL_STYLES: Record<string, { icon: React.ElementType; bg: string; text: string; border: string }> = {
-  danger:  { icon: AlertCircle,   bg: 'bg-red-50',    text: 'text-red-600',    border: 'border-red-100' },
-  warning: { icon: AlertTriangle, bg: 'bg-amber-50',  text: 'text-amber-600',  border: 'border-amber-100' },
-  info:    { icon: Bell,          bg: 'bg-blue-50',   text: 'text-blue-600',   border: 'border-blue-100' },
+  danger:  { icon: AlertCircle,   bg: 'bg-red-50 dark:bg-red-950/40',    text: 'text-red-600 dark:text-red-400',    border: 'border-red-100 dark:border-red-900/50' },
+  warning: { icon: AlertTriangle, bg: 'bg-amber-50 dark:bg-amber-950/40',  text: 'text-amber-600 dark:text-amber-400',  border: 'border-amber-100 dark:border-amber-900/50' },
+  info:    { icon: Bell,          bg: 'bg-blue-50 dark:bg-blue-950/40',   text: 'text-blue-600 dark:text-blue-400',   border: 'border-blue-100 dark:border-blue-900/50' },
 }
 
 export function NotificationDropdown() {
@@ -59,7 +59,7 @@ export function NotificationDropdown() {
     <div ref={wrapperRef} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="relative p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+        className="relative p-2 text-app-subtle hover:text-app-muted rounded-lg hover:bg-app-hover-strong transition-colors"
         title="Notificaciones"
       >
         <Bell className="w-5 h-5" />
@@ -71,12 +71,12 @@ export function NotificationDropdown() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl border border-gray-200 shadow-xl z-50 overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+        <div className="absolute right-0 top-full mt-2 w-80 bg-app-surface rounded-xl border border-app-border shadow-xl z-50 overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-app-border">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-gray-900">Notificaciones</span>
+              <span className="text-sm font-semibold text-app-text">Notificaciones</span>
               {badgeCount > 0 && (
-                <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-gray-100 text-gray-600">
+                <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-app-chip text-app-muted">
                   {badgeCount}
                 </span>
               )}
@@ -89,15 +89,15 @@ export function NotificationDropdown() {
             </button>
           </div>
 
-          <div className="max-h-96 overflow-y-auto divide-y divide-gray-50">
+          <div className="max-h-96 overflow-y-auto divide-y divide-app-border">
             {loading && (
-              <div className="px-4 py-6 text-sm text-center text-gray-400">Cargando...</div>
+              <div className="px-4 py-6 text-sm text-center text-app-subtle">Cargando...</div>
             )}
 
             {!loading && visible.length === 0 && (
               <div className="px-4 py-8 text-center">
                 <CheckCircle className="w-8 h-8 text-green-400 mx-auto mb-2" />
-                <p className="text-sm text-gray-500">Todo en orden</p>
+                <p className="text-sm text-app-muted">Todo en orden</p>
               </div>
             )}
 
@@ -108,18 +108,18 @@ export function NotificationDropdown() {
                 <button
                   key={notif.id}
                   onClick={() => handleClick(notif)}
-                  className={`w-full text-left flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors ${style.border}`}
+                  className={`w-full text-left flex items-start gap-3 px-4 py-3 hover:bg-app-hover transition-colors ${style.border}`}
                 >
                   <div className={`mt-0.5 w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${style.bg}`}>
                     <Icon className={`w-3.5 h-3.5 ${style.text}`} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-gray-900">{notif.title}</p>
-                    <p className="text-xs text-gray-500 truncate mt-0.5">{notif.description}</p>
+                    <p className="text-xs font-semibold text-app-text">{notif.title}</p>
+                    <p className="text-xs text-app-muted truncate mt-0.5">{notif.description}</p>
                   </div>
                   <button
                     onClick={(e) => dismiss(notif.id, e)}
-                    className="shrink-0 p-0.5 text-gray-300 hover:text-gray-500 mt-0.5"
+                    className="shrink-0 p-0.5 text-app-subtle hover:text-app-muted mt-0.5"
                   >
                     <X className="w-3 h-3" />
                   </button>

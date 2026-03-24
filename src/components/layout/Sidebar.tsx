@@ -84,18 +84,18 @@ export function Sidebar({ open, onClose }: SidebarProps) {
 
       <aside
         className={`
-          fixed top-0 left-0 z-50 h-full w-64 bg-white border-r border-gray-200
+          fixed top-0 left-0 z-50 h-full w-64 bg-app-surface border-r border-app-border
           transform transition-transform duration-200 ease-in-out
           lg:translate-x-0 lg:static lg:z-auto
           ${open ? 'translate-x-0' : '-translate-x-full'}
         `}
       >
-        <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
+        <div className="flex items-center justify-between h-16 px-4 border-b border-app-border">
           <div className="flex items-center gap-2">
             <ClipboardList className="w-7 h-7 text-blue-600" />
-            <span className="text-lg font-semibold text-gray-900">NominaAPP</span>
+            <span className="text-lg font-semibold text-app-text">NominaAPP</span>
           </div>
-          <button onClick={onClose} className="lg:hidden p-1 text-gray-400 hover:text-gray-600">
+          <button onClick={onClose} className="lg:hidden p-1 text-app-subtle hover:text-app-muted">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -103,7 +103,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         <nav className="p-3 space-y-4 overflow-y-auto h-[calc(100%-4rem)]">
           {NAV_SECTIONS.map((section) => (
             <div key={section.label}>
-              <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+              <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-wider text-app-subtle">
                 {section.label}
               </p>
               <div className="space-y-0.5">
@@ -116,8 +116,8 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                     className={({ isActive }) =>
                       `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                         isActive
-                          ? 'bg-blue-50 text-blue-700'
-                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                          ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300'
+                          : 'text-app-muted hover:bg-app-hover hover:text-app-text'
                       }`
                     }
                   >

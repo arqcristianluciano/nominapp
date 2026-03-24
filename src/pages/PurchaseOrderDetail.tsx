@@ -93,24 +93,24 @@ export default function PurchaseOrderDetail() {
   const missingQuotes = Math.max(0, MIN_QUOTES - quotes.length)
   const canSubmit = canEdit && quotes.length >= MIN_QUOTES
 
-  if (loading) return <div className="p-8 text-center text-gray-400">Cargando…</div>
-  if (!req) return <div className="p-8 text-center text-gray-500">Solicitud no encontrada</div>
+  if (loading) return <div className="p-8 text-center text-app-subtle">Cargando…</div>
+  if (!req) return <div className="p-8 text-center text-app-muted">Solicitud no encontrada</div>
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-start gap-3">
-        <Link to="/ordenes-compra" className="text-gray-400 hover:text-gray-600 mt-1">
+        <Link to="/ordenes-compra" className="text-app-subtle hover:text-app-muted mt-1">
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div className="flex-1">
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-xl font-bold text-gray-900">{req.req_number}</h1>
+            <h1 className="text-xl font-bold text-app-text">{req.req_number}</h1>
             <span className={`px-3 py-1 rounded-full text-xs font-medium ${REQ_STATUS_COLOR[req.status]}`}>
               {REQ_STATUS_LABEL[req.status]}
             </span>
           </div>
-          <p className="text-sm text-gray-600 mt-0.5">{req.description}</p>
+          <p className="text-sm text-app-muted mt-0.5">{req.description}</p>
         </div>
       </div>
 
@@ -129,23 +129,23 @@ export default function PurchaseOrderDetail() {
       )}
 
       {/* Meta */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-        <div><span className="text-gray-500 text-xs block">Proyecto</span><span className="font-medium">{req.project?.name}</span></div>
-        <div><span className="text-gray-500 text-xs block">Solicitado por</span><span className="font-medium">{req.requested_by}</span></div>
-        {req.required_date && <div><span className="text-gray-500 text-xs block">Fecha requerida</span><span className="font-medium">{req.required_date}</span></div>}
-        {req.approved_by && <div><span className="text-gray-500 text-xs block">Aprobado por</span><span className="font-medium text-green-700">{req.approved_by}</span></div>}
-        {req.approved_at && <div><span className="text-gray-500 text-xs block">Fecha aprobación</span><span className="font-medium">{new Date(req.approved_at).toLocaleDateString('es-DO')}</span></div>}
-        {req.payment_type && <div><span className="text-gray-500 text-xs block">Forma de pago</span><span className="font-medium">{req.payment_type === 'credit' ? 'Crédito' : 'Contado'}</span></div>}
-        {req.rejection_reason && <div className="col-span-2"><span className="text-gray-500 text-xs block">Motivo rechazo</span><span className="font-medium text-red-700">{req.rejection_reason}</span></div>}
-        {req.notes && <div className="col-span-2"><span className="text-gray-500 text-xs block">Notas</span><span>{req.notes}</span></div>}
+      <div className="bg-app-surface rounded-xl border border-app-border p-4 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+        <div><span className="text-app-muted text-xs block">Proyecto</span><span className="font-medium">{req.project?.name}</span></div>
+        <div><span className="text-app-muted text-xs block">Solicitado por</span><span className="font-medium">{req.requested_by}</span></div>
+        {req.required_date && <div><span className="text-app-muted text-xs block">Fecha requerida</span><span className="font-medium">{req.required_date}</span></div>}
+        {req.approved_by && <div><span className="text-app-muted text-xs block">Aprobado por</span><span className="font-medium text-green-700">{req.approved_by}</span></div>}
+        {req.approved_at && <div><span className="text-app-muted text-xs block">Fecha aprobación</span><span className="font-medium">{new Date(req.approved_at).toLocaleDateString('es-DO')}</span></div>}
+        {req.payment_type && <div><span className="text-app-muted text-xs block">Forma de pago</span><span className="font-medium">{req.payment_type === 'credit' ? 'Crédito' : 'Contado'}</span></div>}
+        {req.rejection_reason && <div className="col-span-2"><span className="text-app-muted text-xs block">Motivo rechazo</span><span className="font-medium text-red-700">{req.rejection_reason}</span></div>}
+        {req.notes && <div className="col-span-2"><span className="text-app-muted text-xs block">Notas</span><span>{req.notes}</span></div>}
       </div>
 
       {/* Cotizaciones */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-base font-semibold text-gray-900">
-              Cotizaciones <span className="text-gray-400 font-normal text-sm">({quotes.length})</span>
+            <h2 className="text-base font-semibold text-app-text">
+              Cotizaciones <span className="text-app-subtle font-normal text-sm">({quotes.length})</span>
             </h2>
             {canEdit && missingQuotes > 0 && (
               <p className="text-xs text-amber-600 mt-0.5">
@@ -153,7 +153,7 @@ export default function PurchaseOrderDetail() {
               </p>
             )}
             {canNegotiate && quotes.length > 0 && (
-              <p className="text-xs text-gray-400 mt-0.5">
+              <p className="text-xs text-app-subtle mt-0.5">
                 Haz clic en <span className="font-medium">✏</span> en cada tarjeta para registrar un precio negociado
               </p>
             )}
@@ -178,17 +178,17 @@ export default function PurchaseOrderDetail() {
 
       {/* Firma */}
       {req.signature_data && (
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <p className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+        <div className="bg-app-surface rounded-xl border border-app-border p-5">
+          <p className="text-sm font-medium text-app-muted mb-3 flex items-center gap-2">
             <ImageIcon className="w-4 h-4" /> Firma digital
             {req.approved_at && (
-              <span className="text-xs text-gray-400 font-normal">
+              <span className="text-xs text-app-subtle font-normal">
                 — {new Date(req.approved_at).toLocaleString('es-DO')}
               </span>
             )}
           </p>
           <img src={req.signature_data} alt="Firma digital"
-            className="max-h-32 border border-gray-200 rounded-lg bg-gray-50" />
+            className="max-h-32 border border-app-border rounded-lg bg-app-bg" />
         </div>
       )}
 

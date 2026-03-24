@@ -43,39 +43,39 @@ export function CreatePayrollForm({ projectId, onCreated, onCancel }: Props) {
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">No. de nómina</label>
+          <label className="block text-xs font-medium text-app-muted mb-1">No. de nómina</label>
           <input
             type="number"
             value={number}
             onChange={(e) => setNumber(parseInt(e.target.value))}
             required
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">Fecha de reporte</label>
+          <label className="block text-xs font-medium text-app-muted mb-1">Fecha de reporte</label>
           <input
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
             required
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-gray-700 mb-1">Reportado por</label>
+        <label className="block text-xs font-medium text-app-muted mb-1">Reportado por</label>
         <input
           type="text"
           value={reportedBy}
           onChange={(e) => setReportedBy(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
 
       <div className="flex justify-end gap-2 pt-2">
-        <button type="button" onClick={onCancel} className="px-4 py-2 text-sm text-gray-600">Cancelar</button>
+        <button type="button" onClick={onCancel} className="px-4 py-2 text-sm text-app-muted">Cancelar</button>
         <button type="submit" disabled={saving} className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50">
           {saving ? 'Creando...' : 'Crear reporte'}
         </button>

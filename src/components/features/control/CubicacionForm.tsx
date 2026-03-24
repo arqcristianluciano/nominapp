@@ -42,8 +42,8 @@ export function CubicacionForm({ initial, contractors, saving, onSubmit, onCance
     })
   }
 
-  const inputClass = 'w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
-  const labelClass = 'text-xs font-medium text-gray-700 mb-1 block'
+  const inputClass = 'w-full px-3 py-2 border border-app-border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+  const labelClass = 'text-xs font-medium text-app-muted mb-1 block'
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -76,7 +76,7 @@ export function CubicacionForm({ initial, contractors, saving, onSubmit, onCance
       </div>
 
       <div className="flex justify-end gap-2 pt-2">
-        <button type="button" onClick={onCancel} className="px-4 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50">Cancelar</button>
+        <button type="button" onClick={onCancel} className="px-4 py-2 text-sm text-app-muted border border-app-border rounded-lg hover:bg-app-hover">Cancelar</button>
         <button type="submit" disabled={saving} className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50">
           {saving ? 'Guardando...' : initial?.id ? 'Actualizar' : 'Agregar'}
         </button>

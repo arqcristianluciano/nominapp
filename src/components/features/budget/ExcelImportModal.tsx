@@ -139,13 +139,13 @@ export default function ExcelImportModal({ categories, onImport, onClose }: Prop
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl mx-4 max-h-[90vh] flex flex-col">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+      <div className="bg-app-surface rounded-xl shadow-xl w-full max-w-3xl mx-4 max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-app-border">
           <div className="flex items-center gap-2">
             <FileSpreadsheet className="w-4 h-4 text-green-600" />
-            <h2 className="text-sm font-semibold text-gray-900">Importar presupuesto desde Excel</h2>
+            <h2 className="text-sm font-semibold text-app-text">Importar presupuesto desde Excel</h2>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <button onClick={onClose} className="text-app-subtle hover:text-app-muted">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -164,11 +164,11 @@ export default function ExcelImportModal({ categories, onImport, onClose }: Prop
               onDragOver={(e) => e.preventDefault()}
               onDrop={handleDrop}
               onClick={() => inputRef.current?.click()}
-              className="border-2 border-dashed border-gray-200 rounded-xl p-10 text-center cursor-pointer hover:border-blue-300 hover:bg-blue-50/30 transition-colors"
+              className="border-2 border-dashed border-app-border rounded-xl p-10 text-center cursor-pointer hover:border-blue-300 hover:bg-blue-50/30 transition-colors"
             >
-              <Upload className="w-8 h-8 text-gray-300 mx-auto mb-3" />
-              <p className="text-sm text-gray-500">Arrastra tu archivo Excel aquí</p>
-              <p className="text-xs text-gray-400 mt-1">o haz click para seleccionar (.xlsx, .xls)</p>
+              <Upload className="w-8 h-8 text-app-subtle mx-auto mb-3" />
+              <p className="text-sm text-app-muted">Arrastra tu archivo Excel aquí</p>
+              <p className="text-xs text-app-subtle mt-1">o haz click para seleccionar (.xlsx, .xls)</p>
               <input
                 ref={inputRef}
                 type="file"
@@ -184,7 +184,7 @@ export default function ExcelImportModal({ categories, onImport, onClose }: Prop
             <>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3 text-xs">
-                  <span className="text-gray-600 font-medium">{fileName}</span>
+                  <span className="text-app-muted font-medium">{fileName}</span>
                   <span className="text-green-600 flex items-center gap-1">
                     <CheckCircle className="w-3.5 h-3.5" /> {validCount} válidas
                   </span>
@@ -196,38 +196,38 @@ export default function ExcelImportModal({ categories, onImport, onClose }: Prop
                 </div>
                 <button
                   onClick={() => { setRows([]); setFileName('') }}
-                  className="text-xs text-gray-400 hover:text-gray-600"
+                  className="text-xs text-app-subtle hover:text-app-muted"
                 >
                   Cambiar archivo
                 </button>
               </div>
 
-              <div className="border border-gray-200 rounded-lg overflow-hidden">
+              <div className="border border-app-border rounded-lg overflow-hidden">
                 <table className="w-full text-xs">
                   <thead>
-                    <tr className="bg-gray-50 border-b border-gray-200">
-                      <th className="px-3 py-2 text-left font-medium text-gray-500">Partida</th>
-                      <th className="px-3 py-2 text-left font-medium text-gray-500">Cod.</th>
-                      <th className="px-3 py-2 text-left font-medium text-gray-500">Descripción</th>
-                      <th className="px-3 py-2 text-center font-medium text-gray-500">Und</th>
-                      <th className="px-3 py-2 text-right font-medium text-gray-500">Cant.</th>
-                      <th className="px-3 py-2 text-right font-medium text-gray-500">P. Unit.</th>
-                      <th className="px-3 py-2 text-right font-medium text-gray-500">Total</th>
+                    <tr className="bg-app-bg border-b border-app-border">
+                      <th className="px-3 py-2 text-left font-medium text-app-muted">Partida</th>
+                      <th className="px-3 py-2 text-left font-medium text-app-muted">Cod.</th>
+                      <th className="px-3 py-2 text-left font-medium text-app-muted">Descripción</th>
+                      <th className="px-3 py-2 text-center font-medium text-app-muted">Und</th>
+                      <th className="px-3 py-2 text-right font-medium text-app-muted">Cant.</th>
+                      <th className="px-3 py-2 text-right font-medium text-app-muted">P. Unit.</th>
+                      <th className="px-3 py-2 text-right font-medium text-app-muted">Total</th>
                     </tr>
                   </thead>
                   <tbody>
                     {rows.map((row, i) => (
                       <tr
                         key={i}
-                        className={`border-b border-gray-50 ${row.valid ? 'hover:bg-gray-50' : 'bg-amber-50'}`}
+                        className={`border-b border-app-border ${row.valid ? 'hover:bg-app-hover' : 'bg-amber-50'}`}
                       >
-                        <td className="px-3 py-1.5 text-gray-500 max-w-[120px] truncate">{row.categoryName}</td>
-                        <td className="px-3 py-1.5 text-gray-400 font-mono">{row.code}</td>
-                        <td className="px-3 py-1.5 text-gray-800 max-w-[200px] truncate">{row.description}</td>
-                        <td className="px-3 py-1.5 text-center text-gray-500">{row.unit}</td>
-                        <td className="px-3 py-1.5 text-right text-gray-700">{row.quantity}</td>
-                        <td className="px-3 py-1.5 text-right text-gray-700">{formatRD(row.unit_price)}</td>
-                        <td className="px-3 py-1.5 text-right font-medium text-gray-900">
+                        <td className="px-3 py-1.5 text-app-muted max-w-[120px] truncate">{row.categoryName}</td>
+                        <td className="px-3 py-1.5 text-app-subtle font-mono">{row.code}</td>
+                        <td className="px-3 py-1.5 text-app-text max-w-[200px] truncate">{row.description}</td>
+                        <td className="px-3 py-1.5 text-center text-app-muted">{row.unit}</td>
+                        <td className="px-3 py-1.5 text-right text-app-muted">{row.quantity}</td>
+                        <td className="px-3 py-1.5 text-right text-app-muted">{formatRD(row.unit_price)}</td>
+                        <td className="px-3 py-1.5 text-right font-medium text-app-text">
                           {row.valid ? formatRD(row.quantity * row.unit_price) : (
                             <span className="text-amber-600 text-[10px]">{row.error}</span>
                           )}
@@ -249,8 +249,8 @@ export default function ExcelImportModal({ categories, onImport, onClose }: Prop
           {error && <p className="text-xs text-red-600">{error}</p>}
         </div>
 
-        <div className="flex justify-end gap-2 px-5 py-4 border-t border-gray-100">
-          <button onClick={onClose} className="px-4 py-2 text-xs text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50">
+        <div className="flex justify-end gap-2 px-5 py-4 border-t border-app-border">
+          <button onClick={onClose} className="px-4 py-2 text-xs text-app-muted border border-app-border rounded-lg hover:bg-app-hover">
             {done ? 'Cerrar' : 'Cancelar'}
           </button>
           {!done && validCount > 0 && (

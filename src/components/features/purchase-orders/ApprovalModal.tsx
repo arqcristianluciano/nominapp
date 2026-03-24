@@ -69,11 +69,11 @@ export function ApprovalModal({ open, onClose, quotes, onApprove, onReturn, onRe
   return (
     <Modal open={open} onClose={handleClose} title="Revisión de solicitud de compra" width="max-w-xl">
       <div className="space-y-4">
-        <div className="flex border-b border-gray-200">
+        <div className="flex border-b border-app-border">
           {tabs.map((t) => (
             <button key={t.key} onClick={() => { setTab(t.key); setError(null) }}
               className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
-                tab === t.key ? t.color : 'border-transparent text-gray-500 hover:text-gray-700'
+                tab === t.key ? t.color : 'border-transparent text-app-muted hover:text-app-muted'
               }`}>
               {t.label}
             </button>
@@ -83,7 +83,7 @@ export function ApprovalModal({ open, onClose, quotes, onApprove, onReturn, onRe
         {tab === 'approve' && (
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-2">
+              <label className="block text-xs font-medium text-app-muted mb-2">
                 Seleccione la cotización a aprobar
               </label>
               <div className="space-y-2">
@@ -91,15 +91,17 @@ export function ApprovalModal({ open, onClose, quotes, onApprove, onReturn, onRe
                   const effectiveTotal = q.negotiated_total ?? q.total
                   return (
                     <label key={q.id} className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-colors ${
-                      selectedQuoteId === q.id ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-gray-300'
+                      selectedQuoteId === q.id
+                        ? 'border-green-500 bg-green-50 dark:bg-green-950/40'
+                        : 'border-app-border hover:border-gray-400 dark:hover:border-gray-500'
                     }`}>
                       <input type="radio" name="quote" value={q.id}
                         checked={selectedQuoteId === q.id}
                         onChange={() => setSelectedQuoteId(q.id)}
                         className="text-green-600" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900">{q.supplier?.name}</p>
-                        {q.quote_number && <p className="text-xs text-gray-400">Cot. {q.quote_number}</p>}
+                        <p className="text-sm font-medium text-app-text">{q.supplier?.name}</p>
+                        {q.quote_number && <p className="text-xs text-app-subtle">Cot. {q.quote_number}</p>}
                         {q.negotiated_total && (
                           <p className="text-xs text-orange-600 font-medium">Precio negociado</p>
                         )}
@@ -107,7 +109,7 @@ export function ApprovalModal({ open, onClose, quotes, onApprove, onReturn, onRe
                       <div className="text-right shrink-0">
                         {q.negotiated_total ? (
                           <>
-                            <p className="text-xs text-gray-400 line-through">{fmt(q.total)}</p>
+                            <p className="text-xs text-app-subtle line-through">{fmt(q.total)}</p>
                             <p className="text-sm font-semibold text-green-700">{fmt(q.negotiated_total)}</p>
                           </>
                         ) : (
@@ -121,22 +123,22 @@ export function ApprovalModal({ open, onClose, quotes, onApprove, onReturn, onRe
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Código de aprobación personal</label>
+              <label className="block text-xs font-medium text-app-muted mb-1">Código de aprobación personal</label>
               <input value={code} onChange={(e) => setCode(e.target.value)} type="password"
                 placeholder="Su código personal"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
-              <p className="text-[10px] text-gray-400 mt-1">En modo demo el código es: 1234</p>
+                className="w-full border border-app-border rounded-lg px-3 py-2 text-sm" />
+              <p className="text-[10px] text-app-subtle mt-1">En modo demo el código es: 1234</p>
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Aprobado por</label>
+              <label className="block text-xs font-medium text-app-muted mb-1">Aprobado por</label>
               <input value={approvedBy} onChange={(e) => setApprovedBy(e.target.value)}
                 placeholder="Su nombre completo"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                className="w-full border border-app-border rounded-lg px-3 py-2 text-sm" />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Firma digital</label>
+              <label className="block text-xs font-medium text-app-muted mb-1">Firma digital</label>
               <SignatureCanvas onChange={setSignature} />
             </div>
 
@@ -156,12 +158,12 @@ export function ApprovalModal({ open, onClose, quotes, onApprove, onReturn, onRe
               Ella podrá ajustar cotizaciones y reenviar para aprobación.
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
+              <label className="block text-xs font-medium text-app-muted mb-1">
                 ¿Qué debe corregirse o conseguirse?
               </label>
               <textarea value={returnNotes} onChange={(e) => setReturnNotes(e.target.value)} rows={4}
                 placeholder="Ej: Conseguir cotización de Ferretería Nacional también. El precio de Ochoa parece muy alto comparado con el mercado…"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none" />
+                className="w-full border border-app-border rounded-lg px-3 py-2 text-sm resize-none" />
             </div>
             {error && <p className="text-sm text-red-600">{error}</p>}
             <button onClick={handleReturn} disabled={loading}
@@ -178,10 +180,10 @@ export function ApprovalModal({ open, onClose, quotes, onApprove, onReturn, onRe
               El rechazo es definitivo. Si solo necesita ajustes, use "Devolver" en su lugar.
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Motivo del rechazo</label>
+              <label className="block text-xs font-medium text-app-muted mb-1">Motivo del rechazo</label>
               <textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} rows={3}
                 placeholder="Explique el motivo…"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none" />
+                className="w-full border border-app-border rounded-lg px-3 py-2 text-sm resize-none" />
             </div>
             {error && <p className="text-sm text-red-600">{error}</p>}
             <button onClick={handleReject} disabled={loading}
@@ -192,7 +194,7 @@ export function ApprovalModal({ open, onClose, quotes, onApprove, onReturn, onRe
           </div>
         )}
 
-        <p className="text-xs text-gray-400 flex items-center gap-1">
+        <p className="text-xs text-app-subtle flex items-center gap-1">
           <ShieldCheck className="w-3.5 h-3.5" />
           Toda acción queda registrada con fecha, hora y responsable
         </p>

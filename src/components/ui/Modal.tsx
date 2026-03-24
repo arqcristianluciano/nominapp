@@ -26,10 +26,10 @@ export function Modal({ open, onClose, title, children, width = 'max-w-lg' }: Mo
       className="fixed inset-0 z-[60] flex items-start justify-center bg-black/40 p-4 pt-[10vh] overflow-y-auto"
       onClick={(e) => { if (e.target === overlayRef.current) onClose() }}
     >
-      <div className={`bg-white rounded-xl shadow-xl w-full ${width} animate-in fade-in`}>
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <h2 className="text-base font-semibold text-gray-900">{title}</h2>
-          <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600">
+      <div className={`bg-app-surface rounded-xl shadow-xl w-full ${width} animate-in fade-in`}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-app-border">
+          <h2 className="text-base font-semibold text-app-text">{title}</h2>
+          <button onClick={onClose} className="p-1 text-app-subtle hover:text-app-muted">
             <X className="w-4 h-4" />
           </button>
         </div>

@@ -59,15 +59,15 @@ export function QuoteForm({ suppliers, onSubmit, onCancel, saving }: Props) {
     })
   }
 
-  const cell = 'border border-gray-200 rounded px-2 py-1.5 text-xs w-full'
+  const cell = 'border border-app-border rounded px-2 py-1.5 text-xs w-full'
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2">
-          <label className="block text-xs font-medium text-gray-700 mb-1">Suplidor *</label>
+          <label className="block text-xs font-medium text-app-muted mb-1">Suplidor *</label>
           <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)} required
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+            className="w-full border border-app-border rounded-lg px-3 py-2 text-sm">
             <option value="">Seleccionar…</option>
             {suppliers.filter((s) => s.is_active).map((s) => (
               <option key={s.id} value={s.id}>{s.name}</option>
@@ -75,28 +75,28 @@ export function QuoteForm({ suppliers, onSubmit, onCancel, saving }: Props) {
           </select>
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">N° cotización del suplidor</label>
+          <label className="block text-xs font-medium text-app-muted mb-1">N° cotización del suplidor</label>
           <input value={quoteNumber} onChange={(e) => setQuoteNumber(e.target.value)}
             placeholder="Ej: COT-2026-001"
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+            className="w-full border border-app-border rounded-lg px-3 py-2 text-sm" />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">Válida hasta</label>
+          <label className="block text-xs font-medium text-app-muted mb-1">Válida hasta</label>
           <input type="date" value={validUntil} onChange={(e) => setValidUntil(e.target.value)}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+            className="w-full border border-app-border rounded-lg px-3 py-2 text-sm" />
         </div>
       </div>
 
       <div>
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-medium text-gray-700">Ítems *</span>
+          <span className="text-xs font-medium text-app-muted">Ítems *</span>
           <button type="button" onClick={() => setItems((p) => [...p, emptyItem()])}
             className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700">
             <Plus className="w-3.5 h-3.5" /> Agregar ítem
           </button>
         </div>
         <div className="space-y-1.5">
-          <div className="grid grid-cols-12 gap-2 text-[10px] font-medium text-gray-500 px-0.5">
+          <div className="grid grid-cols-12 gap-2 text-[10px] font-medium text-app-muted px-0.5">
             <span className="col-span-5">Descripción</span>
             <span className="col-span-2">Cantidad</span>
             <span className="col-span-2">Unidad</span>
@@ -113,7 +113,7 @@ export function QuoteForm({ suppliers, onSubmit, onCancel, saving }: Props) {
               <input value={it.unit_price} onChange={(e) => updateItem(idx, 'unit_price', e.target.value)}
                 type="number" min="0" step="any" placeholder="0.00" className={`col-span-2 ${cell}`} />
               <button type="button" onClick={() => setItems((p) => p.filter((_, i) => i !== idx))}
-                className="col-span-1 text-gray-300 hover:text-red-500 flex justify-center">
+                className="col-span-1 text-app-subtle hover:text-red-500 flex justify-center">
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -123,26 +123,26 @@ export function QuoteForm({ suppliers, onSubmit, onCancel, saving }: Props) {
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">ITBIS (%)</label>
+          <label className="block text-xs font-medium text-app-muted mb-1">ITBIS (%)</label>
           <input type="number" value={taxPercent} onChange={(e) => setTaxPercent(e.target.value)}
-            min="0" max="100" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+            min="0" max="100" className="w-full border border-app-border rounded-lg px-3 py-2 text-sm" />
         </div>
         <div className="text-right text-sm space-y-0.5 pt-1">
-          <p className="text-gray-500">Subtotal: <span className="font-medium text-gray-800">{fmt(subtotal)}</span></p>
-          <p className="font-semibold text-gray-900">Total: {fmt(total)}</p>
+          <p className="text-app-muted">Subtotal: <span className="font-medium text-app-text">{fmt(subtotal)}</span></p>
+          <p className="font-semibold text-app-text">Total: {fmt(total)}</p>
         </div>
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-gray-700 mb-1">Notas</label>
+        <label className="block text-xs font-medium text-app-muted mb-1">Notas</label>
         <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2}
-          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none" />
+          className="w-full border border-app-border rounded-lg px-3 py-2 text-sm resize-none" />
       </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       <div className="flex gap-3 justify-end pt-2">
-        <button type="button" onClick={onCancel} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">
+        <button type="button" onClick={onCancel} className="px-4 py-2 text-sm text-app-muted hover:text-app-text">
           Cancelar
         </button>
         <button type="submit" disabled={saving}

@@ -9,7 +9,7 @@ import { formatRD } from '@/utils/currency'
 import type { PayrollPeriod, Project } from '@/types/database'
 
 const STATUS_COLORS: Record<string, string> = {
-  draft: 'bg-gray-100 text-gray-600',
+  draft: 'bg-app-chip text-app-muted',
   submitted: 'bg-blue-50 text-blue-700',
   approved: 'bg-green-50 text-green-700',
   paid: 'bg-emerald-50 text-emerald-700',
@@ -51,8 +51,8 @@ export default function ReportesObra() {
     <div className="space-y-6 max-w-4xl">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Reportes</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{periods.length} reporte{periods.length !== 1 ? 's' : ''} registrado{periods.length !== 1 ? 's' : ''}</p>
+          <h1 className="text-2xl font-semibold text-app-text">Reportes</h1>
+          <p className="text-sm text-app-muted mt-0.5">{periods.length} reporte{periods.length !== 1 ? 's' : ''} registrado{periods.length !== 1 ? 's' : ''}</p>
         </div>
         <button
           onClick={() => setShowCreate(true)}
@@ -63,11 +63,11 @@ export default function ReportesObra() {
       </div>
 
       {loading ? (
-        <div className="text-sm text-gray-500">Cargando reportes...</div>
+        <div className="text-sm text-app-muted">Cargando reportes...</div>
       ) : periods.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-          <FileText className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500 font-medium">No hay reportes registrados</p>
+        <div className="bg-app-surface rounded-xl border border-app-border p-12 text-center">
+          <FileText className="w-10 h-10 text-app-subtle mx-auto mb-3" />
+          <p className="text-app-muted font-medium">No hay reportes registrados</p>
           <button
             onClick={() => setShowCreate(true)}
             className="mt-3 text-sm text-blue-600 hover:text-blue-800 font-medium"
@@ -81,8 +81,8 @@ export default function ReportesObra() {
             <div key={project.id}>
               <div className="flex items-center justify-between mb-2">
                 <div>
-                  <h2 className="text-sm font-semibold text-gray-900">{project.name}</h2>
-                  <p className="text-xs text-gray-400">{project.code}</p>
+                  <h2 className="text-sm font-semibold text-app-text">{project.name}</h2>
+                  <p className="text-xs text-app-subtle">{project.code}</p>
                 </div>
                 <button
                   onClick={() => { setSelectedProjectId(project.id); setShowCreate(true) }}
@@ -96,15 +96,15 @@ export default function ReportesObra() {
                   <Link
                     key={period.id}
                     to={`/nominas/${period.id}`}
-                    className="flex items-center justify-between bg-white rounded-xl border border-gray-200 px-4 py-3 hover:border-blue-300 hover:shadow-sm transition-all"
+                    className="flex items-center justify-between bg-app-surface rounded-xl border border-app-border px-4 py-3 hover:border-blue-300 hover:shadow-sm transition-all"
                   >
                     <div className="flex items-center gap-4">
                       <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-semibold text-sm">
                         {period.period_number}
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-900">Reporte No. {period.period_number}</p>
-                        <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+                        <p className="text-sm font-medium text-app-text">Reporte No. {period.period_number}</p>
+                        <p className="text-xs text-app-muted flex items-center gap-1 mt-0.5">
                           <Calendar className="w-3 h-3" />
                           {new Date(period.report_date).toLocaleDateString('es-DO')}
                           {period.reported_by && ` · ${period.reported_by}`}
@@ -112,10 +112,10 @@ export default function ReportesObra() {
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${STATUS_COLORS[period.status] ?? 'bg-gray-100 text-gray-600'}`}>
+                      <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${STATUS_COLORS[period.status] ?? 'bg-app-chip text-app-muted'}`}>
                         {STATUS_LABELS[period.status] ?? period.status}
                       </span>
-                      <span className="text-sm font-semibold text-gray-900 hidden sm:inline">
+                      <span className="text-sm font-semibold text-app-text hidden sm:inline">
                         {formatRD(period.grand_total || 0)}
                       </span>
                     </div>
@@ -127,19 +127,19 @@ export default function ReportesObra() {
 
           {emptyProjects.length > 0 && (
             <div>
-              <p className="text-xs text-gray-400 font-medium uppercase tracking-wider mb-2">Proyectos sin reportes</p>
+              <p className="text-xs text-app-subtle font-medium uppercase tracking-wider mb-2">Proyectos sin reportes</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {emptyProjects.map((proj) => (
                   <button
                     key={proj.id}
                     onClick={() => { setSelectedProjectId(proj.id); setShowCreate(true) }}
-                    className="flex items-center justify-between bg-white rounded-xl border border-dashed border-gray-300 px-4 py-3 hover:border-blue-400 hover:bg-blue-50 transition-all text-left"
+                    className="flex items-center justify-between bg-app-surface rounded-xl border border-dashed border-app-border px-4 py-3 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all text-left"
                   >
                     <div>
-                      <p className="text-sm font-medium text-gray-700">{proj.name}</p>
-                      <p className="text-xs text-gray-400">{proj.code}</p>
+                      <p className="text-sm font-medium text-app-muted">{proj.name}</p>
+                      <p className="text-xs text-app-subtle">{proj.code}</p>
                     </div>
-                    <Plus className="w-4 h-4 text-gray-400" />
+                    <Plus className="w-4 h-4 text-app-subtle" />
                   </button>
                 ))}
               </div>
@@ -153,11 +153,11 @@ export default function ReportesObra() {
           <div className="space-y-4">
             {projects.length > 1 && (
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Proyecto</label>
+                <label className="block text-xs font-medium text-app-muted mb-1">Proyecto</label>
                 <select
                   value={selectedProjectId}
                   onChange={(e) => setSelectedProjectId(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   {projects.map((p) => (
                     <option key={p.id} value={p.id}>{p.name}</option>

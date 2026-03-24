@@ -64,19 +64,19 @@ export default function QualityControlPage() {
   function StatusBadge({ status }: { status: QualityControl['status'] }) {
     if (status === 'passed') return <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-green-50 text-green-700"><CheckCircle2 className="w-3 h-3" />Aprobado</span>
     if (status === 'failed') return <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-red-50 text-red-700"><XCircle className="w-3 h-3" />Fallido</span>
-    return <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-500"><Clock className="w-3 h-3" />Pendiente</span>
+    return <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-app-chip text-app-muted"><Clock className="w-3 h-3" />Pendiente</span>
   }
 
   return (
     <div className="space-y-5">
       <div>
-        <Link to={`/proyectos/${projectId}`} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-2">
+        <Link to={`/proyectos/${projectId}`} className="flex items-center gap-1 text-sm text-app-muted hover:text-app-muted mb-2">
           <ArrowLeft className="w-4 h-4" /> {project?.name || 'Proyecto'}
         </Link>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold text-gray-900">Control de Calidad</h1>
-            <p className="text-sm text-gray-500 mt-0.5">Ensayos de resistencia del hormigón</p>
+            <h1 className="text-2xl font-semibold text-app-text">Control de Calidad</h1>
+            <p className="text-sm text-app-muted mt-0.5">Ensayos de resistencia del hormigón</p>
           </div>
           <button onClick={() => setShowForm(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
             <Plus className="w-4 h-4" /> Nuevo ensayo
@@ -95,52 +95,52 @@ export default function QualityControlPage() {
           <p className="text-2xl font-bold text-red-700">{failed}</p>
           <p className="text-xs text-red-600">Fallidos</p>
         </div>
-        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-center">
-          <Clock className="w-5 h-5 text-gray-400 mx-auto mb-1" />
-          <p className="text-2xl font-bold text-gray-600">{pending}</p>
-          <p className="text-xs text-gray-500">Pendientes</p>
+        <div className="bg-app-bg border border-app-border rounded-xl p-4 text-center">
+          <Clock className="w-5 h-5 text-app-subtle mx-auto mb-1" />
+          <p className="text-2xl font-bold text-app-muted">{pending}</p>
+          <p className="text-xs text-app-muted">Pendientes</p>
         </div>
       </div>
 
       {loading ? (
-        <div className="text-sm text-gray-500">Cargando ensayos...</div>
+        <div className="text-sm text-app-muted">Cargando ensayos...</div>
       ) : records.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-200 p-10 text-center">
-          <FlaskConical className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500">No hay ensayos registrados</p>
+        <div className="bg-app-surface rounded-xl border border-app-border p-10 text-center">
+          <FlaskConical className="w-10 h-10 text-app-subtle mx-auto mb-3" />
+          <p className="text-app-muted">No hay ensayos registrados</p>
           <button onClick={() => setShowForm(true)} className="mt-3 text-sm text-blue-600 hover:text-blue-800 font-medium">Registrar primer ensayo</button>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
+        <div className="bg-app-surface rounded-xl border border-app-border overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-gray-500 uppercase">Elemento</th>
-                <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-gray-500 uppercase">Colada</th>
-                <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-gray-500 uppercase hidden sm:table-cell">Edad</th>
-                <th className="px-3 py-2.5 text-right text-[10px] font-semibold text-gray-500 uppercase">Esperada</th>
-                <th className="px-3 py-2.5 text-right text-[10px] font-semibold text-gray-500 uppercase">Real</th>
-                <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-gray-500 uppercase hidden md:table-cell">Proveedor</th>
-                <th className="px-3 py-2.5 text-center text-[10px] font-semibold text-gray-500 uppercase">Estado</th>
+              <tr className="bg-app-bg border-b border-app-border">
+                <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-app-muted uppercase">Elemento</th>
+                <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-app-muted uppercase">Colada</th>
+                <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-app-muted uppercase hidden sm:table-cell">Edad</th>
+                <th className="px-3 py-2.5 text-right text-[10px] font-semibold text-app-muted uppercase">Esperada</th>
+                <th className="px-3 py-2.5 text-right text-[10px] font-semibold text-app-muted uppercase">Real</th>
+                <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-app-muted uppercase hidden md:table-cell">Proveedor</th>
+                <th className="px-3 py-2.5 text-center text-[10px] font-semibold text-app-muted uppercase">Estado</th>
                 <th className="w-16" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-app-border">
               {records.map((r) => (
-                <tr key={r.id} className="hover:bg-gray-50">
-                  <td className="px-3 py-2.5 font-medium text-gray-900 text-xs">{r.element}</td>
-                  <td className="px-3 py-2.5 text-gray-500 text-xs">{new Date(r.pour_date).toLocaleDateString('es-DO')}</td>
-                  <td className="px-3 py-2.5 text-gray-500 text-xs hidden sm:table-cell">{r.test_age || '—'}</td>
-                  <td className="px-3 py-2.5 text-gray-700 text-xs text-right">{r.expected_resistance ? `${r.expected_resistance} kg/cm²` : '—'}</td>
-                  <td className={`px-3 py-2.5 text-xs font-semibold text-right ${r.status === 'failed' ? 'text-red-600' : r.status === 'passed' ? 'text-green-600' : 'text-gray-400'}`}>
+                <tr key={r.id} className="hover:bg-app-hover">
+                  <td className="px-3 py-2.5 font-medium text-app-text text-xs">{r.element}</td>
+                  <td className="px-3 py-2.5 text-app-muted text-xs">{new Date(r.pour_date).toLocaleDateString('es-DO')}</td>
+                  <td className="px-3 py-2.5 text-app-muted text-xs hidden sm:table-cell">{r.test_age || '—'}</td>
+                  <td className="px-3 py-2.5 text-app-muted text-xs text-right">{r.expected_resistance ? `${r.expected_resistance} kg/cm²` : '—'}</td>
+                  <td className={`px-3 py-2.5 text-xs font-semibold text-right ${r.status === 'failed' ? 'text-red-600' : r.status === 'passed' ? 'text-green-600' : 'text-app-subtle'}`}>
                     {r.actual_resistance ? `${r.actual_resistance} kg/cm²` : '—'}
                   </td>
-                  <td className="px-3 py-2.5 text-gray-500 text-xs hidden md:table-cell">{r.concrete_supplier || '—'}</td>
+                  <td className="px-3 py-2.5 text-app-muted text-xs hidden md:table-cell">{r.concrete_supplier || '—'}</td>
                   <td className="px-3 py-2.5 text-center"><StatusBadge status={r.status} /></td>
                   <td className="px-2 py-2.5">
                     <div className="flex items-center gap-1">
-                      <button onClick={() => setEditing(r)} className="p-1 text-gray-300 hover:text-blue-500"><Pencil className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => handleDelete(r.id)} className="p-1 text-gray-300 hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => setEditing(r)} className="p-1 text-app-subtle hover:text-blue-500"><Pencil className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => handleDelete(r.id)} className="p-1 text-app-subtle hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button>
                     </div>
                   </td>
                 </tr>

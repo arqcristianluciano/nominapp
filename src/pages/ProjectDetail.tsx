@@ -59,27 +59,27 @@ export default function ProjectDetail() {
     }
   }
 
-  if (!project) return <div className="text-sm text-gray-500">Cargando proyecto...</div>
+  if (!project) return <div className="text-sm text-app-muted">Cargando proyecto...</div>
 
   const totalBudget = budgetCategories.reduce((sum, c) => sum + c.budgeted_amount, 0)
   const totalInvested = periods.reduce((sum, p) => sum + (p.grand_total || 0), 0)
 
-  const statusColors: Record<string, string> = { draft: 'bg-gray-100 text-gray-600', submitted: 'bg-blue-50 text-blue-700', approved: 'bg-green-50 text-green-700', paid: 'bg-emerald-50 text-emerald-700' }
+  const statusColors: Record<string, string> = { draft: 'bg-app-chip text-app-muted', submitted: 'bg-blue-50 text-blue-700', approved: 'bg-green-50 text-green-700', paid: 'bg-emerald-50 text-emerald-700' }
   const statusLabels: Record<string, string> = { draft: 'Borrador', submitted: 'Enviado', approved: 'Aprobado', paid: 'Pagado' }
 
   return (
     <div className="space-y-6">
       <div>
-        <Link to="/proyectos" className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-2">
+        <Link to="/proyectos" className="flex items-center gap-1 text-sm text-app-muted hover:text-app-muted mb-2">
           <ArrowLeft className="w-4 h-4" /> Proyectos
         </Link>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold text-gray-900">{project.name}</h1>
-            <p className="text-sm text-gray-500 mt-0.5">{project.location} · {project.code}</p>
+            <h1 className="text-2xl font-semibold text-app-text">{project.name}</h1>
+            <p className="text-sm text-app-muted mt-0.5">{project.location} · {project.code}</p>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => setShowEditProject(true)} className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50">
+            <button onClick={() => setShowEditProject(true)} className="flex items-center gap-1.5 px-3 py-2 text-sm text-app-muted border border-app-border rounded-lg hover:bg-app-hover">
               <Pencil className="w-4 h-4" /> Editar
             </button>
             <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
@@ -91,58 +91,58 @@ export default function ProjectDetail() {
 
       {/* Stat Cards + Navigation */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <p className="text-xs text-gray-500">Reportes registrados</p>
-          <p className="text-2xl font-semibold text-gray-900 mt-1">{periods.length}</p>
+        <div className="bg-app-surface rounded-xl border border-app-border p-4">
+          <p className="text-xs text-app-muted">Reportes registrados</p>
+          <p className="text-2xl font-semibold text-app-text mt-1">{periods.length}</p>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <p className="text-xs text-gray-500">Total invertido</p>
-          <p className="text-2xl font-semibold text-gray-900 mt-1">{formatRD(totalInvested)}</p>
+        <div className="bg-app-surface rounded-xl border border-app-border p-4">
+          <p className="text-xs text-app-muted">Total invertido</p>
+          <p className="text-2xl font-semibold text-app-text mt-1">{formatRD(totalInvested)}</p>
         </div>
-        <Link to={`/proyectos/${projectId}/control`} className="bg-white rounded-xl border border-gray-200 p-4 hover:border-blue-300 hover:shadow-sm transition-all">
+        <Link to={`/proyectos/${projectId}/control`} className="bg-app-surface rounded-xl border border-app-border p-4 hover:border-blue-300 hover:shadow-sm transition-all">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-blue-50 text-blue-600">
               <Landmark className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-900">Control Financiero</p>
-              <p className="text-xs text-gray-500">Libro diario, CxP, cheques</p>
+              <p className="text-sm font-medium text-app-text">Control Financiero</p>
+              <p className="text-xs text-app-muted">Libro diario, CxP, cheques</p>
             </div>
           </div>
         </Link>
-        <Link to={`/proyectos/${projectId}/presupuesto`} className="bg-white rounded-xl border border-gray-200 p-4 hover:border-blue-300 hover:shadow-sm transition-all">
+        <Link to={`/proyectos/${projectId}/presupuesto`} className="bg-app-surface rounded-xl border border-app-border p-4 hover:border-blue-300 hover:shadow-sm transition-all">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-purple-50 text-purple-600">
               <BarChart3 className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-900">Presupuesto</p>
-              <p className="text-xs text-gray-500">Presupuesto vs real</p>
+              <p className="text-sm font-medium text-app-text">Presupuesto</p>
+              <p className="text-xs text-app-muted">Presupuesto vs real</p>
             </div>
           </div>
         </Link>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Link to={`/proyectos/${projectId}/cubicaciones`} className="bg-white rounded-xl border border-gray-200 p-4 hover:border-blue-300 hover:shadow-sm transition-all">
+        <Link to={`/proyectos/${projectId}/cubicaciones`} className="bg-app-surface rounded-xl border border-app-border p-4 hover:border-blue-300 hover:shadow-sm transition-all">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-teal-50 text-teal-600">
               <Layers className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-900">Cubicaciones</p>
-              <p className="text-xs text-gray-500">Contrato por contratista</p>
+              <p className="text-sm font-medium text-app-text">Cubicaciones</p>
+              <p className="text-xs text-app-muted">Contrato por contratista</p>
             </div>
           </div>
         </Link>
-        <Link to={`/proyectos/${projectId}/calidad`} className="bg-white rounded-xl border border-gray-200 p-4 hover:border-blue-300 hover:shadow-sm transition-all">
+        <Link to={`/proyectos/${projectId}/calidad`} className="bg-app-surface rounded-xl border border-app-border p-4 hover:border-blue-300 hover:shadow-sm transition-all">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-rose-50 text-rose-600">
               <ClipboardCheck className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-900">Control de Calidad</p>
-              <p className="text-xs text-gray-500">Ensayos de hormigón</p>
+              <p className="text-sm font-medium text-app-text">Control de Calidad</p>
+              <p className="text-xs text-app-muted">Ensayos de hormigón</p>
             </div>
           </div>
         </Link>
@@ -150,28 +150,28 @@ export default function ProjectDetail() {
 
       {/* Budget Summary */}
       {totalBudget > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="bg-app-surface rounded-xl border border-app-border p-4">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium text-gray-900">Resumen presupuestario</p>
+            <p className="text-sm font-medium text-app-text">Resumen presupuestario</p>
             <Link to={`/proyectos/${projectId}/presupuesto`} className="text-xs text-blue-600 hover:text-blue-800">Ver detalle</Link>
           </div>
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
-              <p className="text-xs text-gray-500">Presupuesto</p>
-              <p className="text-sm font-semibold text-gray-900">{formatRD(totalBudget)}</p>
+              <p className="text-xs text-app-muted">Presupuesto</p>
+              <p className="text-sm font-semibold text-app-text">{formatRD(totalBudget)}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-500">Invertido</p>
-              <p className="text-sm font-semibold text-gray-900">{formatRD(totalInvested)}</p>
+              <p className="text-xs text-app-muted">Invertido</p>
+              <p className="text-sm font-semibold text-app-text">{formatRD(totalInvested)}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-500">Disponible</p>
+              <p className="text-xs text-app-muted">Disponible</p>
               <p className={`text-sm font-semibold ${totalBudget - totalInvested >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {formatRD(totalBudget - totalInvested)}
               </p>
             </div>
           </div>
-          <div className="mt-3 w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+          <div className="mt-3 w-full h-2 bg-app-chip rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full transition-all ${
                 totalInvested / totalBudget > 0.9 ? 'bg-red-500' : totalInvested / totalBudget > 0.7 ? 'bg-amber-500' : 'bg-green-500'
@@ -186,18 +186,18 @@ export default function ProjectDetail() {
       {recentTxns.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-medium text-gray-900">Últimas transacciones</h2>
+            <h2 className="text-lg font-medium text-app-text">Últimas transacciones</h2>
             <Link to={`/proyectos/${projectId}/control`} className="text-xs text-blue-600 hover:text-blue-800">Ver todas</Link>
           </div>
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="bg-app-surface rounded-xl border border-app-border overflow-hidden">
             <table className="w-full">
               <tbody>
                 {recentTxns.map((t) => (
-                  <tr key={t.id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
-                    <td className="px-4 py-2.5 text-xs text-gray-500 w-24">{new Date(t.date).toLocaleDateString('es-DO')}</td>
-                    <td className="px-4 py-2.5 text-xs text-gray-900 font-medium">{t.description}</td>
-                    <td className="px-4 py-2.5 text-xs text-gray-500">{t.supplier?.name || ''}</td>
-                    <td className="px-4 py-2.5 text-xs text-gray-900 font-medium text-right">{formatRD(t.total)}</td>
+                  <tr key={t.id} className="border-b border-app-border last:border-0 hover:bg-app-hover">
+                    <td className="px-4 py-2.5 text-xs text-app-muted w-24">{new Date(t.date).toLocaleDateString('es-DO')}</td>
+                    <td className="px-4 py-2.5 text-xs text-app-text font-medium">{t.description}</td>
+                    <td className="px-4 py-2.5 text-xs text-app-muted">{t.supplier?.name || ''}</td>
+                    <td className="px-4 py-2.5 text-xs text-app-text font-medium text-right">{formatRD(t.total)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -208,10 +208,10 @@ export default function ProjectDetail() {
 
       {/* Payrolls */}
       <div>
-        <h2 className="text-lg font-medium text-gray-900 mb-3">Reportes</h2>
-        {loading ? <div className="text-sm text-gray-500">Cargando reportes...</div> : periods.length === 0 ? (
-          <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
-            <p className="text-gray-500">No hay reportes registrados aún</p>
+        <h2 className="text-lg font-medium text-app-text mb-3">Reportes</h2>
+        {loading ? <div className="text-sm text-app-muted">Cargando reportes...</div> : periods.length === 0 ? (
+          <div className="bg-app-surface rounded-xl border border-app-border p-8 text-center">
+            <p className="text-app-muted">No hay reportes registrados aún</p>
             <button onClick={() => setShowCreate(true)} className="mt-3 text-sm text-blue-600 hover:text-blue-800 font-medium">
               Crear el primer reporte
             </button>
@@ -220,12 +220,12 @@ export default function ProjectDetail() {
           <div className="space-y-2">
             {periods.map((period) => (
               <div key={period.id} className="flex items-center gap-2">
-                <Link to={`/nominas/${period.id}`} className="flex-1 flex items-center justify-between bg-white rounded-xl border border-gray-200 p-4 hover:border-blue-300 hover:shadow-sm transition-all">
+                <Link to={`/nominas/${period.id}`} className="flex-1 flex items-center justify-between bg-app-surface rounded-xl border border-app-border p-4 hover:border-blue-300 hover:shadow-sm transition-all">
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-semibold text-sm">{period.period_number}</div>
                     <div>
-                      <p className="font-medium text-gray-900">Reporte No. {period.period_number}</p>
-                      <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+                      <p className="font-medium text-app-text">Reporte No. {period.period_number}</p>
+                      <p className="text-xs text-app-muted flex items-center gap-1 mt-0.5">
                         <Calendar className="w-3 h-3" />
                         {new Date(period.report_date).toLocaleDateString('es-DO')}
                       </p>
@@ -233,14 +233,14 @@ export default function ProjectDetail() {
                   </div>
                   <div className="flex items-center gap-3">
                     <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${statusColors[period.status]}`}>{statusLabels[period.status]}</span>
-                    <span className="text-sm font-medium text-gray-900 hidden sm:inline">{formatRD(period.grand_total || 0)}</span>
+                    <span className="text-sm font-medium text-app-text hidden sm:inline">{formatRD(period.grand_total || 0)}</span>
                   </div>
                 </Link>
                 {period.status === 'draft' && (
                   <button
                     onClick={() => handleDeletePeriod(period.id)}
                     disabled={deletingId === period.id}
-                    className="p-2 text-gray-300 hover:text-red-500 disabled:opacity-50"
+                    className="p-2 text-app-subtle hover:text-red-500 disabled:opacity-50"
                     title="Eliminar reporte"
                   >
                     <Trash2 className="w-4 h-4" />

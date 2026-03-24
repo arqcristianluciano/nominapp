@@ -2,7 +2,7 @@
 
 ## Stack
 - React 19 + TypeScript + Vite
-- Tailwind CSS v4
+- Tailwind CSS v4 (tema claro/oscuro: clase `dark` en `<html>`, tokens `app-*` en `index.css`)
 - Zustand (estado global)
 - Supabase (backend — modo demo sin credenciales)
 - React Router v7
@@ -17,22 +17,22 @@ Para conectar Supabase real: copiar `.env.example` → `.env` con credenciales.
 
 ```
 src/
-  pages/            ← 15 páginas
+  pages/            ← 17 páginas (incl. CxPHub, CxPDetalle, CxPConsolidadoTodos)
   components/
-    layout/         ← AppLayout, Sidebar, Header
+    layout/         ← AppLayout, Sidebar, Header, ThemeToggle
     features/
       payroll/      ← AddLaborItemForm, AddMaterialForm, CreatePayrollForm
       contractors/  ← ContractorForm
       suppliers/    ← SupplierForm
       projects/     ← ProjectForm
-      control/      ← TransactionInlineForm, TransactionRow, CxPView,
+      control/      ← TransactionInlineForm, TransactionRow, CxPView, CxPProjectFilterBar,
                        ChequesEfectivoView, FinancialIndicators, CubicacionForm
       budget/       ← BudgetItemForm, BudgetPartidaRow, ExcelImportModal, PriceListPanel
       payments/     ← PaymentDistributionsSection
       quality/      ← QualityControlForm
     ui/             ← Modal
   services/         ← 10 servicios
-  stores/           ← projectStore, payrollStore
+  stores/           ← projectStore, payrollStore, themeStore (claro/oscuro, localStorage)
   hooks/            ← usePayroll, useTransactions, useBudgetDetail, useBudgetItems
   utils/            ← currency, calculations, financialCalculations
   constants/        ← budgetCategories, indirectCosts, measureUnits, banks
@@ -57,7 +57,9 @@ src/
 | `/nominas/:id/imprimir` | PayrollPrint | ✅ Completo |
 | `/finanzas` | FinanzasHub | ✅ Completo |
 | `/presupuesto` | PresupuestoHub | ✅ Completo |
-| `/cxp` | CxPConsolidado | ✅ Completo |
+| `/cxp` | CxPHub (elegir proyecto) | ✅ Completo |
+| `/cxp/:projectId` | CxPDetalle | ✅ Completo |
+| `/cxp/consolidado` | CxPConsolidadoTodos | ✅ Completo |
 | `/reportes` | Reportes | ✅ Completo |
 | `/contratistas` | Contractors | ✅ Completo |
 | `/suplidores` | Suppliers | ✅ Completo |
@@ -112,7 +114,7 @@ src/
 - Presupuesto vs Real con edición inline
 - Control de Calidad: ensayos de resistencia con estados
 - Cubicaciones: contrato + avance por contratista
-- CxP consolidado multi-proyecto
+- CxP: hub por proyecto (como Presupuesto), detalle por obra; consolidado opcional en `/cxp/consolidado`
 - Reportes financieros consolidados
 - Configuración: cuentas bancarias, condiciones de pago
 - Demo mode banner con dismiss

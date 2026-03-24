@@ -9,7 +9,9 @@ import ControlFinanciero from '@/pages/ControlFinanciero'
 import PresupuestoDetalle from '@/pages/PresupuestoDetalle'
 import FinanzasHub from '@/pages/FinanzasHub'
 import PresupuestoHub from '@/pages/PresupuestoHub'
-import CxPConsolidado from '@/pages/CxPConsolidado'
+import CxPHub from '@/pages/CxPHub'
+import CxPDetalle from '@/pages/CxPDetalle'
+import CxPConsolidadoTodos from '@/pages/CxPConsolidadoTodos'
 import Reportes from '@/pages/Reportes'
 import Contractors from '@/pages/Contractors'
 import Suppliers from '@/pages/Suppliers'
@@ -41,7 +43,9 @@ export const router = createBrowserRouter([
       { path: 'nominas/:periodId', element: <PayrollEditor /> },
       { path: 'finanzas', element: <FinanzasHub /> },
       { path: 'presupuesto', element: <PresupuestoHub /> },
-      { path: 'cxp', element: <CxPConsolidado /> },
+      { path: 'cxp', element: <CxPHub /> },
+      { path: 'cxp/consolidado', element: <CxPConsolidadoTodos /> },
+      { path: 'cxp/:projectId', element: <CxPDetalle /> },
       { path: 'reportes', element: <Reportes /> },
       { path: 'contratistas', element: <Contractors /> },
       { path: 'contratistas/:contractorId', element: <ContractorDetail /> },

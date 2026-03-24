@@ -1,5 +1,33 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --app-bg: #f9fafb;
+  --app-surface: #ffffff;
+  --app-border: #e5e7eb;
+  --app-text: #111827;
+  --app-muted: #4b5563;
+  --app-subtle: #9ca3af;
+  --app-hover: #f3f4f6;
+  --app-hover-strong: #e5e7eb;
+  --app-chip: #f3f4f6;
+  --app-input-bg: #f9fafb;
+}
+
+html.dark {
+  --app-bg: #030712;
+  --app-surface: #111827;
+  --app-border: #374151;
+  --app-text: #f9fafb;
+  --app-muted: #d1d5db;
+  --app-subtle: #9ca3af;
+  --app-hover: #1f2937;
+  --app-hover-strong: #374151;
+  --app-chip: #1f2937;
+  --app-input-bg: #0b1220;
+}
+
 @theme {
   --color-primary: #1e40af;
   --color-primary-light: #3b82f6;
@@ -8,6 +36,23 @@
   --color-success: #10b981;
   --color-danger: #ef4444;
   --color-warning: #f59e0b;
+  --color-app-bg: var(--app-bg);
+  --color-app-surface: var(--app-surface);
+  --color-app-border: var(--app-border);
+  --color-app-text: var(--app-text);
+  --color-app-muted: var(--app-muted);
+  --color-app-subtle: var(--app-subtle);
+  --color-app-hover: var(--app-hover);
+  --color-app-hover-strong: var(--app-hover-strong);
+  --color-app-chip: var(--app-chip);
+  --color-app-input-bg: var(--app-input-bg);
+}
+
+@layer base {
+  body {
+    background-color: var(--app-bg);
+    color: var(--app-text);
+  }
 }
 
 @media print {

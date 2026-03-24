@@ -46,8 +46,8 @@ export default function PurchaseOrders() {
         <div className="flex items-center gap-3">
           <ShoppingCart className="w-6 h-6 text-blue-600" />
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Órdenes de Compra</h1>
-            <p className="text-sm text-gray-500">
+            <h1 className="text-xl font-bold text-app-text">Órdenes de Compra</h1>
+            <p className="text-sm text-app-muted">
               {requisitions.length} solicitud{requisitions.length !== 1 ? 'es' : ''}
             </p>
           </div>
@@ -59,35 +59,35 @@ export default function PurchaseOrders() {
       </div>
 
       {loading ? (
-        <div className="text-center py-16 text-gray-400">Cargando…</div>
+        <div className="text-center py-16 text-app-subtle">Cargando…</div>
       ) : requisitions.length === 0 ? (
-        <div className="text-center py-20 text-gray-400">
+        <div className="text-center py-20 text-app-subtle">
           <ShoppingCart className="w-10 h-10 mx-auto mb-3 opacity-25" />
           <p className="text-sm">No hay solicitudes de compra</p>
-          <p className="text-xs mt-1 text-gray-300">Cree una solicitud y agregue 3 cotizaciones para aprobar</p>
+          <p className="text-xs mt-1 text-app-subtle">Cree una solicitud y agregue 3 cotizaciones para aprobar</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="bg-app-surface rounded-xl border border-app-border overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-app-bg border-b border-app-border">
               <tr>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">N° Solicitud</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Descripción</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Proyecto</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Solicitado por</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Fecha req.</th>
-                <th className="text-center px-4 py-3 font-medium text-gray-600">Estado</th>
+                <th className="text-left px-4 py-3 font-medium text-app-muted">N° Solicitud</th>
+                <th className="text-left px-4 py-3 font-medium text-app-muted">Descripción</th>
+                <th className="text-left px-4 py-3 font-medium text-app-muted">Proyecto</th>
+                <th className="text-left px-4 py-3 font-medium text-app-muted">Solicitado por</th>
+                <th className="text-left px-4 py-3 font-medium text-app-muted">Fecha req.</th>
+                <th className="text-center px-4 py-3 font-medium text-app-muted">Estado</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-app-border">
               {requisitions.map((r) => (
-                <tr key={r.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-mono text-xs text-gray-700">{r.req_number}</td>
-                  <td className="px-4 py-3 text-gray-800 font-medium max-w-xs truncate">{r.description}</td>
-                  <td className="px-4 py-3 text-gray-600 text-xs">{r.project?.name ?? '—'}</td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">{r.requested_by}</td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">{r.required_date ?? '—'}</td>
+                <tr key={r.id} className="hover:bg-app-hover">
+                  <td className="px-4 py-3 font-mono text-xs text-app-muted">{r.req_number}</td>
+                  <td className="px-4 py-3 text-app-text font-medium max-w-xs truncate">{r.description}</td>
+                  <td className="px-4 py-3 text-app-muted text-xs">{r.project?.name ?? '—'}</td>
+                  <td className="px-4 py-3 text-app-muted text-xs">{r.requested_by}</td>
+                  <td className="px-4 py-3 text-app-muted text-xs">{r.required_date ?? '—'}</td>
                   <td className="px-4 py-3 text-center">
                     <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${REQ_STATUS_COLOR[r.status]}`}>
                       {REQ_STATUS_LABEL[r.status]}

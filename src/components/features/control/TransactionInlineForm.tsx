@@ -65,18 +65,18 @@ export function TransactionInlineForm({
     setNotes('')
   }
 
-  const inputClass = 'w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500'
-  const selectClass = 'w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:ring-1 focus:ring-blue-500 bg-white'
+  const inputClass = 'w-full px-2 py-1.5 border border-app-border rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500'
+  const selectClass = 'w-full px-2 py-1.5 border border-app-border rounded text-xs focus:ring-1 focus:ring-blue-500 bg-app-surface'
 
   return (
     <form onSubmit={handleSubmit} className="bg-blue-50 border border-blue-200 rounded-lg p-3">
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2">
         <div>
-          <label className="text-[10px] font-medium text-gray-600 mb-0.5 block">Fecha</label>
+          <label className="text-[10px] font-medium text-app-muted mb-0.5 block">Fecha</label>
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputClass} required />
         </div>
         <div>
-          <label className="text-[10px] font-medium text-gray-600 mb-0.5 block">Código</label>
+          <label className="text-[10px] font-medium text-app-muted mb-0.5 block">Código</label>
           <select value={budgetCategoryId} onChange={(e) => setBudgetCategoryId(e.target.value)} className={selectClass}>
             <option value="">—</option>
             {budgetCategories.map((cat) => (
@@ -85,11 +85,11 @@ export function TransactionInlineForm({
           </select>
         </div>
         <div className="col-span-2">
-          <label className="text-[10px] font-medium text-gray-600 mb-0.5 block">Descripción</label>
+          <label className="text-[10px] font-medium text-app-muted mb-0.5 block">Descripción</label>
           <input type="text" value={description} onChange={(e) => setDescription(e.target.value)} className={inputClass} placeholder="Descripción del gasto" required />
         </div>
         <div>
-          <label className="text-[10px] font-medium text-gray-600 mb-0.5 block">Proveedor</label>
+          <label className="text-[10px] font-medium text-app-muted mb-0.5 block">Proveedor</label>
           <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)} className={selectClass}>
             <option value="">—</option>
             {suppliers.filter((s) => s.is_active).map((s) => (
@@ -98,19 +98,19 @@ export function TransactionInlineForm({
           </select>
         </div>
         <div>
-          <label className="text-[10px] font-medium text-gray-600 mb-0.5 block">Cantidad</label>
+          <label className="text-[10px] font-medium text-app-muted mb-0.5 block">Cantidad</label>
           <input type="number" step="any" value={quantity} onChange={(e) => setQuantity(e.target.value ? Number(e.target.value) : '')} className={inputClass} />
         </div>
         <div>
-          <label className="text-[10px] font-medium text-gray-600 mb-0.5 block">Precio</label>
+          <label className="text-[10px] font-medium text-app-muted mb-0.5 block">Precio</label>
           <input type="number" step="any" value={unitPrice} onChange={(e) => setUnitPrice(e.target.value ? Number(e.target.value) : '')} className={inputClass} />
         </div>
         <div>
-          <label className="text-[10px] font-medium text-gray-600 mb-0.5 block">Total</label>
-          <input type="number" value={total || ''} readOnly className={`${inputClass} bg-gray-50 font-medium`} />
+          <label className="text-[10px] font-medium text-app-muted mb-0.5 block">Total</label>
+          <input type="number" value={total || ''} readOnly className={`${inputClass} bg-app-bg font-medium`} />
         </div>
         <div>
-          <label className="text-[10px] font-medium text-gray-600 mb-0.5 block">Condición</label>
+          <label className="text-[10px] font-medium text-app-muted mb-0.5 block">Condición</label>
           <select value={paymentCondition} onChange={(e) => setPaymentCondition(e.target.value)} className={selectClass}>
             <option value="">—</option>
             {PAYMENT_CONDITIONS.map((pc) => (
@@ -119,15 +119,15 @@ export function TransactionInlineForm({
           </select>
         </div>
         <div>
-          <label className="text-[10px] font-medium text-gray-600 mb-0.5 block">Factura No.</label>
+          <label className="text-[10px] font-medium text-app-muted mb-0.5 block">Factura No.</label>
           <input type="text" value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} className={inputClass} />
         </div>
         <div>
-          <label className="text-[10px] font-medium text-gray-600 mb-0.5 block">No. Cheque</label>
+          <label className="text-[10px] font-medium text-app-muted mb-0.5 block">No. Cheque</label>
           <input type="text" value={checkNumber} onChange={(e) => setCheckNumber(e.target.value)} className={inputClass} />
         </div>
         <div>
-          <label className="text-[10px] font-medium text-gray-600 mb-0.5 block">Banco</label>
+          <label className="text-[10px] font-medium text-app-muted mb-0.5 block">Banco</label>
           <select value={bank} onChange={(e) => setBank(e.target.value)} className={selectClass}>
             <option value="">—</option>
             {DOMINICAN_BANKS.map((b) => (
@@ -136,11 +136,11 @@ export function TransactionInlineForm({
           </select>
         </div>
         <div>
-          <label className="text-[10px] font-medium text-gray-600 mb-0.5 block">Fecha canje</label>
+          <label className="text-[10px] font-medium text-app-muted mb-0.5 block">Fecha canje</label>
           <input type="date" value={cashedDate} onChange={(e) => setCashedDate(e.target.value)} className={inputClass} />
         </div>
         <div className="col-span-2 sm:col-span-1">
-          <label className="text-[10px] font-medium text-gray-600 mb-0.5 block">Notas</label>
+          <label className="text-[10px] font-medium text-app-muted mb-0.5 block">Notas</label>
           <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)} className={inputClass} />
         </div>
       </div>

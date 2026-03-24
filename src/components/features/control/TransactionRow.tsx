@@ -72,9 +72,9 @@ export function TransactionRow({
     setEditing(false)
   }
 
-  const inputClass = 'w-full px-1.5 py-1 border border-gray-200 rounded text-xs focus:ring-1 focus:ring-blue-500'
-  const selectClass = 'w-full px-1 py-1 border border-gray-200 rounded text-xs bg-white'
-  const rowBg = isCurrentMonth ? 'bg-yellow-50' : 'bg-white'
+  const inputClass = 'w-full px-1.5 py-1 border border-app-border rounded text-xs focus:ring-1 focus:ring-blue-500'
+  const selectClass = 'w-full px-1 py-1 border border-app-border rounded text-xs bg-app-surface'
+  const rowBg = isCurrentMonth ? 'bg-yellow-50' : 'bg-app-surface'
 
   if (editing) {
     return (
@@ -114,7 +114,7 @@ export function TransactionRow({
         <td className="px-2 py-1.5">
           <div className="flex items-center gap-1">
             <button onClick={handleSave} className="p-1 text-green-600 hover:bg-green-50 rounded"><Check className="w-3.5 h-3.5" /></button>
-            <button onClick={handleCancel} className="p-1 text-gray-400 hover:bg-gray-100 rounded"><X className="w-3.5 h-3.5" /></button>
+            <button onClick={handleCancel} className="p-1 text-app-subtle hover:bg-app-hover-strong rounded"><X className="w-3.5 h-3.5" /></button>
           </div>
         </td>
       </tr>
@@ -122,23 +122,23 @@ export function TransactionRow({
   }
 
   return (
-    <tr className={`${rowBg} hover:bg-gray-50 border-b border-gray-100`}>
-      <td className="px-2 py-2 text-xs text-gray-600 whitespace-nowrap">{new Date(transaction.date).toLocaleDateString('es-DO')}</td>
-      <td className="px-2 py-2 text-xs text-gray-500 whitespace-nowrap">{transaction.budget_category?.code?.split(' - ')[0] || ''}</td>
-      <td className="px-2 py-2 text-xs text-gray-900 font-medium">{transaction.description}</td>
-      <td className="px-2 py-2 text-xs text-gray-600">{transaction.supplier?.name || ''}</td>
-      <td className="px-2 py-2 text-xs text-gray-600 text-right">{transaction.quantity ?? ''}</td>
-      <td className="px-2 py-2 text-xs text-gray-600 text-right">{transaction.unit_price != null ? formatRD(transaction.unit_price) : ''}</td>
-      <td className="px-2 py-2 text-xs text-gray-900 font-medium text-right">{formatRD(transaction.total)}</td>
-      <td className="px-2 py-2 text-xs text-gray-500">{transaction.payment_condition || ''}</td>
-      <td className="px-2 py-2 text-xs text-gray-500">{transaction.invoice_number || ''}</td>
-      <td className="px-2 py-2 text-xs text-gray-500">{transaction.check_number || ''}</td>
-      <td className="px-2 py-2 text-xs text-gray-500 hidden lg:table-cell">{transaction.bank || ''}</td>
-      <td className="px-2 py-2 text-xs text-gray-500 hidden lg:table-cell">{transaction.cashed_date ? new Date(transaction.cashed_date).toLocaleDateString('es-DO') : ''}</td>
+    <tr className={`${rowBg} hover:bg-app-hover border-b border-app-border`}>
+      <td className="px-2 py-2 text-xs text-app-muted whitespace-nowrap">{new Date(transaction.date).toLocaleDateString('es-DO')}</td>
+      <td className="px-2 py-2 text-xs text-app-muted whitespace-nowrap">{transaction.budget_category?.code?.split(' - ')[0] || ''}</td>
+      <td className="px-2 py-2 text-xs text-app-text font-medium">{transaction.description}</td>
+      <td className="px-2 py-2 text-xs text-app-muted">{transaction.supplier?.name || ''}</td>
+      <td className="px-2 py-2 text-xs text-app-muted text-right">{transaction.quantity ?? ''}</td>
+      <td className="px-2 py-2 text-xs text-app-muted text-right">{transaction.unit_price != null ? formatRD(transaction.unit_price) : ''}</td>
+      <td className="px-2 py-2 text-xs text-app-text font-medium text-right">{formatRD(transaction.total)}</td>
+      <td className="px-2 py-2 text-xs text-app-muted">{transaction.payment_condition || ''}</td>
+      <td className="px-2 py-2 text-xs text-app-muted">{transaction.invoice_number || ''}</td>
+      <td className="px-2 py-2 text-xs text-app-muted">{transaction.check_number || ''}</td>
+      <td className="px-2 py-2 text-xs text-app-muted hidden lg:table-cell">{transaction.bank || ''}</td>
+      <td className="px-2 py-2 text-xs text-app-muted hidden lg:table-cell">{transaction.cashed_date ? new Date(transaction.cashed_date).toLocaleDateString('es-DO') : ''}</td>
       <td className="px-2 py-2">
         <div className="flex items-center gap-1">
-          <button onClick={() => setEditing(true)} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"><Pencil className="w-3.5 h-3.5" /></button>
-          <button onClick={() => onDelete(transaction.id)} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"><Trash2 className="w-3.5 h-3.5" /></button>
+          <button onClick={() => setEditing(true)} className="p-1 text-app-subtle hover:text-blue-600 hover:bg-blue-50 rounded"><Pencil className="w-3.5 h-3.5" /></button>
+          <button onClick={() => onDelete(transaction.id)} className="p-1 text-app-subtle hover:text-red-600 hover:bg-red-50 rounded"><Trash2 className="w-3.5 h-3.5" /></button>
         </div>
       </td>
     </tr>

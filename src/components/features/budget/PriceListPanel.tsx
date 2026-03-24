@@ -60,7 +60,7 @@ function InlineForm({ projectId, initial, onSave, onCancel }: InlineFormProps) {
         <select
           value={form.category}
           onChange={(e) => set('category', e.target.value as PriceListCategory)}
-          className="w-full px-2 py-1 border border-gray-200 rounded text-xs bg-white"
+          className="w-full px-2 py-1 border border-app-border rounded text-xs bg-app-surface"
         >
           {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
         </select>
@@ -69,14 +69,14 @@ function InlineForm({ projectId, initial, onSave, onCancel }: InlineFormProps) {
         <input
           type="text" placeholder="MAT-001" value={form.code}
           onChange={(e) => set('code', e.target.value)}
-          className="w-full px-2 py-1 border border-gray-200 rounded text-xs"
+          className="w-full px-2 py-1 border border-app-border rounded text-xs"
         />
       </td>
       <td className="px-3 py-1.5">
         <input
           type="text" placeholder="Descripción del ítem *" value={form.description}
           onChange={(e) => set('description', e.target.value)}
-          className="w-full px-2 py-1 border border-gray-200 rounded text-xs"
+          className="w-full px-2 py-1 border border-app-border rounded text-xs"
           autoFocus
         />
       </td>
@@ -84,7 +84,7 @@ function InlineForm({ projectId, initial, onSave, onCancel }: InlineFormProps) {
         <select
           value={form.unit}
           onChange={(e) => set('unit', e.target.value)}
-          className="w-full px-2 py-1 border border-gray-200 rounded text-xs bg-white"
+          className="w-full px-2 py-1 border border-app-border rounded text-xs bg-app-surface"
         >
           {MEASURE_UNITS.map((u) => <option key={u.value} value={u.value}>{u.label}</option>)}
           <option value="Und">Unidad</option>
@@ -99,7 +99,7 @@ function InlineForm({ projectId, initial, onSave, onCancel }: InlineFormProps) {
         <input
           type="number" step="any" min="0" placeholder="0.00" value={form.unit_price}
           onChange={(e) => set('unit_price', e.target.value)}
-          className="w-full px-2 py-1 border border-gray-200 rounded text-xs text-right"
+          className="w-full px-2 py-1 border border-app-border rounded text-xs text-right"
         />
       </td>
       <td className="px-3 py-1.5">
@@ -111,7 +111,7 @@ function InlineForm({ projectId, initial, onSave, onCancel }: InlineFormProps) {
           >
             <Check className="w-3.5 h-3.5" />
           </button>
-          <button onClick={onCancel} className="p-1 text-gray-400 hover:bg-gray-100 rounded">
+          <button onClick={onCancel} className="p-1 text-app-subtle hover:bg-app-hover-strong rounded">
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -146,7 +146,7 @@ export default function PriceListPanel({ projectId, items, onAdd, onUpdate, onDe
               className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
                 filterCat === cat
                   ? 'bg-gray-800 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  : 'bg-app-chip text-app-muted hover:bg-app-hover-strong'
               }`}
             >
               {cat === 'all' ? 'Todos' : CATEGORIES.find((c) => c.value === cat)?.label}
@@ -164,15 +164,15 @@ export default function PriceListPanel({ projectId, items, onAdd, onUpdate, onDe
         </button>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="bg-app-surface rounded-xl border border-app-border overflow-hidden">
         <table className="w-full">
           <thead>
-            <tr className="bg-gray-50 border-b border-gray-200">
-              <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-500 uppercase">Tipo</th>
-              <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-500 uppercase">Código</th>
-              <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-500 uppercase">Descripción</th>
-              <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-500 uppercase">Unidad</th>
-              <th className="px-3 py-2 text-right text-[10px] font-semibold text-gray-500 uppercase">Precio unit.</th>
+            <tr className="bg-app-bg border-b border-app-border">
+              <th className="px-3 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">Tipo</th>
+              <th className="px-3 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">Código</th>
+              <th className="px-3 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">Descripción</th>
+              <th className="px-3 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">Unidad</th>
+              <th className="px-3 py-2 text-right text-[10px] font-semibold text-app-muted uppercase">Precio unit.</th>
               <th className="px-3 py-2 w-16" />
             </tr>
           </thead>
@@ -186,7 +186,7 @@ export default function PriceListPanel({ projectId, items, onAdd, onUpdate, onDe
             )}
             {filtered.length === 0 && !showAddForm && (
               <tr>
-                <td colSpan={6} className="px-3 py-8 text-center text-xs text-gray-400">
+                <td colSpan={6} className="px-3 py-8 text-center text-xs text-app-subtle">
                   No hay precios registrados. Agrega el primero con el botón de arriba.
                 </td>
               </tr>
@@ -207,27 +207,27 @@ export default function PriceListPanel({ projectId, items, onAdd, onUpdate, onDe
                   onCancel={() => setEditId(null)}
                 />
               ) : (
-                <tr key={item.id} className="border-b border-gray-50 hover:bg-gray-50">
+                <tr key={item.id} className="border-b border-app-border hover:bg-app-hover">
                   <td className="px-3 py-2">
                     <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${getCatStyle(item.category)}`}>
                       {CATEGORIES.find((c) => c.value === item.category)?.label}
                     </span>
                   </td>
-                  <td className="px-3 py-2 text-xs text-gray-400 font-mono">{item.code ?? '—'}</td>
-                  <td className="px-3 py-2 text-xs text-gray-800">{item.description}</td>
-                  <td className="px-3 py-2 text-xs text-gray-500">{item.unit}</td>
-                  <td className="px-3 py-2 text-xs font-medium text-gray-900 text-right">{formatRD(item.unit_price)}</td>
+                  <td className="px-3 py-2 text-xs text-app-subtle font-mono">{item.code ?? '—'}</td>
+                  <td className="px-3 py-2 text-xs text-app-text">{item.description}</td>
+                  <td className="px-3 py-2 text-xs text-app-muted">{item.unit}</td>
+                  <td className="px-3 py-2 text-xs font-medium text-app-text text-right">{formatRD(item.unit_price)}</td>
                   <td className="px-3 py-2">
                     <div className="flex items-center justify-end gap-1">
                       <button
                         onClick={() => setEditId(item.id)}
-                        className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"
+                        className="p-1 text-app-subtle hover:text-blue-600 hover:bg-blue-50 rounded"
                       >
                         <Pencil className="w-3 h-3" />
                       </button>
                       <button
                         onClick={() => handleDelete(item.id)}
-                        className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
+                        className="p-1 text-app-subtle hover:text-red-600 hover:bg-red-50 rounded"
                       >
                         <Trash2 className="w-3 h-3" />
                       </button>

@@ -43,8 +43,8 @@ export default function PayrollEditor() {
   const toggle = (id: string) => setOpenSections(prev => ({ ...prev, [id]: prev[id] === undefined ? false : !prev[id] }))
   const isOpen = (id: string) => openSections[id] !== false
 
-  if (payroll.loading) return <div className="text-sm text-gray-500 p-4">Cargando nómina...</div>
-  if (!payroll.period) return <div className="text-sm text-gray-500 p-4">Nómina no encontrada</div>
+  if (payroll.loading) return <div className="text-sm text-app-muted p-4">Cargando nómina...</div>
+  if (!payroll.period) return <div className="text-sm text-app-muted p-4">Nómina no encontrada</div>
 
   const { period } = payroll
   const project = period.project
@@ -57,26 +57,26 @@ export default function PayrollEditor() {
   }
   const next = nextStatus[period.status]
 
-  const statusColors: Record<string, string> = { draft: 'bg-gray-100 text-gray-600', submitted: 'bg-blue-50 text-blue-700', approved: 'bg-green-50 text-green-700', paid: 'bg-emerald-50 text-emerald-700' }
+  const statusColors: Record<string, string> = { draft: 'bg-app-chip text-app-muted', submitted: 'bg-blue-50 text-blue-700', approved: 'bg-green-50 text-green-700', paid: 'bg-emerald-50 text-emerald-700' }
   const statusLabels: Record<string, string> = { draft: 'Borrador', submitted: 'Enviado', approved: 'Aprobado', paid: 'Pagado' }
 
   return (
     <div className="space-y-6 max-w-5xl">
       <div>
-        <Link to={project ? `/proyectos/${project.id}` : '/proyectos'} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-2">
+        <Link to={project ? `/proyectos/${project.id}` : '/proyectos'} className="flex items-center gap-1 text-sm text-app-muted hover:text-app-muted mb-2">
           <ArrowLeft className="w-4 h-4" /> {project?.name || 'Proyecto'}
         </Link>
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div>
-            <h1 className="text-2xl font-semibold text-gray-900">Reporte No. {period.period_number}</h1>
-            <p className="text-sm text-gray-500 mt-0.5">
+            <h1 className="text-2xl font-semibold text-app-text">Reporte No. {period.period_number}</h1>
+            <p className="text-sm text-app-muted mt-0.5">
               {new Date(period.report_date).toLocaleDateString('es-DO', { year: 'numeric', month: 'long', day: 'numeric' })}
               {period.reported_by && ` · ${period.reported_by}`}
             </p>
           </div>
           <div className="flex items-center gap-2">
             <span className={`px-3 py-1 text-sm font-medium rounded-full ${statusColors[period.status]}`}>{statusLabels[period.status]}</span>
-            <Link to={`/nominas/${period.id}/imprimir`} target="_blank" className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50">
+            <Link to={`/nominas/${period.id}/imprimir`} target="_blank" className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-app-muted border border-app-border rounded-lg hover:bg-app-hover">
               <Printer className="w-4 h-4" /> Imprimir
             </Link>
             {next && (
@@ -91,24 +91,24 @@ export default function PayrollEditor() {
       {payroll.error && <div className="text-sm text-red-600 bg-red-50 rounded-lg px-4 py-3">{payroll.error}</div>}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="rounded-lg px-3 py-2.5 bg-white border border-gray-200"><p className="text-xs text-gray-500">Mano de obra</p><p className="text-sm font-semibold mt-0.5">{formatRD(period.total_labor || 0)}</p></div>
-        <div className="rounded-lg px-3 py-2.5 bg-white border border-gray-200"><p className="text-xs text-gray-500">Materiales</p><p className="text-sm font-semibold mt-0.5">{formatRD(period.total_materials || 0)}</p></div>
-        <div className="rounded-lg px-3 py-2.5 bg-white border border-gray-200"><p className="text-xs text-gray-500">Indirectos</p><p className="text-sm font-semibold mt-0.5">{formatRD(period.total_indirect || 0)}</p></div>
+        <div className="rounded-lg px-3 py-2.5 bg-app-surface border border-app-border"><p className="text-xs text-app-muted">Mano de obra</p><p className="text-sm font-semibold mt-0.5">{formatRD(period.total_labor || 0)}</p></div>
+        <div className="rounded-lg px-3 py-2.5 bg-app-surface border border-app-border"><p className="text-xs text-app-muted">Materiales</p><p className="text-sm font-semibold mt-0.5">{formatRD(period.total_materials || 0)}</p></div>
+        <div className="rounded-lg px-3 py-2.5 bg-app-surface border border-app-border"><p className="text-xs text-app-muted">Indirectos</p><p className="text-sm font-semibold mt-0.5">{formatRD(period.total_indirect || 0)}</p></div>
         <div className="rounded-lg px-3 py-2.5 bg-blue-600"><p className="text-xs text-blue-200">Total general</p><p className="text-sm font-semibold text-white mt-0.5">{formatRD(period.grand_total || 0)}</p></div>
       </div>
 
       <section>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-medium text-gray-900">Mano de obra</h2>
+          <h2 className="text-lg font-medium text-app-text">Mano de obra</h2>
           {isDraft && (
-            <button onClick={() => setShowAddLabor(true)} className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 text-sm font-medium rounded-lg hover:bg-gray-50">
+            <button onClick={() => setShowAddLabor(true)} className="flex items-center gap-1.5 px-3 py-1.5 bg-app-surface border border-app-border text-sm font-medium rounded-lg hover:bg-app-hover">
               <Plus className="w-4 h-4" /> Agregar partida
             </button>
           )}
         </div>
 
         {contractorGroups.length === 0 ? (
-          <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-sm text-gray-400">
+          <div className="bg-app-surface rounded-xl border border-app-border p-8 text-center text-sm text-app-subtle">
             No hay partidas de mano de obra registradas
           </div>
         ) : (
@@ -116,40 +116,40 @@ export default function PayrollEditor() {
             {contractorGroups.map(({ contractor, items }) => {
               const sub = calcContractorSubtotal(payroll.laborItems, contractor.id)
               return (
-                <div key={contractor.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                  <button onClick={() => toggle(contractor.id)} className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50">
+                <div key={contractor.id} className="bg-app-surface rounded-xl border border-app-border overflow-hidden">
+                  <button onClick={() => toggle(contractor.id)} className="w-full flex items-center justify-between px-4 py-3 hover:bg-app-hover">
                     <div className="flex items-center gap-2">
-                      {isOpen(contractor.id) ? <ChevronDown className="w-4 h-4 text-gray-400" /> : <ChevronRight className="w-4 h-4 text-gray-400" />}
-                      <span className="font-medium text-gray-900">{contractor.name}</span>
-                      {contractor.specialty && <span className="text-xs text-gray-400">{contractor.specialty}</span>}
+                      {isOpen(contractor.id) ? <ChevronDown className="w-4 h-4 text-app-subtle" /> : <ChevronRight className="w-4 h-4 text-app-subtle" />}
+                      <span className="font-medium text-app-text">{contractor.name}</span>
+                      {contractor.specialty && <span className="text-xs text-app-subtle">{contractor.specialty}</span>}
                     </div>
-                    <span className="text-sm font-semibold text-gray-900">{formatRD(sub)}</span>
+                    <span className="text-sm font-semibold text-app-text">{formatRD(sub)}</span>
                   </button>
                   {isOpen(contractor.id) && (
-                    <table className="w-full text-sm border-t border-gray-100">
-                      <thead><tr className="bg-gray-50">
-                        <th className="text-left px-4 py-2 font-medium text-gray-500">Descripción</th>
-                        <th className="text-right px-3 py-2 font-medium text-gray-500 w-20">Cant.</th>
-                        <th className="text-center px-3 py-2 font-medium text-gray-500 w-16">Ud.</th>
-                        <th className="text-right px-3 py-2 font-medium text-gray-500 w-24">Precio</th>
-                        <th className="text-right px-4 py-2 font-medium text-gray-500 w-28">Subtotal</th>
+                    <table className="w-full text-sm border-t border-app-border">
+                      <thead><tr className="bg-app-bg">
+                        <th className="text-left px-4 py-2 font-medium text-app-muted">Descripción</th>
+                        <th className="text-right px-3 py-2 font-medium text-app-muted w-20">Cant.</th>
+                        <th className="text-center px-3 py-2 font-medium text-app-muted w-16">Ud.</th>
+                        <th className="text-right px-3 py-2 font-medium text-app-muted w-24">Precio</th>
+                        <th className="text-right px-4 py-2 font-medium text-app-muted w-28">Subtotal</th>
                         {isDraft && <th className="w-10" />}
                       </tr></thead>
-                      <tbody className="divide-y divide-gray-50">
+                      <tbody className="divide-y divide-app-border">
                         {items.map((item) => (
                           <tr key={item.id} className={item.is_advance_deduction ? 'text-red-600' : ''}>
-                            <td className="px-4 py-2 text-gray-700">
+                            <td className="px-4 py-2 text-app-muted">
                               {item.description}
                               {item.is_advance && <span className="ml-1 text-xs text-blue-500">(avance)</span>}
                               {item.is_advance_deduction && <span className="ml-1 text-xs text-red-400">(deducción)</span>}
                             </td>
-                            <td className="px-3 py-2 text-right text-gray-600">{formatNumber(item.quantity)}</td>
-                            <td className="px-3 py-2 text-center text-gray-500">{item.unit}</td>
-                            <td className="px-3 py-2 text-right text-gray-600">{formatRD(item.unit_price)}</td>
+                            <td className="px-3 py-2 text-right text-app-muted">{formatNumber(item.quantity)}</td>
+                            <td className="px-3 py-2 text-center text-app-muted">{item.unit}</td>
+                            <td className="px-3 py-2 text-right text-app-muted">{formatRD(item.unit_price)}</td>
                             <td className="px-4 py-2 text-right font-medium">{formatRD(item.quantity * item.unit_price)}</td>
                             {isDraft && (
                               <td className="px-2 py-2">
-                                <button onClick={() => payroll.deleteLaborItem(item.id)} className="p-1 text-gray-300 hover:text-red-500">
+                                <button onClick={() => payroll.deleteLaborItem(item.id)} className="p-1 text-app-subtle hover:text-red-500">
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>
                               </td>
@@ -172,39 +172,39 @@ export default function PayrollEditor() {
 
       <section>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-medium text-gray-900">Materiales</h2>
+          <h2 className="text-lg font-medium text-app-text">Materiales</h2>
           {isDraft && (
-            <button onClick={() => setShowAddMaterial(true)} className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 text-sm font-medium rounded-lg hover:bg-gray-50">
+            <button onClick={() => setShowAddMaterial(true)} className="flex items-center gap-1.5 px-3 py-1.5 bg-app-surface border border-app-border text-sm font-medium rounded-lg hover:bg-app-hover">
               <Plus className="w-4 h-4" /> Agregar factura
             </button>
           )}
         </div>
 
         {payroll.materialInvoices.length === 0 ? (
-          <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-sm text-gray-400">
+          <div className="bg-app-surface rounded-xl border border-app-border p-8 text-center text-sm text-app-subtle">
             No hay facturas de materiales registradas
           </div>
         ) : (
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="bg-app-surface rounded-xl border border-app-border overflow-hidden">
             <table className="w-full text-sm">
-              <thead><tr className="bg-gray-50 border-b border-gray-200">
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Proveedor</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Descripción</th>
-                <th className="text-right px-4 py-2.5 font-medium text-gray-600">Monto</th>
+              <thead><tr className="bg-app-bg border-b border-app-border">
+                <th className="text-left px-4 py-2.5 font-medium text-app-muted">Proveedor</th>
+                <th className="text-left px-4 py-2.5 font-medium text-app-muted">Descripción</th>
+                <th className="text-right px-4 py-2.5 font-medium text-app-muted">Monto</th>
                 {isDraft && <th className="w-10" />}
               </tr></thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-app-border">
                 {payroll.materialInvoices.map((inv) => (
-                  <tr key={inv.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-2.5 text-gray-900">{inv.supplier?.name || '—'}</td>
-                    <td className="px-4 py-2.5 text-gray-600">
+                  <tr key={inv.id} className="hover:bg-app-hover">
+                    <td className="px-4 py-2.5 text-app-text">{inv.supplier?.name || '—'}</td>
+                    <td className="px-4 py-2.5 text-app-muted">
                       {inv.description}
-                      {inv.invoice_reference && <span className="text-xs text-gray-400 ml-1">{inv.invoice_reference}</span>}
+                      {inv.invoice_reference && <span className="text-xs text-app-subtle ml-1">{inv.invoice_reference}</span>}
                     </td>
-                    <td className="px-4 py-2.5 text-right font-medium text-gray-900">{formatRD(inv.amount)}</td>
+                    <td className="px-4 py-2.5 text-right font-medium text-app-text">{formatRD(inv.amount)}</td>
                     {isDraft && (
                       <td className="px-2 py-2.5">
-                        <button onClick={() => payroll.deleteMaterialInvoice(inv.id)} className="p-1 text-gray-300 hover:text-red-500">
+                        <button onClick={() => payroll.deleteMaterialInvoice(inv.id)} className="p-1 text-app-subtle hover:text-red-500">
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </td>
@@ -223,15 +223,15 @@ export default function PayrollEditor() {
 
       {payroll.indirectCosts.length > 0 && (
         <section>
-          <h2 className="text-lg font-medium text-gray-900 mb-3">Gastos indirectos</h2>
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <h2 className="text-lg font-medium text-app-text mb-3">Gastos indirectos</h2>
+          <div className="bg-app-surface rounded-xl border border-app-border overflow-hidden">
             <table className="w-full text-sm">
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-app-border">
                 {payroll.indirectCosts.map((cost) => (
                   <tr key={cost.id}>
-                    <td className="px-4 py-2.5 text-gray-700">{cost.description}</td>
-                    <td className="px-4 py-2.5 text-right text-gray-500">{cost.percentage ? `${cost.percentage}%` : 'Fijo'}</td>
-                    <td className="px-4 py-2.5 text-right font-medium text-gray-900 w-32">{formatRD(cost.calculated_amount)}</td>
+                    <td className="px-4 py-2.5 text-app-muted">{cost.description}</td>
+                    <td className="px-4 py-2.5 text-right text-app-muted">{cost.percentage ? `${cost.percentage}%` : 'Fijo'}</td>
+                    <td className="px-4 py-2.5 text-right font-medium text-app-text w-32">{formatRD(cost.calculated_amount)}</td>
                   </tr>
                 ))}
               </tbody>

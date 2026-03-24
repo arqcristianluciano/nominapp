@@ -45,12 +45,12 @@ export function AddLaborItemForm({ contractors, onSubmit, onCancel, saving }: Pr
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="block text-xs font-medium text-gray-700 mb-1">Contratista *</label>
+        <label className="block text-xs font-medium text-app-muted mb-1">Contratista *</label>
         <select
           value={contractorId}
           onChange={(e) => setContractorId(e.target.value)}
           required
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="">Seleccionar contratista...</option>
           {contractors.filter(c => c.is_active).map(c => (
@@ -60,35 +60,35 @@ export function AddLaborItemForm({ contractors, onSubmit, onCancel, saving }: Pr
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-gray-700 mb-1">Descripción *</label>
+        <label className="block text-xs font-medium text-app-muted mb-1">Descripción *</label>
         <input
           type="text"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Ej: ENVARILLADO DE LOSA NIVEL 2"
           required
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
 
       <div className="grid grid-cols-3 gap-3">
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">Cantidad *</label>
+          <label className="block text-xs font-medium text-app-muted mb-1">Cantidad *</label>
           <input
             type="number"
             step="0.01"
             value={quantity}
             onChange={(e) => setQuantity(e.target.value)}
             required
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">Unidad *</label>
+          <label className="block text-xs font-medium text-app-muted mb-1">Unidad *</label>
           <select
             value={unit}
             onChange={(e) => setUnit(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             {MEASURE_UNITS.map(u => (
               <option key={u.value} value={u.value}>{u.label}</option>
@@ -96,14 +96,14 @@ export function AddLaborItemForm({ contractors, onSubmit, onCancel, saving }: Pr
           </select>
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">Precio unitario *</label>
+          <label className="block text-xs font-medium text-app-muted mb-1">Precio unitario *</label>
           <input
             type="number"
             step="0.01"
             value={unitPrice}
             onChange={(e) => setUnitPrice(e.target.value)}
             required
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
       </div>
@@ -120,16 +120,16 @@ export function AddLaborItemForm({ contractors, onSubmit, onCancel, saving }: Pr
       </div>
 
       {subtotal !== 0 && (
-        <div className="bg-gray-50 rounded-lg px-4 py-2 flex justify-between">
-          <span className="text-sm text-gray-600">Subtotal</span>
-          <span className={`text-sm font-semibold ${isDeduction ? 'text-red-600' : 'text-gray-900'}`}>
+        <div className="bg-app-bg rounded-lg px-4 py-2 flex justify-between">
+          <span className="text-sm text-app-muted">Subtotal</span>
+          <span className={`text-sm font-semibold ${isDeduction ? 'text-red-600' : 'text-app-text'}`}>
             RD${(isDeduction ? -Math.abs(subtotal) : subtotal).toLocaleString('es-DO', { minimumFractionDigits: 2 })}
           </span>
         </div>
       )}
 
       <div className="flex justify-end gap-2 pt-2">
-        <button type="button" onClick={onCancel} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">
+        <button type="button" onClick={onCancel} className="px-4 py-2 text-sm text-app-muted hover:text-app-text">
           Cancelar
         </button>
         <button

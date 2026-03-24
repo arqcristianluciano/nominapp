@@ -5,6 +5,7 @@ import { useProjectStore } from '@/stores/projectStore'
 import { supplierService } from '@/services/supplierService'
 import { contractorService } from '@/services/contractorService'
 import { NotificationDropdown } from './NotificationDropdown'
+import { ThemeToggle } from './ThemeToggle'
 
 interface HeaderProps {
   onMenuClick: () => void
@@ -90,22 +91,22 @@ export function Header({ onMenuClick }: HeaderProps) {
   }
 
   const typeColor: Record<string, string> = {
-    proyecto: 'bg-blue-100 text-blue-700',
-    contratista: 'bg-amber-100 text-amber-700',
-    suplidor: 'bg-purple-100 text-purple-700',
+    proyecto: 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300',
+    contratista: 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300',
+    suplidor: 'bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300',
   }
 
   return (
-    <header className="sticky top-0 z-30 h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 lg:px-6">
+    <header className="sticky top-0 z-30 h-16 bg-app-surface border-b border-app-border flex items-center justify-between px-4 lg:px-6">
       <button
         onClick={onMenuClick}
-        className="lg:hidden p-2 -ml-2 text-gray-500 hover:text-gray-700"
+        className="lg:hidden p-2 -ml-2 text-app-muted hover:text-app-text"
       >
         <Menu className="w-5 h-5" />
       </button>
 
       <div ref={wrapperRef} className="hidden lg:block relative w-80">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-app-subtle" />
         <input
           ref={inputRef}
           type="text"
@@ -113,28 +114,28 @@ export function Header({ onMenuClick }: HeaderProps) {
           onChange={(e) => { setQuery(e.target.value); setShowResults(true) }}
           onFocus={() => setShowResults(true)}
           placeholder="Buscar proyectos, contratistas, suplidores..."
-          className="w-full pl-10 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white"
+          className="w-full pl-10 pr-8 py-2 bg-app-bg border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-app-surface"
         />
         {query && (
-          <button onClick={() => { setQuery(''); setShowResults(false) }} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+          <button onClick={() => { setQuery(''); setShowResults(false) }} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-app-subtle hover:text-app-muted">
             <X className="w-3.5 h-3.5" />
           </button>
         )}
 
         {showResults && query && (
-          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-80 overflow-y-auto z-50">
+          <div className="absolute top-full left-0 right-0 mt-1 bg-app-surface border border-app-border rounded-lg shadow-lg max-h-80 overflow-y-auto z-50">
             {results.length === 0 ? (
-              <div className="px-4 py-3 text-sm text-gray-500">Sin resultados para "{query}"</div>
+              <div className="px-4 py-3 text-sm text-app-muted">Sin resultados para "{query}"</div>
             ) : (
               results.map((item) => (
                 <button
                   key={`${item.type}-${item.id}`}
                   onClick={() => { navigate(item.url); setQuery(''); setShowResults(false) }}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 text-left"
+                  className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-app-hover text-left"
                 >
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">{item.name}</p>
-                    {item.detail && <p className="text-xs text-gray-500 truncate">{item.detail}</p>}
+                    <p className="text-sm font-medium text-app-text truncate">{item.name}</p>
+                    {item.detail && <p className="text-xs text-app-muted truncate">{item.detail}</p>}
                   </div>
                   <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full shrink-0 ${typeColor[item.type]}`}>
                     {typeLabel[item.type]}
@@ -146,7 +147,8 @@ export function Header({ onMenuClick }: HeaderProps) {
         )}
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1 sm:gap-2">
+        <ThemeToggle />
         <NotificationDropdown />
         <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-medium">
           CL

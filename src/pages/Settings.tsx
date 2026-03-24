@@ -66,11 +66,11 @@ export default function Settings() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-gray-900">Configuración</h1>
-        <p className="text-sm text-gray-500 mt-1">Tablas maestras y ajustes del sistema</p>
+        <h1 className="text-2xl font-semibold text-app-text">Configuración</h1>
+        <p className="text-sm text-app-muted mt-1">Tablas maestras y ajustes del sistema</p>
       </div>
 
-      <div className="flex gap-0 border-b border-gray-200">
+      <div className="flex gap-0 border-b border-app-border">
         {tabs.map((tab) => (
           <button
             key={tab.key}
@@ -78,7 +78,7 @@ export default function Settings() {
             className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
               activeTab === tab.key
                 ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                : 'border-transparent text-app-muted hover:text-app-muted'
             }`}
           >
             {tab.label}
@@ -94,32 +94,32 @@ export default function Settings() {
             </button>
           </div>
           {loading ? (
-            <div className="text-sm text-gray-500">Cargando...</div>
+            <div className="text-sm text-app-muted">Cargando...</div>
           ) : accounts.length === 0 ? (
-            <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
-              <p className="text-gray-500">No hay cuentas bancarias registradas</p>
+            <div className="bg-app-surface rounded-xl border border-app-border p-8 text-center">
+              <p className="text-app-muted">No hay cuentas bancarias registradas</p>
             </div>
           ) : (
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="bg-app-surface rounded-xl border border-app-border overflow-hidden">
               <table className="w-full">
                 <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
-                    <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-500 uppercase">Titular</th>
-                    <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-500 uppercase">Banco</th>
-                    <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-500 uppercase">No. Cuenta</th>
-                    <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-500 uppercase">Tipo</th>
-                    <th className="px-3 py-2 text-center text-[10px] font-semibold text-gray-500 uppercase">Interna</th>
+                  <tr className="bg-app-bg border-b border-app-border">
+                    <th className="px-3 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">Titular</th>
+                    <th className="px-3 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">Banco</th>
+                    <th className="px-3 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">No. Cuenta</th>
+                    <th className="px-3 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">Tipo</th>
+                    <th className="px-3 py-2 text-center text-[10px] font-semibold text-app-muted uppercase">Interna</th>
                     <th className="px-3 py-2 w-16"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {accounts.map((acc) => (
-                    <tr key={acc.id} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="px-3 py-2.5 text-xs text-gray-900 font-medium">{acc.owner_name}</td>
-                      <td className="px-3 py-2.5 text-xs text-gray-600">{acc.bank_name}</td>
-                      <td className="px-3 py-2.5 text-xs text-gray-600">{acc.account_number}</td>
-                      <td className="px-3 py-2.5 text-xs text-gray-500">{acc.account_type || '—'}</td>
-                      <td className="px-3 py-2.5 text-xs text-center">{acc.is_internal ? <span className="text-green-600 font-medium">Si</span> : <span className="text-gray-400">No</span>}</td>
+                    <tr key={acc.id} className="border-b border-app-border hover:bg-app-hover">
+                      <td className="px-3 py-2.5 text-xs text-app-text font-medium">{acc.owner_name}</td>
+                      <td className="px-3 py-2.5 text-xs text-app-muted">{acc.bank_name}</td>
+                      <td className="px-3 py-2.5 text-xs text-app-muted">{acc.account_number}</td>
+                      <td className="px-3 py-2.5 text-xs text-app-muted">{acc.account_type || '—'}</td>
+                      <td className="px-3 py-2.5 text-xs text-center">{acc.is_internal ? <span className="text-green-600 font-medium">Si</span> : <span className="text-app-subtle">No</span>}</td>
                       <td className="px-3 py-2.5">
                         <button onClick={() => { setEditing(acc); setShowForm(true) }} className="text-xs text-blue-600 hover:text-blue-800">Editar</button>
                       </td>
@@ -142,19 +142,19 @@ export default function Settings() {
       )}
 
       {activeTab === 'condiciones' && (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="bg-app-surface rounded-xl border border-app-border overflow-hidden">
           <table className="w-full">
             <thead>
-              <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-500 uppercase">Valor</th>
-                <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-500 uppercase">Etiqueta</th>
+              <tr className="bg-app-bg border-b border-app-border">
+                <th className="px-3 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">Valor</th>
+                <th className="px-3 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">Etiqueta</th>
               </tr>
             </thead>
             <tbody>
               {PAYMENT_CONDITIONS.map((pc) => (
-                <tr key={pc.value} className="border-b border-gray-100">
-                  <td className="px-3 py-2.5 text-xs text-gray-600 font-mono">{pc.value}</td>
-                  <td className="px-3 py-2.5 text-xs text-gray-900">{pc.label}</td>
+                <tr key={pc.value} className="border-b border-app-border">
+                  <td className="px-3 py-2.5 text-xs text-app-muted font-mono">{pc.value}</td>
+                  <td className="px-3 py-2.5 text-xs text-app-text">{pc.label}</td>
                 </tr>
               ))}
             </tbody>
@@ -163,21 +163,21 @@ export default function Settings() {
       )}
 
       {activeTab === 'categorias' && (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="bg-app-surface rounded-xl border border-app-border overflow-hidden">
           <table className="w-full">
             <thead>
-              <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-500 uppercase w-8">#</th>
-                <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-500 uppercase">Código</th>
-                <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-500 uppercase">Nombre</th>
+              <tr className="bg-app-bg border-b border-app-border">
+                <th className="px-3 py-2 text-left text-[10px] font-semibold text-app-muted uppercase w-8">#</th>
+                <th className="px-3 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">Código</th>
+                <th className="px-3 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">Nombre</th>
               </tr>
             </thead>
             <tbody>
               {DEFAULT_BUDGET_CATEGORIES.map((cat) => (
-                <tr key={cat.code} className="border-b border-gray-100">
-                  <td className="px-3 py-2.5 text-xs text-gray-400">{cat.sort_order}</td>
-                  <td className="px-3 py-2.5 text-xs text-gray-600 font-mono">{cat.code}</td>
-                  <td className="px-3 py-2.5 text-xs text-gray-900">{cat.name}</td>
+                <tr key={cat.code} className="border-b border-app-border">
+                  <td className="px-3 py-2.5 text-xs text-app-subtle">{cat.sort_order}</td>
+                  <td className="px-3 py-2.5 text-xs text-app-muted font-mono">{cat.code}</td>
+                  <td className="px-3 py-2.5 text-xs text-app-text">{cat.name}</td>
                 </tr>
               ))}
             </tbody>
@@ -186,24 +186,24 @@ export default function Settings() {
       )}
 
       {activeTab === 'sistema' && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
-          <h2 className="font-medium text-gray-900">Información del sistema</h2>
+        <div className="bg-app-surface rounded-xl border border-app-border p-6 space-y-4">
+          <h2 className="font-medium text-app-text">Información del sistema</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
             <div>
-              <p className="text-gray-500">Versión</p>
-              <p className="text-gray-900 font-medium">NominaAPP v0.2.0</p>
+              <p className="text-app-muted">Versión</p>
+              <p className="text-app-text font-medium">NominaAPP v0.2.0</p>
             </div>
             <div>
-              <p className="text-gray-500">Stack</p>
-              <p className="text-gray-900 font-medium">React 19 + Supabase + Zustand</p>
+              <p className="text-app-muted">Stack</p>
+              <p className="text-app-text font-medium">React 19 + Supabase + Zustand</p>
             </div>
             <div>
-              <p className="text-gray-500">Compatibilidad</p>
-              <p className="text-gray-900 font-medium">estatePRO (fusión futura)</p>
+              <p className="text-app-muted">Compatibilidad</p>
+              <p className="text-app-text font-medium">estatePRO (fusión futura)</p>
             </div>
             <div>
-              <p className="text-gray-500">Bancos registrados</p>
-              <p className="text-gray-900 font-medium">{DOMINICAN_BANKS.length} bancos</p>
+              <p className="text-app-muted">Bancos registrados</p>
+              <p className="text-app-text font-medium">{DOMINICAN_BANKS.length} bancos</p>
             </div>
           </div>
         </div>
@@ -243,17 +243,17 @@ function BankAccountForm({
     })
   }
 
-  const inputClass = 'w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+  const inputClass = 'w-full px-3 py-2 border border-app-border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
         <div className="col-span-2">
-          <label className="text-xs font-medium text-gray-700 mb-1 block">Titular</label>
+          <label className="text-xs font-medium text-app-muted mb-1 block">Titular</label>
           <input type="text" value={ownerName} onChange={(e) => setOwnerName(e.target.value)} className={inputClass} required />
         </div>
         <div>
-          <label className="text-xs font-medium text-gray-700 mb-1 block">Banco</label>
+          <label className="text-xs font-medium text-app-muted mb-1 block">Banco</label>
           <select value={bankName} onChange={(e) => setBankName(e.target.value)} className={inputClass} required>
             <option value="">Seleccionar...</option>
             {DOMINICAN_BANKS.map((b) => (
@@ -262,11 +262,11 @@ function BankAccountForm({
           </select>
         </div>
         <div>
-          <label className="text-xs font-medium text-gray-700 mb-1 block">No. Cuenta</label>
+          <label className="text-xs font-medium text-app-muted mb-1 block">No. Cuenta</label>
           <input type="text" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} className={inputClass} required />
         </div>
         <div>
-          <label className="text-xs font-medium text-gray-700 mb-1 block">Tipo de cuenta</label>
+          <label className="text-xs font-medium text-app-muted mb-1 block">Tipo de cuenta</label>
           <select value={accountType} onChange={(e) => setAccountType(e.target.value)} className={inputClass}>
             <option value="">—</option>
             <option value="Ahorro">Ahorro</option>
@@ -274,18 +274,18 @@ function BankAccountForm({
           </select>
         </div>
         <div>
-          <label className="text-xs font-medium text-gray-700 mb-1 block">Cédula / RNC</label>
+          <label className="text-xs font-medium text-app-muted mb-1 block">Cédula / RNC</label>
           <input type="text" value={cedulaRnc} onChange={(e) => setCedulaRnc(e.target.value)} className={inputClass} />
         </div>
         <div className="col-span-2">
           <label className="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" checked={isInternal} onChange={(e) => setIsInternal(e.target.checked)} className="rounded border-gray-300" />
-            <span className="text-sm text-gray-700">Cuenta interna (de la empresa)</span>
+            <input type="checkbox" checked={isInternal} onChange={(e) => setIsInternal(e.target.checked)} className="rounded border-app-border" />
+            <span className="text-sm text-app-muted">Cuenta interna (de la empresa)</span>
           </label>
         </div>
       </div>
       <div className="flex justify-end gap-2 pt-2">
-        <button type="button" onClick={onCancel} className="px-4 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50">
+        <button type="button" onClick={onCancel} className="px-4 py-2 text-sm text-app-muted border border-app-border rounded-lg hover:bg-app-hover">
           Cancelar
         </button>
         <button type="submit" disabled={saving} className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50">

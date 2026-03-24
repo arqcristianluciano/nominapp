@@ -66,8 +66,8 @@ export function ProjectForm({ initial, onSubmit, onCancel, saving }: Props) {
     })
   }
 
-  const inputClass = 'w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
-  const labelClass = 'text-xs font-medium text-gray-700 mb-1 block'
+  const inputClass = 'w-full px-3 py-2 border border-app-border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+  const labelClass = 'text-xs font-medium text-app-muted mb-1 block'
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -102,8 +102,8 @@ export function ProjectForm({ initial, onSubmit, onCancel, saving }: Props) {
         )}
       </div>
 
-      <div className="border-t border-gray-200 pt-4">
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Gastos indirectos</p>
+      <div className="border-t border-app-border pt-4">
+        <p className="text-xs font-semibold text-app-muted uppercase tracking-wider mb-3">Gastos indirectos</p>
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className={labelClass}>Dirección técnica %</label>
@@ -125,7 +125,7 @@ export function ProjectForm({ initial, onSubmit, onCancel, saving }: Props) {
       </div>
 
       <div className="flex justify-end gap-2 pt-2">
-        <button type="button" onClick={onCancel} className="px-4 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50">
+        <button type="button" onClick={onCancel} className="px-4 py-2 text-sm text-app-muted border border-app-border rounded-lg hover:bg-app-hover">
           Cancelar
         </button>
         <button type="submit" disabled={saving || !name || !code} className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50">

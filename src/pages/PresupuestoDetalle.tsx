@@ -68,23 +68,23 @@ export default function PresupuestoDetalle() {
     return sum + (hasItems ? budgetItems.getCategoryTotal(row.category.id) : row.budgeted)
   }, 0)
 
-  if (!project) return <div className="text-sm text-gray-500">Cargando proyecto...</div>
+  if (!project) return <div className="text-sm text-app-muted">Cargando proyecto...</div>
 
   return (
     <div className="space-y-5">
       <div>
-        <Link to={`/proyectos/${projectId}`} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-2">
+        <Link to={`/proyectos/${projectId}`} className="flex items-center gap-1 text-sm text-app-muted hover:text-app-muted mb-2">
           <ArrowLeft className="w-4 h-4" /> {project.name}
         </Link>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold text-gray-900">Presupuesto</h1>
-            <p className="text-sm text-gray-500 mt-0.5">{project.name} · {project.code}</p>
+            <h1 className="text-2xl font-semibold text-app-text">Presupuesto</h1>
+            <p className="text-sm text-app-muted mt-0.5">{project.name} · {project.code}</p>
           </div>
           {tab === 'presupuesto' && (
             <button
               onClick={() => setShowImport(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-app-muted border border-app-border rounded-lg hover:bg-app-hover"
             >
               <FileUp className="w-3.5 h-3.5" /> Importar Excel
             </button>
@@ -93,11 +93,11 @@ export default function PresupuestoDetalle() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 rounded-lg p-1 w-fit">
+      <div className="flex gap-1 bg-app-chip rounded-lg p-1 w-fit">
         <button
           onClick={() => setTab('presupuesto')}
           className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-xs font-medium transition-colors ${
-            tab === 'presupuesto' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+            tab === 'presupuesto' ? 'bg-app-surface text-app-text shadow-sm' : 'text-app-muted hover:text-app-muted'
           }`}
         >
           <ListOrdered className="w-3.5 h-3.5" /> Presupuesto
@@ -105,11 +105,11 @@ export default function PresupuestoDetalle() {
         <button
           onClick={() => setTab('precios')}
           className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-xs font-medium transition-colors ${
-            tab === 'precios' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+            tab === 'precios' ? 'bg-app-surface text-app-text shadow-sm' : 'text-app-muted hover:text-app-muted'
           }`}
         >
           Lista de precios
-          <span className="text-[10px] text-gray-400">({budgetItems.priceList.length})</span>
+          <span className="text-[10px] text-app-subtle">({budgetItems.priceList.length})</span>
         </button>
       </div>
 
@@ -117,16 +117,16 @@ export default function PresupuestoDetalle() {
         <>
           {/* KPIs */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-white rounded-xl border border-gray-200 p-4">
-              <p className="text-xs text-gray-500">Total gastado</p>
-              <p className="text-2xl font-semibold text-gray-900 mt-1">{formatRD(budget.totals.spent)}</p>
+            <div className="bg-app-surface rounded-xl border border-app-border p-4">
+              <p className="text-xs text-app-muted">Total gastado</p>
+              <p className="text-2xl font-semibold text-app-text mt-1">{formatRD(budget.totals.spent)}</p>
             </div>
-            <div className="bg-white rounded-xl border border-gray-200 p-4">
-              <p className="text-xs text-gray-500">Presupuesto total</p>
-              <p className="text-2xl font-semibold text-gray-900 mt-1">{formatRD(grandBudgeted)}</p>
+            <div className="bg-app-surface rounded-xl border border-app-border p-4">
+              <p className="text-xs text-app-muted">Presupuesto total</p>
+              <p className="text-2xl font-semibold text-app-text mt-1">{formatRD(grandBudgeted)}</p>
             </div>
             <div className={`rounded-xl border p-4 ${grandBudgeted - budget.totals.spent < 0 ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'}`}>
-              <p className="text-xs text-gray-500">Diferencia</p>
+              <p className="text-xs text-app-muted">Diferencia</p>
               <p className={`text-2xl font-semibold mt-1 ${grandBudgeted - budget.totals.spent < 0 ? 'text-red-700' : 'text-green-700'}`}>
                 {formatRD(grandBudgeted - budget.totals.spent)}
               </p>
@@ -135,17 +135,17 @@ export default function PresupuestoDetalle() {
 
           {/* Tabla jerárquica */}
           {budget.loading ? (
-            <div className="text-sm text-gray-500">Cargando presupuesto...</div>
+            <div className="text-sm text-app-muted">Cargando presupuesto...</div>
           ) : (
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="bg-app-surface rounded-xl border border-app-border overflow-hidden">
               <table className="w-full">
                 <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
+                  <tr className="bg-app-bg border-b border-app-border">
                     <th className="px-3 py-2 w-8" />
-                    <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-500 uppercase">Partida / Subpartida</th>
-                    <th className="px-3 py-2 text-right text-[10px] font-semibold text-gray-500 uppercase">Gastado</th>
-                    <th className="px-3 py-2 text-right text-[10px] font-semibold text-gray-500 uppercase">Presupuesto</th>
-                    <th className="px-3 py-2 text-right text-[10px] font-semibold text-gray-500 uppercase">Diferencia</th>
+                    <th className="px-3 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">Partida / Subpartida</th>
+                    <th className="px-3 py-2 text-right text-[10px] font-semibold text-app-muted uppercase">Gastado</th>
+                    <th className="px-3 py-2 text-right text-[10px] font-semibold text-app-muted uppercase">Presupuesto</th>
+                    <th className="px-3 py-2 text-right text-[10px] font-semibold text-app-muted uppercase">Diferencia</th>
                     <th className="px-3 py-2 w-20" />
                   </tr>
                 </thead>
@@ -165,10 +165,10 @@ export default function PresupuestoDetalle() {
                   ))}
                 </tbody>
                 <tfoot>
-                  <tr className="bg-gray-50 border-t-2 border-gray-300">
-                    <td colSpan={2} className="px-3 py-3 text-xs font-bold text-gray-900 pl-11">TOTAL</td>
-                    <td className="px-3 py-3 text-xs font-bold text-gray-900 text-right">{formatRD(budget.totals.spent)}</td>
-                    <td className="px-3 py-3 text-xs font-bold text-gray-900 text-right">{formatRD(grandBudgeted)}</td>
+                  <tr className="bg-app-bg border-t-2 border-app-border">
+                    <td colSpan={2} className="px-3 py-3 text-xs font-bold text-app-text pl-11">TOTAL</td>
+                    <td className="px-3 py-3 text-xs font-bold text-app-text text-right">{formatRD(budget.totals.spent)}</td>
+                    <td className="px-3 py-3 text-xs font-bold text-app-text text-right">{formatRD(grandBudgeted)}</td>
                     <td className={`px-3 py-3 text-xs font-bold text-right ${grandBudgeted - budget.totals.spent < 0 ? 'text-red-600' : 'text-green-600'}`}>
                       {formatRD(grandBudgeted - budget.totals.spent)}
                     </td>
@@ -194,8 +194,8 @@ export default function PresupuestoDetalle() {
       {/* Modal edición monto directo (sin subpartidas) */}
       {editingId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-          <div className="bg-white rounded-xl shadow-xl p-5 w-72 space-y-3">
-            <p className="text-sm font-semibold text-gray-900">Editar monto presupuestado</p>
+          <div className="bg-app-surface rounded-xl shadow-xl p-5 w-72 space-y-3">
+            <p className="text-sm font-semibold text-app-text">Editar monto presupuestado</p>
             <input
               type="number" step="any" autoFocus
               value={editValue}
@@ -203,9 +203,9 @@ export default function PresupuestoDetalle() {
               onKeyDown={(e) => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditingId(null) }}
               className="w-full px-3 py-2 border border-blue-300 rounded-lg text-sm text-right focus:ring-1 focus:ring-blue-500"
             />
-            <p className="text-[10px] text-gray-400">O agrega subpartidas para que el total se calcule automáticamente.</p>
+            <p className="text-[10px] text-app-subtle">O agrega subpartidas para que el total se calcule automáticamente.</p>
             <div className="flex justify-end gap-2">
-              <button onClick={() => setEditingId(null)} className="px-3 py-1.5 text-xs text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50">Cancelar</button>
+              <button onClick={() => setEditingId(null)} className="px-3 py-1.5 text-xs text-app-muted border border-app-border rounded-lg hover:bg-app-hover">Cancelar</button>
               <button onClick={saveEdit} className="px-3 py-1.5 text-xs text-white bg-blue-600 rounded-lg hover:bg-blue-700">Guardar</button>
             </div>
           </div>

@@ -39,7 +39,7 @@ export function QuotesPanel({ quotes, approvedQuoteId, canDelete, canNegotiate, 
 
   if (!quotes.length) {
     return (
-      <div className="border-2 border-dashed border-gray-200 rounded-xl p-10 text-center text-gray-400">
+      <div className="border-2 border-dashed border-app-border rounded-xl p-10 text-center text-app-subtle">
         <p className="text-sm">No hay cotizaciones. Agregue al menos 3 suplidores.</p>
       </div>
     )
@@ -53,14 +53,14 @@ export function QuotesPanel({ quotes, approvedQuoteId, canDelete, canNegotiate, 
         const hasNeg = !!q.negotiated_total
 
         return (
-          <div key={q.id} className={`bg-white rounded-xl border-2 overflow-hidden flex flex-col ${
-            isApproved ? 'border-green-400 shadow-sm shadow-green-100' : 'border-gray-200'
+          <div key={q.id} className={`bg-app-surface rounded-xl border-2 overflow-hidden flex flex-col ${
+            isApproved ? 'border-green-400 shadow-sm shadow-green-100' : 'border-app-border'
           }`}>
-            <div className={`px-4 py-3 flex items-start justify-between gap-2 ${isApproved ? 'bg-green-50' : 'bg-gray-50'}`}>
+            <div className={`px-4 py-3 flex items-start justify-between gap-2 ${isApproved ? 'bg-green-50' : 'bg-app-bg'}`}>
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-gray-900 truncate">{q.supplier?.name}</p>
-                {q.quote_number && <p className="text-xs text-gray-500">Cot. {q.quote_number}</p>}
-                {q.valid_until && <p className="text-xs text-gray-400">Válida: {q.valid_until}</p>}
+                <p className="text-sm font-semibold text-app-text truncate">{q.supplier?.name}</p>
+                {q.quote_number && <p className="text-xs text-app-muted">Cot. {q.quote_number}</p>}
+                {q.valid_until && <p className="text-xs text-app-subtle">Válida: {q.valid_until}</p>}
               </div>
               <div className="flex items-center gap-1.5 shrink-0">
                 {isApproved && (
@@ -70,12 +70,12 @@ export function QuotesPanel({ quotes, approvedQuoteId, canDelete, canNegotiate, 
                 )}
                 {canNegotiate && !state?.editing && (
                   <button onClick={() => startEdit(q)} title="Negociar precio"
-                    className="text-gray-300 hover:text-orange-500 transition-colors">
+                    className="text-app-subtle hover:text-orange-500 transition-colors">
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
                 )}
                 {canDelete && onDelete && !isApproved && (
-                  <button onClick={() => onDelete(q.id)} className="text-gray-300 hover:text-red-400 transition-colors">
+                  <button onClick={() => onDelete(q.id)} className="text-app-subtle hover:text-red-400 transition-colors">
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 )}
@@ -84,14 +84,14 @@ export function QuotesPanel({ quotes, approvedQuoteId, canDelete, canNegotiate, 
 
             <div className="p-4 flex-1 flex flex-col">
               <table className="w-full text-xs mb-3 flex-1">
-                <tbody className="divide-y divide-gray-50">
+                <tbody className="divide-y divide-app-border">
                   {(q.items || []).map((it) => (
                     <tr key={it.id}>
-                      <td className="py-1.5 pr-2 text-gray-700">
+                      <td className="py-1.5 pr-2 text-app-muted">
                         <p>{it.description}</p>
-                        <p className="text-gray-400">{it.quantity} {it.unit} × {fmt(it.unit_price)}</p>
+                        <p className="text-app-subtle">{it.quantity} {it.unit} × {fmt(it.unit_price)}</p>
                       </td>
-                      <td className="py-1.5 text-right font-medium text-gray-800 whitespace-nowrap">
+                      <td className="py-1.5 text-right font-medium text-app-text whitespace-nowrap">
                         {fmt(it.subtotal)}
                       </td>
                     </tr>
@@ -99,16 +99,16 @@ export function QuotesPanel({ quotes, approvedQuoteId, canDelete, canNegotiate, 
                 </tbody>
               </table>
 
-              <div className="border-t border-gray-100 pt-2 space-y-0.5 text-xs">
-                <div className="flex justify-between text-gray-500">
+              <div className="border-t border-app-border pt-2 space-y-0.5 text-xs">
+                <div className="flex justify-between text-app-muted">
                   <span>Subtotal</span><span>{fmt(q.subtotal)}</span>
                 </div>
-                <div className="flex justify-between text-gray-500">
+                <div className="flex justify-between text-app-muted">
                   <span>ITBIS ({q.tax_percent}%)</span>
                   <span>{fmt(q.subtotal * q.tax_percent / 100)}</span>
                 </div>
                 <div className={`flex justify-between font-semibold text-sm pt-1 ${
-                  isApproved ? 'text-green-700' : hasNeg ? 'text-gray-400 line-through' : 'text-blue-700'
+                  isApproved ? 'text-green-700' : hasNeg ? 'text-app-subtle line-through' : 'text-blue-700'
                 }`}>
                   <span>Total cotizado</span><span>{fmt(q.total)}</span>
                 </div>
@@ -123,7 +123,7 @@ export function QuotesPanel({ quotes, approvedQuoteId, canDelete, canNegotiate, 
               </div>
 
               {q.notes && !state?.editing && (
-                <p className="mt-2 text-xs text-gray-500 italic border-t border-gray-100 pt-2">{q.notes}</p>
+                <p className="mt-2 text-xs text-app-muted italic border-t border-app-border pt-2">{q.notes}</p>
               )}
 
               {state?.editing && (
@@ -148,7 +148,7 @@ export function QuotesPanel({ quotes, approvedQuoteId, canDelete, canNegotiate, 
                       <Check className="w-3 h-3" /> Guardar
                     </button>
                     <button onClick={() => cancelEdit(q.id)}
-                      className="flex items-center justify-center text-gray-400 hover:text-gray-600 px-2">
+                      className="flex items-center justify-center text-app-subtle hover:text-app-muted px-2">
                       <X className="w-3.5 h-3.5" />
                     </button>
                   </div>

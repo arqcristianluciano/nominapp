@@ -33,12 +33,12 @@ export function AddMaterialForm({ suppliers, onSubmit, onCancel, saving }: Props
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="block text-xs font-medium text-gray-700 mb-1">Proveedor *</label>
+        <label className="block text-xs font-medium text-app-muted mb-1">Proveedor *</label>
         <select
           value={supplierId}
           onChange={(e) => setSupplierId(e.target.value)}
           required
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="">Seleccionar proveedor...</option>
           {suppliers.filter(s => s.is_active).map(s => (
@@ -48,43 +48,43 @@ export function AddMaterialForm({ suppliers, onSubmit, onCancel, saving }: Props
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-gray-700 mb-1">Descripción *</label>
+        <label className="block text-xs font-medium text-app-muted mb-1">Descripción *</label>
         <input
           type="text"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Ej: CEMENTO GRIS, ARENA PROCESADA"
           required
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">Referencia de factura</label>
+          <label className="block text-xs font-medium text-app-muted mb-1">Referencia de factura</label>
           <input
             type="text"
             value={reference}
             onChange={(e) => setReference(e.target.value)}
             placeholder="VER FACTURA PAG. 2"
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">Monto RD$ *</label>
+          <label className="block text-xs font-medium text-app-muted mb-1">Monto RD$ *</label>
           <input
             type="number"
             step="0.01"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             required
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
       </div>
 
       <div className="flex justify-end gap-2 pt-2">
-        <button type="button" onClick={onCancel} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">
+        <button type="button" onClick={onCancel} className="px-4 py-2 text-sm text-app-muted hover:text-app-text">
           Cancelar
         </button>
         <button

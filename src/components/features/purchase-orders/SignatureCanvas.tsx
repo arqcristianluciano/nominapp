@@ -68,7 +68,7 @@ export function SignatureCanvas({ onChange }: SignatureCanvasProps) {
 
   return (
     <div className="space-y-2">
-      <div className="relative border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 overflow-hidden">
+      <div className="relative border-2 border-dashed border-app-border rounded-lg bg-app-bg overflow-hidden">
         <canvas
           ref={canvasRef}
           width={500}
@@ -83,7 +83,7 @@ export function SignatureCanvas({ onChange }: SignatureCanvasProps) {
           onTouchEnd={endDraw}
         />
         {isEmpty && (
-          <p className="absolute inset-0 flex items-center justify-center text-sm text-gray-400 pointer-events-none">
+          <p className="absolute inset-0 flex items-center justify-center text-sm text-app-subtle pointer-events-none">
             Firme aquí
           </p>
         )}
@@ -91,7 +91,7 @@ export function SignatureCanvas({ onChange }: SignatureCanvasProps) {
       <button
         type="button"
         onClick={clear}
-        className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700"
+        className="flex items-center gap-1.5 text-xs text-app-muted hover:text-app-muted"
       >
         <Eraser className="w-3.5 h-3.5" />
         Borrar firma
