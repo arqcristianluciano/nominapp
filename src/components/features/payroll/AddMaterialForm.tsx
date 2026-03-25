@@ -38,7 +38,7 @@ export function AddMaterialForm({ suppliers, onSubmit, onCancel, saving }: Props
           value={supplierId}
           onChange={(e) => setSupplierId(e.target.value)}
           required
-          className="w-full px-3 py-2 border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="">Seleccionar proveedor...</option>
           {suppliers.filter(s => s.is_active).map(s => (
@@ -55,7 +55,7 @@ export function AddMaterialForm({ suppliers, onSubmit, onCancel, saving }: Props
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Ej: CEMENTO GRIS, ARENA PROCESADA"
           required
-          className="w-full px-3 py-2 border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
 
@@ -67,7 +67,7 @@ export function AddMaterialForm({ suppliers, onSubmit, onCancel, saving }: Props
             value={reference}
             onChange={(e) => setReference(e.target.value)}
             placeholder="VER FACTURA PAG. 2"
-            className="w-full px-3 py-2 border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
         <div>
@@ -78,7 +78,7 @@ export function AddMaterialForm({ suppliers, onSubmit, onCancel, saving }: Props
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             required
-            className="w-full px-3 py-2 border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
       </div>

@@ -49,7 +49,7 @@ export function CreatePayrollForm({ projectId, onCreated, onCancel }: Props) {
             value={number}
             onChange={(e) => setNumber(parseInt(e.target.value))}
             required
-            className="w-full px-3 py-2 border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
         <div>
@@ -59,7 +59,7 @@ export function CreatePayrollForm({ projectId, onCreated, onCancel }: Props) {
             value={date}
             onChange={(e) => setDate(e.target.value)}
             required
-            className="w-full px-3 py-2 border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
       </div>
@@ -70,7 +70,7 @@ export function CreatePayrollForm({ projectId, onCreated, onCancel }: Props) {
           type="text"
           value={reportedBy}
           onChange={(e) => setReportedBy(e.target.value)}
-          className="w-full px-3 py-2 border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
 
