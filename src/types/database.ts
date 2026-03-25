@@ -220,6 +220,32 @@ export interface ContractCubication {
   contractor?: Contractor
 }
 
+export type LoanStatus = 'active' | 'paid' | 'cancelled'
+
+export interface ContractorLoan {
+  id: string
+  contractor_id: string
+  principal: number
+  interest_rate: number
+  installments: number
+  installment_amount: number
+  disbursed_date: string
+  status: LoanStatus
+  notes: string | null
+  created_at: string
+  contractor?: Contractor
+}
+
+export interface LoanDeduction {
+  id: string
+  loan_id: string
+  payroll_period_id: string
+  contractor_id: string
+  amount: number
+  created_at: string
+  loan?: ContractorLoan
+}
+
 export interface Database {
   public: {
     Tables: {

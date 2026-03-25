@@ -8,6 +8,7 @@ import { Modal } from '@/components/ui/Modal'
 import { AddLaborItemForm } from '@/components/features/payroll/AddLaborItemForm'
 import { AddMaterialForm } from '@/components/features/payroll/AddMaterialForm'
 import { PaymentDistributionsSection } from '@/components/features/payments/PaymentDistributionsSection'
+import { LoanDeductionSection } from '@/components/features/payroll/LoanDeductionSection'
 import { formatRD, formatNumber } from '@/utils/currency'
 import { calcContractorSubtotal } from '@/utils/calculations'
 import type { Contractor, Supplier } from '@/types/database'
@@ -243,6 +244,8 @@ export default function PayrollEditor() {
           </div>
         </section>
       )}
+
+      <LoanDeductionSection periodId={period.id} isDraft={isDraft} />
 
       {(period.status === 'approved' || period.status === 'paid') && (
         <PaymentDistributionsSection periodId={period.id} grandTotal={period.grand_total || 0} />

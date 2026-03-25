@@ -26,6 +26,7 @@ src/
       contractors/  ← ContractorForm
       suppliers/    ← SupplierForm
       projects/     ← ProjectForm
+      loans/        ← LoanForm
       control/      ← TransactionInlineForm, TransactionRow, CxPView, CxPProjectFilterBar,
                        ChequesEfectivoView, FinancialIndicators, CubicacionForm
       budget/       ← BudgetItemForm, BudgetPartidaRow, ExcelImportModal, PriceListPanel
@@ -38,7 +39,7 @@ src/
   utils/            ← currency, calculations, financialCalculations
   constants/        ← budgetCategories, indirectCosts, measureUnits, banks, demoUsers (login demo)
   types/            ← database.ts (14 interfaces)
-  lib/              ← supabase, mockSupabase, mockData, router
+  lib/              ← supabase, mockSupabase, mockData, seedCapullo, seedTorreMirador, router
 ```
 
 ---
@@ -65,6 +66,7 @@ src/
 | `/reportes` | Reportes | ✅ Completo |
 | `/contratistas` | Contractors | ✅ Completo |
 | `/suplidores` | Suppliers | ✅ Completo |
+| `/prestamos` | Loans | ✅ Completo |
 | `/configuracion` | Settings | ✅ Completo |
 | `/ordenes-compra` | PurchaseOrders | ✅ Completo |
 | `/ordenes-compra/:id` | PurchaseOrderDetail | ✅ Completo |
@@ -91,6 +93,7 @@ src/
 | `priceListService` | CRUD de lista de precios por proyecto |
 | `requisitionService` | CRUD requisiciones, aprobación, colocar orden |
 | `quoteService` | CRUD cotizaciones e ítems por requisición |
+| `loanService` | CRUD préstamos a contratistas y deducciones por nómina |
 
 ---
 
@@ -100,7 +103,8 @@ src/
 `budget_categories`, `budget_items`, `price_list_items`, `payroll_periods`, `labor_line_items`,
 `material_invoices`, `indirect_costs`, `payment_distributions`,
 `transactions`, `quality_control`, `contract_cubications`,
-`purchase_requisitions`, `purchase_quotes`, `purchase_quote_items`
+`purchase_requisitions`, `purchase_quotes`, `purchase_quote_items`,
+`contractor_loans`, `loan_deductions`
 
 ---
 
@@ -132,6 +136,11 @@ src/
   - Aprobación con código personal (localStorage) + firma digital en canvas
   - Selección de cotización ganadora en el modal de aprobación
   - Colocar orden con forma de pago: crédito o contado
+- Préstamos a contratistas: capital, tasa de interés, cuotas fijas
+  - Página `/prestamos`: listado con saldo pendiente por préstamo, marcar pagado/cancelar
+  - En cada reporte de nómina: sección "Deducciones de préstamos" (solo préstamos activos con saldo)
+  - El monto descontado se registra en `loan_deductions` y aparece en el reporte impreso
+  - Los totales del reporte (costo del proyecto) no se alteran; la deducción es entre empresa y contratista
 
 ---
 

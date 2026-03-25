@@ -25,6 +25,7 @@ import PurchaseOrders from '@/pages/PurchaseOrders'
 import PurchaseOrderDetail from '@/pages/PurchaseOrderDetail'
 import ContractorDetail from '@/pages/ContractorDetail'
 import ReportesObra from '@/pages/ReportesObra'
+import Loans from '@/pages/Loans'
 
 export const router = createBrowserRouter([
   { path: '/login', element: <Login /> },
@@ -53,6 +54,7 @@ export const router = createBrowserRouter([
           { path: 'cxp/consolidado', element: <CxPConsolidadoTodos /> },
           { path: 'cxp/:projectId', element: <CxPDetalle /> },
           { path: 'reportes', element: <Reportes /> },
+          { path: 'prestamos', element: <Loans /> },
           { path: 'contratistas', element: <Contractors /> },
           { path: 'contratistas/:contractorId', element: <ContractorDetail /> },
           { path: 'suplidores', element: <Suppliers /> },

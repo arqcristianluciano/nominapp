@@ -13,6 +13,7 @@ import {
   CreditCard,
   ShoppingCart,
   ScrollText,
+  Banknote,
 } from 'lucide-react'
 import { usePendingApprovals } from '@/hooks/usePendingApprovals'
 import { ThemeToggle } from '@/components/layout/ThemeToggle'
@@ -50,6 +51,7 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { to: '/contratistas', icon: HardHat, label: 'Contratistas' },
       { to: '/suplidores', icon: Truck, label: 'Suplidores' },
+      { to: '/prestamos', icon: Banknote, label: 'Préstamos' },
     ],
   },
   {

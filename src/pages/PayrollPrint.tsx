@@ -2,14 +2,16 @@ import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft, Printer } from 'lucide-react'
 import { payrollService } from '@/services/payrollService'
+import { loanService } from '@/services/loanService'
 import { formatRD, formatNumber } from '@/utils/currency'
-import type { PayrollPeriod, LaborLineItem, MaterialInvoice, IndirectCost } from '@/types/database'
+import type { PayrollPeriod, LaborLineItem, MaterialInvoice, IndirectCost, LoanDeduction } from '@/types/database'
 
 interface PayrollDetail {
   period: PayrollPeriod
   laborItems: LaborLineItem[]
   materialInvoices: MaterialInvoice[]
   indirectCosts: IndirectCost[]
+  loanDeductions: LoanDeduction[]
 }
 
 export default function PayrollPrint() {
@@ -19,15 +21,17 @@ export default function PayrollPrint() {
 
   useEffect(() => {
     if (!periodId) return
-    payrollService.getPeriodDetail(periodId)
-      .then(setDetail)
+    Promise.all([
+      payrollService.getPeriodDetail(periodId),
+      loanService.getDeductionsByPeriod(periodId),
+    ]).then(([detail, loanDeductions]) => setDetail({ ...detail, loanDeductions }))
       .finally(() => setLoading(false))
   }, [periodId])
 
   if (loading) return <div className="p-8 text-sm text-app-muted">Cargando...</div>
   if (!detail) return <div className="p-8 text-sm text-app-muted">Reporte no encontrado</div>
 
-  const { period, laborItems, materialInvoices, indirectCosts } = detail
+  const { period, laborItems, materialInvoices, indirectCosts, loanDeductions } = detail
   const project = period.project
   const reportDate = new Date(period.report_date).toLocaleDateString('es-DO', { year: 'numeric', month: 'long', day: 'numeric' })
 
@@ -147,6 +151,33 @@ export default function PayrollPrint() {
             <span className="text-xs font-bold text-app-text">{formatRD(period.total_materials || 0)}</span>
           </div>
         </section>
+
+        {/* Loan deductions */}
+        {loanDeductions.length > 0 && (
+          <section className="mb-8">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-app-muted border-b border-gray-300 pb-1 mb-3">Deducciones de Préstamos</h2>
+            <table className="w-full text-xs border border-app-border">
+              <thead>
+                <tr className="bg-app-bg">
+                  <th className="px-2 py-1 text-left font-medium text-app-muted">Contratista</th>
+                  <th className="px-2 py-1 text-right font-medium text-app-muted w-32">Monto descontado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loanDeductions.map((d) => (
+                  <tr key={d.id} className="border-t border-app-border">
+                    <td className="px-2 py-1 text-app-text">{d.loan?.contractor?.name ?? '—'}</td>
+                    <td className="px-2 py-1 text-right font-medium text-red-600">−{formatRD(d.amount)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className="flex justify-end mt-1">
+              <span className="text-xs font-semibold text-app-muted mr-4">Total deducciones:</span>
+              <span className="text-xs font-bold text-red-600">−{formatRD(loanDeductions.reduce((s, d) => s + d.amount, 0))}</span>
+            </div>
+          </section>
+        )}
 
         {/* Indirect */}
         {indirectCosts.length > 0 && (
