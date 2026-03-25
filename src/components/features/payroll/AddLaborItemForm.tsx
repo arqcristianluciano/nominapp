@@ -50,7 +50,7 @@ export function AddLaborItemForm({ contractors, onSubmit, onCancel, saving }: Pr
           value={contractorId}
           onChange={(e) => setContractorId(e.target.value)}
           required
-          className="w-full px-3 py-2 border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="">Seleccionar contratista...</option>
           {contractors.filter(c => c.is_active).map(c => (
@@ -67,7 +67,7 @@ export function AddLaborItemForm({ contractors, onSubmit, onCancel, saving }: Pr
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Ej: ENVARILLADO DE LOSA NIVEL 2"
           required
-          className="w-full px-3 py-2 border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
 
@@ -80,7 +80,7 @@ export function AddLaborItemForm({ contractors, onSubmit, onCancel, saving }: Pr
             value={quantity}
             onChange={(e) => setQuantity(e.target.value)}
             required
-            className="w-full px-3 py-2 border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
         <div>
@@ -88,7 +88,7 @@ export function AddLaborItemForm({ contractors, onSubmit, onCancel, saving }: Pr
           <select
             value={unit}
             onChange={(e) => setUnit(e.target.value)}
-            className="w-full px-3 py-2 border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             {MEASURE_UNITS.map(u => (
               <option key={u.value} value={u.value}>{u.label}</option>
@@ -103,7 +103,7 @@ export function AddLaborItemForm({ contractors, onSubmit, onCancel, saving }: Pr
             value={unitPrice}
             onChange={(e) => setUnitPrice(e.target.value)}
             required
-            className="w-full px-3 py-2 border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
       </div>

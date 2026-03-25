@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { Plus, Search, Pencil } from 'lucide-react'
 import { useProjectStore } from '@/stores/projectStore'
 import { projectService } from '@/services/projectService'
@@ -9,6 +9,7 @@ import type { Project } from '@/types/database'
 
 export default function Projects() {
   const { projects, loading, fetchProjects } = useProjectStore()
+  const navigate = useNavigate()
   const [showCreate, setShowCreate] = useState(false)
   const [editing, setEditing] = useState<Project | undefined>()
   const [saving, setSaving] = useState(false)
@@ -105,11 +106,13 @@ export default function Projects() {
             </thead>
             <tbody className="divide-y divide-app-border">
               {filtered.map((project) => (
-                <tr key={project.id} className="hover:bg-app-hover transition-colors">
+                <tr
+                  key={project.id}
+                  onClick={() => navigate(`/proyectos/${project.id}`)}
+                  className="hover:bg-app-hover transition-colors cursor-pointer"
+                >
                   <td className="px-4 py-3">
-                    <Link to={`/proyectos/${project.id}`} className="font-medium text-blue-600 hover:text-blue-800">
-                      {project.name}
-                    </Link>
+                    <div className="font-medium text-blue-600">{project.name}</div>
                     <div className="text-xs text-app-subtle">{project.code}</div>
                   </td>
                   <td className="px-4 py-3 text-app-muted hidden sm:table-cell">{project.location}</td>
@@ -121,7 +124,11 @@ export default function Projects() {
                   </td>
                   <td className="px-4 py-3 text-right text-app-muted hidden lg:table-cell">{project.dt_percent}%</td>
                   <td className="px-2 py-3">
-                    <button onClick={() => setEditing(project)} className="p-1.5 text-app-subtle hover:text-blue-500" title="Editar proyecto">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setEditing(project) }}
+                      className="p-1.5 text-app-subtle hover:text-blue-500"
+                      title="Editar proyecto"
+                    >
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
                   </td>
