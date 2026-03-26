@@ -1,6 +1,10 @@
 import { useState } from 'react'
+import { UserPlus, X } from 'lucide-react'
 import type { Contractor } from '@/types/database'
 import { MEASURE_UNITS } from '@/constants/measureUnits'
+import { contractorService } from '@/services/contractorService'
+
+const NEW_CONTRACTOR_VALUE = '__NEW__'
 
 interface Props {
   contractors: Contractor[]
@@ -15,9 +19,10 @@ interface Props {
   }) => Promise<void>
   onCancel: () => void
   saving: boolean
+  onContractorCreated?: (contractor: Contractor) => void
 }
 
-export function AddLaborItemForm({ contractors, onSubmit, onCancel, saving }: Props) {
+export function AddLaborItemForm({ contractors, onSubmit, onCancel, saving, onContractorCreated }: Props) {
   const [contractorId, setContractorId] = useState('')
   const [description, setDescription] = useState('')
   const [quantity, setQuantity] = useState('')
@@ -26,11 +31,50 @@ export function AddLaborItemForm({ contractors, onSubmit, onCancel, saving }: Pr
   const [isAdvance, setIsAdvance] = useState(false)
   const [isDeduction, setIsDeduction] = useState(false)
 
+  const [showNewForm, setShowNewForm] = useState(false)
+  const [newName, setNewName] = useState('')
+  const [newSpecialty, setNewSpecialty] = useState('')
+  const [savingNew, setSavingNew] = useState(false)
+
+  function handleSelectChange(value: string) {
+    if (value === NEW_CONTRACTOR_VALUE) {
+      setShowNewForm(true)
+      setContractorId('')
+    } else {
+      setShowNewForm(false)
+      setContractorId(value)
+    }
+  }
+
+  async function handleCreateContractor() {
+    if (!newName.trim()) return
+    setSavingNew(true)
+    try {
+      const created = await contractorService.create({
+        name: newName.trim(),
+        specialty: newSpecialty.trim() || undefined,
+      })
+      onContractorCreated?.(created)
+      setContractorId(created.id)
+      setShowNewForm(false)
+      setNewName('')
+      setNewSpecialty('')
+    } finally {
+      setSavingNew(false)
+    }
+  }
+
+  function cancelNewForm() {
+    setShowNewForm(false)
+    setNewName('')
+    setNewSpecialty('')
+  }
+
   const subtotal = (parseFloat(quantity) || 0) * (parseFloat(unitPrice) || 0)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!contractorId || !description || !quantity || !unitPrice) return
+    if (showNewForm || !contractorId || !description || !quantity || !unitPrice) return
     await onSubmit({
       contractor_id: contractorId,
       description: description.toUpperCase(),
@@ -47,16 +91,52 @@ export function AddLaborItemForm({ contractors, onSubmit, onCancel, saving }: Pr
       <div>
         <label className="block text-xs font-medium text-app-muted mb-1">Contratista *</label>
         <select
-          value={contractorId}
-          onChange={(e) => setContractorId(e.target.value)}
-          required
+          value={showNewForm ? NEW_CONTRACTOR_VALUE : contractorId}
+          onChange={(e) => handleSelectChange(e.target.value)}
+          required={!showNewForm}
           className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="">Seleccionar contratista...</option>
           {contractors.filter(c => c.is_active).map(c => (
             <option key={c.id} value={c.id}>{c.name} — {c.specialty}</option>
           ))}
+          <option value={NEW_CONTRACTOR_VALUE}>＋ Crear nuevo contratista</option>
         </select>
+
+        {showNewForm && (
+          <div className="mt-2 p-3 border border-blue-500/40 bg-blue-500/5 rounded-lg space-y-2">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-medium text-blue-400 flex items-center gap-1">
+                <UserPlus size={12} /> Nuevo contratista
+              </span>
+              <button type="button" onClick={cancelNewForm} className="text-app-muted hover:text-app-text">
+                <X size={14} />
+              </button>
+            </div>
+            <input
+              type="text"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="Nombre *"
+              className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <input
+              type="text"
+              value={newSpecialty}
+              onChange={(e) => setNewSpecialty(e.target.value)}
+              placeholder="Especialidad (ej: Plomería)"
+              className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button
+              type="button"
+              onClick={handleCreateContractor}
+              disabled={savingNew || !newName.trim()}
+              className="w-full py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {savingNew ? 'Creando...' : 'Crear y seleccionar'}
+            </button>
+          </div>
+        )}
       </div>
 
       <div>
@@ -134,7 +214,7 @@ export function AddLaborItemForm({ contractors, onSubmit, onCancel, saving }: Pr
         </button>
         <button
           type="submit"
-          disabled={saving || !contractorId || !description || !quantity || !unitPrice}
+          disabled={saving || showNewForm || !contractorId || !description || !quantity || !unitPrice}
           className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {saving ? 'Guardando...' : 'Agregar partida'}

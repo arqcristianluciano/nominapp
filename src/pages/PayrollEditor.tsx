@@ -257,6 +257,7 @@ export default function PayrollEditor() {
           onSubmit={async (item) => { await payroll.addLaborItem(item); setShowAddLabor(false) }}
           onCancel={() => setShowAddLabor(false)}
           saving={payroll.saving}
+          onContractorCreated={(c) => setContractors(prev => [...prev, c].sort((a, b) => a.name.localeCompare(b.name)))}
         />
       </Modal>
 
