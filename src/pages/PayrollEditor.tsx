@@ -10,6 +10,7 @@ import { AddLaborItemForm } from '@/components/features/payroll/AddLaborItemForm
 import { AddMaterialForm } from '@/components/features/payroll/AddMaterialForm'
 import { PaymentDistributionsSection } from '@/components/features/payments/PaymentDistributionsSection'
 import { LoanDeductionSection } from '@/components/features/payroll/LoanDeductionSection'
+import { CubicacionesPayrollSection } from '@/components/features/cubicacion/CubicacionesPayrollSection'
 import { formatRD, formatNumber } from '@/utils/currency'
 import { calcContractorSubtotal } from '@/utils/calculations'
 import type { Contractor, Supplier, PriceListItem } from '@/types/database'
@@ -253,6 +254,13 @@ export default function PayrollEditor() {
           </div>
         </section>
       )}
+
+      <CubicacionesPayrollSection
+        periodId={period.id}
+        projectId={period.project_id}
+        isDraft={isDraft}
+        onCorteLinked={payroll.load}
+      />
 
       <LoanDeductionSection periodId={period.id} isDraft={isDraft} />
 

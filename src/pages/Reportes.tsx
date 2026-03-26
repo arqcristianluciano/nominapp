@@ -3,6 +3,7 @@ import { FileText } from 'lucide-react'
 import { useProjectStore } from '@/stores/projectStore'
 import { transactionService } from '@/services/transactionService'
 import { budgetCategoryService } from '@/services/budgetCategoryService'
+import { getProjectsProgress } from '@/services/cubicationService'
 import {
   calcTotalIncurrido,
   calcTotalCxP,
@@ -19,6 +20,10 @@ interface ProjectReport {
   cxp: number
   cashDisponible: number
   avance: number
+  acordado: number
+  acumulado: number
+  pendiente: number
+  avgCompletion: number
 }
 
 export default function Reportes() {
@@ -40,6 +45,7 @@ export default function Reportes() {
 
       try {
         const results: ProjectReport[] = []
+        const cubProgress = await getProjectsProgress()
 
         for (const project of activeProjects) {
           const [transactions, categories] = await Promise.all([
@@ -52,6 +58,7 @@ export default function Reportes() {
           const cxp = calcTotalCxP(transactions)
           const cashDisponible = calcCashDisponible(transactions)
           const avance = presupuesto > 0 ? (totalIncurrido / presupuesto) * 100 : 0
+          const cub = cubProgress[project.id] ?? { acordado: 0, acumulado: 0, avg_completion: 0 }
 
           results.push({
             id: project.id,
@@ -62,6 +69,10 @@ export default function Reportes() {
             cxp,
             cashDisponible,
             avance: Math.min(avance, 100),
+            acordado: cub.acordado,
+            acumulado: cub.acumulado,
+            pendiente: cub.acordado - cub.acumulado,
+            avgCompletion: cub.avg_completion,
           })
         }
 
@@ -111,6 +122,49 @@ export default function Reportes() {
           </p>
         </div>
       </div>
+
+      {reports.some((r) => r.acordado > 0) && (
+        <div>
+          <h2 className="text-base font-semibold text-app-text mb-3">Cubicaciones</h2>
+          <div className="bg-app-surface rounded-xl border border-app-border overflow-hidden">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-app-bg border-b border-app-border">
+                  <th className="px-4 py-3 text-left text-[10px] font-semibold text-app-muted uppercase">Proyecto</th>
+                  <th className="px-4 py-3 text-right text-[10px] font-semibold text-app-muted uppercase">Acordado</th>
+                  <th className="px-4 py-3 text-right text-[10px] font-semibold text-app-muted uppercase hidden sm:table-cell">Acumulado</th>
+                  <th className="px-4 py-3 text-right text-[10px] font-semibold text-app-muted uppercase hidden md:table-cell">Pendiente</th>
+                  <th className="px-4 py-3 text-center text-[10px] font-semibold text-app-muted uppercase">% Avance</th>
+                </tr>
+              </thead>
+              <tbody>
+                {reports.filter((r) => r.acordado > 0).map((r) => (
+                  <tr key={r.id} className="border-b border-app-border hover:bg-app-hover">
+                    <td className="px-4 py-3">
+                      <p className="text-sm font-medium text-app-text">{r.name}</p>
+                      <p className="text-xs text-app-subtle">{r.code}</p>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-app-muted text-right">{formatRD(r.acordado)}</td>
+                    <td className="px-4 py-3 text-sm text-green-600 font-medium text-right hidden sm:table-cell">{formatRD(r.acumulado)}</td>
+                    <td className="px-4 py-3 text-sm text-amber-600 font-medium text-right hidden md:table-cell">{formatRD(r.pendiente)}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2 justify-center">
+                        <div className="w-16 h-2 bg-app-chip rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${r.avgCompletion > 90 ? 'bg-red-500' : r.avgCompletion > 70 ? 'bg-amber-500' : 'bg-teal-500'}`}
+                            style={{ width: `${r.avgCompletion}%` }}
+                          />
+                        </div>
+                        <span className="text-xs text-app-muted w-10 text-right">{r.avgCompletion.toFixed(0)}%</span>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="text-sm text-app-muted">Generando reporte...</div>

@@ -187,6 +187,14 @@ export const corteService = {
     const { error } = await supabase.from('contract_cortes').delete().eq('id', id)
     if (error) throw error
   },
+
+  async unlinkFromPayroll(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('contract_cortes')
+      .update({ status: 'approved', linked_payroll_id: null })
+      .eq('id', id)
+    if (error) throw error
+  },
 }
 
 // --- Progreso por proyecto (para Dashboard) ---
@@ -215,6 +223,46 @@ export async function getProjectsProgress(): Promise<Record<string, { acordado: 
     g.avg_completion = g.acordado > 0 ? Math.min((g.acumulado / g.acordado) * 100, 100) : 0
   }
   return result
+}
+
+export async function getCortesByPayroll(
+  payrollId: string,
+): Promise<(ContractCorte & { contract: AdjustmentContract | null })[]> {
+  const { data: contracts } = await supabase
+    .from('adjustment_contracts')
+    .select('id, contractor_id, contractor:contractors(*)')
+  const { data: cortes, error } = await supabase
+    .from('contract_cortes')
+    .select('*, partida:contract_partidas(*)')
+    .eq('linked_payroll_id', payrollId)
+  if (error) throw error
+  return (cortes as ContractCorte[]).map((c) => ({
+    ...c,
+    contract: (contracts as any[])?.find((ac) => ac.id === c.contract_id) ?? null,
+  }))
+}
+
+export async function getApprovedCortesByProject(
+  projectId: string,
+): Promise<(ContractCorte & { contract: AdjustmentContract | null })[]> {
+  const { data: contracts } = await supabase
+    .from('adjustment_contracts')
+    .select('id, contractor_id, contractor:contractors(*)')
+    .eq('project_id', projectId)
+  if (!contracts?.length) return []
+  const groups = await Promise.all(
+    (contracts as any[]).map(async (contract) => {
+      const { data: cortes } = await supabase
+        .from('contract_cortes')
+        .select('*, partida:contract_partidas(*)')
+        .eq('contract_id', contract.id)
+        .eq('status', 'approved')
+      return ((cortes as ContractCorte[]) || [])
+        .filter((c) => !c.linked_payroll_id)
+        .map((c) => ({ ...c, contract }))
+    }),
+  )
+  return groups.flat()
 }
 
 // --- Adelantos ---
