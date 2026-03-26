@@ -1,58 +1,26 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Plus, Trash2, ChevronDown, ChevronRight, CheckCircle, Send, CreditCard, Printer } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2, CheckCircle, Send, CreditCard, Printer } from 'lucide-react'
 import { usePayroll } from '@/hooks/usePayroll'
-import { contractorService } from '@/services/contractorService'
 import { supplierService } from '@/services/supplierService'
-import { priceListService } from '@/services/priceListService'
 import { Modal } from '@/components/ui/Modal'
-import { AddLaborItemForm } from '@/components/features/payroll/AddLaborItemForm'
 import { AddMaterialForm } from '@/components/features/payroll/AddMaterialForm'
 import { PaymentDistributionsSection } from '@/components/features/payments/PaymentDistributionsSection'
 import { LoanDeductionSection } from '@/components/features/payroll/LoanDeductionSection'
 import { CubicacionesPayrollSection } from '@/components/features/cubicacion/CubicacionesPayrollSection'
-import { formatRD, formatNumber } from '@/utils/currency'
-import { calcContractorSubtotal } from '@/utils/calculations'
-import type { Contractor, Supplier, PriceListItem } from '@/types/database'
+import { formatRD } from '@/utils/currency'
+import type { Supplier } from '@/types/database'
 
 export default function PayrollEditor() {
   const { periodId } = useParams<{ periodId: string }>()
   const payroll = usePayroll(periodId)
-  const [contractors, setContractors] = useState<Contractor[]>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
-  const [laborTasks, setLaborTasks] = useState<PriceListItem[]>([])
-  const [showAddLabor, setShowAddLabor] = useState(false)
   const [showAddMaterial, setShowAddMaterial] = useState(false)
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     payroll.load()
-    contractorService.getAll().then(setContractors)
     supplierService.getAll().then(setSuppliers)
   }, [payroll.load])
-
-  useEffect(() => {
-    const projectId = payroll.period?.project_id
-    if (!projectId) return
-    priceListService.getByProject(projectId)
-      .then(items => setLaborTasks(items.filter(i => i.category === 'labor')))
-  }, [payroll.period?.project_id])
-
-  const contractorGroups = useMemo(() => {
-    const groups = new Map<string, { contractor: Contractor; items: typeof payroll.laborItems }>()
-    for (const item of payroll.laborItems) {
-      const cId = item.contractor_id
-      if (!groups.has(cId)) {
-        const c = item.contractor || contractors.find(x => x.id === cId) || { id: cId, name: 'Desconocido', specialty: null } as Contractor
-        groups.set(cId, { contractor: c, items: [] })
-      }
-      groups.get(cId)!.items.push(item)
-    }
-    return Array.from(groups.values())
-  }, [payroll.laborItems, contractors])
-
-  const toggle = (id: string) => setOpenSections(prev => ({ ...prev, [id]: prev[id] === undefined ? false : !prev[id] }))
-  const isOpen = (id: string) => openSections[id] !== false
 
   if (payroll.loading) return <div className="text-sm text-app-muted p-4">Cargando nómina...</div>
   if (!payroll.period) return <div className="text-sm text-app-muted p-4">Nómina no encontrada</div>
@@ -107,79 +75,6 @@ export default function PayrollEditor() {
         <div className="rounded-lg px-3 py-2.5 bg-app-surface border border-app-border"><p className="text-xs text-app-muted">Indirectos</p><p className="text-sm font-semibold mt-0.5">{formatRD(period.total_indirect || 0)}</p></div>
         <div className="rounded-lg px-3 py-2.5 bg-blue-600"><p className="text-xs text-blue-200">Total general</p><p className="text-sm font-semibold text-white mt-0.5">{formatRD(period.grand_total || 0)}</p></div>
       </div>
-
-      <section>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-medium text-app-text">Mano de obra</h2>
-          {isDraft && (
-            <button onClick={() => setShowAddLabor(true)} className="flex items-center gap-1.5 px-3 py-1.5 bg-app-surface border border-app-border text-sm font-medium rounded-lg hover:bg-app-hover">
-              <Plus className="w-4 h-4" /> Agregar partida
-            </button>
-          )}
-        </div>
-
-        {contractorGroups.length === 0 ? (
-          <div className="bg-app-surface rounded-xl border border-app-border p-8 text-center text-sm text-app-subtle">
-            No hay partidas de mano de obra registradas
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {contractorGroups.map(({ contractor, items }) => {
-              const sub = calcContractorSubtotal(payroll.laborItems, contractor.id)
-              return (
-                <div key={contractor.id} className="bg-app-surface rounded-xl border border-app-border overflow-hidden">
-                  <button onClick={() => toggle(contractor.id)} className="w-full flex items-center justify-between px-4 py-3 hover:bg-app-hover">
-                    <div className="flex items-center gap-2">
-                      {isOpen(contractor.id) ? <ChevronDown className="w-4 h-4 text-app-subtle" /> : <ChevronRight className="w-4 h-4 text-app-subtle" />}
-                      <span className="font-medium text-app-text">{contractor.name}</span>
-                      {contractor.specialty && <span className="text-xs text-app-subtle">{contractor.specialty}</span>}
-                    </div>
-                    <span className="text-sm font-semibold text-app-text">{formatRD(sub)}</span>
-                  </button>
-                  {isOpen(contractor.id) && (
-                    <table className="w-full text-sm border-t border-app-border">
-                      <thead><tr className="bg-app-bg">
-                        <th className="text-left px-4 py-2 font-medium text-app-muted">Descripción</th>
-                        <th className="text-right px-3 py-2 font-medium text-app-muted w-20">Cant.</th>
-                        <th className="text-center px-3 py-2 font-medium text-app-muted w-16">Ud.</th>
-                        <th className="text-right px-3 py-2 font-medium text-app-muted w-24">Precio</th>
-                        <th className="text-right px-4 py-2 font-medium text-app-muted w-28">Subtotal</th>
-                        {isDraft && <th className="w-10" />}
-                      </tr></thead>
-                      <tbody className="divide-y divide-app-border">
-                        {items.map((item) => (
-                          <tr key={item.id} className={item.is_advance_deduction ? 'text-red-600' : ''}>
-                            <td className="px-4 py-2 text-app-muted">
-                              {item.description}
-                              {item.is_advance && <span className="ml-1 text-xs text-blue-500">(avance)</span>}
-                              {item.is_advance_deduction && <span className="ml-1 text-xs text-red-400">(deducción)</span>}
-                            </td>
-                            <td className="px-3 py-2 text-right text-app-muted">{formatNumber(item.quantity)}</td>
-                            <td className="px-3 py-2 text-center text-app-muted">{item.unit}</td>
-                            <td className="px-3 py-2 text-right text-app-muted">{formatRD(item.unit_price)}</td>
-                            <td className="px-4 py-2 text-right font-medium">{formatRD(item.quantity * item.unit_price)}</td>
-                            {isDraft && (
-                              <td className="px-2 py-2">
-                                <button onClick={() => payroll.deleteLaborItem(item.id)} className="p-1 text-app-subtle hover:text-red-500">
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </td>
-                            )}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        )}
-        <div className="mt-3 bg-blue-50 rounded-lg px-4 py-3 flex justify-between items-center">
-          <span className="text-sm font-medium text-blue-900">Total mano de obra</span>
-          <span className="text-sm font-semibold text-blue-900">{formatRD(period.total_labor || 0)}</span>
-        </div>
-      </section>
 
       <section>
         <div className="flex items-center justify-between mb-3">
@@ -267,17 +162,6 @@ export default function PayrollEditor() {
       {(period.status === 'approved' || period.status === 'paid') && (
         <PaymentDistributionsSection periodId={period.id} grandTotal={period.grand_total || 0} />
       )}
-
-      <Modal open={showAddLabor} onClose={() => setShowAddLabor(false)} title="Agregar partida de mano de obra" >
-        <AddLaborItemForm
-          contractors={contractors}
-          laborTasks={laborTasks}
-          onSubmit={async (item) => { await payroll.addLaborItem(item); setShowAddLabor(false) }}
-          onCancel={() => setShowAddLabor(false)}
-          saving={payroll.saving}
-          onContractorCreated={(c) => setContractors(prev => [...prev, c].sort((a, b) => a.name.localeCompare(b.name)))}
-        />
-      </Modal>
 
       <Modal open={showAddMaterial} onClose={() => setShowAddMaterial(false)} title="Agregar factura de materiales">
         <AddMaterialForm
