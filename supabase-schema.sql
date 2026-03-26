@@ -338,6 +338,47 @@ create table if not exists contract_adelantos (
 );
 
 -- ============================================================
+-- PRÉSTAMOS A CONTRATISTAS
+-- ============================================================
+
+create table if not exists contractor_loans (
+  id uuid primary key default gen_random_uuid(),
+  contractor_id uuid not null references contractors(id) on delete cascade,
+  principal numeric(15,2) not null default 0,
+  interest_rate numeric(5,2) not null default 0,
+  installments integer not null default 1,
+  installment_amount numeric(15,2) not null default 0,
+  disbursed_date date not null,
+  status text not null default 'active' check (status in ('active','paid','cancelled')),
+  notes text,
+  created_at timestamptz default now()
+);
+
+create table if not exists loan_deductions (
+  id uuid primary key default gen_random_uuid(),
+  loan_id uuid not null references contractor_loans(id) on delete cascade,
+  payroll_period_id uuid not null references payroll_periods(id) on delete cascade,
+  contractor_id uuid not null references contractors(id),
+  amount numeric(15,2) not null default 0,
+  created_at timestamptz default now()
+);
+
+-- ============================================================
+-- ÍNDICES DE RENDIMIENTO
+-- ============================================================
+
+create index if not exists idx_adj_contracts_project on adjustment_contracts(project_id);
+create index if not exists idx_adj_contracts_contractor on adjustment_contracts(contractor_id);
+create index if not exists idx_contract_partidas_contract on contract_partidas(contract_id);
+create index if not exists idx_contract_cortes_contract on contract_cortes(contract_id);
+create index if not exists idx_contract_cortes_partida on contract_cortes(partida_id);
+create index if not exists idx_contract_cortes_status on contract_cortes(status);
+create index if not exists idx_contract_adelantos_contract on contract_adelantos(contract_id);
+create index if not exists idx_contractor_loans_contractor on contractor_loans(contractor_id);
+create index if not exists idx_loan_deductions_loan on loan_deductions(loan_id);
+create index if not exists idx_loan_deductions_period on loan_deductions(payroll_period_id);
+
+-- ============================================================
 -- ROW LEVEL SECURITY (desactivado por defecto — activar al tener Auth)
 -- ============================================================
 
