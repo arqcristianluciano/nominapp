@@ -287,6 +287,57 @@ create table if not exists purchase_quote_items (
 );
 
 -- ============================================================
+-- MÓDULO DE CUBICACIÓN v2
+-- ============================================================
+
+create table if not exists adjustment_contracts (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references projects(id) on delete cascade,
+  contractor_id uuid not null references contractors(id),
+  signed_date date,
+  retention_percent numeric(5,2) not null default 5,
+  notes text,
+  created_at timestamptz default now()
+);
+
+create table if not exists contract_partidas (
+  id uuid primary key default gen_random_uuid(),
+  contract_id uuid not null references adjustment_contracts(id) on delete cascade,
+  description text not null,
+  unit text not null,
+  unit_price numeric(15,2) not null default 0,
+  agreed_quantity numeric(15,4) not null default 0,
+  sort_order integer not null default 0
+);
+
+create table if not exists contract_cortes (
+  id uuid primary key default gen_random_uuid(),
+  contract_id uuid not null references adjustment_contracts(id) on delete cascade,
+  partida_id uuid not null references contract_partidas(id) on delete cascade,
+  cut_number integer not null default 1,
+  cut_date date not null,
+  measured_quantity numeric(15,4) not null default 0,
+  amount numeric(15,2) not null default 0,
+  retention_amount numeric(15,2) not null default 0,
+  status text not null default 'draft' check (status in ('draft','approved','paid')),
+  notes text,
+  photo_url text,
+  approved_by text,
+  signature_data text,
+  linked_payroll_id uuid references payroll_periods(id),
+  created_at timestamptz default now()
+);
+
+create table if not exists contract_adelantos (
+  id uuid primary key default gen_random_uuid(),
+  contract_id uuid not null references adjustment_contracts(id) on delete cascade,
+  advance_date date not null,
+  amount numeric(15,2) not null default 0,
+  description text,
+  created_at timestamptz default now()
+);
+
+-- ============================================================
 -- ROW LEVEL SECURITY (desactivado por defecto — activar al tener Auth)
 -- ============================================================
 

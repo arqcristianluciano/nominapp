@@ -22,6 +22,7 @@ export default function CubicacionesPage() {
 
   const [form, setForm] = useState({ contractor_id: '', retention_percent: '5', signed_date: '', notes: '' })
   const [saving, setSaving] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!projects.length) fetchProjects()
@@ -41,6 +42,7 @@ export default function CubicacionesPage() {
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
+    setFormError(null)
     try {
       const created = await contractService.create({
         project_id: projectId!,
@@ -52,6 +54,8 @@ export default function CubicacionesPage() {
       setShowForm(false)
       setForm({ contractor_id: '', retention_percent: '5', signed_date: '', notes: '' })
       navigate(`/proyectos/${projectId}/cubicaciones/${created.id}`)
+    } catch (err: any) {
+      setFormError(err?.message || 'Error al crear el contrato. Verifica que las tablas del módulo de cubicación existan en Supabase.')
     } finally { setSaving(false) }
   }
 
@@ -188,8 +192,13 @@ export default function CubicacionesPage() {
             <label className={labelCls}>Notas</label>
             <input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Descripción del alcance..." className={inputCls} />
           </div>
+          {formError && (
+            <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-xs text-red-700 dark:text-red-300">
+              {formError}
+            </div>
+          )}
           <div className="flex justify-end gap-2 pt-1">
-            <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-app-muted border border-app-border rounded-lg hover:bg-app-hover">Cancelar</button>
+            <button type="button" onClick={() => { setShowForm(false); setFormError(null) }} className="px-4 py-2 text-sm text-app-muted border border-app-border rounded-lg hover:bg-app-hover">Cancelar</button>
             <button type="submit" disabled={saving} className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50">
               {saving ? 'Creando...' : 'Crear contrato'}
             </button>
