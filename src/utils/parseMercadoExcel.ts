@@ -51,20 +51,21 @@ export function parseMercadoExcel(file: File): Promise<ParsedMercadoLine[]> {
 
           if (!colA && !colB && !colC) continue
 
-          const cat = isCategoryHeader(cells)
-          if (cat) {
-            currentCategory = cat
+          // Primero: si tiene unidad + cantidad válida, es un ítem — nunca un header.
+          // Esto evita que descripciones como "Ajuste de nivelación" sean tomadas como header.
+          const qty = parseNumber(colD)
+          const isLineItem = !!colC && qty > 0
+
+          if (!isLineItem) {
+            // Solo buscar categoría en filas que no son ítems
+            const cat = isCategoryHeader(cells)
+            if (cat) currentCategory = cat
             continue
           }
 
           if (!currentCategory) continue
 
-          // A line item needs a unit (colC) and a positive quantity (colD)
-          const qty = parseNumber(colD)
-          if (!colC || qty <= 0) continue
-
           const price = parseNumber(colE)
-          const total = qty * price
 
           lines.push({
             category: currentCategory,
@@ -73,7 +74,7 @@ export function parseMercadoExcel(file: File): Promise<ParsedMercadoLine[]> {
             unit: colC,
             budgeted_quantity: qty,
             budgeted_unit_price: price,
-            budgeted_total: total,
+            budgeted_total: qty * price,
             sort_order: ++sortOrder,
           })
         }
