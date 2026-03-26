@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Plus, Calendar, FileText } from 'lucide-react'
+import { Plus, Calendar, FileText, TrendingUp, ChevronDown, ChevronUp } from 'lucide-react'
 import { payrollService } from '@/services/payrollService'
 import { projectService } from '@/services/projectService'
 import { Modal } from '@/components/ui/Modal'
@@ -21,6 +21,52 @@ const STATUS_LABELS: Record<string, string> = {
   paid: 'Pagado',
 }
 
+function ProjectSummaryBar({ periods }: { periods: PayrollPeriod[] }) {
+  const total = periods.reduce((s, p) => s + (p.grand_total || 0), 0)
+  const pagado = periods.filter((p) => p.status === 'paid').reduce((s, p) => s + (p.grand_total || 0), 0)
+  const aprobado = periods.filter((p) => p.status === 'approved').reduce((s, p) => s + (p.grand_total || 0), 0)
+  const nBorradores = periods.filter((p) => p.status === 'draft' || p.status === 'submitted').length
+  const porcentajePagado = total > 0 ? (pagado / total) * 100 : 0
+
+  return (
+    <div className="flex items-center gap-x-4 gap-y-1 flex-wrap px-3 py-2 mb-2 bg-app-bg rounded-lg border border-app-border text-xs">
+      <span className="flex items-center gap-1 text-app-muted">
+        <TrendingUp className="w-3 h-3" />
+        Total: <span className="font-semibold text-app-text ml-0.5">{formatRD(total)}</span>
+      </span>
+      <span className="text-app-border">·</span>
+      <span className="text-app-muted">
+        Pagado: <span className="font-semibold text-emerald-600">{formatRD(pagado)}</span>
+        {porcentajePagado > 0 && (
+          <span className="text-app-subtle ml-1">({porcentajePagado.toFixed(0)}%)</span>
+        )}
+      </span>
+      {aprobado > 0 && (
+        <>
+          <span className="text-app-border">·</span>
+          <span className="text-app-muted">
+            Aprobado: <span className="font-semibold text-green-600">{formatRD(aprobado)}</span>
+          </span>
+        </>
+      )}
+      {nBorradores > 0 && (
+        <>
+          <span className="text-app-border">·</span>
+          <span className="text-app-muted">
+            {nBorradores} {nBorradores === 1 ? 'borrador' : 'borradores'}
+          </span>
+        </>
+      )}
+      <span className="text-app-border">·</span>
+      <span className="text-app-muted">
+        {periods.length} {periods.length === 1 ? 'reporte' : 'reportes'}
+      </span>
+    </div>
+  )
+}
+
+const MAX_VISIBLE = 3
+
 export default function ReportesObra() {
   const navigate = useNavigate()
   const [periods, setPeriods] = useState<PayrollPeriod[]>([])
@@ -28,6 +74,15 @@ export default function ReportesObra() {
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
   const [selectedProjectId, setSelectedProjectId] = useState<string>('')
+  const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set())
+
+  function toggleExpand(projectId: string) {
+    setExpandedProjects((prev) => {
+      const next = new Set(prev)
+      next.has(projectId) ? next.delete(projectId) : next.add(projectId)
+      return next
+    })
+  }
 
   useEffect(() => {
     Promise.all([
@@ -77,53 +132,73 @@ export default function ReportesObra() {
         </div>
       ) : (
         <div className="space-y-6">
-          {grouped.map(({ project, periods: pp }) => (
-            <div key={project.id}>
-              <div className="flex items-center justify-between mb-2">
-                <div>
-                  <h2 className="text-sm font-semibold text-app-text">{project.name}</h2>
-                  <p className="text-xs text-app-subtle">{project.code}</p>
-                </div>
-                <button
-                  onClick={() => { setSelectedProjectId(project.id); setShowCreate(true) }}
-                  className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium"
-                >
-                  <Plus className="w-3.5 h-3.5" /> Nuevo reporte
-                </button>
-              </div>
-              <div className="space-y-2">
-                {pp.map((period) => (
-                  <Link
-                    key={period.id}
-                    to={`/nominas/${period.id}`}
-                    className="flex items-center justify-between bg-app-surface rounded-xl border border-app-border px-4 py-3 hover:border-blue-300 hover:shadow-sm transition-all"
+          {grouped.map(({ project, periods: pp }) => {
+            const isExpanded = expandedProjects.has(project.id)
+            const hasMore = pp.length > MAX_VISIBLE
+            const visible = isExpanded ? pp : pp.slice(0, MAX_VISIBLE)
+            const hidden = pp.length - MAX_VISIBLE
+
+            return (
+              <div key={project.id}>
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <h2 className="text-sm font-semibold text-app-text">{project.name}</h2>
+                    <p className="text-xs text-app-subtle">{project.code}</p>
+                  </div>
+                  <button
+                    onClick={() => { setSelectedProjectId(project.id); setShowCreate(true) }}
+                    className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium"
                   >
-                    <div className="flex items-center gap-4">
-                      <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-semibold text-sm">
-                        {period.period_number}
+                    <Plus className="w-3.5 h-3.5" /> Nuevo reporte
+                  </button>
+                </div>
+                <ProjectSummaryBar periods={pp} />
+                <div className="space-y-2">
+                  {visible.map((period) => (
+                    <Link
+                      key={period.id}
+                      to={`/nominas/${period.id}`}
+                      className="flex items-center justify-between bg-app-surface rounded-xl border border-app-border px-4 py-3 hover:border-blue-300 hover:shadow-sm transition-all"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-semibold text-sm">
+                          {period.period_number}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-app-text">Reporte No. {period.period_number}</p>
+                          <p className="text-xs text-app-muted flex items-center gap-1 mt-0.5">
+                            <Calendar className="w-3 h-3" />
+                            {new Date(period.report_date).toLocaleDateString('es-DO')}
+                            {period.reported_by && ` · ${period.reported_by}`}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm font-medium text-app-text">Reporte No. {period.period_number}</p>
-                        <p className="text-xs text-app-muted flex items-center gap-1 mt-0.5">
-                          <Calendar className="w-3 h-3" />
-                          {new Date(period.report_date).toLocaleDateString('es-DO')}
-                          {period.reported_by && ` · ${period.reported_by}`}
-                        </p>
+                      <div className="flex items-center gap-3">
+                        <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${STATUS_COLORS[period.status] ?? 'bg-app-chip text-app-muted'}`}>
+                          {STATUS_LABELS[period.status] ?? period.status}
+                        </span>
+                        <span className="text-sm font-semibold text-app-text hidden sm:inline">
+                          {formatRD(period.grand_total || 0)}
+                        </span>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${STATUS_COLORS[period.status] ?? 'bg-app-chip text-app-muted'}`}>
-                        {STATUS_LABELS[period.status] ?? period.status}
-                      </span>
-                      <span className="text-sm font-semibold text-app-text hidden sm:inline">
-                        {formatRD(period.grand_total || 0)}
-                      </span>
-                    </div>
-                  </Link>
-                ))}
+                    </Link>
+                  ))}
+                </div>
+                {hasMore && (
+                  <button
+                    onClick={() => toggleExpand(project.id)}
+                    className="mt-2 flex items-center gap-1.5 text-xs text-app-muted hover:text-app-text font-medium w-full justify-center py-1.5 rounded-lg hover:bg-app-hover transition-colors"
+                  >
+                    {isExpanded ? (
+                      <><ChevronUp className="w-3.5 h-3.5" /> Mostrar menos</>
+                    ) : (
+                      <><ChevronDown className="w-3.5 h-3.5" /> Ver {hidden} reporte{hidden !== 1 ? 's' : ''} más</>
+                    )}
+                  </button>
+                )}
               </div>
-            </div>
-          ))}
+            )
+          })}
 
           {emptyProjects.length > 0 && (
             <div>
