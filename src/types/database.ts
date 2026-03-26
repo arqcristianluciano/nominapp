@@ -82,7 +82,7 @@ export interface BudgetItem {
   notes: string | null
 }
 
-export type PriceListCategory = 'material' | 'labor' | 'equipment'
+export type PriceListCategory = 'material' | 'labor' | 'equipment' | 'adjustment'
 
 export interface PriceListItem {
   id: string

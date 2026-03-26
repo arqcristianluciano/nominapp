@@ -16,6 +16,7 @@ const CATEGORIES: { value: PriceListCategory; label: string; color: string }[] =
   { value: 'material', label: 'Material', color: 'bg-blue-100 text-blue-700' },
   { value: 'labor', label: 'Mano de obra', color: 'bg-green-100 text-green-700' },
   { value: 'equipment', label: 'Equipo', color: 'bg-amber-100 text-amber-700' },
+  { value: 'adjustment', label: 'Ajuste', color: 'bg-purple-100 text-purple-700' },
 ]
 
 const EMPTY_FORM = {
