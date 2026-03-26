@@ -4,6 +4,7 @@ import { ArrowLeft, Plus, Trash2, ChevronDown, ChevronRight, CheckCircle, Send, 
 import { usePayroll } from '@/hooks/usePayroll'
 import { contractorService } from '@/services/contractorService'
 import { supplierService } from '@/services/supplierService'
+import { priceListService } from '@/services/priceListService'
 import { Modal } from '@/components/ui/Modal'
 import { AddLaborItemForm } from '@/components/features/payroll/AddLaborItemForm'
 import { AddMaterialForm } from '@/components/features/payroll/AddMaterialForm'
@@ -11,13 +12,14 @@ import { PaymentDistributionsSection } from '@/components/features/payments/Paym
 import { LoanDeductionSection } from '@/components/features/payroll/LoanDeductionSection'
 import { formatRD, formatNumber } from '@/utils/currency'
 import { calcContractorSubtotal } from '@/utils/calculations'
-import type { Contractor, Supplier } from '@/types/database'
+import type { Contractor, Supplier, PriceListItem } from '@/types/database'
 
 export default function PayrollEditor() {
   const { periodId } = useParams<{ periodId: string }>()
   const payroll = usePayroll(periodId)
   const [contractors, setContractors] = useState<Contractor[]>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
+  const [laborTasks, setLaborTasks] = useState<PriceListItem[]>([])
   const [showAddLabor, setShowAddLabor] = useState(false)
   const [showAddMaterial, setShowAddMaterial] = useState(false)
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({})
@@ -27,6 +29,13 @@ export default function PayrollEditor() {
     contractorService.getAll().then(setContractors)
     supplierService.getAll().then(setSuppliers)
   }, [payroll.load])
+
+  useEffect(() => {
+    const projectId = payroll.period?.project_id
+    if (!projectId) return
+    priceListService.getByProject(projectId)
+      .then(items => setLaborTasks(items.filter(i => i.category === 'labor')))
+  }, [payroll.period?.project_id])
 
   const contractorGroups = useMemo(() => {
     const groups = new Map<string, { contractor: Contractor; items: typeof payroll.laborItems }>()
@@ -254,6 +263,7 @@ export default function PayrollEditor() {
       <Modal open={showAddLabor} onClose={() => setShowAddLabor(false)} title="Agregar partida de mano de obra" >
         <AddLaborItemForm
           contractors={contractors}
+          laborTasks={laborTasks}
           onSubmit={async (item) => { await payroll.addLaborItem(item); setShowAddLabor(false) }}
           onCancel={() => setShowAddLabor(false)}
           saving={payroll.saving}

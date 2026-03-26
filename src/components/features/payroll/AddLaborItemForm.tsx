@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { UserPlus, X } from 'lucide-react'
-import type { Contractor } from '@/types/database'
+import { UserPlus, X, AlertTriangle } from 'lucide-react'
+import type { Contractor, PriceListItem } from '@/types/database'
 import { MEASURE_UNITS } from '@/constants/measureUnits'
 import { contractorService } from '@/services/contractorService'
 
@@ -8,6 +8,7 @@ const NEW_CONTRACTOR_VALUE = '__NEW__'
 
 interface Props {
   contractors: Contractor[]
+  laborTasks: PriceListItem[]
   onSubmit: (item: {
     contractor_id: string
     description: string
@@ -22,9 +23,9 @@ interface Props {
   onContractorCreated?: (contractor: Contractor) => void
 }
 
-export function AddLaborItemForm({ contractors, onSubmit, onCancel, saving, onContractorCreated }: Props) {
+export function AddLaborItemForm({ contractors, laborTasks, onSubmit, onCancel, saving, onContractorCreated }: Props) {
   const [contractorId, setContractorId] = useState('')
-  const [description, setDescription] = useState('')
+  const [selectedTaskId, setSelectedTaskId] = useState('')
   const [quantity, setQuantity] = useState('')
   const [unit, setUnit] = useState('M2')
   const [unitPrice, setUnitPrice] = useState('')
@@ -36,6 +37,8 @@ export function AddLaborItemForm({ contractors, onSubmit, onCancel, saving, onCo
   const [newSpecialty, setNewSpecialty] = useState('')
   const [savingNew, setSavingNew] = useState(false)
 
+  const selectedTask = laborTasks.find(t => t.id === selectedTaskId)
+
   function handleSelectChange(value: string) {
     if (value === NEW_CONTRACTOR_VALUE) {
       setShowNewForm(true)
@@ -43,6 +46,15 @@ export function AddLaborItemForm({ contractors, onSubmit, onCancel, saving, onCo
     } else {
       setShowNewForm(false)
       setContractorId(value)
+    }
+  }
+
+  function handleTaskSelect(taskId: string) {
+    setSelectedTaskId(taskId)
+    const task = laborTasks.find(t => t.id === taskId)
+    if (task) {
+      setUnit(task.unit)
+      setUnitPrice(String(task.unit_price))
     }
   }
 
@@ -74,10 +86,10 @@ export function AddLaborItemForm({ contractors, onSubmit, onCancel, saving, onCo
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (showNewForm || !contractorId || !description || !quantity || !unitPrice) return
+    if (showNewForm || !contractorId || !selectedTask || !quantity || !unitPrice) return
     await onSubmit({
       contractor_id: contractorId,
-      description: description.toUpperCase(),
+      description: selectedTask.description.toUpperCase(),
       quantity: isDeduction ? -(Math.abs(parseFloat(quantity))) : parseFloat(quantity),
       unit,
       unit_price: parseFloat(unitPrice),
@@ -140,15 +152,30 @@ export function AddLaborItemForm({ contractors, onSubmit, onCancel, saving, onCo
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-app-muted mb-1">Descripción *</label>
-        <input
-          type="text"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Ej: ENVARILLADO DE LOSA NIVEL 2"
-          required
-          className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+        <label className="block text-xs font-medium text-app-muted mb-1">Tarea / Descripción *</label>
+        {laborTasks.length === 0 ? (
+          <div className="flex items-start gap-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-xs text-amber-700 dark:text-amber-400">
+            <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+            <span>
+              No hay tareas de mano de obra en la lista de precios de este proyecto.
+              Agrégalas desde <strong>Presupuesto → Lista de precios</strong>.
+            </span>
+          </div>
+        ) : (
+          <select
+            value={selectedTaskId}
+            onChange={(e) => handleTaskSelect(e.target.value)}
+            required
+            className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">Seleccionar tarea...</option>
+            {laborTasks.map(t => (
+              <option key={t.id} value={t.id}>
+                {t.code ? `[${t.code}] ` : ''}{t.description}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
 
       <div className="grid grid-cols-3 gap-3">
@@ -214,7 +241,7 @@ export function AddLaborItemForm({ contractors, onSubmit, onCancel, saving, onCo
         </button>
         <button
           type="submit"
-          disabled={saving || showNewForm || !contractorId || !description || !quantity || !unitPrice}
+          disabled={saving || showNewForm || !contractorId || !selectedTaskId || !quantity || !unitPrice}
           className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {saving ? 'Guardando...' : 'Agregar partida'}
