@@ -29,6 +29,7 @@ import PurchaseOrderDetail from '@/pages/PurchaseOrderDetail'
 import ContractorDetail from '@/pages/ContractorDetail'
 import ReportesObra from '@/pages/ReportesObra'
 import Loans from '@/pages/Loans'
+import InsumosPage from '@/pages/InsumosPage'
 
 export const router = createBrowserRouter([
   { path: '/login', element: <Login /> },
@@ -48,6 +49,7 @@ export const router = createBrowserRouter([
           { path: 'proyectos/:projectId/control', element: <ControlFinanciero /> },
           { path: 'proyectos/:projectId/presupuesto', element: <PresupuestoDetalle /> },
           { path: 'proyectos/:projectId/calidad', element: <QualityControlPage /> },
+          { path: 'proyectos/:projectId/insumos', element: <InsumosPage /> },
           { path: 'cubicaciones', element: <CubicacionesHub /> },
           { path: 'proyectos/:projectId/cubicaciones', element: <CubicacionesPage /> },
           { path: 'proyectos/:projectId/cubicaciones/:contratoId', element: <CubicacionContratoPage /> },

@@ -108,4 +108,7 @@ export const SEED_DATA: Record<string, any[]> = {
   ],
 
   loan_deductions: [],
+
+  mercado_budgets: [],
+  mercado_budget_lines: [],
 }

@@ -121,6 +121,11 @@ class MockQueryBuilder {
     return this
   }
 
+  maybeSingle() {
+    this._single = true
+    return this
+  }
+
   async then(resolve: (result: any) => void, reject?: (err: any) => void) {
     try {
       const result = this.execute()
@@ -219,10 +224,12 @@ class MockQueryBuilder {
       }
 
       case 'delete': {
+        let toDelete = [...table]
         for (const f of this._filters) {
-          const idx = table.findIndex((r) => r[f.field] === f.value)
-          if (idx >= 0) table.splice(idx, 1)
+          if (f.op === 'eq') toDelete = toDelete.filter((r) => r[f.field] === f.value)
         }
+        const deleteIds = new Set(toDelete.map((r) => r.id))
+        db[this._table] = table.filter((r) => !deleteIds.has(r.id))
         return { data: null, error: null }
       }
 

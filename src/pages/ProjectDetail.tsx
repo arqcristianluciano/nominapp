@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { Plus, ArrowLeft, Calendar, Landmark, BarChart3, Trash2, ClipboardCheck, Layers, Pencil } from 'lucide-react'
+import { Plus, ArrowLeft, Calendar, Landmark, BarChart3, Trash2, ClipboardCheck, Layers, Pencil, PackageSearch } from 'lucide-react'
 import { useProjectStore } from '@/stores/projectStore'
 import { usePayrollStore } from '@/stores/payrollStore'
 import { transactionService, type TransactionWithRelations } from '@/services/transactionService'
@@ -143,6 +143,17 @@ export default function ProjectDetail() {
             <div>
               <p className="text-sm font-medium text-app-text">Control de Calidad</p>
               <p className="text-xs text-app-muted">Ensayos de hormigón</p>
+            </div>
+          </div>
+        </Link>
+        <Link to={`/proyectos/${projectId}/insumos`} className="bg-app-surface rounded-xl border border-app-border p-4 hover:border-blue-300 hover:shadow-sm transition-all">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-green-50 text-green-600">
+              <PackageSearch className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-app-text">Listado de Insumos</p>
+              <p className="text-xs text-app-muted">Presupuesto Mercado · contratos de ajuste</p>
             </div>
           </div>
         </Link>

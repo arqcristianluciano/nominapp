@@ -31,6 +31,7 @@ src/
                        ChequesEfectivoView, FinancialIndicators
       cubicacion/   ← PartidaSection, CorteSection, AdelantoSection
       budget/       ← BudgetItemForm, BudgetPartidaRow, ExcelImportModal, PriceListPanel
+      insumos/      ← MercadoExcelUpload, CreateContractFromLineModal
       payments/     ← PaymentDistributionsSection
       quality/      ← QualityControlForm
     ui/             ← Modal
@@ -56,6 +57,7 @@ src/
 | `/proyectos/:id/control` | ControlFinanciero | ✅ Completo |
 | `/proyectos/:id/presupuesto` | PresupuestoDetalle | ✅ Completo |
 | `/proyectos/:id/calidad` | QualityControlPage | ✅ Completo |
+| `/proyectos/:id/insumos` | InsumosPage | ✅ Completo |
 | `/proyectos/:id/cubicaciones` | CubicacionesPage | ✅ Completo |
 | `/proyectos/:id/cubicaciones/:contratoId` | CubicacionContratoPage | ✅ Completo |
 | `/nominas/:id` | PayrollEditor | ✅ Completo |
@@ -94,6 +96,7 @@ src/
 | `budgetItemService` | CRUD de subpartidas (líneas de presupuesto) |
 | `priceListService` | CRUD de lista de precios por proyecto |
 | `requisitionService` | CRUD requisiciones, aprobación, colocar orden |
+| `mercadoBudgetService` | Presupuesto Mercado por proyecto + líneas + vínculo con contratos |
 | `quoteService` | CRUD cotizaciones e ítems por requisición |
 | `loanService` | CRUD préstamos a contratistas y deducciones por nómina |
 
@@ -107,7 +110,8 @@ src/
 `transactions`, `quality_control`,
 `adjustment_contracts`, `contract_partidas`, `contract_cortes`, `contract_adelantos`,
 `purchase_requisitions`, `purchase_quotes`, `purchase_quote_items`,
-`contractor_loans`, `loan_deductions`
+`contractor_loans`, `loan_deductions`,
+`mercado_budgets`, `mercado_budget_lines`
 
 ---
 
@@ -144,6 +148,11 @@ src/
   - En cada reporte de nómina: sección "Deducciones de préstamos" (solo préstamos activos con saldo)
   - El monto descontado se registra en `loan_deductions` y aparece en el reporte impreso
   - Los totales del reporte (costo del proyecto) no se alteran; la deducción es entre empresa y contratista
+- Listado de Insumos (Presupuesto Mercado): importación de Excel con 4 categorías (AJUSTES, EQUIPOS, MANO DE OBRA, MATERIALES)
+  - AJUSTES y MANO DE OBRA son cubicables → "Crear contrato" crea un AdjustmentContract + una ContractPartida pre-llenados
+  - El modal muestra desvío en tiempo real (acordado vs presupuestado)
+  - Cada línea guarda precio/cantidad presupuestado y acordado para control de desvío
+  - Tabla `mercado_budgets` (cabecera por proyecto) + `mercado_budget_lines` (filas del Excel)
 
 ---
 
