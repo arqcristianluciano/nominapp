@@ -20,6 +20,7 @@ import Suppliers from '@/pages/Suppliers'
 import Settings from '@/pages/Settings'
 import QualityControlPage from '@/pages/QualityControlPage'
 import CubicacionesPage from '@/pages/CubicacionesPage'
+import CubicacionesHub from '@/pages/CubicacionesHub'
 import CubicacionContratoPage from '@/pages/CubicacionContratoPage'
 import CubicacionImprimirPage from '@/pages/CubicacionImprimirPage'
 import PayrollPrint from '@/pages/PayrollPrint'
@@ -47,6 +48,7 @@ export const router = createBrowserRouter([
           { path: 'proyectos/:projectId/control', element: <ControlFinanciero /> },
           { path: 'proyectos/:projectId/presupuesto', element: <PresupuestoDetalle /> },
           { path: 'proyectos/:projectId/calidad', element: <QualityControlPage /> },
+          { path: 'cubicaciones', element: <CubicacionesHub /> },
           { path: 'proyectos/:projectId/cubicaciones', element: <CubicacionesPage /> },
           { path: 'proyectos/:projectId/cubicaciones/:contratoId', element: <CubicacionContratoPage /> },
           { path: 'proyectos/:projectId/cubicaciones/:contratoId/imprimir', element: <CubicacionImprimirPage /> },

@@ -47,7 +47,7 @@ const NAV_SECTIONS: NavSection[] = [
       { to: '/finanzas', icon: Landmark, label: 'Control Financiero' },
       { to: '/presupuesto', icon: BarChart3, label: 'Presupuesto' },
       { to: '/cxp', icon: CreditCard, label: 'Cuentas por Pagar' },
-      { to: '/proyectos', icon: Layers, label: 'Cubicaciones', badgeKey: 'cortes' as const },
+      { to: '/cubicaciones', icon: Layers, label: 'Cubicaciones', badgeKey: 'cortes' as const },
     ],
   },
   {
