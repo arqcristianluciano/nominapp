@@ -42,7 +42,7 @@ export function CubicacionForm({ initial, contractors, saving, onSubmit, onCance
     })
   }
 
-  const inputClass = 'w-full px-3 py-2 border border-app-border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+  const inputClass = 'w-full px-3 py-2 border border-app-border rounded-lg text-sm bg-app-input-bg text-app-text focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
   const labelClass = 'text-xs font-medium text-app-muted mb-1 block'
 
   return (

@@ -44,9 +44,9 @@ const STATUS_LABEL: Record<string, string> = {
 }
 const STATUS_COLOR: Record<string, string> = {
   draft: 'bg-app-chip text-app-muted',
-  submitted: 'bg-yellow-100 text-yellow-700',
-  approved: 'bg-blue-100 text-blue-700',
-  paid: 'bg-green-100 text-green-700',
+  submitted: 'bg-yellow-100 dark:bg-yellow-950/50 text-yellow-700 dark:text-yellow-400',
+  approved: 'bg-blue-100 dark:bg-blue-950/50 text-blue-700 dark:text-blue-400',
+  paid: 'bg-green-100 dark:bg-green-950/50 text-green-700 dark:text-green-400',
 }
 const METHOD_LABEL: Record<string, string> = { cash: 'Efectivo', check: 'Cheque', transfer: 'Transferencia' }
 
@@ -288,16 +288,16 @@ export default function ContractorDetail() {
 }
 
 function KpiCard({ label, value, color }: { label: string; value: string | number; color: string }) {
-  const colors: Record<string, string> = {
-    emerald: 'bg-emerald-50 text-emerald-700',
-    blue: 'bg-blue-50 text-blue-700',
-    purple: 'bg-purple-50 text-purple-700',
-    amber: 'bg-amber-50 text-amber-700',
+  const colors: Record<string, { bg: string; text: string }> = {
+    emerald: { bg: 'bg-emerald-50 dark:bg-emerald-950/40', text: 'text-emerald-700 dark:text-emerald-400' },
+    blue:    { bg: 'bg-blue-50 dark:bg-blue-950/40',       text: 'text-blue-700 dark:text-blue-400' },
+    purple:  { bg: 'bg-purple-50 dark:bg-purple-950/40',   text: 'text-purple-700 dark:text-purple-400' },
+    amber:   { bg: 'bg-amber-50 dark:bg-amber-950/40',     text: 'text-amber-700 dark:text-amber-400' },
   }
   return (
-    <div className={`rounded-xl border border-app-border p-4 ${colors[color].split(' ')[0]} bg-opacity-40`}>
+    <div className={`rounded-xl border border-app-border p-4 ${colors[color].bg}`}>
       <p className="text-xs text-app-muted mb-1">{label}</p>
-      <p className={`text-lg font-bold ${colors[color].split(' ')[1]}`}>{value}</p>
+      <p className={`text-lg font-bold ${colors[color].text}`}>{value}</p>
     </div>
   )
 }

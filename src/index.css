@@ -3,16 +3,16 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --app-bg: #f9fafb;
+  --app-bg: #f1f5f9;
   --app-surface: #ffffff;
-  --app-border: #e5e7eb;
-  --app-text: #111827;
-  --app-muted: #4b5563;
-  --app-subtle: #9ca3af;
-  --app-hover: #f3f4f6;
-  --app-hover-strong: #e5e7eb;
-  --app-chip: #f3f4f6;
-  --app-input-bg: #f9fafb;
+  --app-border: #cbd5e1;
+  --app-text: #0f172a;
+  --app-muted: #374151;
+  --app-subtle: #6b7280;
+  --app-hover: #e2e8f0;
+  --app-hover-strong: #cbd5e1;
+  --app-chip: #e2e8f0;
+  --app-input-bg: #f8fafc;
 }
 
 html.dark {
@@ -52,6 +52,27 @@ html.dark {
   body {
     background-color: var(--app-bg);
     color: var(--app-text);
+  }
+
+  :root {
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  select {
+    color-scheme: light;
+  }
+
+  select option {
+    background-color: var(--app-input-bg);
+    color: var(--app-text);
+  }
+
+  html.dark select {
+    color-scheme: dark;
   }
 }
 
