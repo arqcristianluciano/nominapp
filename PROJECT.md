@@ -28,7 +28,8 @@ src/
       projects/     ← ProjectForm
       loans/        ← LoanForm
       control/      ← TransactionInlineForm, TransactionRow, CxPView, CxPProjectFilterBar,
-                       ChequesEfectivoView, FinancialIndicators, CubicacionForm
+                       ChequesEfectivoView, FinancialIndicators
+      cubicacion/   ← PartidaSection, CorteSection, AdelantoSection
       budget/       ← BudgetItemForm, BudgetPartidaRow, ExcelImportModal, PriceListPanel
       payments/     ← PaymentDistributionsSection
       quality/      ← QualityControlForm
@@ -56,6 +57,7 @@ src/
 | `/proyectos/:id/presupuesto` | PresupuestoDetalle | ✅ Completo |
 | `/proyectos/:id/calidad` | QualityControlPage | ✅ Completo |
 | `/proyectos/:id/cubicaciones` | CubicacionesPage | ✅ Completo |
+| `/proyectos/:id/cubicaciones/:contratoId` | CubicacionContratoPage | ✅ Completo |
 | `/nominas/:id` | PayrollEditor | ✅ Completo |
 | `/nominas/:id/imprimir` | PayrollPrint | ✅ Completo |
 | `/finanzas` | FinanzasHub | ✅ Completo |
@@ -87,7 +89,7 @@ src/
 | `bankAccountService` | Cuentas bancarias |
 | `dashboardService` | KPIs y actividad reciente |
 | `qualityControlService` | Ensayos de resistencia de hormigón |
-| `cubicationService` | Cubicaciones por contratista |
+| `cubicationService` | Contratos de ajuste, partidas, cortes (con retención y estado), adelantos |
 | `paymentDistributionService` | Distribución de pagos por nómina |
 | `budgetItemService` | CRUD de subpartidas (líneas de presupuesto) |
 | `priceListService` | CRUD de lista de precios por proyecto |
@@ -102,7 +104,8 @@ src/
 `companies`, `projects`, `contractors`, `suppliers`, `bank_accounts`,
 `budget_categories`, `budget_items`, `price_list_items`, `payroll_periods`, `labor_line_items`,
 `material_invoices`, `indirect_costs`, `payment_distributions`,
-`transactions`, `quality_control`, `contract_cubications`,
+`transactions`, `quality_control`,
+`adjustment_contracts`, `contract_partidas`, `contract_cortes`, `contract_adelantos`,
 `purchase_requisitions`, `purchase_quotes`, `purchase_quote_items`,
 `contractor_loans`, `loan_deductions`
 
@@ -120,7 +123,7 @@ src/
 - Control Financiero por proyecto: libro diario, CxP, cheques
 - Presupuesto vs Real con edición inline
 - Control de Calidad: ensayos de resistencia con estados
-- Cubicaciones: contrato + avance por contratista
+- Cubicaciones (v2): contratos de ajuste con partidas (unidad × precio), cortes (mediciones con retención, estado borrador→aprobado→pagado), adelantos, y panel Acordado/Acumulado/Pendiente/Retenido
 - CxP: hub por proyecto (como Presupuesto), detalle por obra; consolidado opcional en `/cxp/consolidado`
 - Reportes financieros consolidados
 - Configuración: cuentas bancarias, condiciones de pago

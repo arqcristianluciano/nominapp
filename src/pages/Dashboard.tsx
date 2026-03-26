@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Building2, DollarSign, CreditCard, ClipboardList, Plus, ArrowRight, Landmark, BarChart3, FileText } from 'lucide-react'
+import { Building2, DollarSign, CreditCard, ClipboardList, ArrowRight, Landmark, BarChart3, FileText, Scissors } from 'lucide-react'
 import { useProjectStore } from '@/stores/projectStore'
 import { dashboardService } from '@/services/dashboardService'
-import { supabase } from '@/lib/supabase'
+import { getProjectsProgress, corteService } from '@/services/cubicationService'
 import { formatRD } from '@/utils/currency'
-import type { Project } from '@/types/database'
+import type { Project, ContractCorte, AdjustmentContract } from '@/types/database'
 
 interface Activity {
   id: string
@@ -19,10 +19,12 @@ interface Activity {
 interface ProjectProgress {
   project_id: string
   avg_completion: number
-  total_contracted: number
-  total_advanced: number
+  acordado: number
+  acumulado: number
   contractor_count: number
 }
+
+type PendingCorteItem = ContractCorte & { contract?: AdjustmentContract }
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -32,6 +34,7 @@ export default function Dashboard() {
   const [cxpTotal, setCxpTotal] = useState(0)
   const [activities, setActivities] = useState<Activity[]>([])
   const [progressMap, setProgressMap] = useState<Record<string, ProjectProgress>>({})
+  const [pendingCortes, setPendingCortes] = useState<PendingCorteItem[]>([])
 
   useEffect(() => {
     fetchProjects()
@@ -42,32 +45,17 @@ export default function Dashboard() {
     }).catch(() => {})
     dashboardService.getRecentActivity().then(setActivities).catch(() => {})
     loadProgress()
+    corteService.getPendingApproved().then(setPendingCortes).catch(() => {})
   }, [fetchProjects])
 
   async function loadProgress() {
     try {
-      const { data } = await supabase
-        .from('contract_cubications')
-        .select('project_id, adjusted_budget, total_advanced, completion_percent')
-      if (!data) return
-
-      const grouped: Record<string, ProjectProgress> = {}
-      for (const row of data as any[]) {
-        if (!grouped[row.project_id]) {
-          grouped[row.project_id] = { project_id: row.project_id, avg_completion: 0, total_contracted: 0, total_advanced: 0, contractor_count: 0 }
-        }
-        grouped[row.project_id].total_contracted += row.adjusted_budget || 0
-        grouped[row.project_id].total_advanced += row.total_advanced || 0
-        grouped[row.project_id].contractor_count += 1
+      const data = await getProjectsProgress()
+      const mapped: Record<string, ProjectProgress> = {}
+      for (const [pid, g] of Object.entries(data)) {
+        mapped[pid] = { project_id: pid, avg_completion: g.avg_completion, acordado: g.acordado, acumulado: g.acumulado, contractor_count: g.contractor_count }
       }
-
-      for (const key of Object.keys(grouped)) {
-        const g = grouped[key]
-        g.avg_completion = g.total_contracted > 0
-          ? Math.min((g.total_advanced / g.total_contracted) * 100, 100)
-          : 0
-      }
-      setProgressMap(grouped)
+      setProgressMap(mapped)
     } catch {}
   }
 
@@ -131,6 +119,37 @@ export default function Dashboard() {
           )}
         </div>
 
+        {/* Cortes pendientes de pago */}
+        <div className="space-y-4">
+          {pendingCortes.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-lg font-medium text-app-text flex items-center gap-2">
+                  <Scissors className="w-4 h-4 text-amber-500" />
+                  Cortes por pagar
+                  <span className="text-[10px] font-bold bg-amber-500 text-white rounded-full px-1.5 py-0.5">{pendingCortes.length}</span>
+                </h2>
+              </div>
+              <div className="bg-app-surface rounded-xl border border-amber-200 dark:border-amber-800 overflow-hidden">
+                <div className="divide-y divide-app-border">
+                  {pendingCortes.slice(0, 5).map((c) => {
+                    const contract = c.contract as any
+                    return (
+                      <Link key={c.id} to={`/proyectos/${contract?.project_id}/cubicaciones/${c.contract_id}`}
+                        className="flex items-center justify-between px-4 py-3 hover:bg-app-hover">
+                        <div className="min-w-0">
+                          <p className="text-xs font-medium text-app-text">Corte #{c.cut_number} — {contract?.contractor?.name}</p>
+                          <p className="text-[10px] text-app-muted">{new Date(c.cut_date).toLocaleDateString('es-DO')}</p>
+                        </div>
+                        <span className="text-xs font-semibold text-amber-700 shrink-0 ml-2">{formatRD(c.amount - c.retention_amount)}</span>
+                      </Link>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
         {/* Recent Activity */}
         <div>
           <h2 className="text-lg font-medium text-app-text mb-3">Actividad reciente</h2>
@@ -162,6 +181,7 @@ export default function Dashboard() {
               </div>
             )}
           </div>
+        </div>
         </div>
       </div>
 
@@ -210,7 +230,7 @@ function ProjectCard({ project, progress }: { project: Project; progress?: Proje
             <span className="px-2 py-0.5 text-xs font-medium bg-green-50 text-green-700 rounded-full">Activo</span>
           )}
           {progress && (
-            <p className="text-[10px] text-app-subtle mt-0.5">{progress.contractor_count} contratos</p>
+            <p className="text-[10px] text-app-subtle mt-0.5">{progress.contractor_count} {progress.contractor_count === 1 ? 'contrato' : 'contratos'}</p>
           )}
         </div>
       </div>

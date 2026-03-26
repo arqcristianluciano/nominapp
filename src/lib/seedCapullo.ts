@@ -145,11 +145,40 @@ export const capulloSeed = {
     { id: 'pl18', project_id: P1, category: 'equipment', code: 'EQU-002', description: 'Alquiler andamios (mes)',                 unit: 'Mes',  unit_price: 35000 },
   ],
 
-  contract_cubications: [
-    { id: 'cu01', project_id: P1, contractor_id: ct1, specialty: 'ESTRUCTURA DE HORMIGÓN ARMADO',        original_budget: 1200000, adjusted_budget: 1250000, total_advanced: 750000, remaining: 500000,  completion_percent: 60, contractor: ctRef(ct1, 'Lucio Almonte',  'Maestro constructor') },
-    { id: 'cu02', project_id: P1, contractor_id: ct2, specialty: 'PLOMERÍA E INSTALACIONES SANITARIAS',  original_budget: 350000,  adjusted_budget: 350000,  total_advanced: 140000, remaining: 210000,  completion_percent: 40, contractor: ctRef(ct2, 'Lenin Marte',   'Plomería e instalaciones') },
-    { id: 'cu03', project_id: P1, contractor_id: ct3, specialty: 'INSTALACIÓN ELÉCTRICA COMPLETA',       original_budget: 280000,  adjusted_budget: 310000,  total_advanced: 93000,  remaining: 217000,  completion_percent: 30, contractor: ctRef(ct3, 'Rafael Sánchez', 'Electricidad') },
-    { id: 'cu04', project_id: P1, contractor_id: ct4, specialty: 'EBANISTERÍA Y PUERTAS',                original_budget: 420000,  adjusted_budget: 420000,  total_advanced: 0,      remaining: 420000,  completion_percent: 0,  contractor: ctRef(ct4, 'Joan Pimentel',  'Ebanistería y carpintería') },
+  adjustment_contracts: [
+    { id: 'ac01', project_id: P1, contractor_id: ct1, signed_date: '2026-01-20', retention_percent: 5, notes: 'Incluye mano de obra de muros, losa y estructura', created_at: '2026-01-20T10:00:00Z', contractor: ctRef(ct1, 'Lucio Almonte', 'Maestro constructor') },
+    { id: 'ac02', project_id: P1, contractor_id: ct2, signed_date: '2026-01-22', retention_percent: 5, notes: null, created_at: '2026-01-22T10:00:00Z', contractor: ctRef(ct2, 'Lenin Marte', 'Plomería e instalaciones') },
+    { id: 'ac03', project_id: P1, contractor_id: ct3, signed_date: '2026-01-25', retention_percent: 5, notes: 'Precio ajustado en Feb por alcance adicional de tableros', created_at: '2026-01-25T10:00:00Z', contractor: ctRef(ct3, 'Rafael Sánchez', 'Electricidad') },
+    { id: 'ac04', project_id: P1, contractor_id: ct4, signed_date: '2026-02-15', retention_percent: 5, notes: null, created_at: '2026-02-15T10:00:00Z', contractor: ctRef(ct4, 'Joan Pimentel', 'Ebanistería y carpintería') },
+  ],
+
+  contract_partidas: [
+    { id: 'cp01', contract_id: 'ac01', description: 'MUROS DE MAMPOSTERÍA',  unit: 'm²',  unit_price: 350,   agreed_quantity: 600,  sort_order: 1 },
+    { id: 'cp02', contract_id: 'ac01', description: 'LOSA PLANA H.A.',       unit: 'm²',  unit_price: 1200,  agreed_quantity: 120,  sort_order: 2 },
+    { id: 'cp03', contract_id: 'ac01', description: 'COLUMNAS Y VIGAS H.A.',unit: 'm³',  unit_price: 8500,  agreed_quantity: 45,   sort_order: 3 },
+    { id: 'cp04', contract_id: 'ac02', description: 'TUBERÍA PVC SANITARIA', unit: 'ml',  unit_price: 850,   agreed_quantity: 200,  sort_order: 1 },
+    { id: 'cp05', contract_id: 'ac02', description: 'PUNTOS AGUA POTABLE',   unit: 'und', unit_price: 4500,  agreed_quantity: 24,   sort_order: 2 },
+    { id: 'cp06', contract_id: 'ac03', description: 'CABLEADO ELÉCTRICO',    unit: 'ml',  unit_price: 85,    agreed_quantity: 2500, sort_order: 1 },
+    { id: 'cp07', contract_id: 'ac03', description: 'TABLEROS Y PANELES',    unit: 'und', unit_price: 8500,  agreed_quantity: 4,    sort_order: 2 },
+    { id: 'cp08', contract_id: 'ac04', description: 'PUERTAS MADERA SÓLIDA', unit: 'und', unit_price: 18000, agreed_quantity: 12,   sort_order: 1 },
+    { id: 'cp09', contract_id: 'ac04', description: 'CLOSETS EMPOTRADOS',    unit: 'm²',  unit_price: 8500,  agreed_quantity: 24,   sort_order: 2 },
+  ],
+
+  contract_cortes: [
+    { id: 'cc01', contract_id: 'ac01', partida_id: 'cp01', cut_number: 1, cut_date: '2026-02-01', measured_quantity: 180, amount: 63000,  retention_amount: 3150, status: 'paid',     notes: 'Muros planta baja completos', photo_url: null,                                      approved_by: 'Roberto Peña', signature_data: 'data:image/png;base64,demo', linked_payroll_id: 'pp000000-0000-0000-0000-000000000001', created_at: '2026-02-01T10:00:00Z' },
+    { id: 'cc02', contract_id: 'ac01', partida_id: 'cp03', cut_number: 2, cut_date: '2026-02-01', measured_quantity: 12,  amount: 102000, retention_amount: 5100, status: 'paid',     notes: 'Columnas nivel 1',            photo_url: null,                                      approved_by: 'Roberto Peña', signature_data: 'data:image/png;base64,demo', linked_payroll_id: 'pp000000-0000-0000-0000-000000000001', created_at: '2026-02-01T10:00:00Z' },
+    { id: 'cc03', contract_id: 'ac01', partida_id: 'cp01', cut_number: 3, cut_date: '2026-02-15', measured_quantity: 120, amount: 42000,  retention_amount: 2100, status: 'approved', notes: 'Muros nivel 2',              photo_url: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800', approved_by: 'Mariela Rodríguez', signature_data: 'data:image/png;base64,demo', linked_payroll_id: null, created_at: '2026-02-15T10:00:00Z' },
+    { id: 'cc04', contract_id: 'ac01', partida_id: 'cp02', cut_number: 4, cut_date: '2026-02-15', measured_quantity: 60,  amount: 72000,  retention_amount: 3600, status: 'approved', notes: 'Losa nivel 1',               photo_url: null,                                      approved_by: 'Mariela Rodríguez', signature_data: 'data:image/png;base64,demo', linked_payroll_id: null, created_at: '2026-02-15T10:00:00Z' },
+    { id: 'cc05', contract_id: 'ac01', partida_id: 'cp01', cut_number: 5, cut_date: '2026-03-01', measured_quantity: 80,  amount: 28000,  retention_amount: 1400, status: 'draft',    notes: null,                         photo_url: null, approved_by: null, signature_data: null, linked_payroll_id: null, created_at: '2026-03-01T10:00:00Z' },
+    { id: 'cc06', contract_id: 'ac02', partida_id: 'cp04', cut_number: 1, cut_date: '2026-02-05', measured_quantity: 80,  amount: 68000,  retention_amount: 3400, status: 'paid',     notes: 'Tubería sanitaria PB',       photo_url: null,                                      approved_by: 'Roberto Peña', signature_data: 'data:image/png;base64,demo', linked_payroll_id: 'pp000000-0000-0000-0000-000000000001', created_at: '2026-02-05T10:00:00Z' },
+    { id: 'cc07', contract_id: 'ac02', partida_id: 'cp05', cut_number: 2, cut_date: '2026-02-20', measured_quantity: 12,  amount: 54000,  retention_amount: 2700, status: 'approved', notes: 'Puntos agua potable PB',     photo_url: null,                                      approved_by: 'Mariela Rodríguez', signature_data: 'data:image/png;base64,demo', linked_payroll_id: null, created_at: '2026-02-20T10:00:00Z' },
+    { id: 'cc08', contract_id: 'ac03', partida_id: 'cp06', cut_number: 1, cut_date: '2026-02-01', measured_quantity: 800, amount: 68000,  retention_amount: 3400, status: 'paid',     notes: 'Cableado planta baja',       photo_url: null,                                      approved_by: 'Roberto Peña', signature_data: 'data:image/png;base64,demo', linked_payroll_id: 'pp000000-0000-0000-0000-000000000001', created_at: '2026-02-01T10:00:00Z' },
+    { id: 'cc09', contract_id: 'ac03', partida_id: 'cp06', cut_number: 2, cut_date: '2026-03-01', measured_quantity: 600, amount: 51000,  retention_amount: 2550, status: 'draft',    notes: null,                         photo_url: null, approved_by: null, signature_data: null, linked_payroll_id: null, created_at: '2026-03-01T10:00:00Z' },
+  ],
+
+  contract_adelantos: [
+    { id: 'ca01', contract_id: 'ac01', advance_date: '2026-02-10', amount: 30000, description: 'Adelanto para compra de materiales', created_at: '2026-02-10T10:00:00Z' },
+    { id: 'ca02', contract_id: 'ac02', advance_date: '2026-02-08', amount: 20000, description: 'Adelanto gastos plomería', created_at: '2026-02-08T10:00:00Z' },
   ],
 
   purchase_requisitions: [

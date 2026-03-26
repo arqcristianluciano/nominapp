@@ -207,17 +207,57 @@ export interface QualityControl {
   notes: string | null
 }
 
-export interface ContractCubication {
+// --- Módulo de Cubicación (rediseño v2) ---
+
+export interface AdjustmentContract {
   id: string
   project_id: string
   contractor_id: string
-  specialty: string
-  original_budget: number | null
-  adjusted_budget: number | null
-  total_advanced: number
-  remaining: number
-  completion_percent: number
+  signed_date: string | null
+  retention_percent: number
+  notes: string | null
+  created_at: string
   contractor?: Contractor
+}
+
+export interface ContractPartida {
+  id: string
+  contract_id: string
+  description: string
+  unit: string
+  unit_price: number
+  agreed_quantity: number
+  sort_order: number
+}
+
+export type CorteStatus = 'draft' | 'approved' | 'paid'
+
+export interface ContractCorte {
+  id: string
+  contract_id: string
+  partida_id: string
+  cut_number: number
+  cut_date: string
+  measured_quantity: number
+  amount: number
+  retention_amount: number
+  status: CorteStatus
+  notes: string | null
+  photo_url: string | null
+  approved_by: string | null
+  signature_data: string | null
+  linked_payroll_id: string | null
+  created_at: string
+  partida?: ContractPartida
+}
+
+export interface ContractAdelanto {
+  id: string
+  contract_id: string
+  advance_date: string
+  amount: number
+  description: string | null
+  created_at: string
 }
 
 export type LoanStatus = 'active' | 'paid' | 'cancelled'
@@ -264,7 +304,10 @@ export interface Database {
       payment_distributions: { Row: PaymentDistribution; Insert: Omit<PaymentDistribution, 'id'>; Update: Partial<PaymentDistribution> }
       transactions: { Row: Transaction; Insert: Omit<Transaction, 'id' | 'created_at'>; Update: Partial<Transaction> }
       quality_control: { Row: QualityControl; Insert: Omit<QualityControl, 'id' | 'status'>; Update: Partial<QualityControl> }
-      contract_cubications: { Row: ContractCubication; Insert: Omit<ContractCubication, 'id' | 'remaining' | 'completion_percent'>; Update: Partial<ContractCubication> }
+      adjustment_contracts: { Row: AdjustmentContract; Insert: Omit<AdjustmentContract, 'id' | 'created_at'>; Update: Partial<AdjustmentContract> }
+      contract_partidas: { Row: ContractPartida; Insert: Omit<ContractPartida, 'id'>; Update: Partial<ContractPartida> }
+      contract_cortes: { Row: ContractCorte; Insert: Omit<ContractCorte, 'id' | 'created_at'>; Update: Partial<ContractCorte> }
+      contract_adelantos: { Row: ContractAdelanto; Insert: Omit<ContractAdelanto, 'id' | 'created_at'>; Update: Partial<ContractAdelanto> }
     }
   }
 }

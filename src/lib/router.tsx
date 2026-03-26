@@ -20,6 +20,8 @@ import Suppliers from '@/pages/Suppliers'
 import Settings from '@/pages/Settings'
 import QualityControlPage from '@/pages/QualityControlPage'
 import CubicacionesPage from '@/pages/CubicacionesPage'
+import CubicacionContratoPage from '@/pages/CubicacionContratoPage'
+import CubicacionImprimirPage from '@/pages/CubicacionImprimirPage'
 import PayrollPrint from '@/pages/PayrollPrint'
 import PurchaseOrders from '@/pages/PurchaseOrders'
 import PurchaseOrderDetail from '@/pages/PurchaseOrderDetail'
@@ -46,6 +48,8 @@ export const router = createBrowserRouter([
           { path: 'proyectos/:projectId/presupuesto', element: <PresupuestoDetalle /> },
           { path: 'proyectos/:projectId/calidad', element: <QualityControlPage /> },
           { path: 'proyectos/:projectId/cubicaciones', element: <CubicacionesPage /> },
+          { path: 'proyectos/:projectId/cubicaciones/:contratoId', element: <CubicacionContratoPage /> },
+          { path: 'proyectos/:projectId/cubicaciones/:contratoId/imprimir', element: <CubicacionImprimirPage /> },
           { path: 'nominas', element: <ReportesObra /> },
           { path: 'nominas/:periodId', element: <PayrollEditor /> },
           { path: 'finanzas', element: <FinanzasHub /> },

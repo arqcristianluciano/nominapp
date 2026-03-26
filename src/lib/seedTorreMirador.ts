@@ -114,11 +114,36 @@ export const torreMiradorSeed = {
     { id: 't2pl04', project_id: P2, category: 'equipment', code: 'TME-E001', description: 'Grúa torre — mes', unit: 'Mes', unit_price: 185000 },
   ],
 
-  contract_cubications: [
-    { id: 't2cu01', project_id: P2, contractor_id: ct('1'), specialty: 'ESTRUCTURA HORMIGÓN TORRE', original_budget: 8900000, adjusted_budget: 9200000, total_advanced: 4100000, remaining: 5100000, completion_percent: 45, contractor: { id: ct('1'), name: 'Lucio Almonte', specialty: 'Maestro constructor' } },
-    { id: 't2cu02', project_id: P2, contractor_id: ct('2'), specialty: 'PLOMERÍA Y FIRE FIGHTING', original_budget: 1650000, adjusted_budget: 1680000, total_advanced: 520000, remaining: 1160000, completion_percent: 31, contractor: { id: ct('2'), name: 'Lenin Marte', specialty: 'Plomería e instalaciones' } },
-    { id: 't2cu03', project_id: P2, contractor_id: ct('3'), specialty: 'ELECTRICIDAD Y DATOS', original_budget: 1980000, adjusted_budget: 2050000, total_advanced: 380000, remaining: 1670000, completion_percent: 22, contractor: { id: ct('3'), name: 'Rafael Sánchez', specialty: 'Electricidad' } },
-    { id: 't2cu04', project_id: P2, contractor_id: ct('4'), specialty: 'CARPINTERÍA ALUMINIO Y FACHADA', original_budget: 3200000, adjusted_budget: 3350000, total_advanced: 185000, remaining: 3165000, completion_percent: 8, contractor: { id: ct('4'), name: 'Joan Pimentel', specialty: 'Ebanistería y carpintería' } },
+  adjustment_contracts: [
+    { id: 'ac05', project_id: P2, contractor_id: ct('1'), signed_date: '2026-02-05', retention_percent: 8, notes: 'Contrato estructural torre 12 niveles', created_at: '2026-02-05T10:00:00Z', contractor: { id: ct('1'), name: 'Lucio Almonte', specialty: 'Maestro constructor' } },
+    { id: 'ac06', project_id: P2, contractor_id: ct('2'), signed_date: '2026-02-05', retention_percent: 8, notes: null, created_at: '2026-02-05T10:00:00Z', contractor: { id: ct('2'), name: 'Lenin Marte', specialty: 'Plomería e instalaciones' } },
+    { id: 'ac07', project_id: P2, contractor_id: ct('3'), signed_date: '2026-02-08', retention_percent: 8, notes: null, created_at: '2026-02-08T10:00:00Z', contractor: { id: ct('3'), name: 'Rafael Sánchez', specialty: 'Electricidad' } },
+    { id: 'ac08', project_id: P2, contractor_id: ct('4'), signed_date: '2026-02-10', retention_percent: 8, notes: 'Incluye fachada aluminio y vidrio', created_at: '2026-02-10T10:00:00Z', contractor: { id: ct('4'), name: 'Joan Pimentel', specialty: 'Ebanistería y carpintería' } },
+  ],
+
+  contract_partidas: [
+    { id: 't2cp01', contract_id: 'ac05', description: 'ESTRUCTURA H.A. TORRE',            unit: 'm³',  unit_price: 9500,    agreed_quantity: 350, sort_order: 1 },
+    { id: 't2cp02', contract_id: 'ac05', description: 'LOSAS ENTREPISO',                  unit: 'm²',  unit_price: 1400,    agreed_quantity: 820, sort_order: 2 },
+    { id: 't2cp03', contract_id: 'ac06', description: 'SISTEMA PLOMERÍA VERTICAL',        unit: 'PA',  unit_price: 1250000, agreed_quantity: 1,   sort_order: 1 },
+    { id: 't2cp04', contract_id: 'ac06', description: 'SISTEMA FIRE FIGHTING',            unit: 'PA',  unit_price: 430000,  agreed_quantity: 1,   sort_order: 2 },
+    { id: 't2cp05', contract_id: 'ac07', description: 'INSTALACIÓN ELÉCTRICA TORRE',      unit: 'PA',  unit_price: 1980000, agreed_quantity: 1,   sort_order: 1 },
+    { id: 't2cp06', contract_id: 'ac07', description: 'SISTEMA DE DATOS Y COMUNICACIONES',unit: 'PA',  unit_price: 420000,  agreed_quantity: 1,   sort_order: 2 },
+    { id: 't2cp07', contract_id: 'ac08', description: 'FACHADA ALUMINIO Y VIDRIO',        unit: 'm²',  unit_price: 8500,    agreed_quantity: 380, sort_order: 1 },
+    { id: 't2cp08', contract_id: 'ac08', description: 'CARPINTERÍA INTERIOR MADERA',      unit: 'und', unit_price: 22000,   agreed_quantity: 48,  sort_order: 2 },
+  ],
+
+  contract_cortes: [
+    { id: 't2cc01', contract_id: 'ac05', partida_id: 't2cp01', cut_number: 1, cut_date: '2026-02-20', measured_quantity: 80,  amount: 760000,  retention_amount: 60800, status: 'paid',     notes: 'Estructura sótano y PB',      photo_url: null, approved_by: 'Roberto Peña', signature_data: 'data:image/png;base64,demo', linked_payroll_id: 'pp000000-0000-0000-0000-000000000004', created_at: '2026-02-20T10:00:00Z' },
+    { id: 't2cc02', contract_id: 'ac05', partida_id: 't2cp01', cut_number: 2, cut_date: '2026-03-10', measured_quantity: 65,  amount: 617500,  retention_amount: 49400, status: 'approved', notes: 'Estructura niveles 1-2',      photo_url: 'https://images.unsplash.com/photo-1590844947391-2a44561cfc7b?w=800', approved_by: 'Ana Torres', signature_data: 'data:image/png;base64,demo', linked_payroll_id: null, created_at: '2026-03-10T10:00:00Z' },
+    { id: 't2cc03', contract_id: 'ac05', partida_id: 't2cp02', cut_number: 3, cut_date: '2026-03-10', measured_quantity: 200, amount: 280000,  retention_amount: 22400, status: 'approved', notes: 'Losas PB y nivel 1',          photo_url: null, approved_by: 'Ana Torres', signature_data: 'data:image/png;base64,demo', linked_payroll_id: null, created_at: '2026-03-10T10:00:00Z' },
+    { id: 't2cc04', contract_id: 'ac06', partida_id: 't2cp03', cut_number: 1, cut_date: '2026-03-01', measured_quantity: 0.4, amount: 500000,  retention_amount: 40000, status: 'paid',     notes: '40% avance plomería vertical',photo_url: null, approved_by: 'Roberto Peña', signature_data: 'data:image/png;base64,demo', linked_payroll_id: 'pp000000-0000-0000-0000-000000000004', created_at: '2026-03-01T10:00:00Z' },
+    { id: 't2cc05', contract_id: 'ac07', partida_id: 't2cp05', cut_number: 1, cut_date: '2026-03-05', measured_quantity: 0.2, amount: 396000,  retention_amount: 31680, status: 'paid',     notes: '20% avance eléctrico',        photo_url: null, approved_by: 'Roberto Peña', signature_data: 'data:image/png;base64,demo', linked_payroll_id: 'pp000000-0000-0000-0000-000000000004', created_at: '2026-03-05T10:00:00Z' },
+    { id: 't2cc06', contract_id: 'ac08', partida_id: 't2cp07', cut_number: 1, cut_date: '2026-03-15', measured_quantity: 80,  amount: 680000,  retention_amount: 54400, status: 'approved', notes: 'Fachada niveles 1-2',         photo_url: null, approved_by: 'Ana Torres', signature_data: 'data:image/png;base64,demo', linked_payroll_id: null, created_at: '2026-03-15T10:00:00Z' },
+  ],
+
+  contract_adelantos: [
+    { id: 't2ca01', contract_id: 'ac05', advance_date: '2026-02-15', amount: 150000, description: 'Adelanto movilización obra', created_at: '2026-02-15T10:00:00Z' },
+    { id: 't2ca02', contract_id: 'ac07', advance_date: '2026-02-20', amount: 80000,  description: 'Adelanto compra materiales eléctricos', created_at: '2026-02-20T10:00:00Z' },
   ],
 
   purchase_requisitions: [

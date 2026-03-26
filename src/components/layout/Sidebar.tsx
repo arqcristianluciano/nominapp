@@ -14,13 +14,22 @@ import {
   ShoppingCart,
   ScrollText,
   Banknote,
+  Layers,
 } from 'lucide-react'
 import { usePendingApprovals } from '@/hooks/usePendingApprovals'
+import { usePendingCortes } from '@/hooks/usePendingCortes'
 import { ThemeToggle } from '@/components/layout/ThemeToggle'
+
+interface NavItem {
+  to: string
+  icon: React.ElementType
+  label: string
+  badgeKey?: 'approvals' | 'cortes'
+}
 
 interface NavSection {
   label: string
-  items: { to: string; icon: React.ElementType; label: string }[]
+  items: NavItem[]
 }
 
 const NAV_SECTIONS: NavSection[] = [
@@ -38,6 +47,7 @@ const NAV_SECTIONS: NavSection[] = [
       { to: '/finanzas', icon: Landmark, label: 'Control Financiero' },
       { to: '/presupuesto', icon: BarChart3, label: 'Presupuesto' },
       { to: '/cxp', icon: CreditCard, label: 'Cuentas por Pagar' },
+      { to: '/proyectos', icon: Layers, label: 'Cubicaciones', badgeKey: 'cortes' as const },
     ],
   },
   {
@@ -75,6 +85,7 @@ interface SidebarProps {
 
 export function Sidebar({ open, onClose }: SidebarProps) {
   const pendingApprovals = usePendingApprovals()
+  const pendingCortes = usePendingCortes()
 
   return (
     <>
@@ -130,6 +141,11 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                     {to === '/ordenes-compra' && pendingApprovals > 0 && (
                       <span className="text-[10px] font-bold bg-orange-500 text-white rounded-full w-4.5 h-4.5 flex items-center justify-center leading-none">
                         {pendingApprovals}
+                      </span>
+                    )}
+                    {(item as NavItem).badgeKey === 'cortes' && pendingCortes > 0 && (
+                      <span className="text-[10px] font-bold bg-amber-500 text-white rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center leading-none">
+                        {pendingCortes}
                       </span>
                     )}
                   </NavLink>
