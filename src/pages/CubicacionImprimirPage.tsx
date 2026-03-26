@@ -3,9 +3,10 @@ import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft, Printer } from 'lucide-react'
 import { contractService } from '@/services/cubicationService'
 import { formatRD } from '@/utils/currency'
-import type { ContractWithContractor, ContractPartida, ContractCorte, ContractAdelanto } from '@/services/cubicationService'
+import type { ContractWithContractor } from '@/services/cubicationService'
+import type { ContractPartida, ContractCorte, ContractAdelanto } from '@/types/database'
 
-const STATUS_LABEL = { draft: 'Borrador', approved: 'Aprobado', paid: 'Pagado' }
+const STATUS_LABEL: Record<string, string> = { draft: 'Borrador', approved: 'Aprobado', paid: 'Pagado' }
 
 export default function CubicacionImprimirPage() {
   const { projectId, contratoId } = useParams<{ projectId: string; contratoId: string }>()

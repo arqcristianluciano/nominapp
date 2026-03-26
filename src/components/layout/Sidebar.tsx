@@ -122,11 +122,11 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                 {section.label}
               </p>
               <div className="space-y-0.5">
-                {section.items.map(({ to, icon: Icon, label }) => (
+                {section.items.map((item) => (
                   <NavLink
-                    key={to}
-                    to={to}
-                    end={to === '/'}
+                    key={item.to}
+                    to={item.to}
+                    end={item.to === '/'}
                     onClick={onClose}
                     className={({ isActive }) =>
                       `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -136,14 +136,14 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                       }`
                     }
                   >
-                    <Icon className="w-4.5 h-4.5 shrink-0" />
-                    <span className="flex-1">{label}</span>
-                    {to === '/ordenes-compra' && pendingApprovals > 0 && (
+                    <item.icon className="w-4.5 h-4.5 shrink-0" />
+                    <span className="flex-1">{item.label}</span>
+                    {item.to === '/ordenes-compra' && pendingApprovals > 0 && (
                       <span className="text-[10px] font-bold bg-orange-500 text-white rounded-full w-4.5 h-4.5 flex items-center justify-center leading-none">
                         {pendingApprovals}
                       </span>
                     )}
-                    {(item as NavItem).badgeKey === 'cortes' && pendingCortes > 0 && (
+                    {item.badgeKey === 'cortes' && pendingCortes > 0 && (
                       <span className="text-[10px] font-bold bg-amber-500 text-white rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center leading-none">
                         {pendingCortes}
                       </span>

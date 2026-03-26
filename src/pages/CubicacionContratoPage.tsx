@@ -7,7 +7,8 @@ import { formatRD } from '@/utils/currency'
 import { PartidaSection } from '@/components/features/cubicacion/PartidaSection'
 import { CorteSection } from '@/components/features/cubicacion/CorteSection'
 import { AdelantoSection } from '@/components/features/cubicacion/AdelantoSection'
-import type { ContractWithContractor, ContractPartida, ContractCorte, ContractAdelanto } from '@/services/cubicationService'
+import type { ContractWithContractor } from '@/services/cubicationService'
+import type { ContractPartida, ContractCorte, ContractAdelanto } from '@/types/database'
 
 type Tab = 'partidas' | 'cortes' | 'adelantos'
 
