@@ -220,6 +220,47 @@ export const payrollService = {
     return data as IndirectCost[]
   },
 
+  async addIndirectCost(cost: {
+    payroll_period_id: string
+    type: string
+    description: string
+    percentage: number
+    base_amount: number
+    calculated_amount: number
+  }) {
+    const { data, error } = await supabase
+      .from('indirect_costs')
+      .insert(cost)
+      .select()
+      .single()
+    if (error) throw error
+    return data as IndirectCost
+  },
+
+  async updateIndirectCost(id: string, updates: {
+    description?: string
+    percentage?: number
+    base_amount?: number
+    calculated_amount?: number
+  }) {
+    const { data, error } = await supabase
+      .from('indirect_costs')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+    return data as IndirectCost
+  },
+
+  async deleteIndirectCost(id: string) {
+    const { error } = await supabase
+      .from('indirect_costs')
+      .delete()
+      .eq('id', id)
+    if (error) throw error
+  },
+
   // === FILE ATTACHMENTS ===
 
   async uploadInvoiceFile(file: File, periodId: string) {
