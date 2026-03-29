@@ -94,7 +94,7 @@ export default function PayrollEditor() {
           <div className="bg-app-surface rounded-xl border border-app-border overflow-hidden">
             <table className="w-full text-sm">
               <thead><tr className="bg-app-bg border-b border-app-border">
-                <th className="text-left px-4 py-2.5 font-medium text-app-muted">Proveedor</th>
+                <th className="text-left px-4 py-2.5 font-medium text-app-muted">Suplidores</th>
                 <th className="text-left px-4 py-2.5 font-medium text-app-muted">Descripción</th>
                 <th className="text-right px-4 py-2.5 font-medium text-app-muted">Monto</th>
                 {isDraft && <th className="w-10" />}

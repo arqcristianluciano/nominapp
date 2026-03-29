@@ -129,7 +129,7 @@ export default function PayrollPrint() {
           <table className="w-full text-xs border border-app-border">
             <thead>
               <tr className="bg-app-bg">
-                <th className="px-2 py-1 text-left font-medium text-app-muted">Proveedor</th>
+                <th className="px-2 py-1 text-left font-medium text-app-muted">Suplidores</th>
                 <th className="px-2 py-1 text-left font-medium text-app-muted">Descripción</th>
                 <th className="px-2 py-1 text-left font-medium text-app-muted w-20">Factura</th>
                 <th className="px-2 py-1 text-right font-medium text-app-muted w-24">Monto</th>
