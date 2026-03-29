@@ -60,6 +60,24 @@ export function usePayroll(periodId: string | undefined) {
     setPeriod(prev => prev ? { ...prev, total_labor: laborTotal, total_materials: materialsTotal, total_indirect: indirect.total, grand_total: grandTotal } : null)
   }, [periodId])
 
+  // Recalc only indirect totals from current indirect cost rows (does not recreate rows)
+  const recalcIndirectTotals = useCallback(async (costs: IndirectCost[], items: LaborLineItem[], invoices: MaterialInvoice[]) => {
+    if (!periodId) return
+    const laborTotal = calcLaborTotal(items)
+    const materialsTotal = calcMaterialsTotal(invoices)
+    const indirectTotal = costs.reduce((sum, c) => sum + c.calculated_amount, 0)
+    const grandTotal = calcGrandTotal(laborTotal, materialsTotal, indirectTotal)
+
+    await payrollService.updatePeriodTotals(periodId, {
+      total_labor: laborTotal,
+      total_materials: materialsTotal,
+      total_indirect: indirectTotal,
+      grand_total: grandTotal,
+    })
+
+    setPeriod(prev => prev ? { ...prev, total_labor: laborTotal, total_materials: materialsTotal, total_indirect: indirectTotal, grand_total: grandTotal } : null)
+  }, [periodId])
+
   const addLaborItem = useCallback(async (item: {
     contractor_id: string
     description: string
@@ -153,6 +171,71 @@ export function usePayroll(periodId: string | undefined) {
     }
   }, [laborItems, materialInvoices, period, recalcTotals])
 
+  const addIndirectCost = useCallback(async (cost: { description: string; percentage: number }) => {
+    if (!periodId) return
+    setSaving(true)
+    try {
+      const laborTotal = calcLaborTotal(laborItems)
+      const materialsTotal = calcMaterialsTotal(materialInvoices)
+      const base = laborTotal + materialsTotal
+      const calculated = base * (cost.percentage / 100)
+
+      const newCost = await payrollService.addIndirectCost({
+        payroll_period_id: periodId,
+        type: 'custom',
+        description: `${cost.description} ${cost.percentage}%`,
+        percentage: cost.percentage,
+        base_amount: base,
+        calculated_amount: calculated,
+      })
+      const updated = [...indirectCosts, newCost]
+      setIndirectCosts(updated)
+      await recalcIndirectTotals(updated, laborItems, materialInvoices)
+    } catch (e: any) {
+      setError(e.message)
+    } finally {
+      setSaving(false)
+    }
+  }, [periodId, laborItems, materialInvoices, indirectCosts, recalcIndirectTotals])
+
+  const updateIndirectCost = useCallback(async (id: string, updates: { description: string; percentage: number }) => {
+    setSaving(true)
+    try {
+      const laborTotal = calcLaborTotal(laborItems)
+      const materialsTotal = calcMaterialsTotal(materialInvoices)
+      const base = laborTotal + materialsTotal
+      const calculated = base * (updates.percentage / 100)
+
+      const updated = await payrollService.updateIndirectCost(id, {
+        description: `${updates.description} ${updates.percentage}%`,
+        percentage: updates.percentage,
+        base_amount: base,
+        calculated_amount: calculated,
+      })
+      const costs = indirectCosts.map(c => c.id === id ? updated : c)
+      setIndirectCosts(costs)
+      await recalcIndirectTotals(costs, laborItems, materialInvoices)
+    } catch (e: any) {
+      setError(e.message)
+    } finally {
+      setSaving(false)
+    }
+  }, [laborItems, materialInvoices, indirectCosts, recalcIndirectTotals])
+
+  const deleteIndirectCost = useCallback(async (id: string) => {
+    setSaving(true)
+    try {
+      await payrollService.deleteIndirectCost(id)
+      const costs = indirectCosts.filter(c => c.id !== id)
+      setIndirectCosts(costs)
+      await recalcIndirectTotals(costs, laborItems, materialInvoices)
+    } catch (e: any) {
+      setError(e.message)
+    } finally {
+      setSaving(false)
+    }
+  }, [laborItems, materialInvoices, indirectCosts, recalcIndirectTotals])
+
   const updateStatus = useCallback(async (status: 'draft' | 'submitted' | 'approved' | 'paid') => {
     if (!periodId) return
     setSaving(true)
@@ -170,6 +253,8 @@ export function usePayroll(periodId: string | undefined) {
     period, laborItems, materialInvoices, indirectCosts,
     loading, saving, error,
     load, addLaborItem, updateLaborItem, deleteLaborItem,
-    addMaterialInvoice, deleteMaterialInvoice, updateStatus,
+    addMaterialInvoice, deleteMaterialInvoice,
+    addIndirectCost, updateIndirectCost, deleteIndirectCost,
+    updateStatus,
   }
 }

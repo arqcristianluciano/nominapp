@@ -94,6 +94,14 @@ export interface PriceListItem {
   unit_price: number
 }
 
+export interface StaffMember {
+  id: string
+  name: string
+  role: string | null
+  is_active: boolean
+  created_at: string
+}
+
 export type PayrollStatus = 'draft' | 'submitted' | 'approved' | 'paid'
 
 export interface PayrollPeriod {

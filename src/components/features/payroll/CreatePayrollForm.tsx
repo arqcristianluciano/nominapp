@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { payrollService } from '@/services/payrollService'
+import { staffService } from '@/services/staffService'
+import type { StaffMember } from '@/types/database'
 
 interface Props {
   projectId: string
@@ -10,12 +12,17 @@ interface Props {
 export function CreatePayrollForm({ projectId, onCreated, onCancel }: Props) {
   const [number, setNumber] = useState(1)
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
-  const [reportedBy, setReportedBy] = useState('Ing. Roni Hidalgo')
+  const [reportedBy, setReportedBy] = useState('')
+  const [staffMembers, setStaffMembers] = useState<StaffMember[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
     payrollService.getNextPeriodNumber(projectId).then(setNumber)
+    staffService.getAll().then((members) => {
+      setStaffMembers(members)
+      if (members.length > 0) setReportedBy(members[0].name)
+    })
   }, [projectId])
 
   async function handleSubmit(e: React.FormEvent) {
@@ -43,7 +50,7 @@ export function CreatePayrollForm({ projectId, onCreated, onCancel }: Props) {
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-app-muted mb-1">No. de nómina</label>
+          <label className="block text-xs font-medium text-app-muted mb-1">No. de nomina</label>
           <input
             type="number"
             value={number}
@@ -66,12 +73,16 @@ export function CreatePayrollForm({ projectId, onCreated, onCancel }: Props) {
 
       <div>
         <label className="block text-xs font-medium text-app-muted mb-1">Reportado por</label>
-        <input
-          type="text"
+        <select
           value={reportedBy}
           onChange={(e) => setReportedBy(e.target.value)}
           className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+        >
+          <option value="">Seleccionar...</option>
+          {staffMembers.map((s) => (
+            <option key={s.id} value={s.name}>{s.name}</option>
+          ))}
+        </select>
       </div>
 
       <div className="flex justify-end gap-2 pt-2">
