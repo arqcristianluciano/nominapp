@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ChevronDown, ChevronRight, Plus, Pencil, Trash2 } from 'lucide-react'
 import type { BudgetCategory, BudgetItem, PriceListItem } from '@/types/database'
 import { formatRD } from '@/utils/currency'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import BudgetItemForm from './BudgetItemForm'
 
 interface Props {
@@ -22,6 +23,7 @@ export default function BudgetPartidaRow({
   const [expanded, setExpanded] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [editItem, setEditItem] = useState<BudgetItem | null>(null)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
 
   const hasItems = items.length > 0
   const total = items.reduce((sum, it) => sum + it.quantity * it.unit_price, 0)
@@ -40,8 +42,8 @@ export default function BudgetPartidaRow({
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('¿Eliminar esta subpartida?')) return
     await onDeleteItem(id)
+    setDeleteId(null)
   }
 
   return (
@@ -125,7 +127,7 @@ export default function BudgetPartidaRow({
                   <Pencil className="w-3 h-3" />
                 </button>
                 <button
-                  onClick={() => handleDelete(item.id)}
+                  onClick={() => setDeleteId(item.id)}
                   className="p-1 text-app-subtle hover:text-red-600 hover:bg-red-50 rounded"
                 >
                   <Trash2 className="w-3 h-3" />
@@ -145,6 +147,21 @@ export default function BudgetPartidaRow({
           onSave={handleSave}
           onClose={() => { setShowForm(false); setEditItem(null) }}
         />
+      )}
+
+      {deleteId !== null && (
+        <tr>
+          <td colSpan={6}>
+            <ConfirmModal
+              open={!!deleteId}
+              title="Eliminar subpartida"
+              message="¿Eliminar esta subpartida? Esta acción no se puede deshacer."
+              confirmLabel="Eliminar"
+              onConfirm={() => deleteId && handleDelete(deleteId)}
+              onCancel={() => setDeleteId(null)}
+            />
+          </td>
+        </tr>
       )}
     </>
   )

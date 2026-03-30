@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
 import { partidaService } from '@/services/cubicationService'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { formatRD } from '@/utils/currency'
 import type { ContractPartida, ContractCorte } from '@/types/database'
 
@@ -19,6 +20,7 @@ export function PartidaSection({ contractId, partidas, cortes, onRefresh }: Prop
   const [editing, setEditing] = useState<ContractPartida | null>(null)
   const [showAdd, setShowAdd] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
 
   function acumuladoForPartida(partidaId: string) {
     return cortes.filter((c) => c.partida_id === partidaId).reduce((s, c) => s + c.amount, 0)
@@ -61,8 +63,8 @@ export function PartidaSection({ contractId, partidas, cortes, onRefresh }: Prop
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('¿Eliminar esta partida y todos sus cortes?')) return
     await partidaService.delete(id)
+    setDeleteId(null)
     onRefresh()
   }
 
@@ -147,7 +149,7 @@ export function PartidaSection({ contractId, partidas, cortes, onRefresh }: Prop
                   <td className="py-2.5">
                     <div className="flex gap-0.5">
                       <button onClick={() => startEdit(p)} className="p-1 text-app-subtle hover:text-blue-500"><Pencil className="w-3 h-3" /></button>
-                      <button onClick={() => handleDelete(p.id)} className="p-1 text-app-subtle hover:text-red-500"><Trash2 className="w-3 h-3" /></button>
+                      <button onClick={() => setDeleteId(p.id)} className="p-1 text-app-subtle hover:text-red-500"><Trash2 className="w-3 h-3" /></button>
                     </div>
                   </td>
                 </tr>
@@ -156,6 +158,15 @@ export function PartidaSection({ contractId, partidas, cortes, onRefresh }: Prop
           </tbody>
         </table>
       )}
+
+      <ConfirmModal
+        open={!!deleteId}
+        title="Eliminar partida"
+        message="¿Eliminar esta partida y todos sus cortes asociados? Esta acción no se puede deshacer."
+        confirmLabel="Eliminar"
+        onConfirm={() => deleteId && handleDelete(deleteId)}
+        onCancel={() => setDeleteId(null)}
+      />
     </div>
   )
 }

@@ -7,6 +7,7 @@ import { contractService } from '@/services/cubicationService'
 import type { ContractSummary } from '@/services/cubicationService'
 import { contractorService } from '@/services/contractorService'
 import { Modal } from '@/components/ui/Modal'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { formatRD } from '@/utils/currency'
 import type { Contractor } from '@/types/database'
 
@@ -24,6 +25,7 @@ export default function CubicacionesPage() {
   const [form, setForm] = useState({ contractor_id: '', retention_percent: '5', signed_date: '', notes: '' })
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!projects.length) fetchProjects()
@@ -60,11 +62,10 @@ export default function CubicacionesPage() {
     } finally { setSaving(false) }
   }
 
-  async function handleDelete(id: string, e: React.MouseEvent) {
-    e.stopPropagation()
-    if (!confirm('¿Eliminar este contrato y todos sus datos?')) return
+  async function handleDelete(id: string) {
     await import('@/services/cubicationService').then((m) => m.contractService.delete(id))
     await load()
+    setDeleteTargetId(null)
   }
 
   const totals = contracts.reduce(
@@ -160,7 +161,7 @@ export default function CubicacionesPage() {
                   <td className="px-4 py-3 text-center text-xs text-app-muted hidden lg:table-cell">{formatRD(c.retenido)}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1 justify-end">
-                      <button onClick={(e) => handleDelete(c.id, e)} className="p-1 text-app-subtle hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button>
+                      <button onClick={(e) => { e.stopPropagation(); setDeleteTargetId(c.id) }} className="p-1 text-app-subtle hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button>
                       <ChevronRight className="w-4 h-4 text-app-subtle" />
                     </div>
                   </td>
@@ -170,6 +171,15 @@ export default function CubicacionesPage() {
           </table>
         </div>
       )}
+
+      <ConfirmModal
+        open={!!deleteTargetId}
+        title="Eliminar contrato"
+        message="¿Eliminar este contrato y todos sus partidas y cortes? Esta acción no se puede deshacer."
+        confirmLabel="Eliminar"
+        onConfirm={() => deleteTargetId && handleDelete(deleteTargetId)}
+        onCancel={() => setDeleteTargetId(null)}
+      />
 
       {/* Modal nuevo contrato */}
       <Modal open={showForm} onClose={() => setShowForm(false)} title="Nuevo contrato de ajuste">

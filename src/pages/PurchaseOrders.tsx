@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, ShoppingCart, Eye, Package } from 'lucide-react'
+import { Plus, ShoppingCart, Eye, Package, Search } from 'lucide-react'
 import { requisitionService } from '@/services/requisitionService'
 import { supabase } from '@/lib/supabase'
 import type { PurchaseRequisition } from '@/types/purchaseOrder'
@@ -17,6 +17,8 @@ export default function PurchaseOrders() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState<string>('all')
   const { success, error } = useToast()
 
   useEffect(() => { loadAll() }, [])
@@ -44,13 +46,30 @@ export default function PurchaseOrders() {
     finally { setSaving(false) }
   }
 
+  const filtered = requisitions.filter((r) => {
+    const term = search.toLowerCase()
+    const matchesSearch = !term || r.description.toLowerCase().includes(term) || r.req_number.toLowerCase().includes(term) || r.requested_by.toLowerCase().includes(term)
+    const matchesStatus = statusFilter === 'all' || r.status === statusFilter
+    return matchesSearch && matchesStatus
+  })
+
+  const STATUS_OPTIONS = [
+    { value: 'all', label: 'Todos' },
+    { value: 'draft', label: 'Borrador' },
+    { value: 'quoting', label: 'En cotización' },
+    { value: 'pending_approval', label: 'Pendiente' },
+    { value: 'approved', label: 'Aprobado' },
+    { value: 'ordered', label: 'Ordenado' },
+    { value: 'rejected', label: 'Rechazado' },
+  ]
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-app-text">Órdenes de Compra</h1>
           <p className="text-sm text-app-muted mt-0.5">
-            {requisitions.length} solicitud{requisitions.length !== 1 ? 'es' : ''}
+            {filtered.length} de {requisitions.length} solicitud{requisitions.length !== 1 ? 'es' : ''}
           </p>
         </div>
         <button
@@ -61,9 +80,29 @@ export default function PurchaseOrders() {
         </button>
       </div>
 
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-app-subtle" />
+          <input
+            type="text"
+            placeholder="Buscar solicitud..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 bg-app-surface border border-app-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="px-3 py-2.5 bg-app-surface border border-app-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+      </div>
+
       {loading ? (
         <SkeletonTable rows={5} cols={6} />
-      ) : requisitions.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <EmptyPO onNew={() => setShowForm(true)} />
       ) : (
         <div className="bg-app-surface rounded-xl border border-app-border overflow-hidden shadow-xs">
@@ -80,7 +119,7 @@ export default function PurchaseOrders() {
               </tr>
             </thead>
             <tbody className="divide-y divide-app-border">
-              {requisitions.map((r) => (
+              {filtered.map((r) => (
                 <tr key={r.id} className="hover:bg-app-hover transition-colors group">
                   <td className="px-4 py-3.5">
                     <span className="font-mono text-xs font-semibold text-app-muted bg-app-chip px-1.5 py-0.5 rounded">

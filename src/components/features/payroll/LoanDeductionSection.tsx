@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 import { loanService } from '@/services/loanService'
+import { getCortesByPayroll } from '@/services/cubicationService'
 import { formatRD } from '@/utils/currency'
 import type { ContractorLoan, LoanDeduction } from '@/types/database'
 
@@ -26,13 +27,21 @@ export function LoanDeductionSection({ periodId, isDraft }: Props) {
 
   const load = async () => {
     setLoading(true)
-    const [ded, all] = await Promise.all([
+    const [ded, all, linkedCortes] = await Promise.all([
       loanService.getDeductionsByPeriod(periodId),
       loanService.getAll(),
+      getCortesByPayroll(periodId),
     ])
     setDeductions(ded)
 
-    const active = all.filter(l => l.status === 'active')
+    const contractorIds = linkedCortes.length > 0
+      ? new Set(linkedCortes.map((c) => (c.contract as any)?.contractor_id).filter(Boolean))
+      : null
+
+    const active = all.filter((l) =>
+      l.status === 'active' &&
+      (contractorIds === null || contractorIds.has(l.contractor_id))
+    )
     const withBalance: ActiveLoanOption[] = await Promise.all(
       active.map(async (loan) => {
         const totalPaid = await loanService.getTotalPaid(loan.id)

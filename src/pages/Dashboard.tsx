@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   Building2, DollarSign, CreditCard, ClipboardList,
-  ArrowRight, Landmark, BarChart3, FileText, Scissors, TrendingUp,
+  ArrowRight, Landmark, BarChart3, FileText, Scissors, TrendingUp, TrendingDown, Minus,
 } from 'lucide-react'
 import { useProjectStore } from '@/stores/projectStore'
 import { dashboardService } from '@/services/dashboardService'
@@ -35,6 +35,7 @@ export default function Dashboard() {
   const [totalInvested, setTotalInvested] = useState(0)
   const [payrollsThisMonth, setPayrollsThisMonth] = useState(0)
   const [cxpTotal, setCxpTotal] = useState(0)
+  const [kpiTrend, setKpiTrend] = useState<{ investedPrev: number; payrollsPrev: number; cxpPrev: number } | null>(null)
   const [activities, setActivities] = useState<Activity[]>([])
   const [progressMap, setProgressMap] = useState<Record<string, ProjectProgress>>({})
   const [pendingCortes, setPendingCortes] = useState<PendingCorteItem[]>([])
@@ -45,6 +46,9 @@ export default function Dashboard() {
       setTotalInvested(kpis.totalInvested)
       setPayrollsThisMonth(kpis.payrollsThisMonth)
       setCxpTotal(kpis.cxpTotal)
+      if ('prevInvested' in kpis) {
+        setKpiTrend({ investedPrev: (kpis as any).prevInvested, payrollsPrev: (kpis as any).prevPayrolls, cxpPrev: (kpis as any).prevCxp })
+      }
     }).catch(() => {})
     dashboardService.getRecentActivity().then(setActivities).catch(() => {})
     loadProgress()
@@ -95,18 +99,22 @@ export default function Dashboard() {
           label="Total invertido"
           value={formatRD(totalInvested)}
           accent="emerald"
+          prev={kpiTrend?.investedPrev}
         />
         <StatCard
           icon={CreditCard}
           label="CxP pendientes"
           value={formatRD(cxpTotal)}
           accent="red"
+          prev={kpiTrend?.cxpPrev}
+          invertTrend
         />
         <StatCard
           icon={ClipboardList}
           label="Reportes este mes"
           value={String(payrollsThisMonth)}
           accent="amber"
+          prev={kpiTrend?.payrollsPrev}
         />
       </div>
 
@@ -243,16 +251,38 @@ const ACCENT_STYLES: Record<string, { card: string; icon: string; border: string
   amber:   { card: 'from-amber-500/10',   icon: 'bg-amber-100 text-amber-600 dark:bg-amber-950/70 dark:text-amber-300', border: 'border-l-amber-500' },
 }
 
-function StatCard({ icon: Icon, label, value, accent }: {
-  icon: React.ElementType; label: string; value: string; accent: string
+function StatCard({ icon: Icon, label, value, accent, prev, invertTrend }: {
+  icon: React.ElementType; label: string; value: string; accent: string; prev?: number; invertTrend?: boolean
 }) {
   const s = ACCENT_STYLES[accent]
+
+  let trendEl: React.ReactNode = null
+  if (prev !== undefined) {
+    const current = parseFloat(value.replace(/[^0-9.]/g, ''))
+    const isMonetary = value.startsWith('RD$') || value.includes(',')
+    const change = prev === 0 ? null : ((current - prev) / Math.abs(prev)) * 100
+    if (change !== null) {
+      const isPositive = invertTrend ? change < 0 : change > 0
+      const isNeutral = Math.abs(change) < 0.5
+      const color = isNeutral ? 'text-app-muted' : isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'
+      const TrendIcon = isNeutral ? Minus : isPositive ? TrendingUp : TrendingDown
+      trendEl = (
+        <div className={`flex items-center gap-0.5 text-[11px] font-semibold mt-1 ${color}`}>
+          <TrendIcon className="w-3 h-3" />
+          <span>{Math.abs(change).toFixed(0)}% vs mes ant.</span>
+        </div>
+      )
+      void isMonetary
+    }
+  }
+
   return (
     <div className={`bg-app-surface rounded-xl border border-app-border border-l-4 ${s.border} p-4 shadow-xs`}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className="text-xs font-medium text-app-muted mb-1.5">{label}</p>
           <p className="text-xl font-bold text-app-text truncate">{value}</p>
+          {trendEl}
         </div>
         <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${s.icon}`}>
           <Icon className="w-4.5 h-4.5" />

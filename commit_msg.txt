@@ -1,0 +1,14 @@
+feat: 12 mejoras — ConfirmModal, busqueda, duplicar nomina, aging CxP, amortizacion, paginacion, tendencias KPI, exportar Excel y mas
+
+- ConfirmModal reutilizable reemplaza confirm() nativo en 11 archivos
+- Busqueda + filtro por estado en PurchaseOrders; busqueda en Prestamos
+- Duplicar reporte de nomina (copia partidas y materiales al nuevo borrador)
+- Exportar Reportes a Excel con todos los proyectos y totales
+- CxP Aging report: cards 0-30d / 31-60d / +60d + columna dias en tabla
+- Notificaciones de CxP vencida (+30d warning, +60d danger)
+- Validacion: bloquea envio de nomina sin partidas ni facturas
+- Tabla de amortizacion expandible cuota a cuota en Prestamos
+- KPI Dashboard con tendencia vs mes anterior
+- Paginacion de 30 filas en libro diario (ControlFinanciero)
+- Fecha esperada de ensayo calculada automaticamente en Control de Calidad
+- Version corregida a v0.4.0 en Settings

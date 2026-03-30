@@ -11,6 +11,7 @@ import { ApprovalModal } from '@/components/features/purchase-orders/ApprovalMod
 import { QuoteForm } from '@/components/features/purchase-orders/QuoteForm'
 import { QuotesPanel } from '@/components/features/purchase-orders/QuotesPanel'
 import { Modal } from '@/components/ui/Modal'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 
 const MIN_QUOTES = 3
 
@@ -24,6 +25,8 @@ export default function PurchaseOrderDetail() {
   const [savingQuote, setSavingQuote] = useState(false)
   const [approvalModal, setApprovalModal] = useState(false)
   const [placingOrder, setPlacingOrder] = useState(false)
+  const [deleteQuoteId, setDeleteQuoteId] = useState<string | null>(null)
+  const [confirmDeleteReq, setConfirmDeleteReq] = useState(false)
 
   useEffect(() => { if (orderId) load() }, [orderId])
 
@@ -52,8 +55,9 @@ export default function PurchaseOrderDetail() {
   }
 
   async function handleDeleteQuote(quoteId: string) {
-    if (!confirm('¿Eliminar esta cotización?')) return
-    await quoteService.delete(quoteId); load()
+    await quoteService.delete(quoteId)
+    setDeleteQuoteId(null)
+    load()
   }
 
   async function handleApprove(quoteId: string, approvedBy: string, signature: string) {
@@ -82,7 +86,6 @@ export default function PurchaseOrderDetail() {
   }
 
   async function handleDelete() {
-    if (!confirm('¿Eliminar esta solicitud de compra?')) return
     await requisitionService.delete(orderId!)
     navigate('/ordenes-compra')
   }
@@ -171,7 +174,7 @@ export default function PurchaseOrderDetail() {
           approvedQuoteId={req.approved_quote_id}
           canDelete={canEdit}
           canNegotiate={canNegotiate}
-          onDelete={handleDeleteQuote}
+          onDelete={(id) => setDeleteQuoteId(id)}
           onNegotiate={handleNegotiate}
         />
       </div>
@@ -220,7 +223,7 @@ export default function PurchaseOrderDetail() {
           </>
         )}
         {(canEdit) && (
-          <button onClick={handleDelete}
+          <button onClick={() => setConfirmDeleteReq(true)}
             className="flex items-center gap-2 text-red-500 hover:text-red-700 px-4 py-2 rounded-lg text-sm border border-red-200 hover:bg-red-50">
             <Trash2 className="w-4 h-4" /> Eliminar
           </button>
@@ -248,6 +251,24 @@ export default function PurchaseOrderDetail() {
           onReject={handleReject}
         />
       )}
+
+      <ConfirmModal
+        open={!!deleteQuoteId}
+        title="Eliminar cotización"
+        message="¿Eliminar esta cotización? Esta acción no se puede deshacer."
+        confirmLabel="Eliminar"
+        onConfirm={() => deleteQuoteId && handleDeleteQuote(deleteQuoteId)}
+        onCancel={() => setDeleteQuoteId(null)}
+      />
+
+      <ConfirmModal
+        open={confirmDeleteReq}
+        title="Eliminar solicitud de compra"
+        message="¿Eliminar esta solicitud y todas sus cotizaciones? Esta acción no se puede deshacer."
+        confirmLabel="Eliminar"
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDeleteReq(false)}
+      />
     </div>
   )
 }

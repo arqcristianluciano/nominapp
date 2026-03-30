@@ -98,6 +98,7 @@ export default function ReportesObra() {
   const grouped = projects.map((proj) => ({
     project: proj,
     periods: periods.filter((p) => p.project_id === proj.id),
+    hasDraft: periods.some((p) => p.project_id === proj.id && (p.status === 'draft' || p.status === 'submitted')),
   })).filter((g) => g.periods.length > 0)
 
   const emptyProjects = projects.filter((p) => !periods.some((r) => r.project_id === p.id))
@@ -132,7 +133,7 @@ export default function ReportesObra() {
         </div>
       ) : (
         <div className="space-y-6">
-          {grouped.map(({ project, periods: pp }) => {
+          {grouped.map(({ project, periods: pp, hasDraft }) => {
             const isExpanded = expandedProjects.has(project.id)
             const hasMore = pp.length > MAX_VISIBLE
             const visible = isExpanded ? pp : pp.slice(0, MAX_VISIBLE)
@@ -145,12 +146,21 @@ export default function ReportesObra() {
                     <h2 className="text-sm font-semibold text-app-text">{project.name}</h2>
                     <p className="text-xs text-app-subtle">{project.code}</p>
                   </div>
-                  <button
-                    onClick={() => { setSelectedProjectId(project.id); setShowCreate(true) }}
-                    className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium"
-                  >
-                    <Plus className="w-3.5 h-3.5" /> Nuevo reporte
-                  </button>
+                  {hasDraft ? (
+                    <span
+                      title="Concluye el reporte en borrador antes de crear uno nuevo"
+                      className="flex items-center gap-1 text-xs text-amber-600 font-medium cursor-default"
+                    >
+                      Borrador pendiente
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => { setSelectedProjectId(project.id); setShowCreate(true) }}
+                      className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Nuevo reporte
+                    </button>
+                  )}
                 </div>
                 <ProjectSummaryBar periods={pp} />
                 <div className="space-y-2">

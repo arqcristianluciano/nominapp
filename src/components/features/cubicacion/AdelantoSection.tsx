@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 import { adelantoService } from '@/services/cubicationService'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { formatRD } from '@/utils/currency'
 import type { ContractAdelanto } from '@/types/database'
 
@@ -16,6 +17,7 @@ export function AdelantoSection({ contractId, adelantos, onRefresh }: Props) {
   const [form, setForm] = useState(emptyForm)
   const [showAdd, setShowAdd] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
 
   const total = adelantos.reduce((s, a) => s + a.amount, 0)
 
@@ -36,8 +38,8 @@ export function AdelantoSection({ contractId, adelantos, onRefresh }: Props) {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('¿Eliminar este avance?')) return
     await adelantoService.delete(id)
+    setDeleteId(null)
     onRefresh()
   }
 
@@ -51,7 +53,7 @@ export function AdelantoSection({ contractId, adelantos, onRefresh }: Props) {
           {total > 0 && <strong className="text-app-text ml-2">Total: {formatRD(total)}</strong>}
         </p>
         <button onClick={() => setShowAdd(true)} className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700">
-          <Plus className="w-3.5 h-3.5" /> Avance
+          <Plus className="w-3.5 h-3.5" /> Adelanto
         </button>
       </div>
 
@@ -79,7 +81,7 @@ export function AdelantoSection({ contractId, adelantos, onRefresh }: Props) {
       )}
 
       {adelantos.length === 0 && !showAdd ? (
-        <p className="text-sm text-app-muted py-4 text-center">No hay avances registrados.</p>
+        <p className="text-sm text-app-muted py-4 text-center">No hay adelantos registrados.</p>
       ) : (
         <table className="w-full text-xs">
           <thead>
@@ -97,13 +99,13 @@ export function AdelantoSection({ contractId, adelantos, onRefresh }: Props) {
                 <td className="py-2.5 text-app-muted">{a.description || '—'}</td>
                 <td className="py-2.5 text-right font-medium text-amber-700">{formatRD(a.amount)}</td>
                 <td className="py-2.5">
-                  <button onClick={() => handleDelete(a.id)} className="p-1 text-app-subtle hover:text-red-500"><Trash2 className="w-3 h-3" /></button>
+                  <button onClick={() => setDeleteId(a.id)} className="p-1 text-app-subtle hover:text-red-500"><Trash2 className="w-3 h-3" /></button>
                 </td>
               </tr>
             ))}
             {adelantos.length > 1 && (
               <tr className="bg-app-bg">
-                <td colSpan={2} className="py-2 text-right text-[10px] font-semibold text-app-muted uppercase">Total avances</td>
+                <td colSpan={2} className="py-2 text-right text-[10px] font-semibold text-app-muted uppercase">Total adelantos</td>
                 <td className="py-2 text-right font-bold text-amber-700">{formatRD(total)}</td>
                 <td />
               </tr>
@@ -111,6 +113,15 @@ export function AdelantoSection({ contractId, adelantos, onRefresh }: Props) {
           </tbody>
         </table>
       )}
+
+      <ConfirmModal
+        open={!!deleteId}
+        title="Eliminar adelanto"
+        message="¿Eliminar este adelanto? Esta acción no se puede deshacer."
+        confirmLabel="Eliminar"
+        onConfirm={() => deleteId && handleDelete(deleteId)}
+        onCancel={() => setDeleteId(null)}
+      />
     </div>
   )
 }

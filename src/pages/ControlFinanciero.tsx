@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { Plus, Filter, X } from 'lucide-react'
+import { Plus, Filter, X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Breadcrumb } from '@/components/ui/Breadcrumb'
 import { useProjectStore } from '@/stores/projectStore'
 import { useTransactions } from '@/hooks/useTransactions'
@@ -22,6 +22,8 @@ export default function ControlFinanciero() {
   const [showFilter, setShowFilter] = useState(false)
   const [filterFrom, setFilterFrom] = useState('')
   const [filterTo, setFilterTo] = useState('')
+  const [page, setPage] = useState(1)
+  const PAGE_SIZE = 30
 
   const project = projects.find((p) => p.id === projectId)
 
@@ -52,6 +54,12 @@ export default function ControlFinanciero() {
     setFilterTo('')
     txns.clearDateFilter()
   }
+
+  const totalPages = Math.max(1, Math.ceil(txns.transactions.length / PAGE_SIZE))
+  const pagedTransactions = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE
+    return txns.transactions.slice(start, start + PAGE_SIZE)
+  }, [txns.transactions, page, PAGE_SIZE])
 
   const tabs: { key: Tab; label: string }[] = [
     { key: 'diario', label: 'Libro Diario' },
@@ -175,7 +183,7 @@ export default function ControlFinanciero() {
                   </tr>
                 </thead>
                 <tbody>
-                  {txns.transactions.map((t) => (
+                  {pagedTransactions.map((t) => (
                     <TransactionRow
                       key={t.id}
                       transaction={t}
@@ -189,7 +197,9 @@ export default function ControlFinanciero() {
                 </tbody>
                 <tfoot>
                   <tr className="bg-app-bg border-t border-app-border">
-                    <td colSpan={6} className="px-2 py-2 text-xs font-semibold text-app-muted text-right">Total:</td>
+                    <td colSpan={6} className="px-2 py-2 text-xs font-semibold text-app-muted text-right">
+                      Total ({txns.transactions.length} transacciones):
+                    </td>
                     <td className="px-2 py-2 text-xs font-bold text-app-text text-right">
                       {formatRD(txns.transactions.reduce((sum, t) => sum + t.total, 0))}
                     </td>
@@ -197,6 +207,44 @@ export default function ControlFinanciero() {
                   </tr>
                 </tfoot>
               </table>
+            </div>
+          )}
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-4 py-3 bg-app-surface rounded-xl border border-app-border">
+              <span className="text-xs text-app-muted">
+                Página {page} de {totalPages} — mostrando {Math.min(PAGE_SIZE, txns.transactions.length - (page - 1) * PAGE_SIZE)} de {txns.transactions.length}
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="p-1.5 rounded-lg text-app-subtle hover:text-app-muted hover:bg-app-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  const p = Math.max(1, Math.min(totalPages - 4, page - 2)) + i
+                  return (
+                    <button
+                      key={p}
+                      onClick={() => setPage(p)}
+                      className={`w-7 h-7 text-xs rounded-lg font-medium transition-colors ${
+                        p === page ? 'bg-blue-600 text-white' : 'text-app-muted hover:bg-app-hover'
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  )
+                })}
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="p-1.5 rounded-lg text-app-subtle hover:text-app-muted hover:bg-app-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           )}
         </>

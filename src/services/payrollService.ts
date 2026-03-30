@@ -71,6 +71,16 @@ export const payrollService = {
     return (data?.[0]?.period_number || 0) + 1
   },
 
+  async getDraftPeriod(projectId: string): Promise<PayrollPeriod | null> {
+    const { data } = await supabase
+      .from('payroll_periods')
+      .select('*')
+      .eq('project_id', projectId)
+      .in('status', ['draft', 'submitted'])
+      .limit(1)
+    return (data?.[0] as PayrollPeriod) ?? null
+  },
+
   async updatePeriodStatus(id: string, status: PayrollStatus) {
     const updates: Record<string, unknown> = { status }
     if (status === 'approved') updates.approved_at = new Date().toISOString()
@@ -103,6 +113,48 @@ export const payrollService = {
       .delete()
       .eq('id', id)
     if (error) throw error
+  },
+
+  async duplicatePeriod(sourcePeriodId: string, projectId: string): Promise<PayrollPeriod> {
+    const { laborItems, materialInvoices } = await this.getPeriodDetail(sourcePeriodId)
+    const nextNum = await this.getNextPeriodNumber(projectId)
+
+    const newPeriod = await this.createPeriod({
+      project_id: projectId,
+      period_number: nextNum,
+      report_date: new Date().toISOString().split('T')[0],
+    })
+
+    if (laborItems.length > 0) {
+      const laborRows = laborItems.map((item, i) => ({
+        payroll_period_id: newPeriod.id,
+        contractor_id: item.contractor_id,
+        description: item.description,
+        quantity: item.quantity,
+        unit: item.unit,
+        unit_price: item.unit_price,
+        is_advance: item.is_advance,
+        is_advance_deduction: item.is_advance_deduction,
+        sort_order: i + 1,
+        notes: item.notes,
+      }))
+      await supabase.from('labor_line_items').insert(laborRows)
+    }
+
+    if (materialInvoices.length > 0) {
+      const matRows = materialInvoices.map((inv) => ({
+        payroll_period_id: newPeriod.id,
+        supplier_id: inv.supplier_id,
+        description: inv.description,
+        invoice_reference: inv.invoice_reference,
+        amount: inv.amount,
+        budget_category_id: inv.budget_category_id,
+        notes: inv.notes,
+      }))
+      await supabase.from('material_invoices').insert(matRows)
+    }
+
+    return newPeriod
   },
 
   // === LABOR LINE ITEMS ===

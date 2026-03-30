@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Plus, Trash2, CheckCircle, Circle, Clock, Image, ScrollText } from 'lucide-react'
 import { corteService } from '@/services/cubicationService'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { formatRD } from '@/utils/currency'
 import { CorteApprovalModal } from './CorteApprovalModal'
 import { LinkToPayrollModal } from './LinkToPayrollModal'
@@ -30,6 +31,7 @@ export function CorteSection({ contractId, projectId, contractorId, retentionPer
   const [saving, setSaving] = useState(false)
   const [approvalCorte, setApprovalCorte] = useState<ContractCorte | null>(null)
   const [payrollCorte, setPayrollCorte] = useState<ContractCorte | null>(null)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
 
   const selectedPartida = partidas.find((p) => p.id === form.partida_id)
   const previewAmount = selectedPartida && form.measured_quantity
@@ -58,8 +60,9 @@ export function CorteSection({ contractId, projectId, contractorId, retentionPer
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('¿Eliminar este corte?')) return
-    await corteService.delete(id); onRefresh()
+    await corteService.delete(id)
+    setDeleteId(null)
+    onRefresh()
   }
 
   const inputCls = 'px-2 py-1.5 border border-app-border rounded-md text-xs bg-app-input-bg text-app-text focus:ring-1 focus:ring-blue-500'
@@ -168,7 +171,7 @@ export function CorteSection({ contractId, projectId, contractorId, retentionPer
                           className="p-1 text-app-subtle hover:text-blue-600"><ScrollText className="w-3.5 h-3.5" /></button>
                       )}
                       {c.status !== 'paid' && (
-                        <button onClick={() => handleDelete(c.id)} className="p-1 text-app-subtle hover:text-red-500"><Trash2 className="w-3 h-3" /></button>
+                        <button onClick={() => setDeleteId(c.id)} className="p-1 text-app-subtle hover:text-red-500"><Trash2 className="w-3 h-3" /></button>
                       )}
                     </div>
                   </td>
@@ -195,6 +198,15 @@ export function CorteSection({ contractId, projectId, contractorId, retentionPer
         corte={payrollCorte}
         partida={payrollCorte ? partidas.find((p) => p.id === payrollCorte.partida_id) ?? null : null}
         onLinked={onRefresh}
+      />
+
+      <ConfirmModal
+        open={!!deleteId}
+        title="Eliminar corte"
+        message="¿Eliminar este corte? Esta acción no se puede deshacer."
+        confirmLabel="Eliminar"
+        onConfirm={() => deleteId && handleDelete(deleteId)}
+        onCancel={() => setDeleteId(null)}
       />
     </div>
   )

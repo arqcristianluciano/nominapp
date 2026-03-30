@@ -198,7 +198,7 @@ export default function Settings() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
             <div>
               <p className="text-app-muted">Versión</p>
-              <p className="text-app-text font-medium">NominaAPP v0.2.0</p>
+              <p className="text-app-text font-medium">NominaAPP v0.4.0</p>
             </div>
             <div>
               <p className="text-app-muted">Stack</p>

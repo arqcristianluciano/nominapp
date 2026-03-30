@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Plus, CheckCircle, XCircle, Banknote } from 'lucide-react'
 import { loanService, calcInstallmentAmount } from '@/services/loanService'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { formatRD } from '@/utils/currency'
 import type { ContractorLoan } from '@/types/database'
 
@@ -23,6 +24,7 @@ export function PrestamoSection({ contractorId }: Props) {
   const [showAdd, setShowAdd] = useState(false)
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
+  const [cancelId, setCancelId] = useState<string | null>(null)
 
   async function load() {
     const data = await loanService.getByContractor(contractorId)
@@ -58,8 +60,8 @@ export function PrestamoSection({ contractorId }: Props) {
   }
 
   async function handleCancel(id: string) {
-    if (!confirm('¿Cancelar este préstamo?')) return
     await loanService.updateStatus(id, 'cancelled')
+    setCancelId(null)
     load()
   }
 
@@ -104,6 +106,16 @@ export function PrestamoSection({ contractorId }: Props) {
                 {saving ? '...' : 'Agregar'}
               </button>
             </div>
+          </div>
+          <div>
+            <p className="text-[10px] text-app-muted mb-1">Notas (opcional)</p>
+            <input
+              type="text"
+              value={form.notes}
+              onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              placeholder="Motivo, referencia u observación..."
+              className={inputCls}
+            />
           </div>
           {preview > 0 && (
             <p className="text-[10px] text-blue-600 dark:text-blue-400">
@@ -153,7 +165,7 @@ export function PrestamoSection({ contractorId }: Props) {
                         <button onClick={() => handleMarkPaid(loan.id)} title="Marcar pagado" className="p-1 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded">
                           <CheckCircle className="w-3.5 h-3.5" />
                         </button>
-                        <button onClick={() => handleCancel(loan.id)} title="Cancelar" className="p-1 text-app-subtle hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded">
+                        <button onClick={() => setCancelId(loan.id)} title="Cancelar" className="p-1 text-app-subtle hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded">
                           <XCircle className="w-3.5 h-3.5" />
                         </button>
                       </div>
@@ -165,6 +177,16 @@ export function PrestamoSection({ contractorId }: Props) {
           </tbody>
         </table>
       )}
+
+      <ConfirmModal
+        open={!!cancelId}
+        title="Cancelar préstamo"
+        message="¿Cancelar este préstamo? El saldo pendiente quedará sin efecto."
+        confirmLabel="Cancelar préstamo"
+        variant="warning"
+        onConfirm={() => cancelId && handleCancel(cancelId)}
+        onCancel={() => setCancelId(null)}
+      />
     </div>
   )
 }

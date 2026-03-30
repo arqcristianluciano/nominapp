@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { payrollService } from '@/services/payrollService'
 import { useAuthStore } from '@/stores/authStore'
+import type { PayrollPeriod } from '@/types/database'
 
 interface Props {
   projectId: string
@@ -15,13 +17,23 @@ export function CreatePayrollForm({ projectId, onCreated, onCancel }: Props) {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [draftPeriod, setDraftPeriod] = useState<PayrollPeriod | null>(null)
+  const [checking, setChecking] = useState(true)
 
   useEffect(() => {
-    payrollService.getNextPeriodNumber(projectId).then(setNumber)
+    setChecking(true)
+    Promise.all([
+      payrollService.getNextPeriodNumber(projectId),
+      payrollService.getDraftPeriod(projectId),
+    ]).then(([nextNum, draft]) => {
+      setNumber(nextNum)
+      setDraftPeriod(draft)
+    }).finally(() => setChecking(false))
   }, [projectId])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (draftPeriod) return
     setSaving(true)
     setError('')
     try {
@@ -37,6 +49,37 @@ export function CreatePayrollForm({ projectId, onCreated, onCancel }: Props) {
     } finally {
       setSaving(false)
     }
+  }
+
+  if (checking) {
+    return <div className="text-sm text-app-muted py-4 text-center">Verificando...</div>
+  }
+
+  if (draftPeriod) {
+    const statusLabel = draftPeriod.status === 'submitted' ? 'enviado' : 'borrador'
+    return (
+      <div className="space-y-4">
+        <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm text-amber-800">
+          <p className="font-medium mb-1">Hay un reporte sin concluir</p>
+          <p className="text-amber-700">
+            El <span className="font-semibold">Reporte No. {draftPeriod.period_number}</span> está en estado{' '}
+            <span className="font-semibold">{statusLabel}</span>. Debe aprobarse o pagarse antes de crear uno nuevo.
+          </p>
+        </div>
+        <div className="flex justify-between items-center pt-1">
+          <button type="button" onClick={onCancel} className="px-4 py-2 text-sm text-app-muted">
+            Cerrar
+          </button>
+          <Link
+            to={`/nominas/${draftPeriod.id}`}
+            onClick={onCancel}
+            className="px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700"
+          >
+            Ver reporte pendiente
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   return (

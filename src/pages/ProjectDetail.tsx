@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { Plus, Calendar, Landmark, BarChart3, Trash2, ClipboardCheck, Layers, Pencil, PackageSearch } from 'lucide-react'
+import { Plus, Calendar, Landmark, BarChart3, Trash2, ClipboardCheck, Layers, Pencil, PackageSearch, Copy } from 'lucide-react'
 import { Breadcrumb } from '@/components/ui/Breadcrumb'
 import { useProjectStore } from '@/stores/projectStore'
 import { usePayrollStore } from '@/stores/payrollStore'
@@ -9,6 +9,7 @@ import { budgetCategoryService } from '@/services/budgetCategoryService'
 import { payrollService } from '@/services/payrollService'
 import { projectService } from '@/services/projectService'
 import { Modal } from '@/components/ui/Modal'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { CreatePayrollForm } from '@/components/features/payroll/CreatePayrollForm'
 import { ProjectForm } from '@/components/features/projects/ProjectForm'
 import { formatRD } from '@/utils/currency'
@@ -25,8 +26,10 @@ export default function ProjectDetail() {
 
   const project = projects.find((p) => p.id === projectId)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [showEditProject, setShowEditProject] = useState(false)
   const [savingProject, setSavingProject] = useState(false)
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!projects.length) fetchProjects()
@@ -50,13 +53,24 @@ export default function ProjectDetail() {
   }
 
   async function handleDeletePeriod(periodId: string) {
-    if (!confirm('¿Eliminar este reporte? Esta acción no se puede deshacer.')) return
     setDeletingId(periodId)
     try {
       await payrollService.deletePeriod(periodId)
       if (projectId) fetchPeriods(projectId)
     } finally {
       setDeletingId(null)
+      setConfirmDeleteId(null)
+    }
+  }
+
+  async function handleDuplicatePeriod(periodId: string) {
+    if (!projectId) return
+    setDuplicatingId(periodId)
+    try {
+      const newPeriod = await payrollService.duplicatePeriod(periodId, projectId)
+      navigate(`/nominas/${newPeriod.id}`)
+    } finally {
+      setDuplicatingId(null)
     }
   }
 
@@ -246,16 +260,26 @@ export default function ProjectDetail() {
                     <span className="text-sm font-medium text-app-text hidden sm:inline">{formatRD(period.grand_total || 0)}</span>
                   </div>
                 </Link>
-                {period.status === 'draft' && (
+                <div className="flex items-center gap-1">
                   <button
-                    onClick={() => handleDeletePeriod(period.id)}
-                    disabled={deletingId === period.id}
-                    className="p-2 text-app-subtle hover:text-red-500 disabled:opacity-50"
-                    title="Eliminar reporte"
+                    onClick={() => handleDuplicatePeriod(period.id)}
+                    disabled={duplicatingId === period.id}
+                    className="p-2 text-app-subtle hover:text-blue-500 disabled:opacity-50"
+                    title="Duplicar reporte"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Copy className="w-4 h-4" />
                   </button>
-                )}
+                  {period.status === 'draft' && (
+                    <button
+                      onClick={() => setConfirmDeleteId(period.id)}
+                      disabled={deletingId === period.id}
+                      className="p-2 text-app-subtle hover:text-red-500 disabled:opacity-50"
+                      title="Eliminar reporte"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -280,6 +304,15 @@ export default function ProjectDetail() {
           />
         )}
       </Modal>
+
+      <ConfirmModal
+        open={!!confirmDeleteId}
+        title="Eliminar reporte"
+        message="¿Eliminar este reporte? Esta acción no se puede deshacer y se perderán todas las partidas asociadas."
+        confirmLabel="Eliminar"
+        onConfirm={() => confirmDeleteId && handleDeletePeriod(confirmDeleteId)}
+        onCancel={() => setConfirmDeleteId(null)}
+      />
     </div>
   )
 }

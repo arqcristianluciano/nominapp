@@ -10,28 +10,41 @@ export const dashboardService = {
         .from('transactions')
         .select('id, total, payment_condition, date, description, project_id, created_at')
         .order('created_at', { ascending: false })
-        .limit(50),
+        .limit(200),
     ])
 
     const payrolls = payrollRes.data || []
     const transactions = transactionsRes.data || []
 
-    const totalInvested = payrolls.reduce((sum: number, p: any) => sum + (p.grand_total || 0), 0)
-
     const now = new Date()
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
+    const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split('T')[0]
+    const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().split('T')[0]
+
+    const totalInvested = payrolls.reduce((sum: number, p: any) => sum + (p.grand_total || 0), 0)
+    const prevInvested = payrolls
+      .filter((p: any) => p.created_at && p.created_at >= prevMonthStart && p.created_at <= prevMonthEnd + 'T23:59:59Z')
+      .reduce((sum: number, p: any) => sum + (p.grand_total || 0), 0)
+
     const payrollsThisMonth = payrolls.filter(
       (p: any) => p.created_at && p.created_at >= monthStart
     ).length
+    const prevPayrolls = payrolls.filter(
+      (p: any) => p.created_at && p.created_at >= prevMonthStart && p.created_at <= prevMonthEnd + 'T23:59:59Z'
+    ).length
 
-    const cxpTotal = transactions
-      .filter((t: any) => t.payment_condition?.includes('Credito'))
-      .reduce((sum: number, t: any) => sum + (t.total || 0), 0)
+    const cxpTxns = transactions.filter((t: any) => t.payment_condition?.includes('Credito'))
+    const cxpTotal = cxpTxns.reduce((sum: number, t: any) => sum + (t.total || 0), 0)
+    const prevCxpTxns = cxpTxns.filter((t: any) => t.date && t.date >= prevMonthStart && t.date <= prevMonthEnd)
+    const prevCxp = prevCxpTxns.reduce((sum: number, t: any) => sum + (t.total || 0), 0)
 
     return {
       totalInvested,
       payrollsThisMonth,
       cxpTotal,
+      prevInvested,
+      prevPayrolls,
+      prevCxp,
     }
   },
 

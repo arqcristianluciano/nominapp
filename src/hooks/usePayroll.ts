@@ -155,16 +155,27 @@ export function usePayroll(periodId: string | undefined) {
 
   const updateStatus = useCallback(async (status: 'draft' | 'submitted' | 'approved' | 'paid') => {
     if (!periodId) return
+
+    if (status === 'submitted') {
+      const hasLabor = laborItems.length > 0
+      const hasMaterials = materialInvoices.length > 0
+      if (!hasLabor && !hasMaterials) {
+        setError('El reporte debe tener al menos una partida de mano de obra o una factura de materiales antes de enviarlo.')
+        return
+      }
+    }
+
     setSaving(true)
     try {
       const updated = await payrollService.updatePeriodStatus(periodId, status)
       setPeriod(prev => prev ? { ...prev, ...updated } : null)
+      setError(null)
     } catch (e: any) {
       setError(e.message)
     } finally {
       setSaving(false)
     }
-  }, [periodId])
+  }, [periodId, laborItems, materialInvoices])
 
   return {
     period, laborItems, materialInvoices, indirectCosts,

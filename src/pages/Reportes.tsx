@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { FileText } from 'lucide-react'
+import { FileText, Download } from 'lucide-react'
+import * as XLSX from 'xlsx'
 import { useProjectStore } from '@/stores/projectStore'
 import { transactionService } from '@/services/transactionService'
 import { budgetCategoryService } from '@/services/budgetCategoryService'
@@ -95,11 +96,57 @@ export default function Reportes() {
     { totalIncurrido: 0, presupuesto: 0, cxp: 0, cashDisponible: 0 }
   )
 
+  function exportToExcel() {
+    const rows = reports.map((r) => ({
+      'Proyecto': r.name,
+      'Código': r.code,
+      'Total incurrido (RD$)': r.totalIncurrido,
+      'Presupuesto (RD$)': r.presupuesto,
+      '% Avance financiero': r.avance.toFixed(1) + '%',
+      'CxP (RD$)': r.cxp,
+      'Cash disponible (RD$)': r.cashDisponible,
+      'Acordado cubicaciones (RD$)': r.acordado,
+      'Acumulado cubicaciones (RD$)': r.acumulado,
+      'Pendiente cubicaciones (RD$)': r.pendiente,
+      '% Avance cubicaciones': r.avgCompletion.toFixed(1) + '%',
+    }))
+
+    rows.push({
+      'Proyecto': 'TOTALES',
+      'Código': '',
+      'Total incurrido (RD$)': totals.totalIncurrido,
+      'Presupuesto (RD$)': totals.presupuesto,
+      '% Avance financiero': '',
+      'CxP (RD$)': totals.cxp,
+      'Cash disponible (RD$)': totals.cashDisponible,
+      'Acordado cubicaciones (RD$)': 0,
+      'Acumulado cubicaciones (RD$)': 0,
+      'Pendiente cubicaciones (RD$)': 0,
+      '% Avance cubicaciones': '',
+    } as any)
+
+    const ws = XLSX.utils.json_to_sheet(rows)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Resumen Financiero')
+    const date = new Date().toISOString().split('T')[0]
+    XLSX.writeFile(wb, `resumen-financiero-${date}.xlsx`)
+  }
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-app-text">Resumen Financiero</h1>
-        <p className="text-sm text-app-muted mt-1">Reporte consolidado de todos los proyectos activos</p>
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-app-text">Resumen Financiero</h1>
+          <p className="text-sm text-app-muted mt-1">Reporte consolidado de todos los proyectos activos</p>
+        </div>
+        {reports.length > 0 && (
+          <button
+            onClick={exportToExcel}
+            className="flex items-center gap-2 px-4 py-2 border border-app-border bg-app-surface text-sm font-medium text-app-muted rounded-xl hover:bg-app-hover transition-colors"
+          >
+            <Download className="w-4 h-4" /> Exportar Excel
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

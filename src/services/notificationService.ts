@@ -12,6 +12,8 @@ export interface AppNotification {
 
 const DAYS_APPROACHING = 15
 const DAYS_OVERDUE = 28
+const CXP_WARNING_DAYS = 30
+const CXP_DANGER_DAYS = 60
 
 export const notificationService = {
   async getAll(): Promise<AppNotification[]> {
@@ -20,7 +22,10 @@ export const notificationService = {
     approachingCutoff.setDate(approachingCutoff.getDate() - DAYS_APPROACHING)
     const cutoffStr = approachingCutoff.toISOString().split('T')[0]
 
-    const [poRes, qcOverdueRes, qcFailedRes] = await Promise.all([
+    const warningDateStr = new Date(today.getTime() - CXP_WARNING_DAYS * 86400000).toISOString().split('T')[0]
+    const dangerDateStr = new Date(today.getTime() - CXP_DANGER_DAYS * 86400000).toISOString().split('T')[0]
+
+    const [poRes, qcOverdueRes, qcFailedRes, txnDangerRes, txnWarningRes] = await Promise.all([
       supabase
         .from('purchase_orders')
         .select('id, order_number, project:projects(name)')
@@ -35,6 +40,19 @@ export const notificationService = {
         .select('id, element, project_id')
         .eq('status', 'failed')
         .order('pour_date', { ascending: false })
+        .limit(10),
+      supabase
+        .from('transactions')
+        .select('id, description, total, date, project_id, supplier:suppliers(name)')
+        .ilike('payment_condition', '%Credito%')
+        .lte('date', dangerDateStr)
+        .limit(10),
+      supabase
+        .from('transactions')
+        .select('id, description, total, date, project_id, supplier:suppliers(name)')
+        .ilike('payment_condition', '%Credito%')
+        .lte('date', warningDateStr)
+        .gt('date', dangerDateStr)
         .limit(10),
     ])
 
@@ -73,6 +91,28 @@ export const notificationService = {
         title: 'Ensayo de hormigón fallido',
         description: qc.element,
         link: `/proyectos/${qc.project_id}/calidad`,
+      })
+    }
+
+    for (const txn of (txnDangerRes.data || []) as any[]) {
+      const days = Math.floor((today.getTime() - new Date(txn.date).getTime()) / 86400000)
+      notifications.push({
+        id: `cxp-danger-${txn.id}`,
+        level: 'danger',
+        title: 'CxP vencida (+60 días)',
+        description: `${(txn.supplier as any)?.name ?? txn.description} — ${days}d sin pagar`,
+        link: `/proyectos/${txn.project_id}/control`,
+      })
+    }
+
+    for (const txn of (txnWarningRes.data || []) as any[]) {
+      const days = Math.floor((today.getTime() - new Date(txn.date).getTime()) / 86400000)
+      notifications.push({
+        id: `cxp-warning-${txn.id}`,
+        level: 'warning',
+        title: 'CxP por vencer (31-60 días)',
+        description: `${(txn.supplier as any)?.name ?? txn.description} — ${days}d sin pagar`,
+        link: `/proyectos/${txn.project_id}/control`,
       })
     }
 

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Plus, Pencil, Trash2, X, Check } from 'lucide-react'
 import type { PriceListItem, PriceListCategory } from '@/types/database'
 import { formatRD } from '@/utils/currency'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { MEASURE_UNITS } from '@/constants/measureUnits'
 
 interface Props {
@@ -125,12 +126,13 @@ export default function PriceListPanel({ projectId, items, onAdd, onUpdate, onDe
   const [showAddForm, setShowAddForm] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
   const [filterCat, setFilterCat] = useState<PriceListCategory | 'all'>('all')
+  const [deleteId, setDeleteId] = useState<string | null>(null)
 
   const filtered = filterCat === 'all' ? items : items.filter((i) => i.category === filterCat)
 
   const handleDelete = async (id: string) => {
-    if (!confirm('¿Eliminar este ítem de precios?')) return
     await onDelete(id)
+    setDeleteId(null)
   }
 
   const getCatStyle = (cat: PriceListCategory) =>
@@ -227,7 +229,7 @@ export default function PriceListPanel({ projectId, items, onAdd, onUpdate, onDe
                         <Pencil className="w-3 h-3" />
                       </button>
                       <button
-                        onClick={() => handleDelete(item.id)}
+                        onClick={() => setDeleteId(item.id)}
                         className="p-1 text-app-subtle hover:text-red-600 hover:bg-red-50 rounded"
                       >
                         <Trash2 className="w-3 h-3" />
@@ -240,6 +242,15 @@ export default function PriceListPanel({ projectId, items, onAdd, onUpdate, onDe
           </tbody>
         </table>
       </div>
+
+      <ConfirmModal
+        open={!!deleteId}
+        title="Eliminar ítem de precios"
+        message="¿Eliminar este ítem de la lista de precios? Esta acción no se puede deshacer."
+        confirmLabel="Eliminar"
+        onConfirm={() => deleteId && handleDelete(deleteId)}
+        onCancel={() => setDeleteId(null)}
+      />
     </div>
   )
 }
