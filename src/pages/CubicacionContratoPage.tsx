@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, FileText, Scissors, Wallet, Printer, Banknote } from 'lucide-react'
+import { ArrowLeft, FileText, Scissors, Wallet, Printer, Banknote, FileSignature } from 'lucide-react'
 import { contractService } from '@/services/cubicationService'
 import { useProjectStore } from '@/stores/projectStore'
 import { formatRD } from '@/utils/currency'
@@ -80,10 +80,16 @@ export default function CubicacionContratoPage() {
           </p>
           {contrato.notes && <p className="text-xs text-app-muted mt-1 italic">{contrato.notes}</p>}
           </div>
-          <Link to={`/proyectos/${projectId}/cubicaciones/${contratoId}/imprimir`}
-            className="flex items-center gap-2 px-3 py-2 text-sm text-app-muted border border-app-border rounded-lg hover:bg-app-hover shrink-0">
-            <Printer className="w-4 h-4" /> Imprimir
-          </Link>
+          <div className="flex items-center gap-2 shrink-0">
+            <Link to={`/proyectos/${projectId}/cubicaciones/${contratoId}/contrato`}
+              className="flex items-center gap-2 px-3 py-2 text-sm text-white bg-blue-600 border border-blue-600 rounded-lg hover:bg-blue-700">
+              <FileSignature className="w-4 h-4" /> Generar contrato
+            </Link>
+            <Link to={`/proyectos/${projectId}/cubicaciones/${contratoId}/imprimir`}
+              className="flex items-center gap-2 px-3 py-2 text-sm text-app-muted border border-app-border rounded-lg hover:bg-app-hover">
+              <Printer className="w-4 h-4" /> Reporte
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -124,7 +130,7 @@ export default function CubicacionContratoPage() {
         </div>
         <div className="p-5">
           {tab === 'partidas' && (
-            <PartidaSection contractId={contratoId!} partidas={partidas} cortes={cortes} onRefresh={load} />
+            <PartidaSection contractId={contratoId!} projectId={projectId!} partidas={partidas} cortes={cortes} onRefresh={load} />
           )}
           {tab === 'cortes' && (
             <CorteSection

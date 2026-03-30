@@ -24,6 +24,7 @@ import CubicacionesPage from '@/pages/CubicacionesPage'
 import CubicacionesHub from '@/pages/CubicacionesHub'
 import CubicacionContratoPage from '@/pages/CubicacionContratoPage'
 import CubicacionImprimirPage from '@/pages/CubicacionImprimirPage'
+import ContratoFirmaPage from '@/pages/ContratoFirmaPage'
 import PayrollPrint from '@/pages/PayrollPrint'
 import PurchaseOrders from '@/pages/PurchaseOrders'
 import PurchaseOrderDetail from '@/pages/PurchaseOrderDetail'
@@ -56,6 +57,7 @@ export const router = createBrowserRouter([
           { path: 'proyectos/:projectId/cubicaciones', element: <CubicacionesPage /> },
           { path: 'proyectos/:projectId/cubicaciones/:contratoId', element: <CubicacionContratoPage /> },
           { path: 'proyectos/:projectId/cubicaciones/:contratoId/imprimir', element: <CubicacionImprimirPage /> },
+          { path: 'proyectos/:projectId/cubicaciones/:contratoId/contrato', element: <ContratoFirmaPage /> },
           { path: 'nominas', element: <ReportesObra /> },
           { path: 'nominas/:periodId', element: <PayrollEditor /> },
           { path: 'finanzas', element: <FinanzasHub /> },
