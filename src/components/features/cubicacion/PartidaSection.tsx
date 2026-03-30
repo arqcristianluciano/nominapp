@@ -128,11 +128,11 @@ export function PartidaSection({ contractId, projectId, partidas, cortes, onRefr
 
       {(showAdd || editing) && (
         <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 space-y-2">
-          <div className="grid grid-cols-12 gap-2 items-start">
+          <div className="grid grid-cols-12 gap-2 items-end">
             {/* Picker desde lista de precios */}
-            <div className="col-span-5 relative" ref={dropdownRef}>
+            <div className="col-span-4 relative" ref={dropdownRef}>
               <p className="text-[10px] text-app-muted mb-1">
-                Descripción * <span className="text-blue-500">(selecciona del presupuesto)</span>
+                Descripción * <span className="text-blue-500">(del presupuesto)</span>
               </p>
               <div className="relative">
                 <input
@@ -157,7 +157,7 @@ export function PartidaSection({ contractId, projectId, partidas, cortes, onRefr
                     </button>
                   ))}
                   {priceList.length === 0 && (
-                    <p className="px-3 py-2 text-xs text-app-muted">Sin ítems en la lista de precios del presupuesto.</p>
+                    <p className="px-3 py-2 text-xs text-app-muted">Sin ítems en la lista de precios.</p>
                   )}
                 </div>
               )}
@@ -168,28 +168,37 @@ export function PartidaSection({ contractId, projectId, partidas, cortes, onRefr
               <input value={form.unit} onChange={(e) => setForm((f) => ({ ...f, unit: e.target.value }))} className={`${inputCls} w-full`} />
             </div>
 
+            {/* Precio presupuesto — fijo, solo lectura */}
             <div className="col-span-2">
-              <p className="text-[10px] text-app-muted mb-1">Precio acordado (RD$)</p>
+              <p className="text-[10px] text-app-muted mb-1">P. Presupuesto (RD$)</p>
+              <input
+                readOnly
+                value={form.budget_unit_price !== null ? form.budget_unit_price : '—'}
+                className={`${inputCls} w-full bg-app-chip text-app-muted cursor-not-allowed`}
+                tabIndex={-1}
+              />
+            </div>
+
+            {/* Precio acordado — editable */}
+            <div className="col-span-2">
+              <p className="text-[10px] text-app-muted mb-1">
+                P. Acordado (RD$)
+                {priceDiff !== null && priceDiff !== 0 && (
+                  <span className={`ml-1 font-semibold ${priceDiff > 0 ? 'text-red-500' : 'text-green-600'}`}>
+                    {priceDiff > 0 ? '▲' : '▼'} {formatRD(Math.abs(priceDiff))}
+                  </span>
+                )}
+              </p>
               <input
                 type="number"
                 value={form.unit_price}
                 onChange={(e) => setForm((f) => ({ ...f, unit_price: e.target.value }))}
                 placeholder="0"
-                className={`${inputCls} w-full`}
+                className={`${inputCls} w-full ring-1 ring-blue-400`}
               />
-              {form.budget_unit_price !== null && (
-                <p className="text-[10px] mt-0.5 text-app-muted">
-                  Ppto: <span className="text-app-text font-medium">{formatRD(form.budget_unit_price)}</span>
-                  {priceDiff !== null && priceDiff !== 0 && (
-                    <span className={`ml-1 font-semibold ${priceDiff > 0 ? 'text-red-500' : 'text-green-600'}`}>
-                      ({priceDiff > 0 ? '+' : ''}{formatRD(priceDiff)})
-                    </span>
-                  )}
-                </p>
-              )}
             </div>
 
-            <div className="col-span-2">
+            <div className="col-span-1">
               <p className="text-[10px] text-app-muted mb-1">Cant. acordada</p>
               <input
                 type="number"
@@ -200,7 +209,7 @@ export function PartidaSection({ contractId, projectId, partidas, cortes, onRefr
               />
             </div>
 
-            <div className="col-span-2 flex gap-1 justify-end pt-4">
+            <div className="col-span-2 flex gap-1 justify-end">
               <button onClick={cancelForm} className="px-2 py-1.5 text-xs border border-app-border rounded-md hover:bg-app-hover text-app-muted">Cancelar</button>
               <button onClick={handleSave} disabled={saving} className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">
                 {saving ? '...' : editing ? 'Guardar' : 'Agregar'}
