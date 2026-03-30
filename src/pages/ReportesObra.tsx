@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Plus, Calendar, FileText, TrendingUp, ChevronDown, ChevronUp } from 'lucide-react'
+import { Plus, Calendar, FileText, TrendingUp, ChevronDown, ChevronUp, Trash2 } from 'lucide-react'
 import { payrollService } from '@/services/payrollService'
 import { projectService } from '@/services/projectService'
 import { Modal } from '@/components/ui/Modal'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { CreatePayrollForm } from '@/components/features/payroll/CreatePayrollForm'
 import { formatRD } from '@/utils/currency'
 import type { PayrollPeriod, Project } from '@/types/database'
@@ -75,6 +76,8 @@ export default function ReportesObra() {
   const [showCreate, setShowCreate] = useState(false)
   const [selectedProjectId, setSelectedProjectId] = useState<string>('')
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set())
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   function toggleExpand(projectId: string) {
     setExpandedProjects((prev) => {
@@ -82,6 +85,17 @@ export default function ReportesObra() {
       next.has(projectId) ? next.delete(projectId) : next.add(projectId)
       return next
     })
+  }
+
+  async function handleDelete(periodId: string) {
+    setDeletingId(periodId)
+    try {
+      await payrollService.deletePeriod(periodId)
+      setPeriods((prev) => prev.filter((p) => p.id !== periodId))
+    } finally {
+      setDeletingId(null)
+      setConfirmDeleteId(null)
+    }
   }
 
   useEffect(() => {
@@ -165,33 +179,44 @@ export default function ReportesObra() {
                 <ProjectSummaryBar periods={pp} />
                 <div className="space-y-2">
                   {visible.map((period) => (
-                    <Link
-                      key={period.id}
-                      to={`/nominas/${period.id}`}
-                      className="flex items-center justify-between bg-app-surface rounded-xl border border-app-border px-4 py-3 hover:border-blue-300 hover:shadow-sm transition-all"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-semibold text-sm">
-                          {period.period_number}
+                    <div key={period.id} className="flex items-center gap-2">
+                      <Link
+                        to={`/nominas/${period.id}`}
+                        className="flex-1 flex items-center justify-between bg-app-surface rounded-xl border border-app-border px-4 py-3 hover:border-blue-300 hover:shadow-sm transition-all"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-semibold text-sm">
+                            {period.period_number}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-app-text">Reporte No. {period.period_number}</p>
+                            <p className="text-xs text-app-muted flex items-center gap-1 mt-0.5">
+                              <Calendar className="w-3 h-3" />
+                              {new Date(period.report_date).toLocaleDateString('es-DO')}
+                              {period.reported_by && ` · ${period.reported_by}`}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm font-medium text-app-text">Reporte No. {period.period_number}</p>
-                          <p className="text-xs text-app-muted flex items-center gap-1 mt-0.5">
-                            <Calendar className="w-3 h-3" />
-                            {new Date(period.report_date).toLocaleDateString('es-DO')}
-                            {period.reported_by && ` · ${period.reported_by}`}
-                          </p>
+                        <div className="flex items-center gap-3">
+                          <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${STATUS_COLORS[period.status] ?? 'bg-app-chip text-app-muted'}`}>
+                            {STATUS_LABELS[period.status] ?? period.status}
+                          </span>
+                          <span className="text-sm font-semibold text-app-text hidden sm:inline">
+                            {formatRD(period.grand_total || 0)}
+                          </span>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${STATUS_COLORS[period.status] ?? 'bg-app-chip text-app-muted'}`}>
-                          {STATUS_LABELS[period.status] ?? period.status}
-                        </span>
-                        <span className="text-sm font-semibold text-app-text hidden sm:inline">
-                          {formatRD(period.grand_total || 0)}
-                        </span>
-                      </div>
-                    </Link>
+                      </Link>
+                      {period.status === 'draft' && (
+                        <button
+                          onClick={() => setConfirmDeleteId(period.id)}
+                          disabled={deletingId === period.id}
+                          className="p-2 text-app-subtle hover:text-red-500 disabled:opacity-30"
+                          title="Eliminar borrador"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
                   ))}
                 </div>
                 {hasMore && (
@@ -232,6 +257,15 @@ export default function ReportesObra() {
           )}
         </div>
       )}
+
+      <ConfirmModal
+        open={!!confirmDeleteId}
+        title="Eliminar borrador"
+        message="¿Eliminar este reporte en borrador? Esta acción no se puede deshacer."
+        confirmLabel="Eliminar"
+        onConfirm={() => confirmDeleteId && handleDelete(confirmDeleteId)}
+        onCancel={() => setConfirmDeleteId(null)}
+      />
 
       <Modal open={showCreate} onClose={() => setShowCreate(false)} title="Nuevo reporte">
         {showCreate && (
