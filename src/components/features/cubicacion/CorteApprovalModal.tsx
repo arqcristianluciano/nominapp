@@ -3,6 +3,7 @@ import { CheckCircle, ShieldCheck } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { SignatureCanvas } from '@/components/features/purchase-orders/SignatureCanvas'
 import { approvalCode } from '@/utils/approvalCode'
+import { useAuthStore } from '@/stores/authStore'
 
 interface Props {
   open: boolean
@@ -13,14 +14,15 @@ interface Props {
 }
 
 export function CorteApprovalModal({ open, onClose, corteNum, amount, onApprove }: Props) {
+  const user = useAuthStore((s) => s.user)
   const [code, setCode] = useState('')
-  const [approvedBy, setApprovedBy] = useState('')
+  const [approvedBy, setApprovedBy] = useState(user?.displayName ?? '')
   const [signature, setSignature] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   function reset() {
-    setCode(''); setApprovedBy(''); setSignature(null); setError(null)
+    setCode(''); setApprovedBy(user?.displayName ?? ''); setSignature(null); setError(null)
   }
 
   function handleClose() { reset(); onClose() }

@@ -4,9 +4,11 @@ import {
   getCortesByPayroll,
   getApprovedCortesByProject,
   corteService,
+  adelantoService,
 } from '@/services/cubicationService'
 import { payrollService } from '@/services/payrollService'
 import { formatRD, formatNumber } from '@/utils/currency'
+import { CorteAdelantoConfirm } from './CorteAdelantoConfirm'
 import type { ContractCorte, AdjustmentContract } from '@/types/database'
 
 type LinkedCorte = ContractCorte & { contract: AdjustmentContract | null }
@@ -22,9 +24,11 @@ export function CubicacionesPayrollSection({ periodId, projectId, isDraft, onCor
   const [linked, setLinked] = useState<LinkedCorte[]>([])
   const [available, setAvailable] = useState<LinkedCorte[]>([])
   const [showAvailable, setShowAvailable] = useState(false)
-  const [linking, setLinking] = useState<string | null>(null)
+  const [linking, setLinking] = useState(false)
   const [unlinking, setUnlinking] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [pendingCorte, setPendingCorte] = useState<LinkedCorte | null>(null)
+  const [pendingAdelantoTotal, setPendingAdelantoTotal] = useState(0)
 
   const load = useCallback(async () => {
     const [l, a] = await Promise.all([
@@ -38,9 +42,9 @@ export function CubicacionesPayrollSection({ periodId, projectId, isDraft, onCor
 
   useEffect(() => { load() }, [load])
 
-  async function handleLink(corte: LinkedCorte) {
+  async function doLink(corte: LinkedCorte, deductAdelantos: boolean) {
     if (!corte.partida || !corte.contract) return
-    setLinking(corte.id)
+    setLinking(true)
     try {
       await payrollService.addLaborItem({
         payroll_period_id: periodId,
@@ -52,10 +56,38 @@ export function CubicacionesPayrollSection({ periodId, projectId, isDraft, onCor
         sort_order: 99,
         notes: `Retención: ${formatRD(corte.retention_amount)}`,
       })
+      if (deductAdelantos && pendingAdelantoTotal > 0) {
+        await payrollService.addLaborItem({
+          payroll_period_id: periodId,
+          contractor_id: (corte.contract as any).contractor_id,
+          description: `DEDUCCIÓN ADELANTOS — ${(corte.contract as any)?.contractor?.name}`,
+          quantity: 1,
+          unit: 'global',
+          unit_price: -pendingAdelantoTotal,
+          is_advance_deduction: true,
+          sort_order: 100,
+        })
+      }
       await corteService.linkToPayroll(corte.id, periodId)
       onCorteLinked()
       await load()
-    } finally { setLinking(null) }
+    } finally {
+      setLinking(false)
+      setPendingCorte(null)
+      setPendingAdelantoTotal(0)
+    }
+  }
+
+  async function handleLink(corte: LinkedCorte) {
+    if (!corte.partida || !corte.contract) return
+    const adelantos = await adelantoService.getByContract(corte.contract_id)
+    const total = adelantos.reduce((s, a) => s + a.amount, 0)
+    if (total > 0) {
+      setPendingAdelantoTotal(total)
+      setPendingCorte(corte)
+    } else {
+      await doLink(corte, false)
+    }
   }
 
   async function handleUnlink(corte: LinkedCorte) {
@@ -113,30 +145,18 @@ export function CubicacionesPayrollSection({ periodId, projectId, isDraft, onCor
               {linked.map((c) => (
                 <tr key={c.id} className="hover:bg-app-hover">
                   <td className="px-4 py-2.5">
-                    <p className="text-app-text font-medium text-xs">
-                      {(c.contract as any)?.contractor?.name ?? '—'}
-                    </p>
-                    <p className="text-app-muted text-xs mt-0.5">
-                      Corte #{c.cut_number} · {(c.partida as any)?.description ?? '—'}
-                    </p>
+                    <p className="text-app-text font-medium text-xs">{(c.contract as any)?.contractor?.name ?? '—'}</p>
+                    <p className="text-app-muted text-xs mt-0.5">Corte #{c.cut_number} · {(c.partida as any)?.description ?? '—'}</p>
                   </td>
                   <td className="px-4 py-2.5 text-right text-app-muted hidden sm:table-cell">
                     {formatNumber(c.measured_quantity)} {(c.partida as any)?.unit}
                   </td>
-                  <td className="px-4 py-2.5 text-right font-medium text-app-text">
-                    {formatRD(c.amount)}
-                  </td>
-                  <td className="px-4 py-2.5 text-right text-amber-600 hidden md:table-cell">
-                    {formatRD(c.retention_amount)}
-                  </td>
+                  <td className="px-4 py-2.5 text-right font-medium text-app-text">{formatRD(c.amount)}</td>
+                  <td className="px-4 py-2.5 text-right text-amber-600 hidden md:table-cell">{formatRD(c.retention_amount)}</td>
                   {isDraft && (
                     <td className="px-2 py-2.5">
-                      <button
-                        onClick={() => handleUnlink(c)}
-                        disabled={unlinking === c.id}
-                        title="Desvincular corte"
-                        className="p-1 text-app-subtle hover:text-red-500 disabled:opacity-40"
-                      >
+                      <button onClick={() => handleUnlink(c)} disabled={unlinking === c.id} title="Desvincular corte"
+                        className="p-1 text-app-subtle hover:text-red-500 disabled:opacity-40">
                         <Link2Off className="w-3.5 h-3.5" />
                       </button>
                     </td>
@@ -178,18 +198,26 @@ export function CubicacionesPayrollSection({ periodId, projectId, isDraft, onCor
                     · Neto: {formatRD(c.amount - c.retention_amount)}
                   </p>
                 </div>
-                <button
-                  onClick={() => handleLink(c)}
-                  disabled={linking === c.id}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium rounded-lg disabled:opacity-50 shrink-0 ml-3"
-                >
+                <button onClick={() => handleLink(c)} disabled={linking}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium rounded-lg disabled:opacity-50 shrink-0 ml-3">
                   <Link2 className="w-3.5 h-3.5" />
-                  {linking === c.id ? 'Vinculando...' : 'Vincular'}
+                  {linking ? 'Vinculando...' : 'Vincular'}
                 </button>
               </div>
             ))}
           </div>
         </div>
+      )}
+
+      {pendingCorte && (
+        <CorteAdelantoConfirm
+          open={!!pendingCorte}
+          onClose={() => { setPendingCorte(null); setPendingAdelantoTotal(0) }}
+          corte={pendingCorte}
+          adelantoTotal={pendingAdelantoTotal}
+          linking={linking}
+          onLink={(deduct) => doLink(pendingCorte, deduct)}
+        />
       )}
     </section>
   )
