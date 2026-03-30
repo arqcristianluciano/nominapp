@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { payrollService } from '@/services/payrollService'
+import { useAuthStore } from '@/stores/authStore'
 
 interface Props {
   projectId: string
@@ -8,9 +9,10 @@ interface Props {
 }
 
 export function CreatePayrollForm({ projectId, onCreated, onCancel }: Props) {
+  const user = useAuthStore((s) => s.user)
+  const reportedBy = user?.displayName ?? ''
   const [number, setNumber] = useState(1)
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
-  const [reportedBy, setReportedBy] = useState('Ing. Roni Hidalgo')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -66,12 +68,9 @@ export function CreatePayrollForm({ projectId, onCreated, onCancel }: Props) {
 
       <div>
         <label className="block text-xs font-medium text-app-muted mb-1">Reportado por</label>
-        <input
-          type="text"
-          value={reportedBy}
-          onChange={(e) => setReportedBy(e.target.value)}
-          className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+        <div className="w-full px-3 py-2 bg-app-chip text-app-muted border border-app-border rounded-lg text-sm select-none">
+          {reportedBy}
+        </div>
       </div>
 
       <div className="flex justify-end gap-2 pt-2">
