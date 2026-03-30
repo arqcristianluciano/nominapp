@@ -36,7 +36,7 @@ export function AdelantoSection({ contractId, adelantos, onRefresh }: Props) {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('¿Eliminar este adelanto?')) return
+    if (!confirm('¿Eliminar este avance?')) return
     await adelantoService.delete(id)
     onRefresh()
   }
@@ -51,7 +51,7 @@ export function AdelantoSection({ contractId, adelantos, onRefresh }: Props) {
           {total > 0 && <strong className="text-app-text ml-2">Total: {formatRD(total)}</strong>}
         </p>
         <button onClick={() => setShowAdd(true)} className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700">
-          <Plus className="w-3.5 h-3.5" /> Adelanto
+          <Plus className="w-3.5 h-3.5" /> Avance
         </button>
       </div>
 
@@ -79,7 +79,7 @@ export function AdelantoSection({ contractId, adelantos, onRefresh }: Props) {
       )}
 
       {adelantos.length === 0 && !showAdd ? (
-        <p className="text-sm text-app-muted py-4 text-center">No hay adelantos registrados.</p>
+        <p className="text-sm text-app-muted py-4 text-center">No hay avances registrados.</p>
       ) : (
         <table className="w-full text-xs">
           <thead>
@@ -103,7 +103,7 @@ export function AdelantoSection({ contractId, adelantos, onRefresh }: Props) {
             ))}
             {adelantos.length > 1 && (
               <tr className="bg-app-bg">
-                <td colSpan={2} className="py-2 text-right text-[10px] font-semibold text-app-muted uppercase">Total adelantos</td>
+                <td colSpan={2} className="py-2 text-right text-[10px] font-semibold text-app-muted uppercase">Total avances</td>
                 <td className="py-2 text-right font-bold text-amber-700">{formatRD(total)}</td>
                 <td />
               </tr>

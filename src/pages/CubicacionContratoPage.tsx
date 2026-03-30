@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, FileText, Scissors, Wallet, Printer } from 'lucide-react'
+import { ArrowLeft, FileText, Scissors, Wallet, Banknote, Printer } from 'lucide-react'
 import { contractService } from '@/services/cubicationService'
 import { useProjectStore } from '@/stores/projectStore'
 import { formatRD } from '@/utils/currency'
 import { PartidaSection } from '@/components/features/cubicacion/PartidaSection'
 import { CorteSection } from '@/components/features/cubicacion/CorteSection'
 import { AdelantoSection } from '@/components/features/cubicacion/AdelantoSection'
+import { PrestamoSection } from '@/components/features/cubicacion/PrestamoSection'
 import type { ContractWithContractor } from '@/services/cubicationService'
 import type { ContractPartida, ContractCorte, ContractAdelanto } from '@/types/database'
 
-type Tab = 'partidas' | 'cortes' | 'adelantos'
+type Tab = 'partidas' | 'cortes' | 'avances' | 'prestamos'
 
 export default function CubicacionContratoPage() {
   const { projectId, contratoId } = useParams<{ projectId: string; contratoId: string }>()
@@ -58,7 +59,8 @@ export default function CubicacionContratoPage() {
   const tabs: { id: Tab; label: string; icon: React.ReactNode; count: number }[] = [
     { id: 'partidas',  label: 'Partidas',  icon: <FileText className="w-3.5 h-3.5" />,  count: partidas.length },
     { id: 'cortes',    label: 'Cortes',    icon: <Scissors className="w-3.5 h-3.5" />,   count: cortes.length },
-    { id: 'adelantos', label: 'Adelantos', icon: <Wallet className="w-3.5 h-3.5" />,     count: adelantos.length },
+    { id: 'avances',   label: 'Avances',   icon: <Wallet className="w-3.5 h-3.5" />,     count: adelantos.length },
+    { id: 'prestamos', label: 'Préstamos', icon: <Banknote className="w-3.5 h-3.5" />,   count: 0 },
   ]
 
   return (
@@ -74,7 +76,7 @@ export default function CubicacionContratoPage() {
           <p className="text-sm text-app-muted mt-0.5">
             {contrato.contractor?.specialty}
             {contrato.signed_date && <span className="ml-3">· Firmado: {new Date(contrato.signed_date).toLocaleDateString('es-DO')}</span>}
-            {adelantosTotal > 0 && <span className="ml-3">· Adelantos: {formatRD(adelantosTotal)}</span>}
+            {adelantosTotal > 0 && <span className="ml-3">· Avances: {formatRD(adelantosTotal)}</span>}
           </p>
           {contrato.notes && <p className="text-xs text-app-muted mt-1 italic">{contrato.notes}</p>}
           </div>
@@ -135,8 +137,11 @@ export default function CubicacionContratoPage() {
               onRefresh={load}
             />
           )}
-          {tab === 'adelantos' && (
+          {tab === 'avances' && (
             <AdelantoSection contractId={contratoId!} adelantos={adelantos} onRefresh={load} />
+          )}
+          {tab === 'prestamos' && (
+            <PrestamoSection contractorId={contrato.contractor_id} />
           )}
         </div>
       </div>
