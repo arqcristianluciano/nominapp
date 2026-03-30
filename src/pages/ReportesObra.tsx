@@ -78,6 +78,7 @@ export default function ReportesObra() {
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set())
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [closingProjectId, setClosingProjectId] = useState<string | null>(null)
 
   function toggleExpand(projectId: string) {
     setExpandedProjects((prev) => {
@@ -85,6 +86,21 @@ export default function ReportesObra() {
       next.has(projectId) ? next.delete(projectId) : next.add(projectId)
       return next
     })
+  }
+
+  async function handleMarkAllPaid(projectId: string) {
+    setClosingProjectId(projectId)
+    try {
+      const drafts = periods.filter(
+        (p) => p.project_id === projectId && (p.status === 'draft' || p.status === 'submitted' || p.status === 'approved')
+      )
+      await Promise.all(drafts.map((p) => payrollService.updatePeriodStatus(p.id, 'paid')))
+      setPeriods((prev) =>
+        prev.map((p) => (p.project_id === projectId && p.status !== 'paid') ? { ...p, status: 'paid' } : p)
+      )
+    } finally {
+      setClosingProjectId(null)
+    }
   }
 
   async function handleDelete(periodId: string) {
@@ -161,12 +177,14 @@ export default function ReportesObra() {
                     <p className="text-xs text-app-subtle">{project.code}</p>
                   </div>
                   {hasDraft ? (
-                    <span
-                      title="Concluye el reporte en borrador antes de crear uno nuevo"
-                      className="flex items-center gap-1 text-xs text-amber-600 font-medium cursor-default"
+                    <button
+                      onClick={() => handleMarkAllPaid(project.id)}
+                      disabled={closingProjectId === project.id}
+                      className="flex items-center gap-1 text-xs text-amber-600 hover:text-emerald-600 font-medium disabled:opacity-50 transition-colors"
+                      title="Marcar todos los borradores como pagado"
                     >
-                      Borrador pendiente
-                    </span>
+                      {closingProjectId === project.id ? 'Guardando...' : 'Marcar como pagado'}
+                    </button>
                   ) : (
                     <button
                       onClick={() => { setSelectedProjectId(project.id); setShowCreate(true) }}
