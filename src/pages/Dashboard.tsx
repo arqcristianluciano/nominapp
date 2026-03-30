@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Building2, DollarSign, CreditCard, ClipboardList, ArrowRight, Landmark, BarChart3, FileText, Scissors } from 'lucide-react'
+import {
+  Building2, DollarSign, CreditCard, ClipboardList,
+  ArrowRight, Landmark, BarChart3, FileText, Scissors, TrendingUp,
+} from 'lucide-react'
 import { useProjectStore } from '@/stores/projectStore'
 import { dashboardService } from '@/services/dashboardService'
 import { getProjectsProgress, corteService } from '@/services/cubicationService'
@@ -75,73 +78,100 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-app-text">Dashboard</h1>
-        <p className="text-sm text-app-muted mt-1">Vista general de tus proyectos de construcción</p>
+        <h1 className="text-2xl font-bold text-app-text">Dashboard</h1>
+        <p className="text-sm text-app-muted mt-0.5">Vista general de tus proyectos de construcción</p>
       </div>
 
+      {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={Building2} label="Proyectos activos" value={activeProjects.length} color="blue" />
-        <StatCard icon={DollarSign} label="Total invertido" value={formatRD(totalInvested)} color="emerald" />
-        <StatCard icon={CreditCard} label="CxP pendientes" value={formatRD(cxpTotal)} color="red" />
-        <StatCard icon={ClipboardList} label="Reportes este mes" value={payrollsThisMonth} color="amber" />
+        <StatCard
+          icon={Building2}
+          label="Proyectos activos"
+          value={String(activeProjects.length)}
+          accent="blue"
+        />
+        <StatCard
+          icon={DollarSign}
+          label="Total invertido"
+          value={formatRD(totalInvested)}
+          accent="emerald"
+        />
+        <StatCard
+          icon={CreditCard}
+          label="CxP pendientes"
+          value={formatRD(cxpTotal)}
+          accent="red"
+        />
+        <StatCard
+          icon={ClipboardList}
+          label="Reportes este mes"
+          value={String(payrollsThisMonth)}
+          accent="amber"
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Active Projects with progress */}
-        <div className="lg:col-span-2">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-medium text-app-text">Proyectos activos</h2>
-            <Link to="/proyectos" className="text-xs text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1">
+        {/* Active Projects */}
+        <div className="lg:col-span-2 space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-semibold text-app-text">Proyectos activos</h2>
+            <Link to="/proyectos" className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 dark:text-blue-400">
               Ver todos <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
+
           {loading ? (
-            <div className="text-sm text-app-muted">Cargando...</div>
+            <ProjectsSkeleton />
           ) : activeProjects.length === 0 ? (
-            <div className="bg-app-surface rounded-xl border border-app-border p-8 text-center">
-              <Building2 className="w-10 h-10 text-app-subtle mx-auto mb-3" />
-              <p className="text-app-muted text-sm">No hay proyectos activos</p>
-              <Link to="/proyectos" className="mt-2 inline-block text-sm text-blue-600 hover:text-blue-800 font-medium">
-                Crear un proyecto
-              </Link>
-            </div>
+            <EmptyProjects />
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {activeProjects.slice(0, 4).map((project) => (
                 <ProjectCard key={project.id} project={project} progress={progressMap[project.id]} />
               ))}
               {activeProjects.length > 4 && (
-                <Link to="/proyectos" className="block text-center text-xs text-blue-600 hover:text-blue-800 font-medium py-1">
-                  Ver {activeProjects.length - 4} más
+                <Link to="/proyectos" className="block text-center text-xs text-blue-600 hover:text-blue-700 font-medium py-1 dark:text-blue-400">
+                  Ver {activeProjects.length - 4} proyecto{activeProjects.length - 4 !== 1 ? 's' : ''} más
                 </Link>
               )}
             </div>
           )}
         </div>
 
-        {/* Cortes pendientes de pago */}
+        {/* Right column */}
         <div className="space-y-4">
           {pendingCortes.length > 0 && (
             <div>
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-lg font-medium text-app-text flex items-center gap-2">
+                <h2 className="text-base font-semibold text-app-text flex items-center gap-2">
                   <Scissors className="w-4 h-4 text-amber-500" />
                   Cortes por pagar
-                  <span className="text-[10px] font-bold bg-amber-500 text-white rounded-full px-1.5 py-0.5">{pendingCortes.length}</span>
+                  <span className="text-[10px] font-bold bg-amber-500 text-white rounded-full px-1.5 py-0.5 leading-none">
+                    {pendingCortes.length}
+                  </span>
                 </h2>
               </div>
-              <div className="bg-app-surface rounded-xl border border-amber-200 dark:border-amber-800 overflow-hidden">
+              <div className="bg-app-surface rounded-xl border border-amber-200 dark:border-amber-800/60 overflow-hidden shadow-xs">
                 <div className="divide-y divide-app-border">
                   {pendingCortes.slice(0, 5).map((c) => {
                     const contract = c.contract as any
                     return (
-                      <Link key={c.id} to={`/proyectos/${contract?.project_id}/cubicaciones/${c.contract_id}`}
-                        className="flex items-center justify-between px-4 py-3 hover:bg-app-hover">
+                      <Link
+                        key={c.id}
+                        to={`/proyectos/${contract?.project_id}/cubicaciones/${c.contract_id}`}
+                        className="flex items-center justify-between px-4 py-3 hover:bg-app-hover transition-colors"
+                      >
                         <div className="min-w-0">
-                          <p className="text-xs font-medium text-app-text">Corte #{c.cut_number} — {contract?.contractor?.name}</p>
-                          <p className="text-[10px] text-app-muted">{new Date(c.cut_date).toLocaleDateString('es-DO')}</p>
+                          <p className="text-xs font-medium text-app-text">
+                            Corte #{c.cut_number} — {contract?.contractor?.name}
+                          </p>
+                          <p className="text-[11px] text-app-muted mt-0.5">
+                            {new Date(c.cut_date).toLocaleDateString('es-DO')}
+                          </p>
                         </div>
-                        <span className="text-xs font-semibold text-amber-700 shrink-0 ml-2">{formatRD(c.amount - c.retention_amount)}</span>
+                        <span className="text-xs font-semibold text-amber-700 dark:text-amber-400 shrink-0 ml-2">
+                          {formatRD(c.amount - c.retention_amount)}
+                        </span>
                       </Link>
                     )
                   })}
@@ -150,49 +180,82 @@ export default function Dashboard() {
             </div>
           )}
 
-        {/* Recent Activity */}
-        <div>
-          <h2 className="text-lg font-medium text-app-text mb-3">Actividad reciente</h2>
-          <div className="bg-app-surface rounded-xl border border-app-border overflow-hidden">
-            {activities.length === 0 ? (
-              <div className="p-6 text-center text-sm text-app-muted">Sin actividad reciente</div>
-            ) : (
-              <div className="divide-y divide-app-border">
-                {activities.map((act) => (
-                  <div key={act.id} className="px-4 py-3 hover:bg-app-hover">
-                    <div className="flex items-start justify-between">
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs font-medium text-app-text truncate">{act.description}</p>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
-                            act.type === 'payroll' ? 'bg-blue-50 text-blue-600' : 'bg-app-chip text-app-muted'
-                          }`}>
-                            {act.type === 'payroll' ? 'Reporte' : 'Transacción'}
-                          </span>
-                          <span className="text-[10px] text-app-subtle">{timeAgo(act.date)}</span>
+          {/* Recent Activity */}
+          <div>
+            <h2 className="text-base font-semibold text-app-text mb-3">Actividad reciente</h2>
+            <div className="bg-app-surface rounded-xl border border-app-border overflow-hidden shadow-xs">
+              {activities.length === 0 ? (
+                <div className="p-8 text-center">
+                  <TrendingUp className="w-8 h-8 text-app-subtle mx-auto mb-2" />
+                  <p className="text-sm text-app-muted">Sin actividad reciente</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-app-border">
+                  {activities.map((act) => (
+                    <div key={act.id} className="px-4 py-3 hover:bg-app-hover transition-colors">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-medium text-app-text truncate">{act.description}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-semibold ${
+                              act.type === 'payroll'
+                                ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300'
+                                : 'bg-app-chip text-app-muted'
+                            }`}>
+                              {act.type === 'payroll' ? 'Reporte' : 'Transacción'}
+                            </span>
+                            <span className="text-[11px] text-app-subtle">{timeAgo(act.date)}</span>
+                          </div>
                         </div>
+                        <span className="text-xs font-semibold text-app-text shrink-0">
+                          {formatRD(act.amount)}
+                        </span>
                       </div>
-                      <span className="text-xs font-medium text-app-muted shrink-0 ml-2">
-                        {formatRD(act.amount)}
-                      </span>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
         </div>
       </div>
 
       {/* Quick Actions */}
       <div>
-        <h2 className="text-lg font-medium text-app-text mb-3">Accesos rápidos</h2>
+        <h2 className="text-base font-semibold text-app-text mb-3">Accesos rápidos</h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <QuickAction icon={Landmark} label="Control financiero" sub="Libro diario" color="blue" onClick={() => navigate('/finanzas')} />
-          <QuickAction icon={BarChart3} label="Presupuesto" sub="vs Real" color="purple" onClick={() => navigate('/presupuesto')} />
-          <QuickAction icon={CreditCard} label="Cuentas x Pagar" sub="Por proyecto" color="red" onClick={() => navigate('/cxp')} />
-          <QuickAction icon={FileText} label="Reportes" sub="Resumen financiero" color="emerald" onClick={() => navigate('/reportes')} />
+          <QuickAction icon={Landmark} label="Control financiero" sub="Libro diario" accent="blue" onClick={() => navigate('/finanzas')} />
+          <QuickAction icon={BarChart3} label="Presupuesto" sub="vs Real" accent="purple" onClick={() => navigate('/presupuesto')} />
+          <QuickAction icon={CreditCard} label="Cuentas x Pagar" sub="Por proyecto" accent="red" onClick={() => navigate('/cxp')} />
+          <QuickAction icon={FileText} label="Reportes" sub="Resumen financiero" accent="emerald" onClick={() => navigate('/reportes')} />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+const ACCENT_STYLES: Record<string, { card: string; icon: string; border: string }> = {
+  blue:    { card: 'from-blue-500/10',    icon: 'bg-blue-100 text-blue-600 dark:bg-blue-950/70 dark:text-blue-300',    border: 'border-l-blue-500' },
+  emerald: { card: 'from-emerald-500/10', icon: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950/70 dark:text-emerald-300', border: 'border-l-emerald-500' },
+  red:     { card: 'from-red-500/10',     icon: 'bg-red-100 text-red-600 dark:bg-red-950/70 dark:text-red-300',         border: 'border-l-red-500' },
+  amber:   { card: 'from-amber-500/10',   icon: 'bg-amber-100 text-amber-600 dark:bg-amber-950/70 dark:text-amber-300', border: 'border-l-amber-500' },
+}
+
+function StatCard({ icon: Icon, label, value, accent }: {
+  icon: React.ElementType; label: string; value: string; accent: string
+}) {
+  const s = ACCENT_STYLES[accent]
+  return (
+    <div className={`bg-app-surface rounded-xl border border-app-border border-l-4 ${s.border} p-4 shadow-xs`}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-medium text-app-muted mb-1.5">{label}</p>
+          <p className="text-xl font-bold text-app-text truncate">{value}</p>
+        </div>
+        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${s.icon}`}>
+          <Icon className="w-4.5 h-4.5" />
         </div>
       </div>
     </div>
@@ -211,41 +274,43 @@ function ProjectCard({ project, progress }: { project: Project; progress?: Proje
   return (
     <Link
       to={`/proyectos/${project.id}`}
-      className="flex flex-col bg-app-surface rounded-xl border border-app-border p-4 hover:border-blue-300 hover:shadow-sm transition-all"
+      className="flex flex-col bg-app-surface rounded-xl border border-app-border p-4 hover:border-blue-300 hover:shadow-sm transition-all dark:hover:border-blue-700"
     >
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-            <Building2 className="w-5 h-5" />
+          <div className="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+            <Building2 className="w-4.5 h-4.5" />
           </div>
           <div className="min-w-0">
-            <h3 className="font-medium text-app-text text-sm truncate">{project.name}</h3>
+            <h3 className="font-semibold text-app-text text-sm truncate">{project.name}</h3>
             <p className="text-xs text-app-muted truncate">{project.location || project.code}</p>
           </div>
         </div>
         <div className="text-right shrink-0 hidden sm:block">
           {pct !== null ? (
-            <span className="text-sm font-semibold text-app-muted">{Math.round(pct)}%</span>
+            <span className="text-sm font-bold text-app-text">{Math.round(pct)}%</span>
           ) : (
-            <span className="px-2 py-0.5 text-xs font-medium bg-green-50 text-green-700 rounded-full">Activo</span>
+            <span className="px-2 py-0.5 text-[11px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 rounded-full">Activo</span>
           )}
           {progress && (
-            <p className="text-[10px] text-app-subtle mt-0.5">{progress.contractor_count} {progress.contractor_count === 1 ? 'contrato' : 'contratos'}</p>
+            <p className="text-[11px] text-app-subtle mt-0.5">
+              {progress.contractor_count} {progress.contractor_count === 1 ? 'contrato' : 'contratos'}
+            </p>
           )}
         </div>
       </div>
 
       {pct !== null && (
         <div className="mt-3">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-[10px] text-app-subtle">Avance de obra</span>
-            <span className="text-[10px] font-medium text-app-muted">{Math.round(pct)}%</span>
-          </div>
           <div className="h-1.5 bg-app-chip rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full transition-all ${progressColor(pct)}`}
               style={{ width: `${pct}%` }}
             />
+          </div>
+          <div className="flex items-center justify-between mt-1">
+            <span className="text-[11px] text-app-subtle">Avance de obra</span>
+            <span className="text-[11px] font-semibold text-app-muted">{Math.round(pct)}%</span>
           </div>
         </div>
       )}
@@ -253,46 +318,64 @@ function ProjectCard({ project, progress }: { project: Project; progress?: Proje
   )
 }
 
-function StatCard({ icon: Icon, label, value, color }: { icon: React.ElementType; label: string; value: number | string; color: string }) {
-  const colors: Record<string, string> = {
-    blue: 'bg-blue-50 text-blue-600',
-    amber: 'bg-amber-50 text-amber-600',
-    emerald: 'bg-emerald-50 text-emerald-600',
-    red: 'bg-red-50 text-red-600',
+function QuickAction({ icon: Icon, label, sub, accent, onClick }: {
+  icon: React.ElementType; label: string; sub: string; accent: string; onClick: () => void
+}) {
+  const icons: Record<string, string> = {
+    blue:    'bg-blue-100 text-blue-600 dark:bg-blue-950/70 dark:text-blue-300',
+    purple:  'bg-purple-100 text-purple-600 dark:bg-purple-950/70 dark:text-purple-300',
+    red:     'bg-red-100 text-red-600 dark:bg-red-950/70 dark:text-red-300',
+    emerald: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950/70 dark:text-emerald-300',
   }
   return (
-    <div className="bg-app-surface rounded-xl border border-app-border p-4">
-      <div className="flex items-center gap-3">
-        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${colors[color]}`}>
-          <Icon className="w-5 h-5" />
-        </div>
-        <div>
-          <p className="text-xl font-semibold text-app-text">{value}</p>
-          <p className="text-xs text-app-muted">{label}</p>
-        </div>
+    <button
+      onClick={onClick}
+      className="flex items-center gap-3 bg-app-surface rounded-xl border border-app-border p-4 hover:border-blue-300 hover:shadow-sm dark:hover:border-blue-700 transition-all text-left w-full group"
+    >
+      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 ${icons[accent]}`}>
+        <Icon className="w-4 h-4" />
       </div>
+      <div className="min-w-0">
+        <p className="text-sm font-semibold text-app-text truncate">{label}</p>
+        <p className="text-[11px] text-app-muted">{sub}</p>
+      </div>
+    </button>
+  )
+}
+
+function ProjectsSkeleton() {
+  return (
+    <div className="space-y-2.5">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="bg-app-surface rounded-xl border border-app-border p-4 animate-pulse">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-app-chip shrink-0" />
+            <div className="flex-1 space-y-2">
+              <div className="h-3 bg-app-chip rounded w-1/2" />
+              <div className="h-2.5 bg-app-chip rounded w-1/3" />
+            </div>
+          </div>
+        </div>
+      ))}
     </div>
   )
 }
 
-function QuickAction({ icon: Icon, label, sub, color, onClick }: {
-  icon: React.ElementType; label: string; sub: string; color: string; onClick: () => void
-}) {
-  const colors: Record<string, string> = {
-    blue: 'bg-blue-50 text-blue-600',
-    purple: 'bg-purple-50 text-purple-600',
-    red: 'bg-red-50 text-red-600',
-    emerald: 'bg-emerald-50 text-emerald-600',
-  }
+function EmptyProjects() {
   return (
-    <button onClick={onClick} className="flex items-center gap-3 bg-app-surface rounded-xl border border-app-border p-4 hover:border-blue-300 hover:shadow-sm transition-all text-left w-full">
-      <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${colors[color]}`}>
-        <Icon className="w-4 h-4" />
+    <div className="bg-app-surface rounded-xl border border-app-border p-8 text-center">
+      <div className="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-950/60 flex items-center justify-center mx-auto mb-3">
+        <Building2 className="w-6 h-6 text-blue-600 dark:text-blue-400" />
       </div>
-      <div className="min-w-0">
-        <p className="text-sm font-medium text-app-text truncate">{label}</p>
-        <p className="text-[10px] text-app-muted">{sub}</p>
-      </div>
-    </button>
+      <p className="text-sm font-medium text-app-text mb-1">Sin proyectos activos</p>
+      <p className="text-xs text-app-muted mb-4">Crea tu primer proyecto para empezar</p>
+      <Link
+        to="/proyectos"
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition-colors"
+      >
+        <Building2 className="w-3.5 h-3.5" />
+        Ir a Proyectos
+      </Link>
+    </div>
   )
 }

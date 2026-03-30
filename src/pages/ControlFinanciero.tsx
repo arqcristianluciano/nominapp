@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Plus, Filter, X } from 'lucide-react'
+import { Plus, Filter, X } from 'lucide-react'
+import { Breadcrumb } from '@/components/ui/Breadcrumb'
 import { useProjectStore } from '@/stores/projectStore'
 import { useTransactions } from '@/hooks/useTransactions'
 import { FinancialIndicators } from '@/components/features/control/FinancialIndicators'
@@ -61,10 +62,12 @@ export default function ControlFinanciero() {
   return (
     <div className="space-y-5">
       <div>
-        <Link to={`/proyectos/${projectId}`} className="flex items-center gap-1 text-sm text-app-muted hover:text-app-muted mb-2">
-          <ArrowLeft className="w-4 h-4" /> {project.name}
-        </Link>
-        <h1 className="text-2xl font-semibold text-app-text">Control Financiero</h1>
+        <Breadcrumb items={[
+          { label: 'Proyectos', to: '/proyectos' },
+          { label: project.name, to: `/proyectos/${projectId}` },
+          { label: 'Control Financiero' },
+        ]} />
+        <h1 className="text-2xl font-bold text-app-text">Control Financiero</h1>
         <p className="text-sm text-app-muted mt-0.5">{project.name} · {project.code}</p>
       </div>
 

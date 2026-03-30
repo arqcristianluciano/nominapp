@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Plus, Layers, ChevronRight, Trash2 } from 'lucide-react'
+import { Plus, Layers, ChevronRight, Trash2 } from 'lucide-react'
+import { Breadcrumb } from '@/components/ui/Breadcrumb'
 import { useProjectStore } from '@/stores/projectStore'
 import { contractService } from '@/services/cubicationService'
 import type { ContractSummary } from '@/services/cubicationService'
@@ -78,9 +79,11 @@ export default function CubicacionesPage() {
     <div className="space-y-5">
       {/* Header */}
       <div>
-        <Link to={`/proyectos/${projectId}`} className="flex items-center gap-1 text-sm text-app-muted hover:text-app-text mb-2">
-          <ArrowLeft className="w-4 h-4" /> {project?.name || 'Proyecto'}
-        </Link>
+        <Breadcrumb items={[
+          { label: 'Proyectos', to: '/proyectos' },
+          { label: project?.name || 'Proyecto', to: `/proyectos/${projectId}` },
+          { label: 'Cubicaciones' },
+        ]} />
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold text-app-text">Cubicaciones</h1>

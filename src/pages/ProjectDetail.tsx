@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { Plus, ArrowLeft, Calendar, Landmark, BarChart3, Trash2, ClipboardCheck, Layers, Pencil, PackageSearch } from 'lucide-react'
+import { Plus, Calendar, Landmark, BarChart3, Trash2, ClipboardCheck, Layers, Pencil, PackageSearch } from 'lucide-react'
+import { Breadcrumb } from '@/components/ui/Breadcrumb'
 import { useProjectStore } from '@/stores/projectStore'
 import { usePayrollStore } from '@/stores/payrollStore'
 import { transactionService, type TransactionWithRelations } from '@/services/transactionService'
@@ -70,19 +71,17 @@ export default function ProjectDetail() {
   return (
     <div className="space-y-6">
       <div>
-        <Link to="/proyectos" className="flex items-center gap-1 text-sm text-app-muted hover:text-app-muted mb-2">
-          <ArrowLeft className="w-4 h-4" /> Proyectos
-        </Link>
-        <div className="flex items-center justify-between">
+        <Breadcrumb items={[{ label: 'Proyectos', to: '/proyectos' }, { label: project.name }]} />
+        <div className="flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold text-app-text">{project.name}</h1>
+            <h1 className="text-2xl font-bold text-app-text">{project.name}</h1>
             <p className="text-sm text-app-muted mt-0.5">{project.location} · {project.code}</p>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => setShowEditProject(true)} className="flex items-center gap-1.5 px-3 py-2 text-sm text-app-muted border border-app-border rounded-lg hover:bg-app-hover">
+            <button onClick={() => setShowEditProject(true)} className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-app-muted border border-app-border rounded-xl hover:bg-app-hover transition-colors">
               <Pencil className="w-4 h-4" /> Editar
             </button>
-            <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
+            <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-colors shadow-sm shadow-blue-600/20">
               <Plus className="w-4 h-4" /> Nuevo reporte
             </button>
           </div>

@@ -5,27 +5,36 @@
 :root {
   --app-bg: #f1f5f9;
   --app-surface: #ffffff;
-  --app-border: #cbd5e1;
+  --app-border: #e2e8f0;
   --app-text: #0f172a;
-  --app-muted: #374151;
-  --app-subtle: #6b7280;
-  --app-hover: #e2e8f0;
-  --app-hover-strong: #cbd5e1;
-  --app-chip: #e2e8f0;
-  --app-input-bg: #f8fafc;
+  --app-muted: #475569;
+  --app-subtle: #94a3b8;
+  --app-hover: #f8fafc;
+  --app-hover-strong: #e2e8f0;
+  --app-chip: #f1f5f9;
+  --app-input-bg: #ffffff;
+
+  /* Shadows */
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.04);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.06);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.06);
 }
 
 html.dark {
-  --app-bg: #030712;
+  --app-bg: #0a0f1a;
   --app-surface: #111827;
-  --app-border: #374151;
-  --app-text: #f9fafb;
-  --app-muted: #d1d5db;
-  --app-subtle: #9ca3af;
-  --app-hover: #1f2937;
-  --app-hover-strong: #374151;
-  --app-chip: #1f2937;
-  --app-input-bg: #0b1220;
+  --app-border: #1e293b;
+  --app-text: #f1f5f9;
+  --app-muted: #cbd5e1;
+  --app-subtle: #64748b;
+  --app-hover: #1e293b;
+  --app-hover-strong: #334155;
+  --app-chip: #1e293b;
+  --app-input-bg: #0f172a;
+
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.3);
 }
 
 @theme {
@@ -36,6 +45,7 @@ html.dark {
   --color-success: #10b981;
   --color-danger: #ef4444;
   --color-warning: #f59e0b;
+
   --color-app-bg: var(--app-bg);
   --color-app-surface: var(--app-surface);
   --color-app-border: var(--app-border);
@@ -46,12 +56,19 @@ html.dark {
   --color-app-hover-strong: var(--app-hover-strong);
   --color-app-chip: var(--app-chip);
   --color-app-input-bg: var(--app-input-bg);
+
+  --shadow-xs: var(--shadow-xs);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
 }
 
 @layer base {
   body {
     background-color: var(--app-bg);
     color: var(--app-text);
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   :root {
@@ -73,6 +90,31 @@ html.dark {
 
   html.dark select {
     color-scheme: dark;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--app-border);
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--app-subtle);
+  }
+
+  /* Focus ring consistency */
+  [data-focus-visible], :focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
   }
 }
 

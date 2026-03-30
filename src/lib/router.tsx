@@ -2,6 +2,7 @@ import { createBrowserRouter } from 'react-router-dom'
 import { RequireAuth } from '@/components/auth/RequireAuth'
 import { AppLayout } from '@/components/layout/AppLayout'
 import Login from '@/pages/Login'
+import NotFound from '@/pages/NotFound'
 import Dashboard from '@/pages/Dashboard'
 import Projects from '@/pages/Projects'
 import ProjectDetail from '@/pages/ProjectDetail'
@@ -33,6 +34,7 @@ import InsumosPage from '@/pages/InsumosPage'
 
 export const router = createBrowserRouter([
   { path: '/login', element: <Login /> },
+  { path: '*', element: <NotFound /> },
   {
     path: '/',
     element: <RequireAuth />,
