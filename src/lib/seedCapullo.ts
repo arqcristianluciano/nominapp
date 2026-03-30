@@ -52,8 +52,8 @@ export const capulloSeed = {
 
   payroll_periods: [
     { id: payroll1, project_id: P1, period_number: 1, report_date: '2026-02-01', reported_by: 'CL', status: 'paid',     total_labor: 285000, total_materials: 412500, total_indirect: 80212, grand_total: 777712,  notes: 'Primera quincena febrero',   created_at: '2026-02-01T10:00:00Z', approved_at: '2026-02-03T10:00:00Z', approved_by: 'Admin', project: projRef },
-    { id: payroll2, project_id: P1, period_number: 2, report_date: '2026-02-15', reported_by: 'CL', status: 'approved', total_labor: 195000, total_materials: 328000, total_indirect: 60045, grand_total: 583045,  notes: 'Segunda quincena febrero',   created_at: '2026-02-15T10:00:00Z', approved_at: '2026-02-17T10:00:00Z', approved_by: 'Admin', project: projRef },
-    { id: payroll3, project_id: P1, period_number: 3, report_date: '2026-03-01', reported_by: 'CL', status: 'draft',    total_labor: 142000, total_materials: 256000, total_indirect: 45720, grand_total: 443720,  notes: 'Primera quincena marzo',     created_at: '2026-03-01T10:00:00Z', approved_at: null,                   approved_by: null,    project: projRef },
+    { id: payroll2, project_id: P1, period_number: 2, report_date: '2026-02-15', reported_by: 'CL', status: 'paid',     total_labor: 195000, total_materials: 328000, total_indirect: 60045, grand_total: 583045,  notes: 'Segunda quincena febrero',   created_at: '2026-02-15T10:00:00Z', approved_at: '2026-02-17T10:00:00Z', approved_by: 'Admin', project: projRef },
+    { id: payroll3, project_id: P1, period_number: 3, report_date: '2026-03-01', reported_by: 'CL', status: 'paid',     total_labor: 142000, total_materials: 256000, total_indirect: 45720, grand_total: 443720,  notes: 'Primera quincena marzo',     created_at: '2026-03-01T10:00:00Z', approved_at: '2026-03-03T10:00:00Z', approved_by: 'Admin', project: projRef },
   ],
 
   labor_line_items: [
