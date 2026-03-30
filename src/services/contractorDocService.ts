@@ -64,7 +64,7 @@ export const contractorDocService = {
   async getAllExpiring(): Promise<ContractorDocument[]> {
     const { data, error } = await supabase.from('contractor_documents').select('*')
     if (error) return []
-    return (data ?? []).filter((d) => d.status === 'expiring' || d.status === 'expired')
+    return (data ?? []).filter((d: ContractorDocument) => d.status === 'expiring' || d.status === 'expired')
   },
 }
 
