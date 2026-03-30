@@ -121,9 +121,9 @@ export default function PayrollEditor() {
             </table>
           </div>
         )}
-        <div className="mt-3 bg-amber-50 rounded-lg px-4 py-3 flex justify-between items-center">
-          <span className="text-sm font-medium text-amber-900">Total materiales</span>
-          <span className="text-sm font-semibold text-amber-900">{formatRD(period.total_materials || 0)}</span>
+        <div className="mt-3 bg-amber-50 dark:bg-amber-950/40 rounded-lg px-4 py-3 flex justify-between items-center">
+          <span className="text-sm font-medium text-amber-800 dark:text-amber-400">Total materiales</span>
+          <span className="text-sm font-semibold text-amber-800 dark:text-amber-400">{formatRD(period.total_materials || 0)}</span>
         </div>
       </section>
 
