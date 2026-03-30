@@ -1,6 +1,14 @@
 import type { TransactionWithRelations } from '@/services/transactionService'
 import { calcCxPDetails } from '@/utils/financialCalculations'
 import { formatRD } from '@/utils/currency'
+import { MessageCircle } from 'lucide-react'
+
+function buildWhatsAppLink(supplierName: string, amount: number, invoiceNo: string | null, days: number): string {
+  const msg = encodeURIComponent(
+    `Estimado proveedor ${supplierName},\n\nLe recordamos que tenemos pendiente de pago la factura${invoiceNo ? ` No. ${invoiceNo}` : ''} por ${formatRD(amount)} con ${days} días de antigüedad.\n\nPor favor, confirme la forma de pago.\n\nGracias,\nConstructora`
+  )
+  return `https://wa.me/?text=${msg}`
+}
 
 function daysSince(dateStr: string): number {
   return Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000)
@@ -60,6 +68,7 @@ export function CxPView({ transactions }: { transactions: TransactionWithRelatio
                 <th className="px-3 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">Proveedor</th>
                 <th className="px-3 py-2 text-right text-[10px] font-semibold text-app-muted uppercase">Pendiente</th>
                 <th className="px-3 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">Condición</th>
+                <th className="px-3 py-2 text-[10px] font-semibold text-app-muted uppercase" />
               </tr>
             </thead>
             <tbody>
@@ -79,6 +88,16 @@ export function CxPView({ transactions }: { transactions: TransactionWithRelatio
                       <td className="px-3 py-2.5 text-xs text-app-text font-medium">{item.supplierName}</td>
                       <td className="px-3 py-2.5 text-xs text-red-700 dark:text-red-400 font-semibold text-right">{formatRD(item.pending)}</td>
                       <td className="px-3 py-2.5 text-xs text-app-muted">{item.paymentCondition}</td>
+                      <td className="px-3 py-2.5">
+                        {days > 30 && (
+                          <a href={buildWhatsAppLink(item.supplierName, item.pending, item.invoiceNumber, days)}
+                            target="_blank" rel="noopener noreferrer"
+                            title="Notificar por WhatsApp"
+                            className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-medium text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800 rounded-lg hover:bg-green-100 dark:hover:bg-green-950/60 transition-colors">
+                            <MessageCircle className="w-3 h-3" />WA
+                          </a>
+                        )}
+                      </td>
                     </tr>
                   )
                 })}
@@ -87,6 +106,7 @@ export function CxPView({ transactions }: { transactions: TransactionWithRelatio
               <tr className="bg-app-bg border-t border-app-border">
                 <td colSpan={5} className="px-3 py-2 text-xs font-semibold text-app-muted text-right">Total CxP:</td>
                 <td className="px-3 py-2 text-xs font-bold text-red-700 dark:text-red-400 text-right">{formatRD(totalCxP)}</td>
+                <td></td>
                 <td></td>
               </tr>
             </tfoot>

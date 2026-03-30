@@ -32,6 +32,12 @@ import ContractorDetail from '@/pages/ContractorDetail'
 import ReportesObra from '@/pages/ReportesObra'
 import Loans from '@/pages/Loans'
 import InsumosPage from '@/pages/InsumosPage'
+import Calendario from '@/pages/Calendario'
+import BitacoraPage from '@/pages/BitacoraPage'
+import AsistenciaPage from '@/pages/AsistenciaPage'
+import InventarioPage from '@/pages/InventarioPage'
+import CronogramaPage from '@/pages/CronogramaPage'
+import HistorialPrecios from '@/pages/HistorialPrecios'
 
 export const router = createBrowserRouter([
   { path: '/login', element: <Login /> },
@@ -73,6 +79,12 @@ export const router = createBrowserRouter([
           { path: 'configuracion', element: <Settings /> },
           { path: 'ordenes-compra', element: <PurchaseOrders /> },
           { path: 'ordenes-compra/:orderId', element: <PurchaseOrderDetail /> },
+          { path: 'calendario', element: <Calendario /> },
+          { path: 'historial-precios', element: <HistorialPrecios /> },
+          { path: 'proyectos/:projectId/bitacora', element: <BitacoraPage /> },
+          { path: 'proyectos/:projectId/asistencia', element: <AsistenciaPage /> },
+          { path: 'proyectos/:projectId/inventario', element: <InventarioPage /> },
+          { path: 'proyectos/:projectId/cronograma', element: <CronogramaPage /> },
         ],
       },
     ],

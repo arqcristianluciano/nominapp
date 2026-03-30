@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { FileText, Download } from 'lucide-react'
+import { FileText, Download, Printer } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import { useProjectStore } from '@/stores/projectStore'
 import { transactionService } from '@/services/transactionService'
@@ -140,12 +140,20 @@ export default function Reportes() {
           <p className="text-sm text-app-muted mt-1">Reporte consolidado de todos los proyectos activos</p>
         </div>
         {reports.length > 0 && (
-          <button
-            onClick={exportToExcel}
-            className="flex items-center gap-2 px-4 py-2 border border-app-border bg-app-surface text-sm font-medium text-app-muted rounded-xl hover:bg-app-hover transition-colors"
-          >
-            <Download className="w-4 h-4" /> Exportar Excel
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => window.print()}
+              className="flex items-center gap-2 px-4 py-2 border border-app-border bg-app-surface text-sm font-medium text-app-muted rounded-xl hover:bg-app-hover transition-colors"
+            >
+              <Printer className="w-4 h-4" /> Imprimir / PDF
+            </button>
+            <button
+              onClick={exportToExcel}
+              className="flex items-center gap-2 px-4 py-2 border border-app-border bg-app-surface text-sm font-medium text-app-muted rounded-xl hover:bg-app-hover transition-colors"
+            >
+              <Download className="w-4 h-4" /> Exportar Excel
+            </button>
+          </div>
         )}
       </div>
 

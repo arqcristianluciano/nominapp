@@ -1,0 +1,22 @@
+{
+  "name": "NominaAPP — Construcción",
+  "short_name": "NominaAPP",
+  "description": "Gestión integral de obras de construcción: nóminas, finanzas, cubicaciones y más.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#1e40af",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "lang": "es",
+  "dir": "ltr",
+  "scope": "/"
+}

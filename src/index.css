@@ -130,7 +130,24 @@ html.dark {
     background: #fff;
   }
 
-  .print\:hidden {
+  /* Hide sidebar, header and nav elements when printing */
+  aside,
+  nav[class*="sidebar"],
+  header,
+  .print\:hidden,
+  button {
     display: none !important;
   }
+
+  /* Ensure main content uses full width */
+  main,
+  .lg\:pl-64 {
+    padding-left: 0 !important;
+    margin-left: 0 !important;
+  }
+
+  /* Keep borders and backgrounds for tables */
+  table { border-collapse: collapse; width: 100%; }
+  th, td { border: 1px solid #ddd; padding: 4px 8px; }
+  thead { background: #f3f4f6 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }

@@ -16,6 +16,8 @@ import {
   Banknote,
   Layers,
   ChevronRight,
+  Calendar,
+  TrendingUp,
 } from 'lucide-react'
 import { usePendingApprovals } from '@/hooks/usePendingApprovals'
 import { usePendingCortes } from '@/hooks/usePendingCortes'
@@ -66,9 +68,16 @@ const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
+    label: 'Planificación',
+    items: [
+      { to: '/calendario', icon: Calendar, label: 'Calendario de pagos' },
+    ],
+  },
+  {
     label: 'Reportes',
     items: [
       { to: '/reportes', icon: FileText, label: 'Resumen financiero' },
+      { to: '/historial-precios', icon: TrendingUp, label: 'Historial de precios' },
     ],
   },
   {

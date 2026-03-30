@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { Plus, Calendar, Landmark, BarChart3, Trash2, ClipboardCheck, Layers, Pencil, PackageSearch, Copy } from 'lucide-react'
+import { Plus, Calendar, Landmark, BarChart3, Trash2, ClipboardCheck, Layers, Pencil, PackageSearch, Copy, BookOpen, Users, Package, BarChart2 } from 'lucide-react'
 import { Breadcrumb } from '@/components/ui/Breadcrumb'
 import { useProjectStore } from '@/stores/projectStore'
 import { usePayrollStore } from '@/stores/payrollStore'
@@ -177,6 +177,50 @@ export default function ProjectDetail() {
             <div>
               <p className="text-sm font-medium text-app-text">Listado de Insumos</p>
               <p className="text-xs text-app-muted">Presupuesto Mercado · contratos de ajuste</p>
+            </div>
+          </div>
+        </Link>
+        <Link to={`/proyectos/${projectId}/bitacora`} className="bg-app-surface rounded-xl border border-app-border p-4 hover:border-blue-300 hover:shadow-sm transition-all">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-amber-50 text-amber-600">
+              <BookOpen className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-app-text">Bitácora de Obra</p>
+              <p className="text-xs text-app-muted">Registro diario de actividades</p>
+            </div>
+          </div>
+        </Link>
+        <Link to={`/proyectos/${projectId}/asistencia`} className="bg-app-surface rounded-xl border border-app-border p-4 hover:border-blue-300 hover:shadow-sm transition-all">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-indigo-50 text-indigo-600">
+              <Users className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-app-text">Asistencia Diaria</p>
+              <p className="text-xs text-app-muted">Personal · horas-hombre</p>
+            </div>
+          </div>
+        </Link>
+        <Link to={`/proyectos/${projectId}/inventario`} className="bg-app-surface rounded-xl border border-app-border p-4 hover:border-blue-300 hover:shadow-sm transition-all">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-orange-50 text-orange-600">
+              <Package className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-app-text">Inventario de Materiales</p>
+              <p className="text-xs text-app-muted">Stock · entradas y salidas</p>
+            </div>
+          </div>
+        </Link>
+        <Link to={`/proyectos/${projectId}/cronograma`} className="bg-app-surface rounded-xl border border-app-border p-4 hover:border-blue-300 hover:shadow-sm transition-all">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-sky-50 text-sky-600">
+              <BarChart2 className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-app-text">Cronograma de Obra</p>
+              <p className="text-xs text-app-muted">Diagrama de Gantt · avance</p>
             </div>
           </div>
         </Link>

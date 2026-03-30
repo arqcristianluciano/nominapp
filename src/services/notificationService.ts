@@ -14,6 +14,9 @@ const DAYS_APPROACHING = 15
 const DAYS_OVERDUE = 28
 const CXP_WARNING_DAYS = 30
 const CXP_DANGER_DAYS = 60
+const BUDGET_WARNING_THRESHOLD = 0.80
+const BUDGET_DANGER_THRESHOLD = 1.00
+const DOC_EXPIRY_WARNING_DAYS = 30
 
 export const notificationService = {
   async getAll(): Promise<AppNotification[]> {
@@ -24,8 +27,10 @@ export const notificationService = {
 
     const warningDateStr = new Date(today.getTime() - CXP_WARNING_DAYS * 86400000).toISOString().split('T')[0]
     const dangerDateStr = new Date(today.getTime() - CXP_DANGER_DAYS * 86400000).toISOString().split('T')[0]
+    const docExpiryWarning = new Date(today.getTime() + DOC_EXPIRY_WARNING_DAYS * 86400000).toISOString().split('T')[0]
 
-    const [poRes, qcOverdueRes, qcFailedRes, txnDangerRes, txnWarningRes] = await Promise.all([
+    const [poRes, qcOverdueRes, qcFailedRes, txnDangerRes, txnWarningRes,
+           budgetCatRes, transactionsRes, projectsRes, docsRes] = await Promise.all([
       supabase
         .from('purchase_orders')
         .select('id, order_number, project:projects(name)')
@@ -54,6 +59,10 @@ export const notificationService = {
         .lte('date', warningDateStr)
         .gt('date', dangerDateStr)
         .limit(10),
+      supabase.from('budget_categories').select('id, project_id, name, budgeted_amount'),
+      supabase.from('transactions').select('project_id, total').limit(500),
+      supabase.from('projects').select('id, name, code'),
+      supabase.from('contractor_documents').select('*, contractor:contractors(name)'),
     ])
 
     const notifications: AppNotification[] = []
@@ -114,6 +123,70 @@ export const notificationService = {
         description: `${(txn.supplier as any)?.name ?? txn.description} — ${days}d sin pagar`,
         link: `/proyectos/${txn.project_id}/control`,
       })
+    }
+
+    // --- Desviación presupuestaria ---
+    const allProjects: any[] = projectsRes.data ?? []
+    const allTransactions: any[] = transactionsRes.data ?? []
+    const allCategories: any[] = budgetCatRes.data ?? []
+
+    const projectMap = Object.fromEntries(allProjects.map((p) => [p.id, p]))
+    const totalBudgetByProject: Record<string, number> = {}
+    for (const cat of allCategories) {
+      totalBudgetByProject[cat.project_id] = (totalBudgetByProject[cat.project_id] ?? 0) + (cat.budgeted_amount ?? 0)
+    }
+    const totalActualByProject: Record<string, number> = {}
+    for (const txn of allTransactions) {
+      totalActualByProject[txn.project_id] = (totalActualByProject[txn.project_id] ?? 0) + (txn.total ?? 0)
+    }
+
+    for (const [projectId, actual] of Object.entries(totalActualByProject)) {
+      const budget = totalBudgetByProject[projectId] ?? 0
+      if (!budget) continue
+      const ratio = actual / budget
+      const project = projectMap[projectId]
+      if (!project) continue
+      if (ratio >= BUDGET_DANGER_THRESHOLD) {
+        notifications.push({
+          id: `budget-danger-${projectId}`,
+          level: 'danger',
+          title: 'Presupuesto excedido',
+          description: `${project.name} — ${Math.round(ratio * 100)}% ejecutado`,
+          link: `/proyectos/${projectId}/presupuesto`,
+        })
+      } else if (ratio >= BUDGET_WARNING_THRESHOLD) {
+        notifications.push({
+          id: `budget-warning-${projectId}`,
+          level: 'warning',
+          title: 'Presupuesto al límite (≥80%)',
+          description: `${project.name} — ${Math.round(ratio * 100)}% ejecutado`,
+          link: `/proyectos/${projectId}/presupuesto`,
+        })
+      }
+    }
+
+    // --- Documentos de contratistas vencidos o por vencer ---
+    const todayStr = today.toISOString().split('T')[0]
+    for (const doc of (docsRes.data ?? []) as any[]) {
+      if (!doc.expiry_date) continue
+      const contractorName = doc.contractor?.name ?? 'Contratista'
+      if (doc.expiry_date < todayStr) {
+        notifications.push({
+          id: `doc-expired-${doc.id}`,
+          level: 'danger',
+          title: 'Documento vencido',
+          description: `${contractorName} — ${doc.name}`,
+          link: `/contratistas/${doc.contractor_id}`,
+        })
+      } else if (doc.expiry_date <= docExpiryWarning) {
+        notifications.push({
+          id: `doc-expiring-${doc.id}`,
+          level: 'warning',
+          title: 'Documento por vencer (≤30 días)',
+          description: `${contractorName} — ${doc.name}`,
+          link: `/contratistas/${doc.contractor_id}`,
+        })
+      }
     }
 
     return notifications
