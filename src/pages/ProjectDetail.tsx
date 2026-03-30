@@ -78,6 +78,7 @@ export default function ProjectDetail() {
 
   const totalBudget = budgetCategories.reduce((sum, c) => sum + c.budgeted_amount, 0)
   const totalInvested = periods.reduce((sum, p) => sum + (p.grand_total || 0), 0)
+  const draftPeriod = periods.find((p) => p.status === 'draft' || p.status === 'submitted') ?? null
 
   const statusColors: Record<string, string> = { draft: 'bg-app-chip text-app-muted', submitted: 'bg-blue-50 text-blue-700', approved: 'bg-green-50 text-green-700', paid: 'bg-emerald-50 text-emerald-700' }
   const statusLabels: Record<string, string> = { draft: 'Borrador', submitted: 'Enviado', approved: 'Aprobado', paid: 'Pagado' }
@@ -95,9 +96,18 @@ export default function ProjectDetail() {
             <button onClick={() => setShowEditProject(true)} className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-app-muted border border-app-border rounded-xl hover:bg-app-hover transition-colors">
               <Pencil className="w-4 h-4" /> Editar
             </button>
-            <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-colors shadow-sm shadow-blue-600/20">
-              <Plus className="w-4 h-4" /> Nuevo reporte
-            </button>
+            {draftPeriod ? (
+              <span
+                title={`El Reporte No. ${draftPeriod.period_number} está pendiente. Concluye ese reporte antes de crear uno nuevo.`}
+                className="flex items-center gap-2 px-4 py-2 bg-amber-100 text-amber-700 text-sm font-semibold rounded-xl cursor-not-allowed border border-amber-200"
+              >
+                Borrador pendiente
+              </span>
+            ) : (
+              <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-colors shadow-sm shadow-blue-600/20">
+                <Plus className="w-4 h-4" /> Nuevo reporte
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -263,9 +273,9 @@ export default function ProjectDetail() {
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => handleDuplicatePeriod(period.id)}
-                    disabled={duplicatingId === period.id}
-                    className="p-2 text-app-subtle hover:text-blue-500 disabled:opacity-50"
-                    title="Duplicar reporte"
+                    disabled={duplicatingId === period.id || !!draftPeriod}
+                    className="p-2 text-app-subtle hover:text-blue-500 disabled:opacity-30 disabled:cursor-not-allowed"
+                    title={draftPeriod ? `Concluye el Reporte No. ${draftPeriod.period_number} antes de duplicar` : 'Duplicar reporte'}
                   >
                     <Copy className="w-4 h-4" />
                   </button>

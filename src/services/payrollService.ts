@@ -116,6 +116,9 @@ export const payrollService = {
   },
 
   async duplicatePeriod(sourcePeriodId: string, projectId: string): Promise<PayrollPeriod> {
+    const draft = await this.getDraftPeriod(projectId)
+    if (draft) throw new Error(`Ya existe el Reporte No. ${draft.period_number} en borrador. Concluye ese reporte antes de duplicar.`)
+
     const { laborItems, materialInvoices } = await this.getPeriodDetail(sourcePeriodId)
     const nextNum = await this.getNextPeriodNumber(projectId)
 
