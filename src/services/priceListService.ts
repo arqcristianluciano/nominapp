@@ -40,4 +40,14 @@ export const priceListService = {
       .eq('id', id)
     if (error) throw error
   },
+
+  async copyToProject(items: PriceListItem[], targetProjectId: string): Promise<number> {
+    for (const { id: _id, project_id: _pid, ...rest } of items) {
+      const { error } = await supabase
+        .from('price_list_items')
+        .insert({ ...rest, project_id: targetProjectId })
+      if (error) throw error
+    }
+    return items.length
+  },
 }

@@ -93,6 +93,10 @@ export function useBudgetItems(projectId: string | undefined) {
     setPriceList((prev) => prev.filter((p) => p.id !== id))
   }, [])
 
+  const copyPriceListToProject = useCallback(async (targetProjectId: string) => {
+    return priceListService.copyToProject(priceList, targetProjectId)
+  }, [priceList])
+
   const getCategoryTotal = useCallback((categoryId: string): number => {
     return (itemsByCategory[categoryId] ?? []).reduce(
       (sum, it) => sum + it.quantity * it.unit_price,
@@ -113,6 +117,7 @@ export function useBudgetItems(projectId: string | undefined) {
     addPriceListItem,
     updatePriceListItem,
     deletePriceListItem,
+    copyPriceListToProject,
     getCategoryTotal,
   }
 }

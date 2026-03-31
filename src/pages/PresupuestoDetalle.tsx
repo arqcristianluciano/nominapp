@@ -9,6 +9,7 @@ import { formatRD } from '@/utils/currency'
 import BudgetPartidaRow from '@/components/features/budget/BudgetPartidaRow'
 import ExcelImportModal from '@/components/features/budget/ExcelImportModal'
 import PriceListPanel from '@/components/features/budget/PriceListPanel'
+import CopyPriceListModal from '@/components/features/budget/CopyPriceListModal'
 import type { BudgetItem } from '@/types/database'
 
 type Tab = 'presupuesto' | 'precios'
@@ -21,6 +22,7 @@ export default function PresupuestoDetalle() {
 
   const [tab, setTab] = useState<Tab>('presupuesto')
   const [showImport, setShowImport] = useState(false)
+  const [showCopyModal, setShowCopyModal] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
 
@@ -188,15 +190,21 @@ export default function PresupuestoDetalle() {
         <PriceListPanel
           projectId={projectId}
           items={budgetItems.priceList}
-          onAdd={async (item) => {
-            await budgetItems.addPriceListItem(item)
-          }}
-          onUpdate={async (id, changes) => {
-            await budgetItems.updatePriceListItem(id, changes)
-          }}
-          onDelete={async (id) => {
-            await budgetItems.deletePriceListItem(id)
-          }}
+          onAdd={async (item) => { await budgetItems.addPriceListItem(item) }}
+          onUpdate={async (id, changes) => { await budgetItems.updatePriceListItem(id, changes) }}
+          onDelete={async (id) => { await budgetItems.deletePriceListItem(id) }}
+          onReplicate={() => setShowCopyModal(true)}
+        />
+      )}
+
+      {showCopyModal && projectId && project && (
+        <CopyPriceListModal
+          sourceProjectName={project.name}
+          projects={projects}
+          currentProjectId={projectId}
+          itemCount={budgetItems.priceList.length}
+          onConfirm={async (targetId) => { await budgetItems.copyPriceListToProject(targetId) }}
+          onClose={() => setShowCopyModal(false)}
         />
       )}
 

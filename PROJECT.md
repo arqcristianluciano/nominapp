@@ -30,7 +30,8 @@ src/
       control/      ← TransactionInlineForm, TransactionRow, CxPView, CxPProjectFilterBar,
                        ChequesEfectivoView, FinancialIndicators
       cubicacion/   ← PartidaSection, CorteSection, AdelantoSection
-      budget/       ← BudgetItemForm, BudgetPartidaRow, ExcelImportModal, PriceListPanel
+      budget/       ← BudgetItemForm, BudgetPartidaRow, ExcelImportModal, PriceListPanel,
+                       PriceListInlineForm, CopyPriceListModal
       insumos/      ← MercadoExcelUpload, CreateContractFromLineModal
       payments/     ← PaymentDistributionsSection
       quality/      ← QualityControlForm
@@ -38,7 +39,7 @@ src/
   services/         ← authService + servicios de dominio (ver tabla)
   stores/           ← projectStore, payrollStore, themeStore, authStore (sesión demo, localStorage)
   hooks/            ← usePayroll, useTransactions, useBudgetDetail, useBudgetItems
-  utils/            ← currency, calculations, financialCalculations
+  utils/            ← currency, calculations, financialCalculations, priceCodeGenerator
   constants/        ← budgetCategories, indirectCosts, measureUnits, banks, demoUsers (login demo)
   types/            ← database.ts (14 interfaces)
   lib/              ← supabase, mockSupabase, mockData, seedCapullo, seedTorreMirador, router
@@ -136,6 +137,8 @@ src/
 - Presupuesto jerárquico: partidas → subpartidas (cantidad × precio unit. = total)
 - Importación de presupuesto desde Excel (.xlsx/.xls) con previsualización
 - Lista de precios unitarios por proyecto (materiales, mano de obra, equipos)
+  - Código auto-generado por categoría (MAT-001, MO-001, EQ-001, AJ-001) al crear un ítem
+  - Botón "Replicar" para copiar la lista completa a otro proyecto (modal de selección)
 - Autocomplete de precios al crear subpartidas
 - Órdenes de Compra: flujo completo de requisición con mínimo 3 cotizaciones
   - draft → quoting (agregar cotizaciones) → pending_approval → approved → ordered | rejected
