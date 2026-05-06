@@ -1,12 +1,13 @@
 # NominaAPP — Estado del Proyecto
 
 ## Stack
-- React 19 + TypeScript + Vite
+- React 19 + TypeScript + Vite (rutas con `lazy()` + Suspense)
 - Tailwind CSS v4 (tema claro/oscuro: clase `dark` en `<html>`, tokens `app-*` en `index.css`)
 - Zustand (estado global)
 - Supabase (backend — modo demo sin credenciales)
 - React Router v7
-- Testing: Vitest + Playwright (E2E smoke)
+- `decimal.js` para cálculos financieros (nunca `float`)
+- Testing: Vitest (unit, 51 tests) + Playwright (E2E smoke)
 
 ## Modo Demo
 Sin `.env`, el sistema corre en **mockSupabase** (datos en memoria).
@@ -18,7 +19,7 @@ Para conectar Supabase real: copiar `.env.example` → `.env` con credenciales.
 
 ```
 src/
-  pages/            ← 17 páginas (incl. CxPHub, CxPDetalle, CxPConsolidadoTodos)
+  pages/            ← 32 páginas (ver tabla de rutas)
   components/
     auth/           ← RequireAuth (rutas protegidas)
     layout/         ← AppLayout, Sidebar, Header, ThemeToggle
@@ -42,43 +43,37 @@ src/
   stores/           ← projectStore, payrollStore, themeStore, authStore (sesión demo, localStorage)
   hooks/            ← usePayroll, useTransactions, useBudgetDetail, useBudgetItems,
                        useDashboardData
-  utils/            ← currency, calculations, financialCalculations, priceCodeGenerator
+  utils/            ← currency, money (Decimal helpers), calculations,
+                       financialCalculations, priceCodeGenerator, approvalCode,
+                       errors, parseMercadoExcel
   constants/        ← budgetCategories, indirectCosts, measureUnits, banks, demoUsers (login demo)
-  types/            ← database.ts (14 interfaces)
-  lib/              ← supabase, mockSupabase, mockData, seedCapullo, seedTorreMirador, router
-  e2e/              ← smoke.spec.ts (flujos críticos UI)
+  types/            ← database.ts (14+ interfaces), purchaseOrder, mercadoBudget
+  lib/              ← supabase, mockSupabase (+ mockSupabase.types), mockData,
+                       seedCapullo, seedTorreMirador, router
+e2e/                ← smoke.spec.ts (flujos críticos UI)
 ```
 
 ---
 
 ## Páginas y rutas
 
-| Ruta | Página | Estado |
-|---|---|---|
-| `/login` | Login | ✅ Completo (usuarios demo en `constants/demoUsers`) |
-| `/` | Dashboard | ✅ Completo |
-| `/proyectos` | Projects | ✅ Completo |
-| `/proyectos/:id` | ProjectDetail | ✅ Completo |
-| `/proyectos/:id/control` | ControlFinanciero | ✅ Completo |
-| `/proyectos/:id/presupuesto` | PresupuestoDetalle | ✅ Completo |
-| `/proyectos/:id/calidad` | QualityControlPage | ✅ Completo |
-| `/proyectos/:id/insumos` | InsumosPage | ✅ Completo |
-| `/proyectos/:id/cubicaciones` | CubicacionesPage | ✅ Completo |
-| `/proyectos/:id/cubicaciones/:contratoId` | CubicacionContratoPage | ✅ Completo |
-| `/nominas/:id` | PayrollEditor | ✅ Completo |
-| `/nominas/:id/imprimir` | PayrollPrint | ✅ Completo |
-| `/finanzas` | FinanzasHub | ✅ Completo |
-| `/presupuesto` | PresupuestoHub | ✅ Completo |
-| `/cxp` | CxPHub (elegir proyecto) | ✅ Completo |
-| `/cxp/:projectId` | CxPDetalle | ✅ Completo |
-| `/cxp/consolidado` | CxPConsolidadoTodos | ✅ Completo |
-| `/reportes` | Reportes | ✅ Completo |
-| `/contratistas` | Contractors | ✅ Completo |
-| `/suplidores` | Suppliers | ✅ Completo |
-| `/prestamos` | Loans | ✅ Completo |
-| `/configuracion` | Settings | ✅ Completo |
-| `/ordenes-compra` | PurchaseOrders | ✅ Completo |
-| `/ordenes-compra/:id` | PurchaseOrderDetail | ✅ Completo |
+Todas las rutas (excepto `/login`) protegidas con `RequireAuth` y cargadas con `lazy()`.
+
+| Ruta | Página |
+|---|---|
+| `/login` | Login (usuarios demo en `constants/demoUsers`) |
+| `/` | Dashboard |
+| `/proyectos` `/proyectos/:id` | Projects, ProjectDetail |
+| `/proyectos/:id/nominas` `/nominas` `/nominas/:id` `/nominas/:id/imprimir` | PayrollList, ReportesObra, PayrollEditor, PayrollPrint |
+| `/proyectos/:id/control` `/proyectos/:id/presupuesto` | ControlFinanciero, PresupuestoDetalle |
+| `/proyectos/:id/calidad` `/proyectos/:id/insumos` | QualityControlPage, InsumosPage |
+| `/proyectos/:id/bitacora` `/proyectos/:id/asistencia` `/proyectos/:id/inventario` `/proyectos/:id/cronograma` | BitacoraPage, AsistenciaPage, InventarioPage, CronogramaPage |
+| `/cubicaciones` `/proyectos/:id/cubicaciones` `…/:contratoId` `…/imprimir` `…/contrato` | CubicacionesHub, CubicacionesPage, CubicacionContratoPage, CubicacionImprimirPage, ContratoFirmaPage |
+| `/finanzas` `/presupuesto` `/reportes` | FinanzasHub, PresupuestoHub, Reportes |
+| `/cxp` `/cxp/:projectId` `/cxp/consolidado` | CxPHub, CxPDetalle, CxPConsolidadoTodos |
+| `/contratistas` `/contratistas/:id` `/suplidores` | Contractors, ContractorDetail, Suppliers |
+| `/prestamos` `/configuracion` `/calendario` `/historial-precios` | Loans, Settings, Calendario, HistorialPrecios |
+| `/ordenes-compra` `/ordenes-compra/:id` | PurchaseOrders, PurchaseOrderDetail |
 
 ---
 
@@ -104,6 +99,12 @@ src/
 | `mercadoBudgetService` | Presupuesto Mercado por proyecto + líneas + vínculo con contratos |
 | `quoteService` | CRUD cotizaciones e ítems por requisición |
 | `loanService` | CRUD préstamos a contratistas y deducciones por nómina |
+| `notificationService` | Notificaciones in-app (badge en header) |
+| `bitacoraService` | Bitácora de obra (clima, mano de obra, incidentes) |
+| `attendanceService` | Asistencia diaria por proyecto |
+| `scheduleService` | Cronograma / Gantt de tareas por proyecto |
+| `inventoryService` | Inventario de materiales (stock + movimientos in/out) |
+| `contractorDocService` | Documentos de contratista (cédula, ARS, AFP, etc.) con vencimiento |
 
 ---
 
