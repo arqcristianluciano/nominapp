@@ -92,10 +92,10 @@ export default function ControlFinanciero() {
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+              className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 ${
                 activeTab === tab.key
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-app-muted hover:text-app-muted'
+                  ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                  : 'border-transparent text-app-muted hover:text-app-text'
               }`}
             >
               {tab.label}
@@ -133,7 +133,7 @@ export default function ControlFinanciero() {
             <span className="text-app-muted">Aquí solo ves este proyecto. Para filtrar o comparar otras obras abre el consolidado:</span>
             <Link
               to={`/cxp/${projectId}`}
-              className="font-medium text-blue-600 hover:underline shrink-0"
+              className="font-medium text-blue-600 dark:text-blue-400 hover:underline focus-visible:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-app-surface rounded-sm shrink-0"
             >
               Cuentas por Pagar (filtrar por proyecto)
             </Link>
