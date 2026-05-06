@@ -1,59 +1,17 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { HardHat, Phone, CreditCard, Layers, FileText, Building2 } from 'lucide-react'
+import { HardHat } from 'lucide-react'
 import { Breadcrumb } from '@/components/ui/Breadcrumb'
 import { contractorService } from '@/services/contractorService'
 import { contractorDocService, type ContractorDocument } from '@/services/contractorDocService'
 import { ContractorDocsSection } from '@/components/features/contractors/ContractorDocsSection'
-import { formatRD } from '@/utils/currency'
-import type { Contractor, Project } from '@/types/database'
-
-type ProjectLite = Pick<Project, 'id' | 'name' | 'code'> & { location?: string | null }
-
-interface LaborItem {
-  id: string
-  description: string
-  subtotal: number
-  is_advance: boolean
-  is_advance_deduction: boolean
-  payroll_period?: {
-    id: string
-    period_number: number
-    report_date: string
-    status: string
-    project_id: string
-  }
-  project?: { id: string; name: string; code: string }
-}
-
-interface Cubication {
-  id: string
-  specialty: string
-  adjusted_budget: number
-  total_advanced: number
-  completion_percent: number
-  remaining: number
-  project_id: string
-}
-
-interface ProjectSummary {
-  id: string
-  name: string
-  code: string
-  total: number
-  periods: Set<string>
-}
-
-const STATUS_LABEL: Record<string, string> = {
-  draft: 'Borrador', submitted: 'En revisión', approved: 'Aprobada', paid: 'Pagada',
-}
-const STATUS_COLOR: Record<string, string> = {
-  draft: 'bg-app-chip text-app-muted',
-  submitted: 'bg-yellow-100 dark:bg-yellow-950/50 text-yellow-700 dark:text-yellow-400',
-  approved: 'bg-blue-100 dark:bg-blue-950/50 text-blue-700 dark:text-blue-400',
-  paid: 'bg-green-100 dark:bg-green-950/50 text-green-700 dark:text-green-400',
-}
-const METHOD_LABEL: Record<string, string> = { cash: 'Efectivo', check: 'Cheque', transfer: 'Transferencia' }
+import type { Contractor } from '@/types/database'
+import { ContractorProfileCard } from '@/components/features/contractors/ContractorProfileCard'
+import { ContractorKpiGrid } from '@/components/features/contractors/ContractorKpiGrid'
+import { ContractorProjectsSummary } from '@/components/features/contractors/ContractorProjectsSummary'
+import { ContractorCubicationsList } from '@/components/features/contractors/ContractorCubicationsList'
+import { ContractorLaborItemsTable } from '@/components/features/contractors/ContractorLaborItemsTable'
+import { buildProjectSummary, type Cubication, type LaborItem, type ProjectLite } from '@/components/features/contractors/detailTypes'
 
 export default function ContractorDetail() {
   const { contractorId } = useParams<{ contractorId: string }>()
@@ -89,19 +47,7 @@ export default function ContractorDetail() {
   const billableItems = items.filter((i) => !i.is_advance_deduction)
   const totalPaid = billableItems.reduce((s, i) => s + i.subtotal, 0)
   const totalContracted = cubications.reduce((s, c) => s + (c.adjusted_budget || 0), 0)
-
-  // Group by project for summary
-  const byProject: Record<string, ProjectSummary> = {}
-  for (const item of billableItems) {
-    const pid = item.payroll_period?.project_id
-    if (!pid) continue
-    const proj = item.project || projectMap[pid]
-    if (!byProject[pid]) {
-      byProject[pid] = { id: pid, name: proj?.name || pid, code: proj?.code || '', total: 0, periods: new Set() }
-    }
-    byProject[pid].total += item.subtotal
-    if (item.payroll_period?.id) byProject[pid].periods.add(item.payroll_period.id)
-  }
+  const byProject = buildProjectSummary(billableItems, projectMap)
 
   if (loading) {
     return <div className="text-sm text-app-muted p-6">Cargando...</div>
@@ -127,160 +73,16 @@ export default function ContractorDetail() {
         <p className="text-sm text-app-muted">{contractor.specialty || 'Sin especialidad'}</p>
       </div>
 
-      {/* Contractor Info */}
-      <div className="bg-app-surface rounded-xl border border-app-border p-5">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-          {contractor.cedula && (
-            <div>
-              <p className="text-xs text-app-subtle mb-0.5">Cédula</p>
-              <p className="font-medium text-app-text">{contractor.cedula}</p>
-            </div>
-          )}
-          {contractor.phone && (
-            <div>
-              <p className="text-xs text-app-subtle mb-0.5 flex items-center gap-1"><Phone className="w-3 h-3" /> Teléfono</p>
-              <p className="font-medium text-app-text">{contractor.phone}</p>
-            </div>
-          )}
-          <div>
-            <p className="text-xs text-app-subtle mb-0.5 flex items-center gap-1"><CreditCard className="w-3 h-3" /> Forma de pago</p>
-            <p className="font-medium text-app-text">{METHOD_LABEL[contractor.payment_method]}</p>
-          </div>
-          {contractor.bank_name && (
-            <div>
-              <p className="text-xs text-app-subtle mb-0.5">Banco</p>
-              <p className="font-medium text-app-text">{contractor.bank_name}</p>
-              {contractor.bank_account && <p className="text-xs text-app-muted">{contractor.bank_account}</p>}
-            </div>
-          )}
-        </div>
-        {contractor.notes && (
-          <p className="mt-3 text-xs text-app-muted bg-app-bg rounded-lg px-3 py-2">{contractor.notes}</p>
-        )}
-      </div>
-
-      {/* KPI Summary */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KpiCard label="Total cobrado" value={formatRD(totalPaid)} color="emerald" />
-        <KpiCard label="Contrato total" value={totalContracted > 0 ? formatRD(totalContracted) : '—'} color="blue" />
-        <KpiCard label="Proyectos" value={Object.keys(byProject).length} color="purple" />
-        <KpiCard label="Reportes" value={new Set(items.map(i => i.payroll_period?.id).filter(Boolean)).size} color="amber" />
-      </div>
-
-      {/* By Project Summary */}
-      {Object.keys(byProject).length > 0 && (
-        <div>
-          <h2 className="text-base font-semibold text-app-text mb-3 flex items-center gap-2">
-            <Building2 className="w-4 h-4 text-app-subtle" /> Por proyecto
-          </h2>
-          <div className="space-y-2">
-            {Object.values(byProject).map((proj) => (
-              <Link
-                key={proj.id}
-                to={`/proyectos/${proj.id}`}
-                className="flex items-center justify-between bg-app-surface rounded-xl border border-app-border px-4 py-3 hover:border-blue-300 hover:shadow-sm transition-all"
-              >
-                <div>
-                  <p className="text-sm font-medium text-app-text">{proj.name}</p>
-                  <p className="text-xs text-app-subtle">{proj.code} · {proj.periods.size} reporte{proj.periods.size !== 1 ? 's' : ''}</p>
-                </div>
-                <span className="text-sm font-semibold text-app-muted">{formatRD(proj.total)}</span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Cubicaciones */}
-      {cubications.length > 0 && (
-        <div>
-          <h2 className="text-base font-semibold text-app-text mb-3 flex items-center gap-2">
-            <Layers className="w-4 h-4 text-app-subtle" /> Contratos de cubicación
-          </h2>
-          <div className="space-y-2">
-            {cubications.map((cub) => {
-              const project = projectMap[cub.project_id]
-              const pct = Math.round(cub.completion_percent)
-              return (
-                <div key={cub.id} className="bg-app-surface rounded-xl border border-app-border px-4 py-3">
-                  <div className="flex items-start justify-between gap-4 mb-2">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-app-text truncate">{cub.specialty}</p>
-                      {project && <p className="text-xs text-app-subtle">{project.name}</p>}
-                    </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-sm font-semibold text-app-muted">{formatRD(cub.total_advanced)}</p>
-                      <p className="text-xs text-app-subtle">de {formatRD(cub.adjusted_budget || 0)}</p>
-                    </div>
-                  </div>
-                  <div className="h-1.5 bg-app-chip rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full ${pct >= 80 ? 'bg-emerald-500' : pct >= 40 ? 'bg-blue-500' : 'bg-amber-500'}`}
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-                  <p className="text-[10px] text-app-subtle mt-1">{pct}% completado · Pendiente {formatRD(cub.remaining)}</p>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Labor Line Items Detail */}
-      {items.length > 0 && (
-        <div>
-          <h2 className="text-base font-semibold text-app-text mb-3 flex items-center gap-2">
-            <FileText className="w-4 h-4 text-app-subtle" /> Detalle de reportes
-          </h2>
-          <div className="bg-app-surface rounded-xl border border-app-border overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-app-bg border-b border-app-border">
-                <tr>
-                  <th className="text-left px-4 py-2.5 text-xs font-medium text-app-muted">Descripción</th>
-                  <th className="text-left px-4 py-2.5 text-xs font-medium text-app-muted hidden md:table-cell">Proyecto</th>
-                  <th className="text-left px-4 py-2.5 text-xs font-medium text-app-muted hidden sm:table-cell">Fecha</th>
-                  <th className="text-left px-4 py-2.5 text-xs font-medium text-app-muted hidden sm:table-cell">Estado</th>
-                  <th className="text-right px-4 py-2.5 text-xs font-medium text-app-muted">Monto</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-app-border">
-                {items.map((item) => (
-                  <tr key={item.id} className={item.is_advance_deduction ? 'opacity-50' : ''}>
-                    <td className="px-4 py-2.5">
-                      <p className="text-xs text-app-text">{item.description}</p>
-                      {item.is_advance && <span className="text-[10px] text-amber-600">Adelanto</span>}
-                      {item.is_advance_deduction && <span className="text-[10px] text-red-500">Deducción</span>}
-                    </td>
-                    <td className="px-4 py-2.5 hidden md:table-cell">
-                      <p className="text-xs text-app-muted truncate max-w-32">{item.project?.name || '—'}</p>
-                    </td>
-                    <td className="px-4 py-2.5 hidden sm:table-cell">
-                      <p className="text-xs text-app-muted">{item.payroll_period?.report_date || '—'}</p>
-                    </td>
-                    <td className="px-4 py-2.5 hidden sm:table-cell">
-                      {item.payroll_period?.status && (
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${STATUS_COLOR[item.payroll_period.status]}`}>
-                          {STATUS_LABEL[item.payroll_period.status]}
-                        </span>
-                      )}
-                    </td>
-                    <td className={`px-4 py-2.5 text-right text-xs font-medium ${item.is_advance_deduction ? 'text-red-500' : 'text-app-text'}`}>
-                      {item.is_advance_deduction ? '-' : ''}{formatRD(item.subtotal)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot className="bg-app-bg border-t border-app-border">
-                <tr>
-                  <td colSpan={4} className="px-4 py-2.5 text-xs font-semibold text-app-muted">Total cobrado</td>
-                  <td className="px-4 py-2.5 text-right text-sm font-bold text-app-text">{formatRD(totalPaid)}</td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        </div>
-      )}
+      <ContractorProfileCard contractor={contractor} />
+      <ContractorKpiGrid
+        totalPaid={totalPaid}
+        totalContracted={totalContracted}
+        projectCount={Object.keys(byProject).length}
+        reportCount={new Set(items.map((item) => item.payroll_period?.id).filter(Boolean)).size}
+      />
+      <ContractorProjectsSummary projects={Object.values(byProject)} />
+      <ContractorCubicationsList cubications={cubications} projectMap={projectMap} />
+      <ContractorLaborItemsTable items={items} totalPaid={totalPaid} />
 
       {items.length === 0 && cubications.length === 0 && (
         <div className="bg-app-surface rounded-xl border border-app-border p-8 text-center">
@@ -290,21 +92,6 @@ export default function ContractorDetail() {
       )}
 
       <ContractorDocsSection contractorId={contractorId!} docs={docs} onChange={setDocs} />
-    </div>
-  )
-}
-
-function KpiCard({ label, value, color }: { label: string; value: string | number; color: string }) {
-  const colors: Record<string, { bg: string; text: string }> = {
-    emerald: { bg: 'bg-emerald-50 dark:bg-emerald-950/40', text: 'text-emerald-700 dark:text-emerald-400' },
-    blue:    { bg: 'bg-blue-50 dark:bg-blue-950/40',       text: 'text-blue-700 dark:text-blue-400' },
-    purple:  { bg: 'bg-purple-50 dark:bg-purple-950/40',   text: 'text-purple-700 dark:text-purple-400' },
-    amber:   { bg: 'bg-amber-50 dark:bg-amber-950/40',     text: 'text-amber-700 dark:text-amber-400' },
-  }
-  return (
-    <div className={`rounded-xl border border-app-border p-4 ${colors[color].bg}`}>
-      <p className="text-xs text-app-muted mb-1">{label}</p>
-      <p className={`text-lg font-bold ${colors[color].text}`}>{value}</p>
     </div>
   )
 }

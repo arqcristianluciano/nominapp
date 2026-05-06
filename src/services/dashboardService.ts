@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { calcTotalCxP, type FinancialTransaction } from '@/utils/financialCalculations'
 
 interface PayrollKpiRow {
   grand_total: number | null
@@ -9,6 +10,10 @@ interface TransactionKpiRow {
   total: number | null
   payment_condition: string | null
   date: string
+}
+
+function isBetween(dateValue: string | null | undefined, from: string, to: string) {
+  return Boolean(dateValue && dateValue >= from && dateValue <= to)
 }
 
 export const dashboardService = {
@@ -44,10 +49,10 @@ export const dashboardService = {
       (p) => p.created_at && p.created_at >= prevMonthStart && p.created_at <= prevMonthEnd + 'T23:59:59Z'
     ).length
 
-    const cxpTxns = transactions.filter((t) => t.payment_condition?.includes('Credito'))
-    const cxpTotal = cxpTxns.reduce((sum, t) => sum + (t.total || 0), 0)
-    const prevCxpTxns = cxpTxns.filter((t) => t.date && t.date >= prevMonthStart && t.date <= prevMonthEnd)
-    const prevCxp = prevCxpTxns.reduce((sum, t) => sum + (t.total || 0), 0)
+    const cxpTotal = calcTotalCxP(transactions as FinancialTransaction[])
+    const prevCxp = calcTotalCxP(
+      transactions.filter((t) => isBetween(t.date, prevMonthStart, prevMonthEnd)) as FinancialTransaction[],
+    )
 
     return {
       totalInvested,

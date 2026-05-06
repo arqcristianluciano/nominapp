@@ -1,16 +1,17 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Plus, Send, Truck, ShieldCheck, ImageIcon, Trash2, AlertTriangle } from 'lucide-react'
-import { Breadcrumb } from '@/components/ui/Breadcrumb'
 import { requisitionService } from '@/services/requisitionService'
 import { quoteService } from '@/services/quoteService'
 import { supplierService } from '@/services/supplierService'
 import type { PurchaseRequisition } from '@/types/purchaseOrder'
 import type { Supplier } from '@/types/database'
-import { REQ_STATUS_LABEL, REQ_STATUS_COLOR } from '@/types/purchaseOrder'
 import { ApprovalModal } from '@/components/features/purchase-orders/ApprovalModal'
 import { QuoteForm } from '@/components/features/purchase-orders/QuoteForm'
-import { QuotesPanel } from '@/components/features/purchase-orders/QuotesPanel'
+import { PurchaseOrderHeader } from '@/components/features/purchase-orders/PurchaseOrderHeader'
+import { PurchaseOrderMeta } from '@/components/features/purchase-orders/PurchaseOrderMeta'
+import { PurchaseOrderActions } from '@/components/features/purchase-orders/PurchaseOrderActions'
+import { PurchaseOrderQuotesSection } from '@/components/features/purchase-orders/PurchaseOrderQuotesSection'
+import { PurchaseOrderSignatureCard } from '@/components/features/purchase-orders/PurchaseOrderSignatureCard'
 import { Modal } from '@/components/ui/Modal'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 
@@ -102,133 +103,32 @@ export default function PurchaseOrderDetail() {
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
-      {/* Header */}
-      <div>
-        <Breadcrumb items={[
-          { label: 'Órdenes de compra', to: '/ordenes-compra' },
-          { label: req.req_number },
-        ]} />
-        <div className="flex items-center gap-3 flex-wrap">
-          <h1 className="text-xl font-bold text-app-text">{req.req_number}</h1>
-          <span className={`px-3 py-1 rounded-full text-xs font-medium ${REQ_STATUS_COLOR[req.status]}`}>
-            {REQ_STATUS_LABEL[req.status]}
-          </span>
-        </div>
-        <p className="text-sm text-app-muted mt-0.5">{req.description}</p>
-      </div>
+      <PurchaseOrderHeader req={req} />
+      <PurchaseOrderMeta req={req} />
 
-      {/* Banner de revisión */}
-      {req.status === 'needs_revision' && req.revision_notes && (
-        <div className="bg-orange-50 border border-orange-300 rounded-xl p-4 flex gap-3">
-          <AlertTriangle className="w-5 h-5 text-orange-500 shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm font-semibold text-orange-800">Devuelta para revisión</p>
-            <p className="text-sm text-orange-700 mt-1">{req.revision_notes}</p>
-            <p className="text-xs text-orange-500 mt-2">
-              Corrija las cotizaciones y reenvíe a aprobación cuando esté listo.
-            </p>
-          </div>
-        </div>
-      )}
+      <PurchaseOrderQuotesSection
+        quotes={quotes}
+        approvedQuoteId={req.approved_quote_id ?? null}
+        canEdit={canEdit}
+        canNegotiate={canNegotiate}
+        missingQuotes={missingQuotes}
+        onOpenAdd={() => setAddQuote(true)}
+        onDelete={setDeleteQuoteId}
+        onNegotiate={handleNegotiate}
+      />
+      <PurchaseOrderSignatureCard signatureData={req.signature_data} approvedAt={req.approved_at} />
 
-      {/* Meta */}
-      <div className="bg-app-surface rounded-xl border border-app-border p-4 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-        <div><span className="text-app-muted text-xs block">Proyecto</span><span className="font-medium">{req.project?.name}</span></div>
-        <div><span className="text-app-muted text-xs block">Solicitado por</span><span className="font-medium">{req.requested_by}</span></div>
-        {req.required_date && <div><span className="text-app-muted text-xs block">Fecha requerida</span><span className="font-medium">{req.required_date}</span></div>}
-        {req.approved_by && <div><span className="text-app-muted text-xs block">Aprobado por</span><span className="font-medium text-green-700">{req.approved_by}</span></div>}
-        {req.approved_at && <div><span className="text-app-muted text-xs block">Fecha aprobación</span><span className="font-medium">{new Date(req.approved_at).toLocaleDateString('es-DO')}</span></div>}
-        {req.payment_type && <div><span className="text-app-muted text-xs block">Forma de pago</span><span className="font-medium">{req.payment_type === 'credit' ? 'Crédito' : 'Contado'}</span></div>}
-        {req.rejection_reason && <div className="col-span-2"><span className="text-app-muted text-xs block">Motivo rechazo</span><span className="font-medium text-red-700">{req.rejection_reason}</span></div>}
-        {req.notes && <div className="col-span-2"><span className="text-app-muted text-xs block">Notas</span><span>{req.notes}</span></div>}
-      </div>
-
-      {/* Cotizaciones */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-base font-semibold text-app-text">
-              Cotizaciones <span className="text-app-subtle font-normal text-sm">({quotes.length})</span>
-            </h2>
-            {canEdit && missingQuotes > 0 && (
-              <p className="text-xs text-amber-600 mt-0.5">
-                Faltan {missingQuotes} cotización{missingQuotes !== 1 ? 'es' : ''} para enviar a aprobación
-              </p>
-            )}
-            {canNegotiate && quotes.length > 0 && (
-              <p className="text-xs text-app-subtle mt-0.5">
-                Haz clic en <span className="font-medium">✏</span> en cada tarjeta para registrar un precio negociado
-              </p>
-            )}
-          </div>
-          {canEdit && (
-            <button onClick={() => setAddQuote(true)}
-              className="flex items-center gap-2 text-sm text-blue-600 border border-blue-200 hover:bg-blue-50 px-3 py-1.5 rounded-lg">
-              <Plus className="w-3.5 h-3.5" /> Agregar cotización
-            </button>
-          )}
-        </div>
-
-        <QuotesPanel
-          quotes={quotes}
-          approvedQuoteId={req.approved_quote_id}
-          canDelete={canEdit}
-          canNegotiate={canNegotiate}
-          onDelete={(id) => setDeleteQuoteId(id)}
-          onNegotiate={handleNegotiate}
-        />
-      </div>
-
-      {/* Firma */}
-      {req.signature_data && (
-        <div className="bg-app-surface rounded-xl border border-app-border p-5">
-          <p className="text-sm font-medium text-app-muted mb-3 flex items-center gap-2">
-            <ImageIcon className="w-4 h-4" /> Firma digital
-            {req.approved_at && (
-              <span className="text-xs text-app-subtle font-normal">
-                — {new Date(req.approved_at).toLocaleString('es-DO')}
-              </span>
-            )}
-          </p>
-          <img src={req.signature_data} alt="Firma digital"
-            className="max-h-32 border border-app-border rounded-lg bg-app-bg" />
-        </div>
-      )}
-
-      {/* Acciones */}
-      <div className="flex flex-wrap gap-3 pt-2">
-        {canSubmit && (
-          <button onClick={handleSubmitForApproval}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700">
-            <Send className="w-4 h-4" />
-            {req.status === 'needs_revision' ? 'Reenviar a aprobación' : 'Enviar a aprobación'}
-          </button>
-        )}
-        {req.status === 'pending_approval' && (
-          <button onClick={() => setApprovalModal(true)}
-            className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700">
-            <ShieldCheck className="w-4 h-4" /> Revisar y aprobar
-          </button>
-        )}
-        {req.status === 'approved' && (
-          <>
-            <button onClick={() => handlePlaceOrder('cash')} disabled={placingOrder}
-              className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50">
-              <Truck className="w-4 h-4" /> Colocar orden — Contado
-            </button>
-            <button onClick={() => handlePlaceOrder('credit')} disabled={placingOrder}
-              className="flex items-center gap-2 border border-purple-300 text-purple-700 px-4 py-2 rounded-lg text-sm hover:bg-purple-50 disabled:opacity-50">
-              <Truck className="w-4 h-4" /> Colocar orden — Crédito
-            </button>
-          </>
-        )}
-        {(canEdit) && (
-          <button onClick={() => setConfirmDeleteReq(true)}
-            className="flex items-center gap-2 text-red-500 hover:text-red-700 px-4 py-2 rounded-lg text-sm border border-red-200 hover:bg-red-50">
-            <Trash2 className="w-4 h-4" /> Eliminar
-          </button>
-        )}
-      </div>
+      <PurchaseOrderActions
+        canEdit={canEdit}
+        canSubmit={canSubmit}
+        status={req.status}
+        placingOrder={placingOrder}
+        onSubmitForApproval={handleSubmitForApproval}
+        onOpenApproval={() => setApprovalModal(true)}
+        onPlaceCash={() => handlePlaceOrder('cash')}
+        onPlaceCredit={() => handlePlaceOrder('credit')}
+        onDelete={() => setConfirmDeleteReq(true)}
+      />
 
       <Modal open={addQuote} onClose={() => setAddQuote(false)} title="Agregar cotización" width="max-w-2xl">
         <QuoteForm

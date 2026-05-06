@@ -1,27 +1,50 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Plus, Trash2, CheckCircle, Send, CreditCard, Printer } from 'lucide-react'
+import { ArrowLeft, CheckCircle, Send, CreditCard, Printer } from 'lucide-react'
 import { usePayroll } from '@/hooks/usePayroll'
 import { supplierService } from '@/services/supplierService'
+import { contractorService } from '@/services/contractorService'
+import { priceListService } from '@/services/priceListService'
 import { Modal } from '@/components/ui/Modal'
 import { AddMaterialForm } from '@/components/features/payroll/AddMaterialForm'
+import { AddLaborItemForm } from '@/components/features/payroll/AddLaborItemForm'
 import { PaymentDistributionsSection } from '@/components/features/payments/PaymentDistributionsSection'
 import { LoanDeductionSection } from '@/components/features/payroll/LoanDeductionSection'
 import { CubicacionesPayrollSection } from '@/components/features/cubicacion/CubicacionesPayrollSection'
-import { formatRD } from '@/utils/currency'
-import type { Supplier } from '@/types/database'
+import { PayrollTotalsCards } from '@/components/features/payroll/PayrollTotalsCards'
+import { LaborItemsSection } from '@/components/features/payroll/LaborItemsSection'
+import { MaterialInvoicesSection } from '@/components/features/payroll/MaterialInvoicesSection'
+import { IndirectCostsSection } from '@/components/features/payroll/IndirectCostsSection'
+import type { Contractor, PriceListItem, Supplier } from '@/types/database'
 
 export default function PayrollEditor() {
   const { periodId } = useParams<{ periodId: string }>()
   const payroll = usePayroll(periodId)
   const loadPayroll = payroll.load
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
+  const [contractors, setContractors] = useState<Contractor[]>([])
+  const [laborTasks, setLaborTasks] = useState<PriceListItem[]>([])
+  const [showAddLabor, setShowAddLabor] = useState(false)
   const [showAddMaterial, setShowAddMaterial] = useState(false)
 
   useEffect(() => {
     loadPayroll()
-    supplierService.getAll().then(setSuppliers)
+    Promise.all([
+      supplierService.getAll(),
+      contractorService.getAll(),
+    ]).then(([nextSuppliers, nextContractors]) => {
+      setSuppliers(nextSuppliers)
+      setContractors(nextContractors)
+    })
   }, [loadPayroll])
+
+  useEffect(() => {
+    if (!payroll.period?.project_id) return
+    priceListService
+      .getByProject(payroll.period.project_id)
+      .then((items) => setLaborTasks(items.filter((item) => item.category === 'labor')))
+      .catch(() => setLaborTasks([]))
+  }, [payroll.period?.project_id])
 
   if (payroll.loading) return <div className="text-sm text-app-muted p-4">Cargando nómina...</div>
   if (!payroll.period) return <div className="text-sm text-app-muted p-4">Nómina no encontrada</div>
@@ -70,102 +93,18 @@ export default function PayrollEditor() {
 
       {payroll.error && <div className="text-sm text-red-600 bg-red-50 rounded-lg px-4 py-3">{payroll.error}</div>}
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="rounded-lg px-3 py-2.5 bg-app-surface border border-app-border"><p className="text-xs text-app-muted">Mano de obra</p><p className="text-sm font-semibold mt-0.5">{formatRD(period.total_labor || 0)}</p></div>
-        <div className="rounded-lg px-3 py-2.5 bg-app-surface border border-app-border"><p className="text-xs text-app-muted">Materiales</p><p className="text-sm font-semibold mt-0.5">{formatRD(period.total_materials || 0)}</p></div>
-        <div className="rounded-lg px-3 py-2.5 bg-app-surface border border-app-border"><p className="text-xs text-app-muted">Indirectos</p><p className="text-sm font-semibold mt-0.5">{formatRD(period.total_indirect || 0)}</p></div>
-        <div className="rounded-lg px-3 py-2.5 bg-blue-600"><p className="text-xs text-blue-200">Total general</p><p className="text-sm font-semibold text-white mt-0.5">{formatRD(period.grand_total || 0)}</p></div>
-      </div>
+      <PayrollTotalsCards labor={period.total_labor || 0} materials={period.total_materials || 0} indirect={period.total_indirect || 0} grandTotal={period.grand_total || 0} />
 
-      <section>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-medium text-app-text">Materiales</h2>
-          {isDraft && (
-            <button onClick={() => setShowAddMaterial(true)} className="flex items-center gap-1.5 px-3 py-1.5 bg-app-surface border border-app-border text-sm font-medium rounded-lg hover:bg-app-hover">
-              <Plus className="w-4 h-4" /> Agregar factura
-            </button>
-          )}
-        </div>
-
-        {payroll.materialInvoices.length === 0 ? (
-          <div className="bg-app-surface rounded-xl border border-app-border p-8 text-center text-sm text-app-subtle">
-            No hay facturas de materiales registradas
-          </div>
-        ) : (
-          <div className="bg-app-surface rounded-xl border border-app-border overflow-hidden">
-            <table className="w-full text-sm">
-              <thead><tr className="bg-app-bg border-b border-app-border">
-                <th className="text-left px-4 py-2.5 font-medium text-app-muted">Proveedor</th>
-                <th className="text-left px-4 py-2.5 font-medium text-app-muted">Descripción</th>
-                <th className="text-right px-4 py-2.5 font-medium text-app-muted">Monto</th>
-                {isDraft && <th className="w-10" />}
-              </tr></thead>
-              <tbody className="divide-y divide-app-border">
-                {payroll.materialInvoices.map((inv) => (
-                  <tr key={inv.id} className="hover:bg-app-hover">
-                    <td className="px-4 py-2.5 text-app-text">{inv.supplier?.name || '—'}</td>
-                    <td className="px-4 py-2.5 text-app-muted">
-                      {inv.description}
-                      {inv.invoice_reference && <span className="text-xs text-app-subtle ml-1">{inv.invoice_reference}</span>}
-                    </td>
-                    <td className="px-4 py-2.5 text-right font-medium text-app-text">{formatRD(inv.amount)}</td>
-                    {isDraft && (
-                      <td className="px-2 py-2.5">
-                        <button onClick={() => payroll.deleteMaterialInvoice(inv.id)} className="p-1 text-app-subtle hover:text-red-500">
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-        <div className="mt-3 bg-amber-50 dark:bg-amber-950/40 rounded-lg px-4 py-3 flex justify-between items-center">
-          <span className="text-sm font-medium text-amber-800 dark:text-amber-400">Total materiales</span>
-          <span className="text-sm font-semibold text-amber-800 dark:text-amber-400">{formatRD(period.total_materials || 0)}</span>
-        </div>
-      </section>
-
-      {payroll.indirectCosts.length > 0 && (
-        <section>
-          <h2 className="text-lg font-medium text-app-text mb-1">Gastos indirectos</h2>
-          <p className="text-xs text-app-subtle mb-3">Desmarca los que no se aplican en este reporte. La preferencia se mantiene para los próximos.</p>
-          <div className="bg-app-surface rounded-xl border border-app-border overflow-hidden">
-            <table className="w-full text-sm">
-              <tbody className="divide-y divide-app-border">
-                {payroll.indirectCosts.map((cost) => (
-                  <tr key={cost.id} className={cost.is_active ? '' : 'opacity-50'}>
-                    <td className="px-4 py-2.5 w-10">
-                      <input
-                        type="checkbox"
-                        checked={cost.is_active}
-                        disabled={!isDraft || payroll.saving}
-                        onChange={(e) => payroll.setIndirectActive(cost.id, e.target.checked)}
-                        className="w-4 h-4 accent-blue-600 cursor-pointer disabled:cursor-not-allowed"
-                      />
-                    </td>
-                    <td className={`px-4 py-2.5 text-app-muted ${cost.is_active ? '' : 'line-through'}`}>{cost.description}</td>
-                    <td className="px-4 py-2.5 text-right text-app-muted">{cost.percentage ? `${cost.percentage}%` : 'Fijo'}</td>
-                    <td className="px-4 py-2.5 text-right font-medium text-app-text w-32">{formatRD(cost.calculated_amount)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="mt-3 bg-purple-50 rounded-lg px-4 py-3 flex justify-between items-center">
-            <span className="text-sm font-medium text-purple-900">Total indirectos</span>
-            <span className="text-sm font-semibold text-purple-900">{formatRD(period.total_indirect || 0)}</span>
-          </div>
-        </section>
-      )}
+      <LaborItemsSection items={payroll.laborItems} isDraft={isDraft} total={period.total_labor || 0} onOpenAdd={() => setShowAddLabor(true)} onDelete={payroll.deleteLaborItem} />
+      <MaterialInvoicesSection invoices={payroll.materialInvoices} isDraft={isDraft} total={period.total_materials || 0} onOpenAdd={() => setShowAddMaterial(true)} onDelete={payroll.deleteMaterialInvoice} />
+      <IndirectCostsSection costs={payroll.indirectCosts} isDraft={isDraft} saving={payroll.saving} total={period.total_indirect || 0} onToggleActive={payroll.setIndirectActive} />
 
       <CubicacionesPayrollSection
         periodId={period.id}
         projectId={period.project_id}
         isDraft={isDraft}
         onCorteLinked={payroll.load}
+        onRecalculateTotals={payroll.recalculateTotals}
       />
 
       <LoanDeductionSection periodId={period.id} isDraft={isDraft} />
@@ -180,6 +119,17 @@ export default function PayrollEditor() {
           onSubmit={async (inv) => { await payroll.addMaterialInvoice(inv); setShowAddMaterial(false) }}
           onCancel={() => setShowAddMaterial(false)}
           saving={payroll.saving}
+        />
+      </Modal>
+
+      <Modal open={showAddLabor} onClose={() => setShowAddLabor(false)} title="Agregar partida de mano de obra">
+        <AddLaborItemForm
+          contractors={contractors}
+          laborTasks={laborTasks}
+          onSubmit={async (item) => { await payroll.addLaborItem(item); setShowAddLabor(false) }}
+          onCancel={() => setShowAddLabor(false)}
+          saving={payroll.saving}
+          onContractorCreated={(contractor) => setContractors((prev) => [contractor, ...prev])}
         />
       </Modal>
     </div>

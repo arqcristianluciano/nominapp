@@ -78,6 +78,8 @@ export function usePayroll(periodId: string | undefined) {
     unit_price: number
     is_advance?: boolean
     is_advance_deduction?: boolean
+    sort_order?: number
+    notes?: string
   }) => {
     if (!periodId) return
     setSaving(true)
@@ -86,7 +88,7 @@ export function usePayroll(periodId: string | undefined) {
       const newItem = await payrollService.addLaborItem({
         ...item,
         payroll_period_id: periodId,
-        sort_order: maxSort + 1,
+        sort_order: item.sort_order ?? maxSort + 1,
       })
       const updated = [...laborItems, newItem]
       setLaborItems(updated)
@@ -187,11 +189,18 @@ export function usePayroll(periodId: string | undefined) {
     }
   }, [periodId, laborItems, materialInvoices])
 
+  const recalculateTotals = useCallback(async () => {
+    if (!periodId) return
+    await payrollService.recalculateTotals(periodId)
+    await load()
+  }, [periodId, load])
+
   return {
     period, laborItems, materialInvoices, indirectCosts,
     loading, saving, error,
     load, addLaborItem, updateLaborItem, deleteLaborItem,
     addMaterialInvoice, deleteMaterialInvoice, updateStatus,
     setIndirectActive,
+    recalculateTotals,
   }
 }

@@ -1,3 +1,14 @@
+self.addEventListener('install', () => {
+  self.skipWaiting()
+})
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(self.clients.claim())
+})
+
+self.addEventListener('fetch', () => {
+  // Service worker placeholder; no runtime cache yet.
+})
 // NominaAPP Service Worker — cache-first for static assets
 const CACHE_NAME = 'nominaapp-v1'
 const STATIC_ASSETS = ['/', '/manifest.json']

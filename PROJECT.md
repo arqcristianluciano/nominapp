@@ -24,17 +24,37 @@ src/
     auth/           ← RequireAuth (rutas protegidas)
     layout/         ← AppLayout, Sidebar, Header, ThemeToggle
     features/
-      payroll/      ← AddLaborItemForm, AddMaterialForm, CreatePayrollForm
-      contractors/  ← ContractorForm
+      calendar/      ← CalendarMonthGrid, CalendarSidePanels
+      payroll/      ← AddLaborItemForm, AddMaterialForm, CreatePayrollForm,
+                       PayrollTotalsCards, LaborItemsSection, MaterialInvoicesSection, IndirectCostsSection
+      payrollReports/ ← ProjectSummaryBar, ProjectReportsSection, EmptyProjectsPanel,
+                        CreateReportModalContent
+      contractors/  ← ContractorForm, ContractorProfileCard, ContractorKpiGrid,
+                       ContractorProjectsSummary, ContractorCubicationsList, ContractorLaborItemsTable
       suppliers/    ← SupplierForm
       projects/     ← ProjectForm
-      loans/        ← LoanForm
+                      ProjectModulesGrid, ProjectBudgetSummary, ProjectRecentTransactions,
+                      ProjectPayrollSection, ProjectsHeader, ProjectsTable, EmptyProjects
+      loans/        ← LoanForm, LoanTable
+      settings/     ← BankAccountForm, SettingsPanels
+      schedule/     ← ScheduleStats, ScheduleTaskForm, ScheduleTaskTable, ScheduleGantt
       control/      ← TransactionInlineForm, TransactionRow, CxPView, CxPProjectFilterBar,
-                       ChequesEfectivoView, FinancialIndicators
-      cubicacion/   ← PartidaSection, CorteSection, AdelantoSection
+                       ChequesEfectivoView, FinancialIndicators, DiarioTab
+      cubicacion/   ← PartidaSection, CorteSection, AdelantoSection,
+                       CubicacionesSummaryCards, ContractsTable, CreateContractModal
       budget/       ← BudgetItemForm, BudgetPartidaRow, ExcelImportModal, PriceListPanel,
-                       PriceListInlineForm, CopyPriceListModal
-      insumos/      ← MercadoExcelUpload, CreateContractFromLineModal
+                       PriceListInlineForm, CopyPriceListModal, BudgetTabs, BudgetSummaryCards,
+                       BudgetHierarchyTable, BudgetAmountEditModal
+      insumos/      ← MercadoExcelUpload, CreateContractFromLineModal, InsumosImportCard,
+                       InsumosSummary, InsumosLinesTable
+      inventory/    ← InventoryLowStockAlert, InventoryTabs, InventoryForms, InventoryTables
+      bitacora/     ← BitacoraEntryForm, BitacoraEntriesList
+      attendance/   ← AttendanceSummaryCards, AttendanceForm, AttendanceHistoryTable
+      reports/      ← ReportsSummaryCards, ReportsTables
+      priceHistory/ ← PriceHistorySummary, PriceHistorySearch, PriceHistoryTable
+      purchase-orders/ ← PurchaseOrderHeader, PurchaseOrderMeta, PurchaseOrderActions,
+                          PurchaseOrderQuotesSection, PurchaseOrderSignatureCard,
+                          ApprovalModal, QuoteForm, QuotesPanel
       payments/     ← PaymentDistributionsSection
       quality/      ← QualityControlForm
       dashboard/    ← StatCard, ProjectCard, QuickAction, ProjectsSkeleton
@@ -42,7 +62,7 @@ src/
   services/         ← authService + servicios de dominio (ver tabla)
   stores/           ← projectStore, payrollStore, themeStore, authStore (sesión demo, localStorage)
   hooks/            ← usePayroll, useTransactions, useBudgetDetail, useBudgetItems,
-                       useDashboardData
+                       useDashboardData, useCalendarEvents, useProjectReports, usePriceHistory
   utils/            ← currency, money (Decimal helpers), calculations,
                        financialCalculations, priceCodeGenerator, approvalCode,
                        errors, parseMercadoExcel
@@ -108,7 +128,7 @@ Todas las rutas (excepto `/login`) protegidas con `RequireAuth` y cargadas con `
 
 ---
 
-## Schema Supabase (14 tablas)
+## Schema Supabase (tablas principales + módulos de obra)
 
 `companies`, `projects`, `contractors`, `suppliers`, `bank_accounts`,
 `budget_categories`, `budget_items`, `price_list_items`, `payroll_periods`, `labor_line_items`,
@@ -117,7 +137,9 @@ Todas las rutas (excepto `/login`) protegidas con `RequireAuth` y cargadas con `
 `adjustment_contracts`, `contract_partidas`, `contract_cortes`, `contract_adelantos`,
 `purchase_requisitions`, `purchase_quotes`, `purchase_quote_items`,
 `contractor_loans`, `loan_deductions`,
-`mercado_budgets`, `mercado_budget_lines`
+`mercado_budgets`, `mercado_budget_lines`,
+`bitacora_entries`, `attendance_records`, `inventory_items`, `inventory_movements`,
+`schedule_tasks`, `contractor_documents`
 
 ---
 
@@ -127,6 +149,7 @@ Todas las rutas (excepto `/login`) protegidas con `RequireAuth` y cargadas con `
 - Gestión completa de proyectos, contratistas, suplidores
 - Nóminas: draft → submitted → approved → paid
   - Partidas de mano de obra por contratista
+  - Carga manual de partidas de mano de obra desde el editor de nómina
   - Facturas de materiales
   - Indirectos auto-calculados (DT, admin, transporte, planificación + casillas personalizables % o RD$ por proyecto)
   - Activar/desactivar indirectos por nómina (checkbox por fila); la preferencia se preserva por tipo entre recálculos

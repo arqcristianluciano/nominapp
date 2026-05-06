@@ -1,12 +1,14 @@
 import { useEffect, useState, useCallback } from 'react'
-import { useParams, Link } from 'react-router-dom'
-import { FileUp, ListOrdered, PackageSearch } from 'lucide-react'
+import { useParams } from 'react-router-dom'
+import { FileUp } from 'lucide-react'
 import { Breadcrumb } from '@/components/ui/Breadcrumb'
 import { useProjectStore } from '@/stores/projectStore'
 import { useBudgetDetail } from '@/hooks/useBudgetDetail'
 import { useBudgetItems } from '@/hooks/useBudgetItems'
-import { formatRD } from '@/utils/currency'
-import BudgetPartidaRow from '@/components/features/budget/BudgetPartidaRow'
+import { BudgetTabs } from '@/components/features/budget/BudgetTabs'
+import { BudgetSummaryCards } from '@/components/features/budget/BudgetSummaryCards'
+import { BudgetHierarchyTable } from '@/components/features/budget/BudgetHierarchyTable'
+import { BudgetAmountEditModal } from '@/components/features/budget/BudgetAmountEditModal'
 import ExcelImportModal from '@/components/features/budget/ExcelImportModal'
 import PriceListPanel from '@/components/features/budget/PriceListPanel'
 import CopyPriceListModal from '@/components/features/budget/CopyPriceListModal'
@@ -100,98 +102,23 @@ export default function PresupuestoDetalle() {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 bg-app-chip rounded-lg p-1 w-fit">
-        <button
-          onClick={() => setTab('presupuesto')}
-          className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-xs font-medium transition-colors ${
-            tab === 'presupuesto' ? 'bg-app-surface text-app-text shadow-sm' : 'text-app-muted hover:text-app-muted'
-          }`}
-        >
-          <ListOrdered className="w-3.5 h-3.5" /> Presupuesto
-        </button>
-        <button
-          onClick={() => setTab('precios')}
-          className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-xs font-medium transition-colors ${
-            tab === 'precios' ? 'bg-app-surface text-app-text shadow-sm' : 'text-app-muted hover:text-app-muted'
-          }`}
-        >
-          Lista de precios
-          <span className="text-[10px] text-app-subtle">({budgetItems.priceList.length})</span>
-        </button>
-        <Link
-          to={`/proyectos/${projectId}/insumos`}
-          className="flex items-center gap-1.5 px-4 py-1.5 rounded-md text-xs font-medium transition-colors text-app-muted hover:text-app-text"
-        >
-          <PackageSearch className="w-3.5 h-3.5" /> Insumos
-        </Link>
-      </div>
+      <BudgetTabs tab={tab} projectId={projectId!} priceCount={budgetItems.priceList.length} onChange={setTab} />
 
       {tab === 'presupuesto' && (
         <>
-          {/* KPIs */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-app-surface rounded-xl border border-app-border p-4">
-              <p className="text-xs text-app-muted">Total gastado</p>
-              <p className="text-2xl font-semibold text-app-text mt-1">{formatRD(budget.totals.spent)}</p>
-            </div>
-            <div className="bg-app-surface rounded-xl border border-app-border p-4">
-              <p className="text-xs text-app-muted">Presupuesto total</p>
-              <p className="text-2xl font-semibold text-app-text mt-1">{formatRD(grandBudgeted)}</p>
-            </div>
-            <div className={`rounded-xl border p-4 ${grandBudgeted - budget.totals.spent < 0 ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'}`}>
-              <p className="text-xs text-app-muted">Diferencia</p>
-              <p className={`text-2xl font-semibold mt-1 ${grandBudgeted - budget.totals.spent < 0 ? 'text-red-700' : 'text-green-700'}`}>
-                {formatRD(grandBudgeted - budget.totals.spent)}
-              </p>
-            </div>
-          </div>
-
-          {/* Tabla jerárquica */}
-          {budget.loading ? (
-            <div className="text-sm text-app-muted">Cargando presupuesto...</div>
-          ) : (
-            <div className="bg-app-surface rounded-xl border border-app-border overflow-hidden">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-app-bg border-b border-app-border">
-                    <th className="px-3 py-2 w-8" />
-                    <th className="px-3 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">Partida / Subpartida</th>
-                    <th className="px-3 py-2 text-right text-[10px] font-semibold text-app-muted uppercase">Gastado</th>
-                    <th className="px-3 py-2 text-right text-[10px] font-semibold text-app-muted uppercase">Presupuesto</th>
-                    <th className="px-3 py-2 text-right text-[10px] font-semibold text-app-muted uppercase">Diferencia</th>
-                    <th className="px-3 py-2 w-20" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {budget.rows.map((row) => (
-                    <BudgetPartidaRow
-                      key={row.category.id}
-                      category={row.category}
-                      items={budgetItems.itemsByCategory[row.category.id] ?? []}
-                      spent={row.spent}
-                      priceList={budgetItems.priceList}
-                      onAddItem={handleAddItem}
-                      onUpdateItem={(id, changes) => handleUpdateItem(id, row.category.id, changes)}
-                      onDeleteItem={(id) => handleDeleteItem(id, row.category.id)}
-                      onEditBudgetAmount={() => startEdit(row.category.id, row.budgeted)}
-                    />
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className="bg-app-bg border-t-2 border-app-border">
-                    <td colSpan={2} className="px-3 py-3 text-xs font-bold text-app-text pl-11">TOTAL</td>
-                    <td className="px-3 py-3 text-xs font-bold text-app-text text-right">{formatRD(budget.totals.spent)}</td>
-                    <td className="px-3 py-3 text-xs font-bold text-app-text text-right">{formatRD(grandBudgeted)}</td>
-                    <td className={`px-3 py-3 text-xs font-bold text-right ${grandBudgeted - budget.totals.spent < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                      {formatRD(grandBudgeted - budget.totals.spent)}
-                    </td>
-                    <td />
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          )}
+          <BudgetSummaryCards spent={budget.totals.spent} budgeted={grandBudgeted} />
+          <BudgetHierarchyTable
+            loading={budget.loading}
+            rows={budget.rows}
+            spentTotal={budget.totals.spent}
+            budgetedTotal={grandBudgeted}
+            itemsByCategory={budgetItems.itemsByCategory}
+            priceList={budgetItems.priceList}
+            onAddItem={handleAddItem}
+            onUpdateItem={handleUpdateItem}
+            onDeleteItem={handleDeleteItem}
+            onEditBudgetAmount={startEdit}
+          />
         </>
       )}
 
@@ -217,26 +144,13 @@ export default function PresupuestoDetalle() {
         />
       )}
 
-      {/* Modal edición monto directo (sin subpartidas) */}
-      {editingId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-          <div className="bg-app-surface rounded-xl shadow-xl p-5 w-72 space-y-3">
-            <p className="text-sm font-semibold text-app-text">Editar monto presupuestado</p>
-            <input
-              type="number" step="any" autoFocus
-              value={editValue}
-              onChange={(e) => setEditValue(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditingId(null) }}
-              className="w-full px-3 py-2 border border-blue-300 rounded-lg text-sm text-right focus:ring-1 focus:ring-blue-500"
-            />
-            <p className="text-[10px] text-app-subtle">O agrega subpartidas para que el total se calcule automáticamente.</p>
-            <div className="flex justify-end gap-2">
-              <button onClick={() => setEditingId(null)} className="px-3 py-1.5 text-xs text-app-muted border border-app-border rounded-lg hover:bg-app-hover">Cancelar</button>
-              <button onClick={saveEdit} className="px-3 py-1.5 text-xs text-white bg-blue-600 rounded-lg hover:bg-blue-700">Guardar</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <BudgetAmountEditModal
+        open={!!editingId}
+        value={editValue}
+        onChange={setEditValue}
+        onSave={saveEdit}
+        onClose={() => setEditingId(null)}
+      />
 
       {showImport && (
         <ExcelImportModal

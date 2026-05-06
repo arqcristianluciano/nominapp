@@ -5,7 +5,15 @@ import type {
   MaterialInvoice,
   IndirectCost,
   PayrollStatus,
+  Project,
 } from '@/types/database'
+import {
+  buildIndirectCostRows,
+  calcGrandTotal,
+  calcIndirectCosts,
+  calcLaborTotal,
+  calcMaterialsTotal,
+} from '@/utils/calculations'
 
 export const payrollService = {
   // === PAYROLL PERIODS ===
@@ -105,6 +113,28 @@ export const payrollService = {
       .update(totals)
       .eq('id', id)
     if (error) throw error
+  },
+
+  async recalculateTotals(periodId: string) {
+    const { period, laborItems, materialInvoices } = await this.getPeriodDetail(periodId)
+    const project = period.project as Project | undefined
+    if (!project) return
+
+    const laborTotal = calcLaborTotal(laborItems)
+    const materialsTotal = calcMaterialsTotal(materialInvoices)
+    const indirect = calcIndirectCosts(laborTotal, materialsTotal, project)
+    const rows = buildIndirectCostRows(project, indirect)
+    const savedIndirect = await this.saveIndirectCosts(periodId, rows)
+    const totalIndirect = savedIndirect
+      .filter((cost) => cost.is_active)
+      .reduce((acc, cost) => acc + cost.calculated_amount, 0)
+
+    await this.updatePeriodTotals(periodId, {
+      total_labor: laborTotal,
+      total_materials: materialsTotal,
+      total_indirect: totalIndirect,
+      grand_total: calcGrandTotal(laborTotal, materialsTotal, totalIndirect),
+    })
   },
 
   async deletePeriod(id: string) {

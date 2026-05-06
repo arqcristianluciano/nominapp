@@ -4,6 +4,7 @@ import type { BudgetCategory, Supplier } from '@/types/database'
 import { PAYMENT_CONDITIONS } from '@/constants/indirectCosts'
 import { DOMINICAN_BANKS } from '@/constants/banks'
 import type { Transaction } from '@/types/database'
+import { mul, round2 } from '@/utils/money'
 
 export function TransactionInlineForm({
   projectId,
@@ -31,7 +32,7 @@ export function TransactionInlineForm({
   const [cashedDate, setCashedDate] = useState('')
   const [notes, setNotes] = useState('')
 
-  const total = (quantity || 0) * (unitPrice || 0)
+  const total = round2(mul(quantity || 0, unitPrice || 0))
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -67,11 +68,11 @@ export function TransactionInlineForm({
     setNotes('')
   }
 
-  const inputClass = 'w-full px-2 py-1.5 border border-app-border rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500'
-  const selectClass = 'w-full px-2 py-1.5 border border-app-border rounded text-xs focus:ring-1 focus:ring-blue-500 bg-app-surface'
+  const inputClass = 'w-full px-2 py-1.5 border border-app-border rounded text-xs bg-app-input-bg text-app-text placeholder:text-app-subtle focus:ring-1 focus:ring-blue-500 focus:border-blue-500'
+  const selectClass = 'w-full px-2 py-1.5 border border-app-border rounded text-xs bg-app-input-bg text-app-text focus:ring-1 focus:ring-blue-500'
 
   return (
-    <form onSubmit={handleSubmit} className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+    <form onSubmit={handleSubmit} className="bg-app-surface border border-app-border rounded-lg p-3">
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2">
         <div>
           <label className="text-[10px] font-medium text-app-muted mb-0.5 block">Fecha</label>

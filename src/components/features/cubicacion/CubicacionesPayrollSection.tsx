@@ -17,10 +17,17 @@ interface Props {
   periodId: string
   projectId: string
   isDraft: boolean
-  onCorteLinked: () => void
+  onCorteLinked: () => Promise<void>
+  onRecalculateTotals: () => Promise<void>
 }
 
-export function CubicacionesPayrollSection({ periodId, projectId, isDraft, onCorteLinked }: Props) {
+export function CubicacionesPayrollSection({
+  periodId,
+  projectId,
+  isDraft,
+  onCorteLinked,
+  onRecalculateTotals,
+}: Props) {
   const [linked, setLinked] = useState<LinkedCorte[]>([])
   const [available, setAvailable] = useState<LinkedCorte[]>([])
   const [showAvailable, setShowAvailable] = useState(false)
@@ -69,7 +76,8 @@ export function CubicacionesPayrollSection({ periodId, projectId, isDraft, onCor
         })
       }
       await corteService.linkToPayroll(corte.id, periodId)
-      onCorteLinked()
+      await onCorteLinked()
+      await onRecalculateTotals()
       await load()
     } finally {
       setLinking(false)
@@ -94,8 +102,9 @@ export function CubicacionesPayrollSection({ periodId, projectId, isDraft, onCor
     setUnlinking(corte.id)
     try {
       await corteService.unlinkFromPayroll(corte.id)
+      await onCorteLinked()
+      await onRecalculateTotals()
       await load()
-      onCorteLinked()
     } finally { setUnlinking(null) }
   }
 

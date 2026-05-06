@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useState, useMemo } from 'react'
 import { useParams } from 'react-router-dom'
-import { Package, Plus, AlertTriangle, ArrowDownCircle, ArrowUpCircle, Trash2 } from 'lucide-react'
+import { ArrowUpCircle, Package, Plus } from 'lucide-react'
 import { Breadcrumb } from '@/components/ui/Breadcrumb'
 import { useProjectStore } from '@/stores/projectStore'
 import { inventoryService, type InventoryItem, type InventoryMovement } from '@/services/inventoryService'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
-import { formatRD } from '@/utils/currency'
-
-const EMPTY_ITEM = { name: '', unit: 'unid', current_stock: 0, min_stock: 10, unit_cost: 0 }
-const EMPTY_MOVEMENT = { item_id: '', type: 'in' as 'in' | 'out', quantity: 1, date: new Date().toISOString().split('T')[0], supplier_id: null, notes: '' }
+import { InventoryLowStockAlert } from '@/components/features/inventory/InventoryLowStockAlert'
+import { InventoryItemForm, InventoryMovementForm } from '@/components/features/inventory/InventoryForms'
+import { InventoryTabs } from '@/components/features/inventory/InventoryTabs'
+import { InventoryMovementsTable, InventoryStockTable } from '@/components/features/inventory/InventoryTables'
+import { EMPTY_ITEM_FORM, EMPTY_MOVEMENT_FORM, type InventoryTab } from '@/components/features/inventory/inventoryConfig'
 
 export default function InventarioPage() {
   const { projectId } = useParams<{ projectId: string }>()
@@ -17,11 +18,11 @@ export default function InventarioPage() {
   const [items, setItems] = useState<InventoryItem[]>([])
   const [movements, setMovements] = useState<InventoryMovement[]>([])
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState<'stock' | 'movements'>('stock')
+  const [tab, setTab] = useState<InventoryTab>('stock')
   const [showItemForm, setShowItemForm] = useState(false)
   const [showMovForm, setShowMovForm] = useState(false)
-  const [itemForm, setItemForm] = useState(EMPTY_ITEM)
-  const [movForm, setMovForm] = useState(EMPTY_MOVEMENT)
+  const [itemForm, setItemForm] = useState(EMPTY_ITEM_FORM)
+  const [movForm, setMovForm] = useState(EMPTY_MOVEMENT_FORM)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
@@ -47,7 +48,7 @@ export default function InventarioPage() {
     try {
       await inventoryService.createItem({ ...itemForm, project_id: projectId! })
       setShowItemForm(false)
-      setItemForm(EMPTY_ITEM)
+      setItemForm(EMPTY_ITEM_FORM)
       await loadAll()
     } finally { setSaving(false) }
   }
@@ -58,7 +59,7 @@ export default function InventarioPage() {
     try {
       await inventoryService.addMovement({ ...movForm, project_id: projectId!, supplier_id: null })
       setShowMovForm(false)
-      setMovForm(EMPTY_MOVEMENT)
+      setMovForm(EMPTY_MOVEMENT_FORM)
       await loadAll()
     } finally { setSaving(false) }
   }
@@ -94,204 +95,31 @@ export default function InventarioPage() {
         </div>
       </div>
 
-      {/* Low stock alert */}
-      {lowStock.length > 0 && (
-        <div className="bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-xl p-3 flex items-start gap-3">
-          <AlertTriangle className="w-4 h-4 text-yellow-600 shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm font-medium text-yellow-800 dark:text-yellow-300">Stock mínimo alcanzado</p>
-            <p className="text-xs text-yellow-700 dark:text-yellow-400 mt-0.5">
-              {lowStock.map((i) => i.name).join(', ')}
-            </p>
-          </div>
-        </div>
-      )}
+      <InventoryLowStockAlert items={lowStock} />
 
-      {/* Item form */}
       {showItemForm && (
-        <div className="bg-app-surface border border-app-border rounded-xl p-4 space-y-3">
-          <h3 className="font-semibold text-app-text">Nuevo material</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="sm:col-span-2">
-              <label className="text-xs text-app-muted block mb-1">Nombre *</label>
-              <input value={itemForm.name} onChange={(e) => setItemForm({ ...itemForm, name: e.target.value })}
-                placeholder="Ej: Cemento Portland" className="w-full px-3 py-2 text-sm border border-app-border rounded-lg bg-app-bg text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            </div>
-            <div>
-              <label className="text-xs text-app-muted block mb-1">Unidad</label>
-              <input value={itemForm.unit} onChange={(e) => setItemForm({ ...itemForm, unit: e.target.value })}
-                placeholder="sacos, m³, unid" className="w-full px-3 py-2 text-sm border border-app-border rounded-lg bg-app-bg text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            </div>
-            <div>
-              <label className="text-xs text-app-muted block mb-1">Costo unitario (RD$)</label>
-              <input type="number" value={itemForm.unit_cost} onChange={(e) => setItemForm({ ...itemForm, unit_cost: +e.target.value })}
-                className="w-full px-3 py-2 text-sm border border-app-border rounded-lg bg-app-bg text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            </div>
-            <div>
-              <label className="text-xs text-app-muted block mb-1">Stock inicial</label>
-              <input type="number" value={itemForm.current_stock} onChange={(e) => setItemForm({ ...itemForm, current_stock: +e.target.value })}
-                className="w-full px-3 py-2 text-sm border border-app-border rounded-lg bg-app-bg text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            </div>
-            <div>
-              <label className="text-xs text-app-muted block mb-1">Stock mínimo (alerta)</label>
-              <input type="number" value={itemForm.min_stock} onChange={(e) => setItemForm({ ...itemForm, min_stock: +e.target.value })}
-                className="w-full px-3 py-2 text-sm border border-app-border rounded-lg bg-app-bg text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            </div>
-          </div>
-          <div className="flex gap-2 justify-end">
-            <button onClick={() => setShowItemForm(false)} className="px-4 py-2 text-sm border border-app-border rounded-lg hover:bg-app-hover text-app-muted">Cancelar</button>
-            <button onClick={handleAddItem} disabled={saving || !itemForm.name.trim()}
-              className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium">
-              {saving ? 'Guardando...' : 'Guardar'}
-            </button>
-          </div>
-        </div>
+        <InventoryItemForm form={itemForm} saving={saving} onChange={setItemForm} onCancel={() => setShowItemForm(false)} onSave={handleAddItem} />
       )}
 
-      {/* Movement form */}
       {showMovForm && (
-        <div className="bg-app-surface border border-app-border rounded-xl p-4 space-y-3">
-          <h3 className="font-semibold text-app-text">Registrar movimiento</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="sm:col-span-2">
-              <label className="text-xs text-app-muted block mb-1">Material *</label>
-              <select value={movForm.item_id} onChange={(e) => setMovForm({ ...movForm, item_id: e.target.value })}
-                className="w-full px-3 py-2 text-sm border border-app-border rounded-lg bg-app-bg text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="">Seleccionar...</option>
-                {items.map((i) => <option key={i.id} value={i.id}>{i.name} (stock: {i.current_stock} {i.unit})</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs text-app-muted block mb-1">Tipo</label>
-              <select value={movForm.type} onChange={(e) => setMovForm({ ...movForm, type: e.target.value as 'in' | 'out' })}
-                className="w-full px-3 py-2 text-sm border border-app-border rounded-lg bg-app-bg text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="in">Entrada</option>
-                <option value="out">Salida</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-xs text-app-muted block mb-1">Cantidad</label>
-              <input type="number" min={1} value={movForm.quantity} onChange={(e) => setMovForm({ ...movForm, quantity: +e.target.value })}
-                className="w-full px-3 py-2 text-sm border border-app-border rounded-lg bg-app-bg text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            </div>
-            <div>
-              <label className="text-xs text-app-muted block mb-1">Fecha</label>
-              <input type="date" value={movForm.date} onChange={(e) => setMovForm({ ...movForm, date: e.target.value })}
-                className="w-full px-3 py-2 text-sm border border-app-border rounded-lg bg-app-bg text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            </div>
-            <div className="sm:col-span-3">
-              <label className="text-xs text-app-muted block mb-1">Notas</label>
-              <input value={movForm.notes} onChange={(e) => setMovForm({ ...movForm, notes: e.target.value })}
-                placeholder="Compra OC-001, uso en vaciado..." className="w-full px-3 py-2 text-sm border border-app-border rounded-lg bg-app-bg text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            </div>
-          </div>
-          <div className="flex gap-2 justify-end">
-            <button onClick={() => setShowMovForm(false)} className="px-4 py-2 text-sm border border-app-border rounded-lg hover:bg-app-hover text-app-muted">Cancelar</button>
-            <button onClick={handleAddMovement} disabled={saving || !movForm.item_id}
-              className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium">
-              {saving ? 'Guardando...' : 'Guardar'}
-            </button>
-          </div>
-        </div>
+        <InventoryMovementForm
+          form={movForm}
+          items={items}
+          saving={saving}
+          onChange={(next) => setMovForm({ ...movForm, ...next })}
+          onCancel={() => setShowMovForm(false)}
+          onSave={handleAddMovement}
+        />
       )}
 
-      {/* Tabs */}
-      <div className="flex gap-1 bg-app-hover rounded-lg p-1 w-fit">
-        {(['stock', 'movements'] as const).map((t) => (
-          <button key={t} onClick={() => setTab(t)}
-            className={`px-4 py-1.5 text-sm rounded-md font-medium transition-colors ${tab === t ? 'bg-app-surface text-app-text shadow-sm' : 'text-app-muted hover:text-app-text'}`}>
-            {t === 'stock' ? 'Stock actual' : 'Movimientos'}
-          </button>
-        ))}
-      </div>
+      <InventoryTabs tab={tab} onChange={setTab} />
 
       {loading ? (
         <div className="text-center py-8 text-app-muted text-sm">Cargando...</div>
       ) : tab === 'stock' ? (
-        <div className="bg-app-surface border border-app-border rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-app-hover/50 text-xs text-app-muted">
-                <th className="text-left px-4 py-2.5 font-medium">Material</th>
-                <th className="text-center px-4 py-2.5 font-medium">Unidad</th>
-                <th className="text-right px-4 py-2.5 font-medium">Stock</th>
-                <th className="text-right px-4 py-2.5 font-medium">Mínimo</th>
-                <th className="text-right px-4 py-2.5 font-medium">Costo unit.</th>
-                <th className="text-right px-4 py-2.5 font-medium">Valor total</th>
-                <th className="px-4 py-2.5" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-app-border">
-              {items.map((item) => {
-                const isLow = item.current_stock <= item.min_stock
-                return (
-                  <tr key={item.id} className={`hover:bg-app-hover/50 ${isLow ? 'bg-yellow-50/50 dark:bg-yellow-950/10' : ''}`}>
-                    <td className="px-4 py-3 font-medium text-app-text">
-                      <div className="flex items-center gap-2">
-                        {isLow && <AlertTriangle className="w-3.5 h-3.5 text-yellow-500 shrink-0" />}
-                        {item.name}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-center text-app-muted">{item.unit}</td>
-                    <td className={`px-4 py-3 text-right font-bold ${isLow ? 'text-yellow-600' : 'text-app-text'}`}>{item.current_stock}</td>
-                    <td className="px-4 py-3 text-right text-app-muted">{item.min_stock}</td>
-                    <td className="px-4 py-3 text-right text-app-muted">{formatRD(item.unit_cost)}</td>
-                    <td className="px-4 py-3 text-right font-semibold text-app-text">{formatRD(item.current_stock * item.unit_cost)}</td>
-                    <td className="px-4 py-3">
-                      <button onClick={() => setDeleteId(item.id)} className="p-1.5 text-app-subtle hover:text-red-500 rounded hover:bg-red-50 dark:hover:bg-red-950/30">
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </td>
-                  </tr>
-                )
-              })}
-              {items.length > 0 && (
-                <tr className="bg-app-hover/30 font-semibold text-sm">
-                  <td colSpan={5} className="px-4 py-2.5 text-app-muted">Total en inventario</td>
-                  <td className="px-4 py-2.5 text-right text-app-text">
-                    {formatRD(items.reduce((s, i) => s + i.current_stock * i.unit_cost, 0))}
-                  </td>
-                  <td />
-                </tr>
-              )}
-            </tbody>
-          </table>
-          {items.length === 0 && <div className="text-center py-8 text-app-muted text-sm">Sin materiales registrados.</div>}
-        </div>
+        <InventoryStockTable items={items} onDelete={setDeleteId} />
       ) : (
-        <div className="bg-app-surface border border-app-border rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-app-hover/50 text-xs text-app-muted">
-                <th className="text-left px-4 py-2.5 font-medium">Fecha</th>
-                <th className="text-left px-4 py-2.5 font-medium">Material</th>
-                <th className="text-center px-4 py-2.5 font-medium">Tipo</th>
-                <th className="text-right px-4 py-2.5 font-medium">Cantidad</th>
-                <th className="text-left px-4 py-2.5 font-medium">Notas</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-app-border">
-              {movements.map((m) => (
-                <tr key={m.id} className="hover:bg-app-hover/50">
-                  <td className="px-4 py-3 text-app-muted whitespace-nowrap">
-                    {new Date(m.date + 'T12:00:00').toLocaleDateString('es-DO', { day: '2-digit', month: 'short' })}
-                  </td>
-                  <td className="px-4 py-3 text-app-text">{m.item?.name ?? '—'}</td>
-                  <td className="px-4 py-3 text-center">
-                    {m.type === 'in'
-                      ? <span className="inline-flex items-center gap-1 text-green-600 text-xs font-medium"><ArrowDownCircle className="w-3.5 h-3.5" />Entrada</span>
-                      : <span className="inline-flex items-center gap-1 text-red-600 text-xs font-medium"><ArrowUpCircle className="w-3.5 h-3.5" />Salida</span>}
-                  </td>
-                  <td className={`px-4 py-3 text-right font-semibold ${m.type === 'in' ? 'text-green-600' : 'text-red-600'}`}>
-                    {m.type === 'in' ? '+' : '-'}{m.quantity} {m.item?.unit ?? ''}
-                  </td>
-                  <td className="px-4 py-3 text-app-muted text-xs">{m.notes ?? '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {movements.length === 0 && <div className="text-center py-8 text-app-muted text-sm">Sin movimientos registrados.</div>}
-        </div>
+        <InventoryMovementsTable movements={movements} />
       )}
 
       <ConfirmModal

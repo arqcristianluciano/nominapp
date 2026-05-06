@@ -3,6 +3,7 @@ import { UserPlus, X, AlertTriangle } from 'lucide-react'
 import type { Contractor, PriceListItem } from '@/types/database'
 import { MEASURE_UNITS } from '@/constants/measureUnits'
 import { contractorService } from '@/services/contractorService'
+import { mul, round2 } from '@/utils/money'
 
 const NEW_CONTRACTOR_VALUE = '__NEW__'
 
@@ -82,7 +83,7 @@ export function AddLaborItemForm({ contractors, laborTasks, onSubmit, onCancel, 
     setNewSpecialty('')
   }
 
-  const subtotal = (parseFloat(quantity) || 0) * (parseFloat(unitPrice) || 0)
+  const subtotal = round2(mul(parseFloat(quantity) || 0, parseFloat(unitPrice) || 0))
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()

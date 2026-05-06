@@ -26,7 +26,7 @@ export function ChequesEfectivoView({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="bg-app-surface rounded-xl border border-app-border p-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-amber-50 text-amber-600">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400">
               <TrendingDown className="w-5 h-5" />
             </div>
             <div>
@@ -37,7 +37,7 @@ export function ChequesEfectivoView({
         </div>
         <div className="bg-app-surface rounded-xl border border-app-border p-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-green-50 text-green-600">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-green-50 dark:bg-green-950/30 text-green-600 dark:text-green-400">
               <Wallet className="w-5 h-5" />
             </div>
             <div>
@@ -72,18 +72,18 @@ export function ChequesEfectivoView({
                 return (
                   <tr
                     key={t.id}
-                    className={`border-b border-app-border hover:bg-app-hover ${isUncashed ? 'bg-amber-50' : ''}`}
+                    className={`border-b border-app-border hover:bg-app-hover ${isUncashed ? 'bg-amber-50 dark:bg-amber-950/20' : ''}`}
                   >
                     <td className="px-3 py-2.5 text-xs text-app-muted">{new Date(t.date).toLocaleDateString('es-DO')}</td>
                     <td className="px-3 py-2.5 text-xs text-app-muted">{t.check_number || '—'}</td>
                     <td className="px-3 py-2.5 text-xs text-app-muted">{t.bank || '—'}</td>
                     <td className="px-3 py-2.5 text-xs text-app-muted">
                       {t.cashed_date ? new Date(t.cashed_date).toLocaleDateString('es-DO') : (
-                        t.check_number ? <span className="text-amber-600 font-medium">Pendiente</span> : '—'
+                        t.check_number ? <span className="text-amber-600 dark:text-amber-400 font-medium">Pendiente</span> : '—'
                       )}
                     </td>
                     <td className="px-3 py-2.5 text-xs text-app-text">{t.description}</td>
-                    <td className={`px-3 py-2.5 text-xs font-semibold text-right ${isDeposit ? 'text-green-700' : 'text-app-text'}`}>
+                    <td className={`px-3 py-2.5 text-xs font-semibold text-right ${isDeposit ? 'text-green-700 dark:text-green-400' : 'text-app-text'}`}>
                       {isDeposit ? '+' : ''}{formatRD(t.total)}
                     </td>
                   </tr>

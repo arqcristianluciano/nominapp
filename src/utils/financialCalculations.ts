@@ -1,22 +1,33 @@
-import type { TransactionWithRelations } from '@/services/transactionService'
 import { round2, sumBy, sub } from './money'
 
 const DEPOSIT_CODE = '19 - DEPOSITOS'
 
-export function calcTransitos(transactions: TransactionWithRelations[]): number {
+export interface FinancialTransaction {
+  total: number
+  payment_condition?: string | null
+  budget_category?: { code?: string | null } | null
+  budget_category_id?: string | null
+  cashed_date?: string | null
+  invoice_number?: string | null
+  supplier_id?: string | null
+  date: string
+  supplier?: { name?: string | null } | null
+}
+
+export function calcTransitos(transactions: FinancialTransaction[]): number {
   const transitos = transactions.filter(
     (t) => t.payment_condition?.includes('Cheque') && !t.cashed_date
   )
   return round2(sumBy(transitos, (t) => t.total))
 }
 
-export function calcCashDisponible(transactions: TransactionWithRelations[]): number {
+export function calcCashDisponible(transactions: FinancialTransaction[]): number {
   const deposits = transactions.filter((t) => t.budget_category?.code === DEPOSIT_CODE)
   const egresses = transactions.filter((t) => t.budget_category?.code !== DEPOSIT_CODE)
   return round2(sub(sumBy(deposits, (t) => t.total), sumBy(egresses, (t) => t.total)))
 }
 
-export function calcTotalCxP(transactions: TransactionWithRelations[]): number {
+export function calcTotalCxP(transactions: FinancialTransaction[]): number {
   const creditTransactions = transactions.filter((t) =>
     t.payment_condition?.includes('Credito')
   )
@@ -51,13 +62,13 @@ export function calcDisponibleNeto(
   return round2(sub(sub(cash, cxp), transitos))
 }
 
-export function calcTotalIncurrido(transactions: TransactionWithRelations[]): number {
+export function calcTotalIncurrido(transactions: FinancialTransaction[]): number {
   const egresses = transactions.filter((t) => t.budget_category?.code !== DEPOSIT_CODE)
   return round2(sumBy(egresses, (t) => t.total))
 }
 
 export function calcBudgetSpent(
-  transactions: TransactionWithRelations[],
+  transactions: FinancialTransaction[],
   categoryId: string
 ): number {
   const subset = transactions.filter((t) => t.budget_category_id === categoryId)
@@ -73,7 +84,7 @@ export interface CxPItem {
   paymentCondition: string
 }
 
-export function calcCxPDetails(transactions: TransactionWithRelations[]): CxPItem[] {
+export function calcCxPDetails(transactions: FinancialTransaction[]): CxPItem[] {
   const creditTransactions = transactions.filter((t) =>
     t.payment_condition?.includes('Credito')
   )
@@ -94,9 +105,9 @@ export function calcCxPDetails(transactions: TransactionWithRelations[]): CxPIte
 
     return {
       date: credit.date,
-      invoiceNumber: credit.invoice_number,
+      invoiceNumber: credit.invoice_number ?? null,
       supplierName: credit.supplier?.name || 'Sin proveedor',
-      supplierId: credit.supplier_id,
+      supplierId: credit.supplier_id ?? null,
       pending: Math.max(0, round2(credit.total - paid)),
       paymentCondition: credit.payment_condition || '',
     }

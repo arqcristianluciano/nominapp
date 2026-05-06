@@ -29,6 +29,7 @@ interface TransactionLite {
   project_id: string
   payment_condition?: string | null
   supplier?: { name?: string | null } | null
+  budget_category?: { code?: string | null } | null
 }
 
 interface ContractorDocumentLite {
@@ -37,6 +38,12 @@ interface ContractorDocumentLite {
   contractor_id: string
   expiry_date: string | null
   contractor?: { name?: string | null } | null
+}
+
+interface BudgetExecutionTransactionLite {
+  project_id: string
+  total: number | null
+  budget_category?: { code?: string | null } | null
 }
 
 interface OverdueQualityControlLite {
@@ -103,7 +110,10 @@ export const notificationService = {
         .gt('date', dangerDateStr)
         .limit(100),
       supabase.from('budget_categories').select('id, project_id, name, budgeted_amount'),
-      supabase.from('transactions').select('project_id, total').limit(500),
+      supabase
+        .from('transactions')
+        .select('project_id, total, budget_category:budget_categories(code)')
+        .limit(500),
       supabase.from('projects').select('id, name, code'),
       supabase.from('contractor_documents').select('*, contractor:contractors(name)'),
     ])
@@ -176,7 +186,7 @@ export const notificationService = {
 
     // --- Desviación presupuestaria ---
     const allProjects = (projectsRes.data ?? []) as ProjectLite[]
-    const allTransactions = (transactionsRes.data ?? []) as { project_id: string; total: number | null }[]
+    const allTransactions = (transactionsRes.data ?? []) as unknown as BudgetExecutionTransactionLite[]
     const allCategories = (budgetCatRes.data ?? []) as BudgetCategoryLite[]
 
     const projectMap = Object.fromEntries(allProjects.map((p) => [p.id, p]))
@@ -186,6 +196,8 @@ export const notificationService = {
     }
     const totalActualByProject: Record<string, number> = {}
     for (const txn of allTransactions) {
+      const isDeposit = txn.budget_category?.code === '19 - DEPOSITOS'
+      if (isDeposit) continue
       totalActualByProject[txn.project_id] = (totalActualByProject[txn.project_id] ?? 0) + (txn.total ?? 0)
     }
 

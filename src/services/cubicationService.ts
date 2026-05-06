@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { div, mul, pct, round2, sub, sumBy } from '@/utils/money'
 import type {
   AdjustmentContract,
   ContractPartida,
@@ -23,16 +24,16 @@ export type ContractSummary = AdjustmentContract & {
 }
 
 function computeSummary(partidas: ContractPartida[], cortes: ContractCorte[]): Omit<ContractSummary, keyof AdjustmentContract> {
-  const acordado = partidas.reduce((s, p) => s + p.agreed_quantity * p.unit_price, 0)
-  const acumulado = cortes.reduce((s, c) => s + c.amount, 0)
-  const retenido = cortes.reduce((s, c) => s + c.retention_amount, 0)
+  const acordado = round2(sumBy(partidas, (p) => mul(p.agreed_quantity, p.unit_price)))
+  const acumulado = round2(sumBy(cortes, (c) => c.amount))
+  const retenido = round2(sumBy(cortes, (c) => c.retention_amount))
   return {
     partidas_count: partidas.length,
     acordado,
     acumulado,
     retenido,
-    pendiente: acordado - acumulado,
-    completion_percent: acordado > 0 ? Math.min((acumulado / acordado) * 100, 100) : 0,
+    pendiente: round2(sub(acordado, acumulado)),
+    completion_percent: acordado > 0 ? Math.min(round2(mul(div(acumulado, acordado), 100)), 100) : 0,
   }
 }
 
@@ -151,8 +152,8 @@ export const corteService = {
     partida: ContractPartida,
     retentionPct: number,
   ): Promise<ContractCorte> {
-    const amount = data.measured_quantity * partida.unit_price
-    const retention_amount = (amount * retentionPct) / 100
+    const amount = round2(mul(data.measured_quantity, partida.unit_price))
+    const retention_amount = round2(pct(amount, retentionPct))
     const { data: row, error } = await supabase
       .from('contract_cortes')
       .insert({ ...data, amount, retention_amount, approved_by: null, signature_data: null, linked_payroll_id: null })

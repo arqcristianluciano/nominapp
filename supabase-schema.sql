@@ -101,7 +101,7 @@ create table if not exists budget_items (
 create table if not exists price_list_items (
   id uuid primary key default gen_random_uuid(),
   project_id uuid not null references projects(id) on delete cascade,
-  category text not null check (category in ('material','labor','equipment')),
+  category text not null check (category in ('material','labor','equipment','adjustment')),
   code text,
   description text not null,
   unit text not null,
@@ -366,6 +366,112 @@ create table if not exists loan_deductions (
 );
 
 -- ============================================================
+-- MÓDULOS DE OBRA Y SOPORTE DOCUMENTAL
+-- ============================================================
+
+create table if not exists bitacora_entries (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references projects(id) on delete cascade,
+  date date not null,
+  weather text not null,
+  temp_c numeric(5,2),
+  work_summary text not null,
+  workforce_count integer not null default 0,
+  equipment text,
+  visitors text,
+  incidents text,
+  notes text,
+  created_by text not null,
+  created_at timestamptz default now()
+);
+
+create table if not exists attendance_records (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references projects(id) on delete cascade,
+  date date not null,
+  contractor_id uuid not null references contractors(id),
+  workers_count integer not null default 0,
+  hours_worked numeric(6,2) not null default 0,
+  activity text not null,
+  notes text,
+  created_at timestamptz default now()
+);
+
+create table if not exists inventory_items (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references projects(id) on delete cascade,
+  name text not null,
+  unit text not null,
+  current_stock numeric(15,4) not null default 0,
+  min_stock numeric(15,4) not null default 0,
+  unit_cost numeric(15,2) not null default 0,
+  created_at timestamptz default now()
+);
+
+create table if not exists inventory_movements (
+  id uuid primary key default gen_random_uuid(),
+  item_id uuid not null references inventory_items(id) on delete cascade,
+  project_id uuid not null references projects(id) on delete cascade,
+  type text not null check (type in ('in','out')),
+  quantity numeric(15,4) not null default 0,
+  date date not null,
+  supplier_id uuid references suppliers(id) on delete set null,
+  notes text,
+  created_at timestamptz default now()
+);
+
+create table if not exists schedule_tasks (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references projects(id) on delete cascade,
+  name text not null,
+  start_date date not null,
+  end_date date not null,
+  progress numeric(5,2) not null default 0 check (progress >= 0 and progress <= 100),
+  color text not null default '#3b82f6',
+  notes text,
+  created_at timestamptz default now()
+);
+
+create table if not exists contractor_documents (
+  id uuid primary key default gen_random_uuid(),
+  contractor_id uuid not null references contractors(id) on delete cascade,
+  doc_type text not null,
+  name text not null,
+  file_ref text,
+  expiry_date date,
+  status text not null default 'valid' check (status in ('valid','expiring','expired','missing')),
+  notes text,
+  created_at timestamptz default now()
+);
+
+create table if not exists mercado_budgets (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references projects(id) on delete cascade,
+  file_name text not null,
+  imported_at timestamptz not null default now(),
+  total_ajustes numeric(15,2) not null default 0,
+  total_equipos numeric(15,2) not null default 0,
+  total_mano_obra numeric(15,2) not null default 0,
+  total_materiales numeric(15,2) not null default 0
+);
+
+create table if not exists mercado_budget_lines (
+  id uuid primary key default gen_random_uuid(),
+  budget_id uuid not null references mercado_budgets(id) on delete cascade,
+  category text not null check (category in ('AJUSTES','EQUIPOS','MANO_DE_OBRA','MATERIALES')),
+  code text,
+  description text not null,
+  unit text not null,
+  budgeted_quantity numeric(15,4) not null default 0,
+  budgeted_unit_price numeric(15,2) not null default 0,
+  budgeted_total numeric(15,2) not null default 0,
+  sort_order integer not null default 0,
+  contract_id uuid references adjustment_contracts(id) on delete set null,
+  agreed_quantity numeric(15,4),
+  agreed_unit_price numeric(15,2)
+);
+
+-- ============================================================
 -- ÍNDICES DE RENDIMIENTO
 -- ============================================================
 
@@ -379,6 +485,14 @@ create index if not exists idx_contract_adelantos_contract on contract_adelantos
 create index if not exists idx_contractor_loans_contractor on contractor_loans(contractor_id);
 create index if not exists idx_loan_deductions_loan on loan_deductions(loan_id);
 create index if not exists idx_loan_deductions_period on loan_deductions(payroll_period_id);
+create index if not exists idx_bitacora_project_date on bitacora_entries(project_id, date desc);
+create index if not exists idx_attendance_project_date on attendance_records(project_id, date desc);
+create index if not exists idx_inventory_items_project on inventory_items(project_id);
+create index if not exists idx_inventory_movements_project_date on inventory_movements(project_id, date desc);
+create index if not exists idx_schedule_tasks_project_dates on schedule_tasks(project_id, start_date, end_date);
+create index if not exists idx_contractor_documents_contractor on contractor_documents(contractor_id);
+create index if not exists idx_mercado_budgets_project on mercado_budgets(project_id);
+create index if not exists idx_mercado_lines_budget on mercado_budget_lines(budget_id);
 
 -- ============================================================
 -- ROW LEVEL SECURITY (desactivado por defecto — activar al tener Auth)

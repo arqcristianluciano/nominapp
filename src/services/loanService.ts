@@ -1,10 +1,13 @@
 import { supabase } from '@/lib/supabase'
 import type { ContractorLoan, LoanDeduction, LoanStatus } from '@/types/database'
+import { add, div, money, pct, round2 } from '@/utils/money'
 
 /** Cuota fija: capital + interés simple distribuido en N cuotas */
 export function calcInstallmentAmount(principal: number, interestRate: number, installments: number): number {
-  const totalInterest = principal * (interestRate / 100)
-  return (principal + totalInterest) / installments
+  if (installments <= 0) return 0
+  const base = money(principal)
+  const totalInterest = pct(base, interestRate)
+  return round2(div(add(base, totalInterest), installments))
 }
 
 export const loanService = {

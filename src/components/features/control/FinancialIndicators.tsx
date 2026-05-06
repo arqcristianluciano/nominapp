@@ -16,7 +16,7 @@ export function FinancialIndicators({
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       <div className="bg-app-surface rounded-xl border border-app-border p-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-amber-50 text-amber-600">
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400">
             <TrendingDown className="w-5 h-5" />
           </div>
           <div>
@@ -28,7 +28,7 @@ export function FinancialIndicators({
 
       <div className="bg-app-surface rounded-xl border border-app-border p-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-green-50 text-green-600">
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-green-50 dark:bg-green-950/30 text-green-600 dark:text-green-400">
             <Wallet className="w-5 h-5" />
           </div>
           <div>
@@ -38,18 +38,18 @@ export function FinancialIndicators({
         </div>
       </div>
 
-      <div className={`rounded-xl border p-4 ${disponibleNeto <= 0 ? 'bg-red-50 border-red-200' : 'bg-app-surface border-app-border'}`}>
+      <div className={`rounded-xl border p-4 ${disponibleNeto <= 0 ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800' : 'bg-app-surface border-app-border'}`}>
         <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${disponibleNeto <= 0 ? 'bg-red-100 text-red-600' : 'bg-blue-50 text-blue-600'}`}>
+          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${disponibleNeto <= 0 ? 'bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400' : 'bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400'}`}>
             <AlertTriangle className="w-5 h-5" />
           </div>
           <div>
-            <p className={`text-lg font-semibold ${disponibleNeto <= 0 ? 'text-red-700' : 'text-app-text'}`}>
+            <p className={`text-lg font-semibold ${disponibleNeto <= 0 ? 'text-red-700 dark:text-red-400' : 'text-app-text'}`}>
               {formatRD(disponibleNeto)}
             </p>
             <p className="text-xs text-app-muted">Disponible neto</p>
             {disponibleNeto <= 0 && (
-              <span className="text-xs font-semibold text-red-600 bg-red-100 px-2 py-0.5 rounded-full mt-1 inline-block">
+              <span className="text-xs font-semibold text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-950/40 px-2 py-0.5 rounded-full mt-1 inline-block">
                 SOLICITAR FONDOS
               </span>
             )}
@@ -59,7 +59,7 @@ export function FinancialIndicators({
 
       <div className="bg-app-surface rounded-xl border border-app-border p-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-purple-50 text-purple-600">
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-purple-50 dark:bg-purple-950/30 text-purple-600 dark:text-purple-400">
             <BarChart3 className="w-5 h-5" />
           </div>
           <div>

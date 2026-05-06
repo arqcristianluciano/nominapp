@@ -45,6 +45,7 @@ export function LinkToPayrollModal({ open, onClose, projectId, contractorId, cor
         notes: `Corte del ${new Date(corte.cut_date).toLocaleDateString('es-DO')}. Retención: ${formatRD(corte.retention_amount)}`,
       })
       await corteService.linkToPayroll(corte.id, selectedId)
+      await payrollService.recalculateTotals(selectedId)
       onLinked()
       onClose()
     } finally { setSaving(false) }

@@ -12,9 +12,9 @@ type Props = {
 
 export function CxPProjectFilterBar({ value, onChange, activeProjects }: Props) {
   return (
-    <div className="bg-app-surface border-2 border-blue-200 dark:border-blue-800 rounded-xl p-4 shadow-sm">
+    <div className="bg-app-surface border border-app-border rounded-xl p-4 shadow-sm">
       <div className="flex items-start gap-3">
-        <div className="mt-0.5 p-2 rounded-lg bg-blue-100 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 shrink-0">
+        <div className="mt-0.5 p-2 rounded-lg bg-app-bg text-blue-600 dark:text-blue-400 shrink-0">
           <Filter className="w-5 h-5" aria-hidden />
         </div>
         <div className="min-w-0 flex-1">

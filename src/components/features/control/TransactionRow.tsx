@@ -72,13 +72,13 @@ export function TransactionRow({
     setEditing(false)
   }
 
-  const inputClass = 'w-full px-1.5 py-1 border border-app-border rounded text-xs focus:ring-1 focus:ring-blue-500'
-  const selectClass = 'w-full px-1 py-1 border border-app-border rounded text-xs bg-app-surface'
-  const rowBg = isCurrentMonth ? 'bg-yellow-50' : 'bg-app-surface'
+  const inputClass = 'w-full px-1.5 py-1 border border-app-border rounded text-xs bg-app-input-bg text-app-text focus:ring-1 focus:ring-blue-500'
+  const selectClass = 'w-full px-1 py-1 border border-app-border rounded text-xs bg-app-input-bg text-app-text'
+  const rowBg = isCurrentMonth ? 'bg-amber-50 dark:bg-amber-950/20' : 'bg-app-surface'
 
   if (editing) {
     return (
-      <tr className="bg-blue-50">
+      <tr className="bg-app-bg">
         <td className="px-2 py-1.5"><input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputClass} /></td>
         <td className="px-2 py-1.5">
           <select value={budgetCategoryId} onChange={(e) => setBudgetCategoryId(e.target.value)} className={selectClass}>
@@ -113,7 +113,7 @@ export function TransactionRow({
         <td className="px-2 py-1.5"><input type="date" value={cashedDate} onChange={(e) => setCashedDate(e.target.value)} className={inputClass} /></td>
         <td className="px-2 py-1.5">
           <div className="flex items-center gap-1">
-            <button onClick={handleSave} className="p-1 text-green-600 hover:bg-green-50 rounded"><Check className="w-3.5 h-3.5" /></button>
+            <button onClick={handleSave} className="p-1 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-950/30 rounded"><Check className="w-3.5 h-3.5" /></button>
             <button onClick={handleCancel} className="p-1 text-app-subtle hover:bg-app-hover-strong rounded"><X className="w-3.5 h-3.5" /></button>
           </div>
         </td>
@@ -137,8 +137,8 @@ export function TransactionRow({
       <td className="px-2 py-2 text-xs text-app-muted hidden lg:table-cell">{transaction.cashed_date ? new Date(transaction.cashed_date).toLocaleDateString('es-DO') : ''}</td>
       <td className="px-2 py-2">
         <div className="flex items-center gap-1">
-          <button onClick={() => setEditing(true)} className="p-1 text-app-subtle hover:text-blue-600 hover:bg-blue-50 rounded"><Pencil className="w-3.5 h-3.5" /></button>
-          <button onClick={() => onDelete(transaction.id)} className="p-1 text-app-subtle hover:text-red-600 hover:bg-red-50 rounded"><Trash2 className="w-3.5 h-3.5" /></button>
+          <button onClick={() => setEditing(true)} className="p-1 text-app-subtle hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded"><Pencil className="w-3.5 h-3.5" /></button>
+          <button onClick={() => onDelete(transaction.id)} className="p-1 text-app-subtle hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded"><Trash2 className="w-3.5 h-3.5" /></button>
         </div>
       </td>
     </tr>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link, useNavigate } from 'react-router-dom'
-import { Plus, Calendar, Landmark, BarChart3, Trash2, ClipboardCheck, Layers, Pencil, PackageSearch, Copy, BookOpen, Users, Package, BarChart2 } from 'lucide-react'
+import { useParams, useNavigate } from 'react-router-dom'
+import { Pencil, Plus } from 'lucide-react'
 import { Breadcrumb } from '@/components/ui/Breadcrumb'
 import { useProjectStore } from '@/stores/projectStore'
 import { usePayrollStore } from '@/stores/payrollStore'
@@ -12,7 +12,10 @@ import { Modal } from '@/components/ui/Modal'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { CreatePayrollForm } from '@/components/features/payroll/CreatePayrollForm'
 import { ProjectForm } from '@/components/features/projects/ProjectForm'
-import { formatRD } from '@/utils/currency'
+import { ProjectBudgetSummary } from '@/components/features/projects/ProjectBudgetSummary'
+import { ProjectModulesGrid } from '@/components/features/projects/ProjectModulesGrid'
+import { ProjectPayrollSection } from '@/components/features/projects/ProjectPayrollSection'
+import { ProjectRecentTransactions } from '@/components/features/projects/ProjectRecentTransactions'
 import type { BudgetCategory, Project } from '@/types/database'
 
 export default function ProjectDetail() {
@@ -80,9 +83,6 @@ export default function ProjectDetail() {
   const totalInvested = periods.reduce((sum, p) => sum + (p.grand_total || 0), 0)
   const draftPeriod = periods.find((p) => p.status === 'draft' || p.status === 'submitted') ?? null
 
-  const statusColors: Record<string, string> = { draft: 'bg-app-chip text-app-muted', submitted: 'bg-blue-50 text-blue-700', approved: 'bg-green-50 text-green-700', paid: 'bg-emerald-50 text-emerald-700' }
-  const statusLabels: Record<string, string> = { draft: 'Borrador', submitted: 'Enviado', approved: 'Aprobado', paid: 'Pagado' }
-
   return (
     <div className="space-y-6">
       <div>
@@ -112,233 +112,19 @@ export default function ProjectDetail() {
         </div>
       </div>
 
-      {/* Stat Cards + Navigation */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-app-surface rounded-xl border border-app-border p-4">
-          <p className="text-xs text-app-muted">Reportes registrados</p>
-          <p className="text-2xl font-semibold text-app-text mt-1">{periods.length}</p>
-        </div>
-        <div className="bg-app-surface rounded-xl border border-app-border p-4">
-          <p className="text-xs text-app-muted">Total invertido</p>
-          <p className="text-2xl font-semibold text-app-text mt-1">{formatRD(totalInvested)}</p>
-        </div>
-        <Link to={`/proyectos/${projectId}/control`} className="bg-app-surface rounded-xl border border-app-border p-4 hover:border-blue-300 hover:shadow-sm transition-all">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-blue-50 text-blue-600">
-              <Landmark className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-app-text">Control Financiero</p>
-              <p className="text-xs text-app-muted">Libro diario, CxP, cheques</p>
-            </div>
-          </div>
-        </Link>
-        <Link to={`/proyectos/${projectId}/presupuesto`} className="bg-app-surface rounded-xl border border-app-border p-4 hover:border-blue-300 hover:shadow-sm transition-all">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-purple-50 text-purple-600">
-              <BarChart3 className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-app-text">Presupuesto</p>
-              <p className="text-xs text-app-muted">Presupuesto vs real</p>
-            </div>
-          </div>
-        </Link>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Link to={`/proyectos/${projectId}/cubicaciones`} className="bg-app-surface rounded-xl border border-app-border p-4 hover:border-blue-300 hover:shadow-sm transition-all">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-teal-50 text-teal-600">
-              <Layers className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-app-text">Cubicaciones</p>
-              <p className="text-xs text-app-muted">Contrato por contratista</p>
-            </div>
-          </div>
-        </Link>
-        <Link to={`/proyectos/${projectId}/calidad`} className="bg-app-surface rounded-xl border border-app-border p-4 hover:border-blue-300 hover:shadow-sm transition-all">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-rose-50 text-rose-600">
-              <ClipboardCheck className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-app-text">Control de Calidad</p>
-              <p className="text-xs text-app-muted">Ensayos de hormigón</p>
-            </div>
-          </div>
-        </Link>
-        <Link to={`/proyectos/${projectId}/insumos`} className="bg-app-surface rounded-xl border border-app-border p-4 hover:border-blue-300 hover:shadow-sm transition-all">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-green-50 text-green-600">
-              <PackageSearch className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-app-text">Listado de Insumos</p>
-              <p className="text-xs text-app-muted">Presupuesto Mercado · contratos de ajuste</p>
-            </div>
-          </div>
-        </Link>
-        <Link to={`/proyectos/${projectId}/bitacora`} className="bg-app-surface rounded-xl border border-app-border p-4 hover:border-blue-300 hover:shadow-sm transition-all">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-amber-50 text-amber-600">
-              <BookOpen className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-app-text">Bitácora de Obra</p>
-              <p className="text-xs text-app-muted">Registro diario de actividades</p>
-            </div>
-          </div>
-        </Link>
-        <Link to={`/proyectos/${projectId}/asistencia`} className="bg-app-surface rounded-xl border border-app-border p-4 hover:border-blue-300 hover:shadow-sm transition-all">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-indigo-50 text-indigo-600">
-              <Users className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-app-text">Asistencia Diaria</p>
-              <p className="text-xs text-app-muted">Personal · horas-hombre</p>
-            </div>
-          </div>
-        </Link>
-        <Link to={`/proyectos/${projectId}/inventario`} className="bg-app-surface rounded-xl border border-app-border p-4 hover:border-blue-300 hover:shadow-sm transition-all">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-orange-50 text-orange-600">
-              <Package className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-app-text">Inventario de Materiales</p>
-              <p className="text-xs text-app-muted">Stock · entradas y salidas</p>
-            </div>
-          </div>
-        </Link>
-        <Link to={`/proyectos/${projectId}/cronograma`} className="bg-app-surface rounded-xl border border-app-border p-4 hover:border-blue-300 hover:shadow-sm transition-all">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-sky-50 text-sky-600">
-              <BarChart2 className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-app-text">Cronograma de Obra</p>
-              <p className="text-xs text-app-muted">Diagrama de Gantt · avance</p>
-            </div>
-          </div>
-        </Link>
-      </div>
-
-      {/* Budget Summary */}
-      {totalBudget > 0 && (
-        <div className="bg-app-surface rounded-xl border border-app-border p-4">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium text-app-text">Resumen presupuestario</p>
-            <Link to={`/proyectos/${projectId}/presupuesto`} className="text-xs text-blue-600 hover:text-blue-800">Ver detalle</Link>
-          </div>
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div>
-              <p className="text-xs text-app-muted">Presupuesto</p>
-              <p className="text-sm font-semibold text-app-text">{formatRD(totalBudget)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-app-muted">Invertido</p>
-              <p className="text-sm font-semibold text-app-text">{formatRD(totalInvested)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-app-muted">Disponible</p>
-              <p className={`text-sm font-semibold ${totalBudget - totalInvested >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {formatRD(totalBudget - totalInvested)}
-              </p>
-            </div>
-          </div>
-          <div className="mt-3 w-full h-2 bg-app-chip rounded-full overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all ${
-                totalInvested / totalBudget > 0.9 ? 'bg-red-500' : totalInvested / totalBudget > 0.7 ? 'bg-amber-500' : 'bg-green-500'
-              }`}
-              style={{ width: `${Math.min((totalInvested / totalBudget) * 100, 100)}%` }}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Recent Transactions */}
-      {recentTxns.length > 0 && (
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-medium text-app-text">Últimas transacciones</h2>
-            <Link to={`/proyectos/${projectId}/control`} className="text-xs text-blue-600 hover:text-blue-800">Ver todas</Link>
-          </div>
-          <div className="bg-app-surface rounded-xl border border-app-border overflow-hidden">
-            <table className="w-full">
-              <tbody>
-                {recentTxns.map((t) => (
-                  <tr key={t.id} className="border-b border-app-border last:border-0 hover:bg-app-hover">
-                    <td className="px-4 py-2.5 text-xs text-app-muted w-24">{new Date(t.date).toLocaleDateString('es-DO')}</td>
-                    <td className="px-4 py-2.5 text-xs text-app-text font-medium">{t.description}</td>
-                    <td className="px-4 py-2.5 text-xs text-app-muted">{t.supplier?.name || ''}</td>
-                    <td className="px-4 py-2.5 text-xs text-app-text font-medium text-right">{formatRD(t.total)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* Payrolls */}
-      <div>
-        <h2 className="text-lg font-medium text-app-text mb-3">Reportes</h2>
-        {loading ? <div className="text-sm text-app-muted">Cargando reportes...</div> : periods.length === 0 ? (
-          <div className="bg-app-surface rounded-xl border border-app-border p-8 text-center">
-            <p className="text-app-muted">No hay reportes registrados aún</p>
-            <button onClick={() => setShowCreate(true)} className="mt-3 text-sm text-blue-600 hover:text-blue-800 font-medium">
-              Crear el primer reporte
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {periods.map((period) => (
-              <div key={period.id} className="flex items-center gap-2">
-                <Link to={`/nominas/${period.id}`} className="flex-1 flex items-center justify-between bg-app-surface rounded-xl border border-app-border p-4 hover:border-blue-300 hover:shadow-sm transition-all">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-semibold text-sm">{period.period_number}</div>
-                    <div>
-                      <p className="font-medium text-app-text">Reporte No. {period.period_number}</p>
-                      <p className="text-xs text-app-muted flex items-center gap-1 mt-0.5">
-                        <Calendar className="w-3 h-3" />
-                        {new Date(period.report_date).toLocaleDateString('es-DO')}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${statusColors[period.status]}`}>{statusLabels[period.status]}</span>
-                    <span className="text-sm font-medium text-app-text hidden sm:inline">{formatRD(period.grand_total || 0)}</span>
-                  </div>
-                </Link>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => handleDuplicatePeriod(period.id)}
-                    disabled={duplicatingId === period.id || !!draftPeriod}
-                    className="p-2 text-app-subtle hover:text-blue-500 disabled:opacity-30 disabled:cursor-not-allowed"
-                    title={draftPeriod ? `Concluye el Reporte No. ${draftPeriod.period_number} antes de duplicar` : 'Duplicar reporte'}
-                  >
-                    <Copy className="w-4 h-4" />
-                  </button>
-                  {period.status === 'draft' && (
-                    <button
-                      onClick={() => setConfirmDeleteId(period.id)}
-                      disabled={deletingId === period.id}
-                      className="p-2 text-app-subtle hover:text-red-500 disabled:opacity-50"
-                      title="Eliminar reporte"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      <ProjectModulesGrid projectId={projectId!} />
+      <ProjectBudgetSummary projectId={projectId!} totalBudget={totalBudget} totalInvested={totalInvested} />
+      <ProjectRecentTransactions projectId={projectId!} transactions={recentTxns} />
+      <ProjectPayrollSection
+        loading={loading}
+        periods={periods}
+        draftPeriod={draftPeriod}
+        deletingId={deletingId}
+        duplicatingId={duplicatingId}
+        onCreate={() => setShowCreate(true)}
+        onDuplicate={handleDuplicatePeriod}
+        onDelete={setConfirmDeleteId}
+      />
 
       <Modal open={showCreate} onClose={() => setShowCreate(false)} title="Nuevo reporte">
         <CreatePayrollForm

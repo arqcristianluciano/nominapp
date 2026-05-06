@@ -46,48 +46,55 @@ export function Header({ onMenuClick }: HeaderProps) {
   const [query, setQuery] = useState('')
   const [showResults, setShowResults] = useState(false)
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
-  const [allItems, setAllItems] = useState<SearchResult[]>([])
+  const [indexedSuppliers, setIndexedSuppliers] = useState<Array<{ id: string; name: string; rnc: string | null }>>([])
+  const [indexedContractors, setIndexedContractors] = useState<Array<{ id: string; name: string; specialty: string | null }>>([])
   const inputRef = useRef<HTMLInputElement>(null)
   const mobileInputRef = useRef<HTMLInputElement>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
   const mobileWrapperRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    async function loadSearchData() {
+    async function loadSearchDirectory() {
       try {
         const [suppliers, contractors] = await Promise.all([
           supplierService.getAll(),
           contractorService.getAll(),
         ])
-        setAllItems([
-          ...projects.map((p) => ({
-            type: 'proyecto' as const,
-            id: p.id,
-            name: p.name,
-            detail: p.location || p.code,
-            url: `/proyectos/${p.id}`,
-          })),
-          ...contractors.map((c) => ({
-            type: 'contratista' as const,
-            id: c.id,
-            name: c.name,
-            detail: c.specialty || '',
-            url: '/contratistas',
-          })),
-          ...suppliers.map((s) => ({
-            type: 'suplidor' as const,
-            id: s.id,
-            name: s.name,
-            detail: s.rnc || '',
-            url: '/suplidores',
-          })),
-        ])
+        setIndexedSuppliers(suppliers.map((s) => ({ id: s.id, name: s.name, rnc: s.rnc })))
+        setIndexedContractors(contractors.map((c) => ({ id: c.id, name: c.name, specialty: c.specialty })))
       } catch (err) {
-        console.error('Failed to load search data', err)
+        console.error('Failed to load search directory', err)
       }
     }
-    loadSearchData()
-  }, [projects])
+    loadSearchDirectory()
+  }, [])
+
+  const allItems = useMemo<SearchResult[]>(
+    () => [
+      ...projects.map((p) => ({
+        type: 'proyecto' as const,
+        id: p.id,
+        name: p.name,
+        detail: p.location || p.code,
+        url: `/proyectos/${p.id}`,
+      })),
+      ...indexedContractors.map((c) => ({
+        type: 'contratista' as const,
+        id: c.id,
+        name: c.name,
+        detail: c.specialty || '',
+        url: `/contratistas/${c.id}`,
+      })),
+      ...indexedSuppliers.map((s) => ({
+        type: 'suplidor' as const,
+        id: s.id,
+        name: s.name,
+        detail: s.rnc || '',
+        url: '/suplidores',
+      })),
+    ],
+    [projects, indexedContractors, indexedSuppliers],
+  )
 
   const results = useMemo(() => {
     if (!query.trim()) return []
