@@ -79,6 +79,8 @@ html.dark {
     color-scheme: dark;
   }
 
+  input,
+  textarea,
   select {
     color-scheme: light;
   }
@@ -88,6 +90,8 @@ html.dark {
     color: var(--app-text);
   }
 
+  html.dark input,
+  html.dark textarea,
   html.dark select {
     color-scheme: dark;
   }

@@ -55,14 +55,14 @@ export function DiarioTab({
       </div>
 
       {showFilter && (
-        <div className="flex items-end gap-3 bg-app-bg rounded-lg p-3">
+        <div className="flex items-end gap-3 bg-app-surface border border-app-border rounded-lg p-3 shadow-xs">
           <div>
             <label className="text-[10px] font-medium text-app-muted mb-0.5 block">Desde</label>
-            <input type="date" value={filterFrom} onChange={(e) => onFilterFrom(e.target.value)} className="px-2 py-1.5 border border-app-border rounded text-xs bg-app-input-bg text-app-text" />
+            <input type="date" value={filterFrom} onChange={(e) => onFilterFrom(e.target.value)} className="px-2 py-1.5 border border-app-border rounded text-xs bg-app-input-bg text-app-text [color-scheme:light] dark:[color-scheme:dark] focus:ring-1 focus:ring-blue-500 focus:border-blue-500" />
           </div>
           <div>
             <label className="text-[10px] font-medium text-app-muted mb-0.5 block">Hasta</label>
-            <input type="date" value={filterTo} onChange={(e) => onFilterTo(e.target.value)} className="px-2 py-1.5 border border-app-border rounded text-xs bg-app-input-bg text-app-text" />
+            <input type="date" value={filterTo} onChange={(e) => onFilterTo(e.target.value)} className="px-2 py-1.5 border border-app-border rounded text-xs bg-app-input-bg text-app-text [color-scheme:light] dark:[color-scheme:dark] focus:ring-1 focus:ring-blue-500 focus:border-blue-500" />
           </div>
           <button onClick={onApplyFilter} className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700">Aplicar</button>
           {(txns.dateFrom || txns.dateTo) && (

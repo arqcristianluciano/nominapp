@@ -68,11 +68,11 @@ export function TransactionInlineForm({
     setNotes('')
   }
 
-  const inputClass = 'w-full px-2 py-1.5 border border-app-border rounded text-xs bg-app-input-bg text-app-text placeholder:text-app-subtle focus:ring-1 focus:ring-blue-500 focus:border-blue-500'
-  const selectClass = 'w-full px-2 py-1.5 border border-app-border rounded text-xs bg-app-input-bg text-app-text focus:ring-1 focus:ring-blue-500'
+  const inputClass = 'w-full px-2 py-1.5 border border-app-border rounded text-xs bg-app-input-bg text-app-text placeholder:text-app-subtle [color-scheme:light] dark:[color-scheme:dark] focus:ring-1 focus:ring-blue-500 focus:border-blue-500'
+  const selectClass = 'w-full px-2 py-1.5 border border-app-border rounded text-xs bg-app-input-bg text-app-text [color-scheme:light] dark:[color-scheme:dark] focus:ring-1 focus:ring-blue-500 focus:border-blue-500'
 
   return (
-    <form onSubmit={handleSubmit} className="bg-app-surface border border-app-border rounded-lg p-3">
+    <form onSubmit={handleSubmit} className="bg-app-surface border border-app-border rounded-lg p-3 shadow-xs">
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2">
         <div>
           <label className="text-[10px] font-medium text-app-muted mb-0.5 block">Fecha</label>
@@ -110,7 +110,7 @@ export function TransactionInlineForm({
         </div>
         <div>
           <label className="text-[10px] font-medium text-app-muted mb-0.5 block">Total</label>
-          <input type="number" value={total || ''} readOnly className={`${inputClass} bg-app-bg font-medium`} />
+          <input type="number" value={total || ''} readOnly className={`${inputClass} bg-app-hover font-medium`} />
         </div>
         <div>
           <label className="text-[10px] font-medium text-app-muted mb-0.5 block">Condición</label>
