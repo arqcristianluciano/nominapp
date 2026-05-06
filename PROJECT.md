@@ -126,6 +126,7 @@ src/
   - Partidas de mano de obra por contratista
   - Facturas de materiales
   - Indirectos auto-calculados (DT, admin, transporte, planificación + casillas personalizables % o RD$ por proyecto)
+  - Activar/desactivar indirectos por nómina (checkbox por fila); la preferencia se preserva por tipo entre recálculos
   - Distribución de pagos (post-aprobación)
 - Control Financiero por proyecto: libro diario, CxP, cheques
 - Presupuesto vs Real con edición inline

@@ -74,12 +74,12 @@ export const torreMiradorSeed = {
   ],
 
   indirect_costs: [
-    { id: 't2ic01', payroll_period_id: payroll4, type: 'direction_technique', description: 'Dirección técnica 8%', percentage: 8, base_amount: 1197000, calculated_amount: 95760, fixed_amount: null, notes: null },
-    { id: 't2ic02', payroll_period_id: payroll4, type: 'administration', description: 'Administración 1.5%', percentage: 1.5, base_amount: 1197000, calculated_amount: 17955, fixed_amount: null, notes: null },
-    { id: 't2ic03', payroll_period_id: payroll4, type: 'transport', description: 'Transporte 1%', percentage: 1, base_amount: 1197000, calculated_amount: 11970, fixed_amount: null, notes: null },
-    { id: 't2ic04', payroll_period_id: payroll5, type: 'direction_technique', description: 'Dirección técnica 8%', percentage: 8, base_amount: 1040400, calculated_amount: 83232, fixed_amount: null, notes: null },
-    { id: 't2ic05', payroll_period_id: payroll5, type: 'administration', description: 'Administración 1.5%', percentage: 1.5, base_amount: 1040400, calculated_amount: 15606, fixed_amount: null, notes: null },
-    { id: 't2ic06', payroll_period_id: payroll5, type: 'transport', description: 'Transporte 1%', percentage: 1, base_amount: 1040400, calculated_amount: 10404, fixed_amount: null, notes: null },
+    { id: 't2ic01', payroll_period_id: payroll4, type: 'direction_technique', description: 'Dirección técnica 8%', percentage: 8, base_amount: 1197000, calculated_amount: 95760, fixed_amount: null, is_active: true, notes: null },
+    { id: 't2ic02', payroll_period_id: payroll4, type: 'administration', description: 'Administración 1.5%', percentage: 1.5, base_amount: 1197000, calculated_amount: 17955, fixed_amount: null, is_active: true, notes: null },
+    { id: 't2ic03', payroll_period_id: payroll4, type: 'transport', description: 'Transporte 1%', percentage: 1, base_amount: 1197000, calculated_amount: 11970, fixed_amount: null, is_active: true, notes: null },
+    { id: 't2ic04', payroll_period_id: payroll5, type: 'direction_technique', description: 'Dirección técnica 8%', percentage: 8, base_amount: 1040400, calculated_amount: 83232, fixed_amount: null, is_active: true, notes: null },
+    { id: 't2ic05', payroll_period_id: payroll5, type: 'administration', description: 'Administración 1.5%', percentage: 1.5, base_amount: 1040400, calculated_amount: 15606, fixed_amount: null, is_active: true, notes: null },
+    { id: 't2ic06', payroll_period_id: payroll5, type: 'transport', description: 'Transporte 1%', percentage: 1, base_amount: 1040400, calculated_amount: 10404, fixed_amount: null, is_active: true, notes: null },
   ],
 
   transactions: [

@@ -180,12 +180,12 @@ export default function PayrollPrint() {
         )}
 
         {/* Indirect */}
-        {indirectCosts.length > 0 && (
+        {indirectCosts.filter((c) => c.is_active).length > 0 && (
           <section className="mb-8">
             <h2 className="text-sm font-bold uppercase tracking-wider text-app-muted border-b border-gray-300 pb-1 mb-3">Gastos Indirectos</h2>
             <table className="w-full text-xs border border-app-border">
               <tbody>
-                {indirectCosts.map((cost) => (
+                {indirectCosts.filter((c) => c.is_active).map((cost) => (
                   <tr key={cost.id} className="border-t border-app-border">
                     <td className="px-2 py-1 text-app-text">{cost.description}</td>
                     <td className="px-2 py-1 text-right text-app-muted w-16">{cost.percentage ? `${cost.percentage}%` : 'Fijo'}</td>

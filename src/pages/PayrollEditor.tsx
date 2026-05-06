@@ -130,13 +130,23 @@ export default function PayrollEditor() {
 
       {payroll.indirectCosts.length > 0 && (
         <section>
-          <h2 className="text-lg font-medium text-app-text mb-3">Gastos indirectos</h2>
+          <h2 className="text-lg font-medium text-app-text mb-1">Gastos indirectos</h2>
+          <p className="text-xs text-app-subtle mb-3">Desmarca los que no se aplican en este reporte. La preferencia se mantiene para los próximos.</p>
           <div className="bg-app-surface rounded-xl border border-app-border overflow-hidden">
             <table className="w-full text-sm">
               <tbody className="divide-y divide-app-border">
                 {payroll.indirectCosts.map((cost) => (
-                  <tr key={cost.id}>
-                    <td className="px-4 py-2.5 text-app-muted">{cost.description}</td>
+                  <tr key={cost.id} className={cost.is_active ? '' : 'opacity-50'}>
+                    <td className="px-4 py-2.5 w-10">
+                      <input
+                        type="checkbox"
+                        checked={cost.is_active}
+                        disabled={!isDraft || payroll.saving}
+                        onChange={(e) => payroll.setIndirectActive(cost.id, e.target.checked)}
+                        className="w-4 h-4 accent-blue-600 cursor-pointer disabled:cursor-not-allowed"
+                      />
+                    </td>
+                    <td className={`px-4 py-2.5 text-app-muted ${cost.is_active ? '' : 'line-through'}`}>{cost.description}</td>
                     <td className="px-4 py-2.5 text-right text-app-muted">{cost.percentage ? `${cost.percentage}%` : 'Fijo'}</td>
                     <td className="px-4 py-2.5 text-right font-medium text-app-text w-32">{formatRD(cost.calculated_amount)}</td>
                   </tr>

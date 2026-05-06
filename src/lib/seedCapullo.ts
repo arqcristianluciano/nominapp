@@ -70,9 +70,9 @@ export const capulloSeed = {
   ],
 
   indirect_costs: [
-    { id: 'ic01', payroll_period_id: payroll1, type: 'direction_technique', description: 'Dirección técnica 10%', percentage: 10,  base_amount: 697500, calculated_amount: 69750, fixed_amount: null, notes: null },
-    { id: 'ic02', payroll_period_id: payroll1, type: 'administration',      description: 'Administración 1%',    percentage: 1,   base_amount: 697500, calculated_amount: 6975,  fixed_amount: null, notes: null },
-    { id: 'ic03', payroll_period_id: payroll1, type: 'transport',           description: 'Transporte 0.5%',      percentage: 0.5, base_amount: 697500, calculated_amount: 3487,  fixed_amount: null, notes: null },
+    { id: 'ic01', payroll_period_id: payroll1, type: 'direction_technique', description: 'Dirección técnica 10%', percentage: 10,  base_amount: 697500, calculated_amount: 69750, fixed_amount: null, is_active: true, notes: null },
+    { id: 'ic02', payroll_period_id: payroll1, type: 'administration',      description: 'Administración 1%',    percentage: 1,   base_amount: 697500, calculated_amount: 6975,  fixed_amount: null, is_active: true, notes: null },
+    { id: 'ic03', payroll_period_id: payroll1, type: 'transport',           description: 'Transporte 0.5%',      percentage: 0.5, base_amount: 697500, calculated_amount: 3487,  fixed_amount: null, is_active: true, notes: null },
   ],
 
   transactions: [
