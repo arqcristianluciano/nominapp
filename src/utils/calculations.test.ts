@@ -25,11 +25,12 @@ const labor = (overrides: Partial<LaborLineItem>): LaborLineItem => ({
   ...overrides,
 })
 
-const project: Pick<Project, 'dt_percent' | 'admin_percent' | 'transport_percent' | 'planning_fee'> = {
+const project: Pick<Project, 'dt_percent' | 'admin_percent' | 'transport_percent' | 'planning_fee' | 'custom_indirects'> = {
   dt_percent: 10,
   admin_percent: 1,
   transport_percent: 0.5,
   planning_fee: 25000,
+  custom_indirects: [],
 }
 
 describe('calculations', () => {
@@ -90,8 +91,23 @@ describe('calculations', () => {
     })
 
     it('porcentajes fraccionarios sin pérdida de precisión', () => {
-      const result = calcIndirectCosts(33333.33, 0, { ...project, dt_percent: 7.5, admin_percent: 0, transport_percent: 0, planning_fee: 0 })
+      const result = calcIndirectCosts(33333.33, 0, { ...project, dt_percent: 7.5, admin_percent: 0, transport_percent: 0, planning_fee: 0, custom_indirects: [] })
       expect(result.direction_technique.amount).toBe(2500)
+    })
+
+    it('incluye custom_indirects en porcentaje y monto fijo', () => {
+      const result = calcIndirectCosts(80000, 20000, {
+        ...project,
+        planning_fee: 0,
+        custom_indirects: [
+          { id: 'a', name: 'Supervisión eléctrica', type: 'percent', value: 2 },
+          { id: 'b', name: 'Seguridad', type: 'fixed', value: 5000 },
+        ],
+      })
+      expect(result.customs).toHaveLength(2)
+      expect(result.customs[0].amount).toBe(2000)
+      expect(result.customs[1].amount).toBe(5000)
+      expect(result.total).toBe(10000 + 1000 + 500 + 0 + 2000 + 5000)
     })
   })
 

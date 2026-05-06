@@ -40,11 +40,15 @@ function resolveRelations(_table: string, row: MockRow, selectStr: string): Mock
   return result
 }
 
+function unaccent(s: string): string {
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+}
+
 function matchPattern(value: unknown, pattern: string, caseInsensitive: boolean): boolean {
   if (value == null) return false
-  const str = String(value)
-  const target = caseInsensitive ? str.toLowerCase() : str
-  const pat = caseInsensitive ? pattern.toLowerCase() : pattern
+  const norm = (s: string) => caseInsensitive ? unaccent(s.toLowerCase()) : s
+  const target = norm(String(value))
+  const pat = norm(pattern)
   const regex = new RegExp('^' + pat.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/%/g, '.*').replace(/_/g, '.') + '$')
   return regex.test(target)
 }

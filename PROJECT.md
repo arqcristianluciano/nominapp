@@ -6,6 +6,7 @@
 - Zustand (estado global)
 - Supabase (backend — modo demo sin credenciales)
 - React Router v7
+- Testing: Vitest + Playwright (E2E smoke)
 
 ## Modo Demo
 Sin `.env`, el sistema corre en **mockSupabase** (datos en memoria).
@@ -45,6 +46,7 @@ src/
   constants/        ← budgetCategories, indirectCosts, measureUnits, banks, demoUsers (login demo)
   types/            ← database.ts (14 interfaces)
   lib/              ← supabase, mockSupabase, mockData, seedCapullo, seedTorreMirador, router
+  e2e/              ← smoke.spec.ts (flujos críticos UI)
 ```
 
 ---
@@ -167,3 +169,10 @@ src/
 - [ ] Autenticación real (Supabase Auth); hoy: login demo en cliente (`authStore` + `demoUsers`)
 - [ ] Notificaciones (ensayos fallidos, CxP vencidos)
 - [ ] Multi-empresa con permisos por usuario
+
+---
+
+## Testing rápido
+
+- Unit: `npm test`
+- E2E smoke: `npm run test:e2e`

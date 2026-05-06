@@ -27,6 +27,7 @@ interface TransactionLite {
   total: number | null
   date: string
   project_id: string
+  payment_condition?: string | null
   supplier?: { name?: string | null } | null
 }
 
@@ -52,6 +53,15 @@ const CXP_DANGER_DAYS = 60
 const BUDGET_WARNING_THRESHOLD = 0.80
 const BUDGET_DANGER_THRESHOLD = 1.00
 const DOC_EXPIRY_WARNING_DAYS = 30
+
+function isCreditCondition(value: string | null | undefined): boolean {
+  if (!value) return false
+  const normalized = value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+  return normalized.includes('credito')
+}
 
 export const notificationService = {
   async getAll(): Promise<AppNotification[]> {
@@ -83,17 +93,15 @@ export const notificationService = {
         .limit(10),
       supabase
         .from('transactions')
-        .select('id, description, total, date, project_id, supplier:suppliers(name)')
-        .ilike('payment_condition', '%Credito%')
+        .select('id, description, total, date, project_id, payment_condition, supplier:suppliers(name)')
         .lte('date', dangerDateStr)
-        .limit(10),
+        .limit(100),
       supabase
         .from('transactions')
-        .select('id, description, total, date, project_id, supplier:suppliers(name)')
-        .ilike('payment_condition', '%Credito%')
+        .select('id, description, total, date, project_id, payment_condition, supplier:suppliers(name)')
         .lte('date', warningDateStr)
         .gt('date', dangerDateStr)
-        .limit(10),
+        .limit(100),
       supabase.from('budget_categories').select('id, project_id, name, budgeted_amount'),
       supabase.from('transactions').select('project_id, total').limit(500),
       supabase.from('projects').select('id, name, code'),
@@ -138,7 +146,10 @@ export const notificationService = {
       })
     }
 
-    for (const txn of (txnDangerRes.data || []) as TransactionLite[]) {
+    const dangerCreditTxns = ((txnDangerRes.data || []) as Array<TransactionLite & { payment_condition?: string | null }>)
+      .filter((txn) => isCreditCondition(txn.payment_condition))
+      .slice(0, 10)
+    for (const txn of dangerCreditTxns) {
       const days = Math.floor((today.getTime() - new Date(txn.date).getTime()) / 86400000)
       notifications.push({
         id: `cxp-danger-${txn.id}`,
@@ -149,7 +160,10 @@ export const notificationService = {
       })
     }
 
-    for (const txn of (txnWarningRes.data || []) as TransactionLite[]) {
+    const warningCreditTxns = ((txnWarningRes.data || []) as Array<TransactionLite & { payment_condition?: string | null }>)
+      .filter((txn) => isCreditCondition(txn.payment_condition))
+      .slice(0, 10)
+    for (const txn of warningCreditTxns) {
       const days = Math.floor((today.getTime() - new Date(txn.date).getTime()) / 86400000)
       notifications.push({
         id: `cxp-warning-${txn.id}`,
