@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useCallback, useEffect, useState } from 'react'
+import { useParams } from 'react-router-dom'
 import {
-  BookOpen, ArrowLeft, Plus, Sun, Cloud, CloudRain,
+  BookOpen, Plus, Sun, Cloud, CloudRain,
   Users, AlertTriangle, ChevronDown, ChevronUp, Pencil, Trash2,
 } from 'lucide-react'
+import { Breadcrumb } from '@/components/ui/Breadcrumb'
+import { useProjectStore } from '@/stores/projectStore'
 import { bitacoraService, type BitacoraEntry, type BitacoraFormData } from '@/services/bitacoraService'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 
@@ -30,6 +32,8 @@ const EMPTY_FORM: BitacoraFormData = {
 
 export default function BitacoraPage() {
   const { projectId } = useParams<{ projectId: string }>()
+  const { projects } = useProjectStore()
+  const project = projects.find((p) => p.id === projectId)
   const [entries, setEntries] = useState<BitacoraEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -39,13 +43,13 @@ export default function BitacoraPage() {
   const [saving, setSaving] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
 
-  useEffect(() => { load() }, [projectId])
-
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true)
     try { setEntries(await bitacoraService.getByProject(projectId!)) }
     finally { setLoading(false) }
-  }
+  }, [projectId])
+
+  useEffect(() => { load() }, [load])
 
   function startEdit(entry: BitacoraEntry) {
     setForm({
@@ -97,20 +101,24 @@ export default function BitacoraPage() {
 
   return (
     <div className="p-4 lg:p-6 space-y-5 max-w-4xl mx-auto">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link to={`/proyectos/${projectId}`} className="p-1.5 rounded-lg hover:bg-app-hover text-app-muted">
-            <ArrowLeft className="w-4 h-4" />
-          </Link>
-          <BookOpen className="w-5 h-5 text-blue-600" />
-          <h1 className="text-xl font-bold text-app-text">Bitácora de Obra</h1>
+      <div>
+        <Breadcrumb items={[
+          { label: 'Proyectos', to: '/proyectos' },
+          { label: project?.name ?? 'Proyecto', to: `/proyectos/${projectId}` },
+          { label: 'Bitácora' },
+        ]} />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <BookOpen className="w-5 h-5 text-blue-600" />
+            <h1 className="text-xl font-bold text-app-text">Bitácora de Obra</h1>
+          </div>
+          <button
+            onClick={() => { setShowForm(true); setEditId(null); setForm({ ...EMPTY_FORM, project_id: projectId! }) }}
+            className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+          >
+            <Plus className="w-4 h-4" />Nuevo registro
+          </button>
         </div>
-        <button
-          onClick={() => { setShowForm(true); setEditId(null); setForm({ ...EMPTY_FORM, project_id: projectId! }) }}
-          className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-        >
-          <Plus className="w-4 h-4" />Nuevo registro
-        </button>
       </div>
 
       {/* Form */}

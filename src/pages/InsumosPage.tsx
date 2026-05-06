@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { FileSpreadsheet, RefreshCw, ExternalLink, FileX } from 'lucide-react'
 import { Breadcrumb } from '@/components/ui/Breadcrumb'
@@ -30,14 +30,10 @@ export default function InsumosPage() {
 
   useEffect(() => {
     if (!projects.length) fetchProjects()
-    contractorService.getAll().then(setContractors).catch(() => {})
+    contractorService.getAll().then(setContractors).catch((err) => console.error('InsumosPage contractors load failed', err))
   }, [projects.length, fetchProjects])
 
-  useEffect(() => {
-    if (projectId) load()
-  }, [projectId])
-
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true)
     try {
       const b = await mercadoBudgetService.getByProject(projectId!)
@@ -51,7 +47,11 @@ export default function InsumosPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [projectId])
+
+  useEffect(() => {
+    if (projectId) load()
+  }, [projectId, load])
 
   function handleImported() {
     setShowUpload(false)

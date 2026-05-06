@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Plus, Pencil, Trash2, FlaskConical, CheckCircle2, XCircle, Clock, CalendarClock } from 'lucide-react'
 import { Breadcrumb } from '@/components/ui/Breadcrumb'
@@ -25,18 +25,18 @@ export default function QualityControlPage() {
     if (!projects.length) fetchProjects()
   }, [projects.length, fetchProjects])
 
-  useEffect(() => {
-    if (projectId) load()
-  }, [projectId])
-
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true)
     try {
       setRecords(await qualityControlService.getByProject(projectId!))
     } finally {
       setLoading(false)
     }
-  }
+  }, [projectId])
+
+  useEffect(() => {
+    if (projectId) load()
+  }, [projectId, load])
 
   async function handleSubmit(data: Omit<QualityControl, 'id' | 'status'>) {
     setSaving(true)

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { HardHat, Phone, CreditCard, Layers, FileText, Building2, FileCheck, Plus, Trash2, AlertTriangle, CheckCircle, Clock } from 'lucide-react'
 import { Breadcrumb } from '@/components/ui/Breadcrumb'
@@ -6,7 +6,9 @@ import { contractorService } from '@/services/contractorService'
 import { contractorDocService, DOC_TYPES, type ContractorDocument, type ContractorDocFormData } from '@/services/contractorDocService'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { formatRD } from '@/utils/currency'
-import type { Contractor } from '@/types/database'
+import type { Contractor, Project } from '@/types/database'
+
+type ProjectLite = Pick<Project, 'id' | 'name' | 'code'> & { location?: string | null }
 
 interface LaborItem {
   id: string
@@ -58,7 +60,7 @@ export default function ContractorDetail() {
   const [contractor, setContractor] = useState<Contractor | null>(null)
   const [items, setItems] = useState<LaborItem[]>([])
   const [cubications, setCubications] = useState<Cubication[]>([])
-  const [projectMap, setProjectMap] = useState<Record<string, any>>({})
+  const [projectMap, setProjectMap] = useState<Record<string, ProjectLite>>({})
   const [loading, setLoading] = useState(true)
   const [docs, setDocs] = useState<ContractorDocument[]>([])
   const [showDocForm, setShowDocForm] = useState(false)
@@ -66,29 +68,27 @@ export default function ContractorDetail() {
   const [deleteDocId, setDeleteDocId] = useState<string | null>(null)
   const [savingDoc, setSavingDoc] = useState(false)
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     if (!contractorId) return
-    load()
-  }, [contractorId])
-
-  async function load() {
     setLoading(true)
     try {
       const [ctrs, { items: laborItems, cubications: cubs, projectMap: pmap }, docList] = await Promise.all([
         contractorService.getAll(),
-        contractorService.getHistory(contractorId!),
-        contractorDocService.getByContractor(contractorId!),
+        contractorService.getHistory(contractorId),
+        contractorDocService.getByContractor(contractorId),
       ])
       const found = ctrs.find((c) => c.id === contractorId) ?? null
       setContractor(found)
       setItems(laborItems)
       setCubications(cubs)
-      setProjectMap(pmap)
+      setProjectMap(pmap as Record<string, ProjectLite>)
       setDocs(docList)
     } finally {
       setLoading(false)
     }
-  }
+  }, [contractorId])
+
+  useEffect(() => { load() }, [load])
 
   async function handleSaveDoc() {
     if (!docForm.name.trim()) return

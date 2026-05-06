@@ -1,6 +1,8 @@
-import { useEffect, useState, useMemo } from 'react'
-import { useParams, Link } from 'react-router-dom'
-import { BarChart2, ArrowLeft, Plus, Pencil, Trash2, AlertTriangle } from 'lucide-react'
+import { useCallback, useEffect, useState, useMemo } from 'react'
+import { useParams } from 'react-router-dom'
+import { BarChart2, Plus, Pencil, Trash2, AlertTriangle } from 'lucide-react'
+import { Breadcrumb } from '@/components/ui/Breadcrumb'
+import { useProjectStore } from '@/stores/projectStore'
 import { scheduleService, type ScheduleTask, type ScheduleTaskFormData } from '@/services/scheduleService'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 
@@ -17,6 +19,8 @@ const EMPTY_FORM: Omit<ScheduleTaskFormData, 'project_id'> = {
 
 export default function CronogramaPage() {
   const { projectId } = useParams<{ projectId: string }>()
+  const { projects } = useProjectStore()
+  const project = projects.find((p) => p.id === projectId)
   const [tasks, setTasks] = useState<ScheduleTask[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -25,13 +29,13 @@ export default function CronogramaPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => { load() }, [projectId])
-
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true)
     try { setTasks(await scheduleService.getByProject(projectId!)) }
     finally { setLoading(false) }
-  }
+  }, [projectId])
+
+  useEffect(() => { load() }, [load])
 
   function startEdit(task: ScheduleTask) {
     setForm({ name: task.name, start_date: task.start_date, end_date: task.end_date, progress: task.progress, color: task.color, notes: task.notes ?? '' })
@@ -112,18 +116,22 @@ export default function CronogramaPage() {
 
   return (
     <div className="p-4 lg:p-6 space-y-5 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link to={`/proyectos/${projectId}`} className="p-1.5 rounded-lg hover:bg-app-hover text-app-muted">
-            <ArrowLeft className="w-4 h-4" />
-          </Link>
-          <BarChart2 className="w-5 h-5 text-blue-600" />
-          <h1 className="text-xl font-bold text-app-text">Cronograma de Obra</h1>
+      <div>
+        <Breadcrumb items={[
+          { label: 'Proyectos', to: '/proyectos' },
+          { label: project?.name ?? 'Proyecto', to: `/proyectos/${projectId}` },
+          { label: 'Cronograma' },
+        ]} />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <BarChart2 className="w-5 h-5 text-blue-600" />
+            <h1 className="text-xl font-bold text-app-text">Cronograma de Obra</h1>
+          </div>
+          <button onClick={() => { setShowForm(true); setEditId(null); setForm({ ...EMPTY_FORM }) }}
+            className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
+            <Plus className="w-4 h-4" />Nueva tarea
+          </button>
         </div>
-        <button onClick={() => { setShowForm(true); setEditId(null); setForm({ ...EMPTY_FORM }) }}
-          className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
-          <Plus className="w-4 h-4" />Nueva tarea
-        </button>
       </div>
 
       {/* Summary */}

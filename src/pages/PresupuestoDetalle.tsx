@@ -33,14 +33,17 @@ export default function PresupuestoDetalle() {
     if (!projects.length) fetchProjects()
   }, [projects.length, fetchProjects])
 
-  useEffect(() => {
-    budget.load()
-  }, [budget.load])
+  const { load: loadBudget } = budget
+  const { loadItems } = budgetItems
 
   useEffect(() => {
-    if (categoryIds.length) budgetItems.loadItems(categoryIds)
+    loadBudget()
+  }, [loadBudget])
+
+  useEffect(() => {
+    if (categoryIds.length) loadItems(categoryIds)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [budget.rows.length, budgetItems.loadItems])
+  }, [budget.rows.length, loadItems])
 
   const startEdit = useCallback((id: string, amount: number) => {
     setEditingId(id)

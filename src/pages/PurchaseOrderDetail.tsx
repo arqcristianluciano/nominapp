@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Plus, Send, Truck, ShieldCheck, ImageIcon, Trash2, AlertTriangle } from 'lucide-react'
 import { Breadcrumb } from '@/components/ui/Breadcrumb'
@@ -29,9 +29,7 @@ export default function PurchaseOrderDetail() {
   const [deleteQuoteId, setDeleteQuoteId] = useState<string | null>(null)
   const [confirmDeleteReq, setConfirmDeleteReq] = useState(false)
 
-  useEffect(() => { if (orderId) load() }, [orderId])
-
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true)
     try {
       const [data, sups] = await Promise.all([
@@ -40,7 +38,9 @@ export default function PurchaseOrderDetail() {
       ])
       setReq(data); setSuppliers(sups)
     } finally { setLoading(false) }
-  }
+  }, [orderId])
+
+  useEffect(() => { if (orderId) load() }, [orderId, load])
 
   async function handleAddQuote(payload: Parameters<typeof quoteService.create>[0]) {
     setSavingQuote(true)

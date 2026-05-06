@@ -1,6 +1,8 @@
-import { useEffect, useState, useMemo } from 'react'
-import { useParams, Link } from 'react-router-dom'
-import { Package, ArrowLeft, Plus, AlertTriangle, ArrowDownCircle, ArrowUpCircle, Trash2 } from 'lucide-react'
+import { useCallback, useEffect, useState, useMemo } from 'react'
+import { useParams } from 'react-router-dom'
+import { Package, Plus, AlertTriangle, ArrowDownCircle, ArrowUpCircle, Trash2 } from 'lucide-react'
+import { Breadcrumb } from '@/components/ui/Breadcrumb'
+import { useProjectStore } from '@/stores/projectStore'
 import { inventoryService, type InventoryItem, type InventoryMovement } from '@/services/inventoryService'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { formatRD } from '@/utils/currency'
@@ -10,6 +12,8 @@ const EMPTY_MOVEMENT = { item_id: '', type: 'in' as 'in' | 'out', quantity: 1, d
 
 export default function InventarioPage() {
   const { projectId } = useParams<{ projectId: string }>()
+  const { projects } = useProjectStore()
+  const project = projects.find((p) => p.id === projectId)
   const [items, setItems] = useState<InventoryItem[]>([])
   const [movements, setMovements] = useState<InventoryMovement[]>([])
   const [loading, setLoading] = useState(true)
@@ -21,9 +25,7 @@ export default function InventarioPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => { loadAll() }, [projectId])
-
-  async function loadAll() {
+  const loadAll = useCallback(async () => {
     setLoading(true)
     try {
       const [its, movs] = await Promise.all([
@@ -33,7 +35,9 @@ export default function InventarioPage() {
       setItems(its)
       setMovements(movs)
     } finally { setLoading(false) }
-  }
+  }, [projectId])
+
+  useEffect(() => { loadAll() }, [loadAll])
 
   const lowStock = useMemo(() => inventoryService.getLowStockItems(items), [items])
 
@@ -68,21 +72,25 @@ export default function InventarioPage() {
 
   return (
     <div className="p-4 lg:p-6 space-y-5 max-w-5xl mx-auto">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link to={`/proyectos/${projectId}`} className="p-1.5 rounded-lg hover:bg-app-hover text-app-muted">
-            <ArrowLeft className="w-4 h-4" />
-          </Link>
-          <Package className="w-5 h-5 text-blue-600" />
-          <h1 className="text-xl font-bold text-app-text">Inventario de Materiales</h1>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={() => setShowMovForm(true)} className="flex items-center gap-2 px-3 py-2 border border-app-border text-app-muted rounded-lg text-sm hover:bg-app-hover transition-colors">
-            <ArrowUpCircle className="w-4 h-4" />Movimiento
-          </button>
-          <button onClick={() => setShowItemForm(true)} className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
-            <Plus className="w-4 h-4" />Material
-          </button>
+      <div>
+        <Breadcrumb items={[
+          { label: 'Proyectos', to: '/proyectos' },
+          { label: project?.name ?? 'Proyecto', to: `/proyectos/${projectId}` },
+          { label: 'Inventario' },
+        ]} />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Package className="w-5 h-5 text-blue-600" />
+            <h1 className="text-xl font-bold text-app-text">Inventario de Materiales</h1>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => setShowMovForm(true)} className="flex items-center gap-2 px-3 py-2 border border-app-border text-app-muted rounded-lg text-sm hover:bg-app-hover transition-colors">
+              <ArrowUpCircle className="w-4 h-4" />Movimiento
+            </button>
+            <button onClick={() => setShowItemForm(true)} className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+              <Plus className="w-4 h-4" />Material
+            </button>
+          </div>
         </div>
       </div>
 

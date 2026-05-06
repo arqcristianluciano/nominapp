@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { FileText, Scissors, Wallet, Printer, Banknote, FileSignature } from 'lucide-react'
 import { Breadcrumb } from '@/components/ui/Breadcrumb'
@@ -27,15 +27,15 @@ export default function CubicacionContratoPage() {
     if (!projects.length) fetchProjects()
   }, [projects.length, fetchProjects])
 
-  useEffect(() => {
-    if (contratoId) load()
-  }, [contratoId])
-
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true)
     try { setContrato(await contractService.getById(contratoId!)) }
     finally { setLoading(false) }
-  }
+  }, [contratoId])
+
+  useEffect(() => {
+    if (contratoId) load()
+  }, [contratoId, load])
 
   if (loading) return <div className="text-sm text-app-muted p-6">Cargando contrato...</div>
   if (!contrato) return <div className="text-sm text-app-muted p-6">Contrato no encontrado.</div>
