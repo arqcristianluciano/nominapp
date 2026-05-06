@@ -13,7 +13,7 @@ import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { CreatePayrollForm } from '@/components/features/payroll/CreatePayrollForm'
 import { ProjectForm } from '@/components/features/projects/ProjectForm'
 import { formatRD } from '@/utils/currency'
-import type { BudgetCategory } from '@/types/database'
+import type { BudgetCategory, Project } from '@/types/database'
 
 export default function ProjectDetail() {
   const { projectId } = useParams<{ projectId: string }>()
@@ -40,7 +40,7 @@ export default function ProjectDetail() {
     }
   }, [projectId, projects.length, fetchProjects, fetchPeriods])
 
-  async function handleEditProject(data: any) {
+  async function handleEditProject(data: Partial<Project>) {
     if (!projectId) return
     setSavingProject(true)
     try {

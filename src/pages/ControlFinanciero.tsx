@@ -17,6 +17,7 @@ export default function ControlFinanciero() {
   const { projectId } = useParams<{ projectId: string }>()
   const { projects, fetchProjects } = useProjectStore()
   const txns = useTransactions(projectId)
+  const loadTransactions = txns.load
   const [activeTab, setActiveTab] = useState<Tab>('diario')
   const [showAddForm, setShowAddForm] = useState(false)
   const [showFilter, setShowFilter] = useState(false)
@@ -32,8 +33,8 @@ export default function ControlFinanciero() {
   }, [projects.length, fetchProjects])
 
   useEffect(() => {
-    txns.load()
-  }, [txns.load])
+    loadTransactions()
+  }, [loadTransactions])
 
   const pagedTransactions = useMemo(() => {
     const start = (page - 1) * PAGE_SIZE

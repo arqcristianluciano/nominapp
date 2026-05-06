@@ -9,6 +9,7 @@ import {
   calcDisponibleNeto,
   calcTotalIncurrido,
 } from '@/utils/financialCalculations'
+import { getErrorMessage } from '@/utils/errors'
 import type { BudgetCategory, Supplier, Transaction } from '@/types/database'
 
 export function useTransactions(projectId: string | undefined) {
@@ -37,8 +38,8 @@ export function useTransactions(projectId: string | undefined) {
       setTransactions(txns)
       setBudgetCategories(categories)
       setSuppliers(supps)
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e) {
+      setError(getErrorMessage(e))
     } finally {
       setLoading(false)
     }
@@ -50,8 +51,8 @@ export function useTransactions(projectId: string | undefined) {
     try {
       const newTxn = await transactionService.create(data)
       setTransactions((prev) => [newTxn, ...prev])
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e) {
+      setError(getErrorMessage(e))
     } finally {
       setSaving(false)
     }
@@ -63,8 +64,8 @@ export function useTransactions(projectId: string | undefined) {
     try {
       const updated = await transactionService.update(id, updates)
       setTransactions((prev) => prev.map((t) => (t.id === id ? updated : t)))
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e) {
+      setError(getErrorMessage(e))
     } finally {
       setSaving(false)
     }
@@ -76,8 +77,8 @@ export function useTransactions(projectId: string | undefined) {
     try {
       await transactionService.delete(id)
       setTransactions((prev) => prev.filter((t) => t.id !== id))
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e) {
+      setError(getErrorMessage(e))
     } finally {
       setSaving(false)
     }

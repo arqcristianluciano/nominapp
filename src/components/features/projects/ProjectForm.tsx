@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import type { Project, Company } from '@/types/database'
+import type { Project, Company, CustomIndirect } from '@/types/database'
+import { CustomIndirectsSection } from './CustomIndirectsSection'
 
 type ProjectFormData = {
   name: string
@@ -11,6 +12,7 @@ type ProjectFormData = {
   admin_percent: number
   transport_percent: number
   planning_fee: number
+  custom_indirects: CustomIndirect[]
   status?: 'active' | 'completed' | 'paused'
 }
 
@@ -27,14 +29,29 @@ const STATUS_OPTIONS = [
   { value: 'completed', label: 'Completado' },
 ]
 
+function generateCodeFromName(name: string): string {
+  const initials = name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+    .split(/\s+/)
+    .map((word) => word.match(/[A-Z]/)?.[0] || '')
+    .join('')
+    .slice(0, 4)
+  if (!initials) return ''
+  return `${initials}-${new Date().getFullYear()}`
+}
+
 export function ProjectForm({ initial, onSubmit, onCancel, saving }: Props) {
   const [name, setName] = useState(initial?.name || '')
   const [code, setCode] = useState(initial?.code || '')
+  const [codeTouched, setCodeTouched] = useState(!!initial?.code)
   const [location, setLocation] = useState(initial?.location || '')
   const [dtPercent, setDtPercent] = useState(initial?.dt_percent ?? 10)
   const [adminPercent, setAdminPercent] = useState(initial?.admin_percent ?? 1)
   const [transportPercent, setTransportPercent] = useState(initial?.transport_percent ?? 0.5)
   const [planningFee, setPlanningFee] = useState(initial?.planning_fee ?? 0)
+  const [customIndirects, setCustomIndirects] = useState<CustomIndirect[]>(initial?.custom_indirects ?? [])
   const [status, setStatus] = useState<'active' | 'completed' | 'paused'>(initial?.status || 'active')
   const [companies, setCompanies] = useState<Company[]>([])
   const [companyId, setCompanyId] = useState(initial?.company_id || '')
@@ -62,6 +79,7 @@ export function ProjectForm({ initial, onSubmit, onCancel, saving }: Props) {
       admin_percent: adminPercent,
       transport_percent: transportPercent,
       planning_fee: planningFee,
+      custom_indirects: customIndirects.filter((c) => c.name.trim() && c.value > 0),
       status,
     })
   }
@@ -74,11 +92,31 @@ export function ProjectForm({ initial, onSubmit, onCancel, saving }: Props) {
       <div className="grid grid-cols-2 gap-3">
         <div className="col-span-2">
           <label className={labelClass}>Nombre del proyecto *</label>
-          <input type="text" value={name} onChange={(e) => setName(e.target.value)} className={inputClass} placeholder="Ej: RESIDENCIA MARTÍNEZ" required />
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => {
+              const nextName = e.target.value
+              setName(nextName)
+              if (!isEditing && !codeTouched) {
+                setCode(generateCodeFromName(nextName))
+              }
+            }}
+            className={inputClass}
+            placeholder="Ej: RESIDENCIA MARTÍNEZ"
+            required
+          />
         </div>
         <div>
           <label className={labelClass}>Código *</label>
-          <input type="text" value={code} onChange={(e) => setCode(e.target.value)} className={inputClass} placeholder="Ej: RM-2026" required />
+          <input
+            type="text"
+            value={code}
+            onChange={(e) => { setCode(e.target.value.toUpperCase()); setCodeTouched(true) }}
+            className={inputClass}
+            placeholder="Ej: RM-2026"
+            required
+          />
         </div>
         <div>
           <label className={labelClass}>Ubicación</label>
@@ -121,6 +159,11 @@ export function ProjectForm({ initial, onSubmit, onCancel, saving }: Props) {
             <label className={labelClass}>Planificación (RD$)</label>
             <input type="number" step="any" min="0" value={planningFee} onChange={(e) => setPlanningFee(Number(e.target.value))} className={inputClass} />
           </div>
+        </div>
+
+        <div className="mt-4 pt-4 border-t border-app-border">
+          <p className="text-xs font-semibold text-app-muted uppercase tracking-wider mb-3">Otros gastos indirectos</p>
+          <CustomIndirectsSection items={customIndirects} onChange={setCustomIndirects} />
         </div>
       </div>
 

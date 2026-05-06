@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { payrollService } from '@/services/payrollService'
 import { useAuthStore } from '@/stores/authStore'
 import type { PayrollPeriod } from '@/types/database'
+import { getErrorMessage } from '@/utils/errors'
 
 interface Props {
   projectId: string
@@ -44,8 +45,9 @@ export function CreatePayrollForm({ projectId, onCreated, onCancel }: Props) {
         reported_by: reportedBy || undefined,
       })
       onCreated(period.id)
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e) {
+
+      setError(getErrorMessage(e))
     } finally {
       setSaving(false)
     }

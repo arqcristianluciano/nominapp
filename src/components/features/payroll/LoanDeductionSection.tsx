@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 import { loanService } from '@/services/loanService'
 import { getCortesByPayroll } from '@/services/cubicationService'
@@ -25,7 +25,7 @@ export function LoanDeductionSection({ periodId, isDraft }: Props) {
   const [selectedLoanId, setSelectedLoanId] = useState('')
   const [amount, setAmount] = useState('')
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true)
     const [ded, all, linkedCortes] = await Promise.all([
       loanService.getDeductionsByPeriod(periodId),
@@ -35,7 +35,7 @@ export function LoanDeductionSection({ periodId, isDraft }: Props) {
     setDeductions(ded)
 
     const contractorIds = linkedCortes.length > 0
-      ? new Set(linkedCortes.map((c) => (c.contract as any)?.contractor_id).filter(Boolean))
+      ? new Set(linkedCortes.map((c) => c.contract?.contractor_id).filter(Boolean))
       : null
 
     const active = all.filter((l) =>
@@ -51,9 +51,9 @@ export function LoanDeductionSection({ periodId, isDraft }: Props) {
     )
     setActiveLoans(withBalance.filter(o => o.balance > 0))
     setLoading(false)
-  }
+  }, [periodId])
 
-  useEffect(() => { load() }, [periodId])
+  useEffect(() => { load() }, [load])
 
   const handleAdd = async () => {
     if (!selectedLoanId || !amount) return

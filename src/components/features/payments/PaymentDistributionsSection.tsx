@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Plus, Trash2, CheckCircle } from 'lucide-react'
 import { paymentDistributionService, type DistributionWithAccount } from '@/services/paymentDistributionService'
 import { bankAccountService } from '@/services/bankAccountService'
@@ -22,6 +22,7 @@ export function PaymentDistributionsSection({ periodId, grandTotal }: Props) {
   const [accounts, setAccounts] = useState<BankAccount[]>([])
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const [bankAccountId, setBankAccountId] = useState('')
   const [beneficiary, setBeneficiary] = useState('')
@@ -29,34 +30,47 @@ export function PaymentDistributionsSection({ periodId, grandTotal }: Props) {
   const [method, setMethod] = useState('transfer')
   const [checkNumber, setCheckNumber] = useState('')
 
+  const load = useCallback(async () => {
+    const data = await paymentDistributionService.getByPeriod(periodId).catch(() => [])
+    setDistributions(data)
+  }, [periodId])
+
   useEffect(() => {
     load()
     bankAccountService.getAll().then(setAccounts).catch(() => {})
-  }, [periodId])
-
-  async function load() {
-    const data = await paymentDistributionService.getByPeriod(periodId).catch(() => [])
-    setDistributions(data)
-  }
+  }, [load, periodId])
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault()
+    const numericAmount = Number(amount)
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+      setError('El monto debe ser mayor que cero.')
+      return
+    }
+    if (numericAmount > pendiente + 0.0001) {
+      setError('El monto excede lo pendiente por distribuir.')
+      return
+    }
+
+    setError(null)
     setSaving(true)
     try {
       await paymentDistributionService.create({
         payroll_period_id: periodId,
         bank_account_id: bankAccountId,
         beneficiary: beneficiary || null,
-        amount: Number(amount),
+        amount: numericAmount,
         payment_method: method as 'transfer' | 'check' | 'deposit' | 'cash',
         check_number: checkNumber || null,
         status: 'pending',
         instructions: null,
         completed_at: null,
-      })
+      }, grandTotal)
       setBankAccountId(''); setBeneficiary(''); setAmount(''); setMethod('transfer'); setCheckNumber('')
       setShowForm(false)
       await load()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo agregar el pago.')
     } finally { setSaving(false) }
   }
 
@@ -125,6 +139,7 @@ export function PaymentDistributionsSection({ periodId, grandTotal }: Props) {
               {saving ? 'Guardando...' : 'Agregar'}
             </button>
           </div>
+          {error && <p className="text-xs text-red-600">{error}</p>}
         </form>
       )}
 

@@ -42,7 +42,10 @@ export const priceListService = {
   },
 
   async copyToProject(items: PriceListItem[], targetProjectId: string): Promise<number> {
-    for (const { id: _id, project_id: _pid, ...rest } of items) {
+    for (const item of items) {
+      const rest = { ...item }
+      delete (rest as Partial<PriceListItem>).id
+      delete (rest as Partial<PriceListItem>).project_id
       const { error } = await supabase
         .from('price_list_items')
         .insert({ ...rest, project_id: targetProjectId })

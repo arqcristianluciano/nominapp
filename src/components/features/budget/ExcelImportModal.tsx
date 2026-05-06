@@ -1,8 +1,8 @@
 import { useState, useRef } from 'react'
 import { X, Upload, FileSpreadsheet, AlertTriangle, CheckCircle } from 'lucide-react'
-import * as XLSX from 'xlsx'
 import type { BudgetCategory, BudgetItem } from '@/types/database'
 import { formatRD } from '@/utils/currency'
+import { getErrorMessage } from '@/utils/errors'
 
 interface ParsedRow {
   categoryId: string
@@ -32,13 +32,12 @@ function matchCategory(categories: BudgetCategory[], rawCode: string, desc: stri
   ) ?? null
 }
 
-function parseSheet(sheet: XLSX.WorkSheet, categories: BudgetCategory[]): ParsedRow[] {
-  const rows = XLSX.utils.sheet_to_json<any[]>(sheet, { header: 1, defval: '' })
+function parseRows(rows: unknown[][], categories: BudgetCategory[]): ParsedRow[] {
   const parsed: ParsedRow[] = []
   let currentCategory: BudgetCategory | null = null
 
   for (const row of rows) {
-    const [colA, colB, colC, colD, colE] = row.map((v: any) => String(v ?? '').trim())
+    const [colA, colB, colC, colD, colE] = row.map((v: unknown) => String(v ?? '').trim())
     if (!colA && !colB) continue
 
     const qty = parseFloat(colD.replace(/,/g, '.'))
@@ -90,11 +89,13 @@ export default function ExcelImportModal({ categories, onImport, onClose }: Prop
     setDone(false)
     setError(null)
     const reader = new FileReader()
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
+        const XLSX = await import('xlsx')
         const wb = XLSX.read(e.target?.result, { type: 'binary' })
         const ws = wb.Sheets[wb.SheetNames[0]]
-        const parsed = parseSheet(ws, categories)
+        const rawRows = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, defval: '' })
+        const parsed = parseRows(rawRows, categories)
         setRows(parsed)
       } catch {
         setError('No se pudo leer el archivo. Verifique que sea un Excel válido.')
@@ -127,8 +128,9 @@ export default function ExcelImportModal({ categories, onImport, onClose }: Prop
       }))
       await onImport(items)
       setDone(true)
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e) {
+
+      setError(getErrorMessage(e))
     } finally {
       setImporting(false)
     }

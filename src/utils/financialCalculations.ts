@@ -1,23 +1,19 @@
 import type { TransactionWithRelations } from '@/services/transactionService'
+import { round2, sumBy, sub } from './money'
 
 const DEPOSIT_CODE = '19 - DEPOSITOS'
 
 export function calcTransitos(transactions: TransactionWithRelations[]): number {
-  return transactions
-    .filter((t) => t.payment_condition?.includes('Cheque') && !t.cashed_date)
-    .reduce((sum, t) => sum + t.total, 0)
+  const transitos = transactions.filter(
+    (t) => t.payment_condition?.includes('Cheque') && !t.cashed_date
+  )
+  return round2(sumBy(transitos, (t) => t.total))
 }
 
 export function calcCashDisponible(transactions: TransactionWithRelations[]): number {
-  const deposits = transactions
-    .filter((t) => t.budget_category?.code === DEPOSIT_CODE)
-    .reduce((sum, t) => sum + t.total, 0)
-
-  const egresses = transactions
-    .filter((t) => t.budget_category?.code !== DEPOSIT_CODE)
-    .reduce((sum, t) => sum + t.total, 0)
-
-  return deposits - egresses
+  const deposits = transactions.filter((t) => t.budget_category?.code === DEPOSIT_CODE)
+  const egresses = transactions.filter((t) => t.budget_category?.code !== DEPOSIT_CODE)
+  return round2(sub(sumBy(deposits, (t) => t.total), sumBy(egresses, (t) => t.total)))
 }
 
 export function calcTotalCxP(transactions: TransactionWithRelations[]): number {
@@ -29,7 +25,7 @@ export function calcTotalCxP(transactions: TransactionWithRelations[]): number {
   for (const credit of creditTransactions) {
     const invoiceNo = credit.invoice_number
     if (!invoiceNo) {
-      totalPending += credit.total
+      totalPending = round2(totalPending + credit.total)
       continue
     }
 
@@ -39,9 +35,9 @@ export function calcTotalCxP(transactions: TransactionWithRelations[]): number {
         t.invoice_number === invoiceNo &&
         t.supplier_id === credit.supplier_id
     )
-    const paid = payments.reduce((sum, p) => sum + Math.abs(p.total), 0)
-    const pending = credit.total - paid
-    if (pending > 0) totalPending += pending
+    const paid = round2(sumBy(payments, (p) => Math.abs(p.total)))
+    const pending = round2(sub(credit.total, paid))
+    if (pending > 0) totalPending = round2(totalPending + pending)
   }
 
   return totalPending
@@ -52,22 +48,20 @@ export function calcDisponibleNeto(
   cxp: number,
   transitos: number
 ): number {
-  return cash - cxp - transitos
+  return round2(sub(sub(cash, cxp), transitos))
 }
 
 export function calcTotalIncurrido(transactions: TransactionWithRelations[]): number {
-  return transactions
-    .filter((t) => t.budget_category?.code !== DEPOSIT_CODE)
-    .reduce((sum, t) => sum + t.total, 0)
+  const egresses = transactions.filter((t) => t.budget_category?.code !== DEPOSIT_CODE)
+  return round2(sumBy(egresses, (t) => t.total))
 }
 
 export function calcBudgetSpent(
   transactions: TransactionWithRelations[],
   categoryId: string
 ): number {
-  return transactions
-    .filter((t) => t.budget_category_id === categoryId)
-    .reduce((sum, t) => sum + t.total, 0)
+  const subset = transactions.filter((t) => t.budget_category_id === categoryId)
+  return round2(sumBy(subset, (t) => t.total))
 }
 
 export interface CxPItem {
@@ -95,7 +89,7 @@ export function calcCxPDetails(transactions: TransactionWithRelations[]): CxPIte
           t.invoice_number === invoiceNo &&
           t.supplier_id === credit.supplier_id
       )
-      paid = payments.reduce((sum, p) => sum + Math.abs(p.total), 0)
+      paid = round2(sumBy(payments, (p) => Math.abs(p.total)))
     }
 
     return {
@@ -103,7 +97,7 @@ export function calcCxPDetails(transactions: TransactionWithRelations[]): CxPIte
       invoiceNumber: credit.invoice_number,
       supplierName: credit.supplier?.name || 'Sin proveedor',
       supplierId: credit.supplier_id,
-      pending: Math.max(0, credit.total - paid),
+      pending: Math.max(0, round2(credit.total - paid)),
       paymentCondition: credit.payment_condition || '',
     }
   }).filter((item) => item.pending > 0)

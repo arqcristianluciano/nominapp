@@ -5,6 +5,7 @@ import { mercadoBudgetLineService } from '@/services/mercadoBudgetService'
 import type { MercadoBudgetLine } from '@/types/mercadoBudget'
 import type { Contractor } from '@/types/database'
 import { formatRD } from '@/utils/currency'
+import { getErrorMessage } from '@/utils/errors'
 
 interface Props {
   line: MercadoBudgetLine
@@ -61,8 +62,9 @@ export function CreateContractFromLineModal({ line, projectId, contractors, onCr
 
       await mercadoBudgetLineService.linkContract(line.id, contract.id, agreedQty, agreedPrice)
       onCreated(contract.id)
-    } catch (err: any) {
-      setError(err?.message || 'Error al crear el contrato')
+    } catch (err) {
+
+      setError(getErrorMessage(err) || 'Error al crear el contrato')
     } finally {
       setSaving(false)
     }

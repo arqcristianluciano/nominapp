@@ -15,6 +15,37 @@ interface CalendarEvent {
   overdue: boolean
 }
 
+interface ProjectLite {
+  id: string
+  name: string
+}
+
+interface CalendarTransaction {
+  id: string
+  description: string
+  total: number
+  date: string
+  project_id: string
+  payment_condition: string | null
+  supplier?: { name?: string | null } | null
+}
+
+interface CalendarLoan {
+  id: string
+  disbursed_date: string
+  installments: number
+  installment_amount: number
+  contractor?: { name?: string | null } | null
+}
+
+interface CalendarCorte {
+  id: string
+  date: string
+  net_amount?: number | null
+  gross_amount?: number | null
+  contract?: { project_id?: string; specialty?: string | null } | null
+}
+
 const TYPE_CONFIG = {
   cxp:   { label: 'CxP',     icon: CreditCard, color: 'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-400 border-red-200 dark:border-red-800' },
   loan:  { label: 'Cuota',   icon: Banknote,   color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-950/50 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800' },
@@ -43,11 +74,13 @@ export default function Calendario() {
         supabase.from('projects').select('id, name, code'),
       ])
 
-      const projectMap: Record<string, any> = Object.fromEntries((projectRes.data ?? []).map((p: any) => [p.id, p]))
+      const projectMap: Record<string, ProjectLite> = Object.fromEntries(
+        ((projectRes.data ?? []) as ProjectLite[]).map((p) => [p.id, p])
+      )
       const result: CalendarEvent[] = []
 
       // CxP - transactions with credit payment condition
-      for (const txn of (txnRes.data ?? []) as any[]) {
+      for (const txn of (txnRes.data ?? []) as CalendarTransaction[]) {
         if (!txn.payment_condition?.toLowerCase().includes('credit')) continue
         const eventDate = txn.date
         const overdue = eventDate < today.toISOString().split('T')[0]
@@ -65,7 +98,7 @@ export default function Calendario() {
       }
 
       // Loan installments (upcoming months)
-      for (const loan of (loanRes.data ?? []) as any[]) {
+      for (const loan of (loanRes.data ?? []) as CalendarLoan[]) {
         const disbursed = new Date(loan.disbursed_date)
         for (let i = 1; i <= loan.installments; i++) {
           const dueDate = new Date(disbursed)
@@ -85,8 +118,8 @@ export default function Calendario() {
       }
 
       // Approved cortes pending payment
-      for (const corte of (corteRes.data ?? []) as any[]) {
-        const project = projectMap[corte.contract?.project_id]
+      for (const corte of (corteRes.data ?? []) as CalendarCorte[]) {
+        const project = corte.contract?.project_id ? projectMap[corte.contract.project_id] : undefined
         result.push({
           id: `corte-${corte.id}`,
           date: corte.date,
@@ -148,19 +181,19 @@ export default function Calendario() {
 
       {/* KPI summary */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {[
-          { label: 'Total CxP', value: totalCxP, icon: CreditCard, color: 'text-red-600' },
-          { label: 'Cuotas préstamos', value: totalLoans, icon: Banknote, color: 'text-yellow-600' },
-          { label: 'Cortes aprobados', value: totalCortes, icon: Layers, color: 'text-blue-600' },
+        {([
+          { label: 'Total CxP', value: totalCxP, icon: CreditCard, color: 'text-red-600', isCount: false },
+          { label: 'Cuotas préstamos', value: totalLoans, icon: Banknote, color: 'text-yellow-600', isCount: false },
+          { label: 'Cortes aprobados', value: totalCortes, icon: Layers, color: 'text-blue-600', isCount: false },
           { label: 'Vencidos', value: overdue, icon: AlertCircle, color: 'text-red-700', isCount: true },
-        ].map((k) => (
+        ] as const).map((k) => (
           <div key={k.label} className="bg-app-surface border border-app-border rounded-xl p-4">
             <div className="flex items-center gap-2 mb-1">
               <k.icon className={`w-4 h-4 ${k.color}`} />
               <span className="text-xs text-app-muted">{k.label}</span>
             </div>
             <p className={`text-lg font-bold ${k.color}`}>
-              {(k as any).isCount ? k.value : formatRD(k.value)}
+              {k.isCount ? k.value : formatRD(k.value)}
             </p>
           </div>
         ))}

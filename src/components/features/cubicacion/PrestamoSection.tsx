@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Plus, CheckCircle, XCircle, Banknote } from 'lucide-react'
 import { loanService, calcInstallmentAmount } from '@/services/loanService'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
@@ -26,15 +26,15 @@ export function PrestamoSection({ contractorId }: Props) {
   const [saving, setSaving] = useState(false)
   const [cancelId, setCancelId] = useState<string | null>(null)
 
-  async function load() {
+  const load = useCallback(async () => {
     const data = await loanService.getByContractor(contractorId)
     setLoans(data)
     const paid: Record<string, number> = {}
     await Promise.all(data.map(async (l) => { paid[l.id] = await loanService.getTotalPaid(l.id) }))
     setPaidMap(paid)
-  }
+  }, [contractorId])
 
-  useEffect(() => { load() }, [contractorId])
+  useEffect(() => { load() }, [load])
 
   async function handleCreate() {
     if (!form.principal || !form.disbursed_date) return
@@ -50,19 +50,19 @@ export function PrestamoSection({ contractorId }: Props) {
       })
       setForm(emptyForm)
       setShowAdd(false)
-      load()
+      await load()
     } finally { setSaving(false) }
   }
 
   async function handleMarkPaid(id: string) {
     await loanService.updateStatus(id, 'paid')
-    load()
+    await load()
   }
 
   async function handleCancel(id: string) {
     await loanService.updateStatus(id, 'cancelled')
     setCancelId(null)
-    load()
+    await load()
   }
 
   const principal = Number(form.principal)

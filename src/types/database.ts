@@ -6,6 +6,15 @@ export interface Company {
   updated_at: string
 }
 
+export type CustomIndirectType = 'percent' | 'fixed'
+
+export interface CustomIndirect {
+  id: string
+  name: string
+  type: CustomIndirectType
+  value: number
+}
+
 export interface Project {
   id: string
   company_id: string
@@ -17,6 +26,7 @@ export interface Project {
   admin_percent: number
   transport_percent: number
   planning_fee: number
+  custom_indirects: CustomIndirect[]
   created_at: string
   updated_at: string
   company?: Company
@@ -155,6 +165,7 @@ export interface IndirectCost {
   base_amount: number | null
   calculated_amount: number
   fixed_amount: number | null
+  is_active: boolean
   notes: string | null
 }
 

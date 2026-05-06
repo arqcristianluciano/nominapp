@@ -32,7 +32,7 @@ export default function Projects() {
 
   useEffect(() => { fetchProjects() }, [fetchProjects])
 
-  const handleCreate = async (data: any) => {
+  const handleCreate = async (data: Parameters<typeof projectService.create>[0]) => {
     setSaving(true)
     try {
       await projectService.create(data)
@@ -46,7 +46,7 @@ export default function Projects() {
     }
   }
 
-  const handleUpdate = async (data: any) => {
+  const handleUpdate = async (data: Parameters<typeof projectService.create>[0]) => {
     if (!editing) return
     setSaving(true)
     try {

@@ -13,8 +13,8 @@ interface Props {
 }
 
 export function CorteAdelantoConfirm({ open, onClose, corte, adelantoTotal, linking, onLink }: Props) {
-  const contractorName = (corte.contract as any)?.contractor?.name ?? '—'
-  const partidaDesc = (corte.partida as any)?.description ?? '—'
+  const contractorName = corte.contract?.contractor?.name ?? '—'
+  const partidaDesc = corte.partida?.description ?? '—'
   const neto = corte.amount - corte.retention_amount
 
   return (

@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import { budgetItemService } from '@/services/budgetItemService'
 import { priceListService } from '@/services/priceListService'
+import { getErrorMessage } from '@/utils/errors'
 import type { BudgetItem, BudgetCategory, PriceListItem } from '@/types/database'
 
 export interface BudgetPartida {
@@ -30,8 +31,8 @@ export function useBudgetItems(projectId: string | undefined) {
       }, {})
       setItemsByCategory(grouped)
       setPriceList(prices)
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e) {
+      setError(getErrorMessage(e))
     } finally {
       setLoading(false)
     }

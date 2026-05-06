@@ -35,10 +35,12 @@ src/
       insumos/      ← MercadoExcelUpload, CreateContractFromLineModal
       payments/     ← PaymentDistributionsSection
       quality/      ← QualityControlForm
+      dashboard/    ← StatCard, ProjectCard, QuickAction, ProjectsSkeleton
     ui/             ← Modal
   services/         ← authService + servicios de dominio (ver tabla)
   stores/           ← projectStore, payrollStore, themeStore, authStore (sesión demo, localStorage)
-  hooks/            ← usePayroll, useTransactions, useBudgetDetail, useBudgetItems
+  hooks/            ← usePayroll, useTransactions, useBudgetDetail, useBudgetItems,
+                       useDashboardData
   utils/            ← currency, calculations, financialCalculations, priceCodeGenerator
   constants/        ← budgetCategories, indirectCosts, measureUnits, banks, demoUsers (login demo)
   types/            ← database.ts (14 interfaces)
@@ -123,7 +125,7 @@ src/
 - Nóminas: draft → submitted → approved → paid
   - Partidas de mano de obra por contratista
   - Facturas de materiales
-  - Indirectos auto-calculados (DT, admin, transporte)
+  - Indirectos auto-calculados (DT, admin, transporte, planificación + casillas personalizables % o RD$ por proyecto)
   - Distribución de pagos (post-aprobación)
 - Control Financiero por proyecto: libro diario, CxP, cheques
 - Presupuesto vs Real con edición inline

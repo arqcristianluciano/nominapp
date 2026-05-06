@@ -48,19 +48,19 @@ export function CubicacionesPayrollSection({ periodId, projectId, isDraft, onCor
     try {
       await payrollService.addLaborItem({
         payroll_period_id: periodId,
-        contractor_id: (corte.contract as any).contractor_id,
-        description: `CUBICACIÓN CORTE #${corte.cut_number} — ${(corte.partida as any).description}`,
+        contractor_id: corte.contract.contractor_id,
+        description: `CUBICACIÓN CORTE #${corte.cut_number} — ${corte.partida.description}`,
         quantity: corte.measured_quantity,
-        unit: (corte.partida as any).unit,
-        unit_price: (corte.partida as any).unit_price,
+        unit: corte.partida.unit,
+        unit_price: corte.partida.unit_price,
         sort_order: 99,
         notes: `Retención: ${formatRD(corte.retention_amount)}`,
       })
       if (deductAdelantos && pendingAdelantoTotal > 0) {
         await payrollService.addLaborItem({
           payroll_period_id: periodId,
-          contractor_id: (corte.contract as any).contractor_id,
-          description: `DEDUCCIÓN ADELANTOS — ${(corte.contract as any)?.contractor?.name}`,
+          contractor_id: corte.contract.contractor_id,
+          description: `DEDUCCIÓN ADELANTOS — ${corte.contract?.contractor?.name}`,
           quantity: 1,
           unit: 'global',
           unit_price: -pendingAdelantoTotal,
@@ -145,11 +145,11 @@ export function CubicacionesPayrollSection({ periodId, projectId, isDraft, onCor
               {linked.map((c) => (
                 <tr key={c.id} className="hover:bg-app-hover">
                   <td className="px-4 py-2.5">
-                    <p className="text-app-text font-medium text-xs">{(c.contract as any)?.contractor?.name ?? '—'}</p>
-                    <p className="text-app-muted text-xs mt-0.5">Corte #{c.cut_number} · {(c.partida as any)?.description ?? '—'}</p>
+                    <p className="text-app-text font-medium text-xs">{c.contract?.contractor?.name ?? '—'}</p>
+                    <p className="text-app-muted text-xs mt-0.5">Corte #{c.cut_number} · {c.partida?.description ?? '—'}</p>
                   </td>
                   <td className="px-4 py-2.5 text-right text-app-muted hidden sm:table-cell">
-                    {formatNumber(c.measured_quantity)} {(c.partida as any)?.unit}
+                    {formatNumber(c.measured_quantity)} {c.partida?.unit}
                   </td>
                   <td className="px-4 py-2.5 text-right font-medium text-app-text">{formatRD(c.amount)}</td>
                   <td className="px-4 py-2.5 text-right text-amber-600 hidden md:table-cell">{formatRD(c.retention_amount)}</td>
@@ -191,10 +191,10 @@ export function CubicacionesPayrollSection({ periodId, projectId, isDraft, onCor
               <div key={c.id} className="flex items-center justify-between px-4 py-3 hover:bg-app-hover">
                 <div>
                   <p className="text-sm font-medium text-app-text">
-                    {(c.contract as any)?.contractor?.name ?? '—'} — Corte #{c.cut_number}
+                    {c.contract?.contractor?.name ?? '—'} — Corte #{c.cut_number}
                   </p>
                   <p className="text-xs text-app-muted mt-0.5">
-                    {(c.partida as any)?.description} · {formatNumber(c.measured_quantity)} {(c.partida as any)?.unit}
+                    {c.partida?.description} · {formatNumber(c.measured_quantity)} {c.partida?.unit}
                     · Neto: {formatRD(c.amount - c.retention_amount)}
                   </p>
                 </div>

@@ -1,5 +1,16 @@
 import { supabase } from '@/lib/supabase'
 
+interface PayrollKpiRow {
+  grand_total: number | null
+  created_at: string
+}
+
+interface TransactionKpiRow {
+  total: number | null
+  payment_condition: string | null
+  date: string
+}
+
 export const dashboardService = {
   async getKPIs() {
     const [payrollRes, transactionsRes] = await Promise.all([
@@ -13,30 +24,30 @@ export const dashboardService = {
         .limit(200),
     ])
 
-    const payrolls = payrollRes.data || []
-    const transactions = transactionsRes.data || []
+    const payrolls = (payrollRes.data || []) as PayrollKpiRow[]
+    const transactions = (transactionsRes.data || []) as TransactionKpiRow[]
 
     const now = new Date()
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
     const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split('T')[0]
     const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().split('T')[0]
 
-    const totalInvested = payrolls.reduce((sum: number, p: any) => sum + (p.grand_total || 0), 0)
+    const totalInvested = payrolls.reduce((sum, p) => sum + (p.grand_total || 0), 0)
     const prevInvested = payrolls
-      .filter((p: any) => p.created_at && p.created_at >= prevMonthStart && p.created_at <= prevMonthEnd + 'T23:59:59Z')
-      .reduce((sum: number, p: any) => sum + (p.grand_total || 0), 0)
+      .filter((p) => p.created_at && p.created_at >= prevMonthStart && p.created_at <= prevMonthEnd + 'T23:59:59Z')
+      .reduce((sum, p) => sum + (p.grand_total || 0), 0)
 
     const payrollsThisMonth = payrolls.filter(
-      (p: any) => p.created_at && p.created_at >= monthStart
+      (p) => p.created_at && p.created_at >= monthStart
     ).length
     const prevPayrolls = payrolls.filter(
-      (p: any) => p.created_at && p.created_at >= prevMonthStart && p.created_at <= prevMonthEnd + 'T23:59:59Z'
+      (p) => p.created_at && p.created_at >= prevMonthStart && p.created_at <= prevMonthEnd + 'T23:59:59Z'
     ).length
 
-    const cxpTxns = transactions.filter((t: any) => t.payment_condition?.includes('Credito'))
-    const cxpTotal = cxpTxns.reduce((sum: number, t: any) => sum + (t.total || 0), 0)
-    const prevCxpTxns = cxpTxns.filter((t: any) => t.date && t.date >= prevMonthStart && t.date <= prevMonthEnd)
-    const prevCxp = prevCxpTxns.reduce((sum: number, t: any) => sum + (t.total || 0), 0)
+    const cxpTxns = transactions.filter((t) => t.payment_condition?.includes('Credito'))
+    const cxpTotal = cxpTxns.reduce((sum, t) => sum + (t.total || 0), 0)
+    const prevCxpTxns = cxpTxns.filter((t) => t.date && t.date >= prevMonthStart && t.date <= prevMonthEnd)
+    const prevCxp = prevCxpTxns.reduce((sum, t) => sum + (t.total || 0), 0)
 
     return {
       totalInvested,

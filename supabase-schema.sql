@@ -29,6 +29,7 @@ create table if not exists projects (
   admin_percent numeric(5,2) not null default 0,
   transport_percent numeric(5,2) not null default 0,
   planning_fee numeric(15,2) not null default 0,
+  custom_indirects jsonb not null default '[]'::jsonb,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
@@ -164,6 +165,7 @@ create table if not exists indirect_costs (
   base_amount numeric(15,2),
   calculated_amount numeric(15,2) not null default 0,
   fixed_amount numeric(15,2),
+  is_active boolean not null default true,
   notes text
 );
 

@@ -1,43 +1,54 @@
+/* eslint-disable react-refresh/only-export-components */
+import { Suspense, lazy, type ComponentType, type LazyExoticComponent } from 'react'
 import { createBrowserRouter } from 'react-router-dom'
 import { RequireAuth } from '@/components/auth/RequireAuth'
 import { AppLayout } from '@/components/layout/AppLayout'
 import Login from '@/pages/Login'
 import NotFound from '@/pages/NotFound'
-import Dashboard from '@/pages/Dashboard'
-import Projects from '@/pages/Projects'
-import ProjectDetail from '@/pages/ProjectDetail'
-import PayrollList from '@/pages/PayrollList'
-import PayrollEditor from '@/pages/PayrollEditor'
-import ControlFinanciero from '@/pages/ControlFinanciero'
-import PresupuestoDetalle from '@/pages/PresupuestoDetalle'
-import FinanzasHub from '@/pages/FinanzasHub'
-import PresupuestoHub from '@/pages/PresupuestoHub'
-import CxPHub from '@/pages/CxPHub'
-import CxPDetalle from '@/pages/CxPDetalle'
-import CxPConsolidadoTodos from '@/pages/CxPConsolidadoTodos'
-import Reportes from '@/pages/Reportes'
-import Contractors from '@/pages/Contractors'
-import Suppliers from '@/pages/Suppliers'
-import Settings from '@/pages/Settings'
-import QualityControlPage from '@/pages/QualityControlPage'
-import CubicacionesPage from '@/pages/CubicacionesPage'
-import CubicacionesHub from '@/pages/CubicacionesHub'
-import CubicacionContratoPage from '@/pages/CubicacionContratoPage'
-import CubicacionImprimirPage from '@/pages/CubicacionImprimirPage'
-import ContratoFirmaPage from '@/pages/ContratoFirmaPage'
-import PayrollPrint from '@/pages/PayrollPrint'
-import PurchaseOrders from '@/pages/PurchaseOrders'
-import PurchaseOrderDetail from '@/pages/PurchaseOrderDetail'
-import ContractorDetail from '@/pages/ContractorDetail'
-import ReportesObra from '@/pages/ReportesObra'
-import Loans from '@/pages/Loans'
-import InsumosPage from '@/pages/InsumosPage'
-import Calendario from '@/pages/Calendario'
-import BitacoraPage from '@/pages/BitacoraPage'
-import AsistenciaPage from '@/pages/AsistenciaPage'
-import InventarioPage from '@/pages/InventarioPage'
-import CronogramaPage from '@/pages/CronogramaPage'
-import HistorialPrecios from '@/pages/HistorialPrecios'
+
+const Dashboard = lazy(() => import('@/pages/Dashboard'))
+const Projects = lazy(() => import('@/pages/Projects'))
+const ProjectDetail = lazy(() => import('@/pages/ProjectDetail'))
+const PayrollList = lazy(() => import('@/pages/PayrollList'))
+const PayrollEditor = lazy(() => import('@/pages/PayrollEditor'))
+const ControlFinanciero = lazy(() => import('@/pages/ControlFinanciero'))
+const PresupuestoDetalle = lazy(() => import('@/pages/PresupuestoDetalle'))
+const FinanzasHub = lazy(() => import('@/pages/FinanzasHub'))
+const PresupuestoHub = lazy(() => import('@/pages/PresupuestoHub'))
+const CxPHub = lazy(() => import('@/pages/CxPHub'))
+const CxPDetalle = lazy(() => import('@/pages/CxPDetalle'))
+const CxPConsolidadoTodos = lazy(() => import('@/pages/CxPConsolidadoTodos'))
+const Reportes = lazy(() => import('@/pages/Reportes'))
+const Contractors = lazy(() => import('@/pages/Contractors'))
+const Suppliers = lazy(() => import('@/pages/Suppliers'))
+const Settings = lazy(() => import('@/pages/Settings'))
+const QualityControlPage = lazy(() => import('@/pages/QualityControlPage'))
+const CubicacionesPage = lazy(() => import('@/pages/CubicacionesPage'))
+const CubicacionesHub = lazy(() => import('@/pages/CubicacionesHub'))
+const CubicacionContratoPage = lazy(() => import('@/pages/CubicacionContratoPage'))
+const CubicacionImprimirPage = lazy(() => import('@/pages/CubicacionImprimirPage'))
+const ContratoFirmaPage = lazy(() => import('@/pages/ContratoFirmaPage'))
+const PayrollPrint = lazy(() => import('@/pages/PayrollPrint'))
+const PurchaseOrders = lazy(() => import('@/pages/PurchaseOrders'))
+const PurchaseOrderDetail = lazy(() => import('@/pages/PurchaseOrderDetail'))
+const ContractorDetail = lazy(() => import('@/pages/ContractorDetail'))
+const ReportesObra = lazy(() => import('@/pages/ReportesObra'))
+const Loans = lazy(() => import('@/pages/Loans'))
+const InsumosPage = lazy(() => import('@/pages/InsumosPage'))
+const Calendario = lazy(() => import('@/pages/Calendario'))
+const BitacoraPage = lazy(() => import('@/pages/BitacoraPage'))
+const AsistenciaPage = lazy(() => import('@/pages/AsistenciaPage'))
+const InventarioPage = lazy(() => import('@/pages/InventarioPage'))
+const CronogramaPage = lazy(() => import('@/pages/CronogramaPage'))
+const HistorialPrecios = lazy(() => import('@/pages/HistorialPrecios'))
+
+function withSuspense(Component: LazyExoticComponent<ComponentType>) {
+  return (
+    <Suspense fallback={<div className="p-6 text-sm text-app-muted">Cargando...</div>}>
+      <Component />
+    </Suspense>
+  )
+}
 
 export const router = createBrowserRouter([
   { path: '/login', element: <Login /> },
@@ -47,44 +58,44 @@ export const router = createBrowserRouter([
     element: <RequireAuth />,
     children: [
       // Impresión sin sidebar — requiere sesión
-      { path: 'nominas/:periodId/imprimir', element: <PayrollPrint /> },
+      { path: 'nominas/:periodId/imprimir', element: withSuspense(PayrollPrint) },
       {
         element: <AppLayout />,
         children: [
-          { index: true, element: <Dashboard /> },
-          { path: 'proyectos', element: <Projects /> },
-          { path: 'proyectos/:projectId', element: <ProjectDetail /> },
-          { path: 'proyectos/:projectId/nominas', element: <PayrollList /> },
-          { path: 'proyectos/:projectId/control', element: <ControlFinanciero /> },
-          { path: 'proyectos/:projectId/presupuesto', element: <PresupuestoDetalle /> },
-          { path: 'proyectos/:projectId/calidad', element: <QualityControlPage /> },
-          { path: 'proyectos/:projectId/insumos', element: <InsumosPage /> },
-          { path: 'cubicaciones', element: <CubicacionesHub /> },
-          { path: 'proyectos/:projectId/cubicaciones', element: <CubicacionesPage /> },
-          { path: 'proyectos/:projectId/cubicaciones/:contratoId', element: <CubicacionContratoPage /> },
-          { path: 'proyectos/:projectId/cubicaciones/:contratoId/imprimir', element: <CubicacionImprimirPage /> },
-          { path: 'proyectos/:projectId/cubicaciones/:contratoId/contrato', element: <ContratoFirmaPage /> },
-          { path: 'nominas', element: <ReportesObra /> },
-          { path: 'nominas/:periodId', element: <PayrollEditor /> },
-          { path: 'finanzas', element: <FinanzasHub /> },
-          { path: 'presupuesto', element: <PresupuestoHub /> },
-          { path: 'cxp', element: <CxPHub /> },
-          { path: 'cxp/consolidado', element: <CxPConsolidadoTodos /> },
-          { path: 'cxp/:projectId', element: <CxPDetalle /> },
-          { path: 'reportes', element: <Reportes /> },
-          { path: 'prestamos', element: <Loans /> },
-          { path: 'contratistas', element: <Contractors /> },
-          { path: 'contratistas/:contractorId', element: <ContractorDetail /> },
-          { path: 'suplidores', element: <Suppliers /> },
-          { path: 'configuracion', element: <Settings /> },
-          { path: 'ordenes-compra', element: <PurchaseOrders /> },
-          { path: 'ordenes-compra/:orderId', element: <PurchaseOrderDetail /> },
-          { path: 'calendario', element: <Calendario /> },
-          { path: 'historial-precios', element: <HistorialPrecios /> },
-          { path: 'proyectos/:projectId/bitacora', element: <BitacoraPage /> },
-          { path: 'proyectos/:projectId/asistencia', element: <AsistenciaPage /> },
-          { path: 'proyectos/:projectId/inventario', element: <InventarioPage /> },
-          { path: 'proyectos/:projectId/cronograma', element: <CronogramaPage /> },
+          { index: true, element: withSuspense(Dashboard) },
+          { path: 'proyectos', element: withSuspense(Projects) },
+          { path: 'proyectos/:projectId', element: withSuspense(ProjectDetail) },
+          { path: 'proyectos/:projectId/nominas', element: withSuspense(PayrollList) },
+          { path: 'proyectos/:projectId/control', element: withSuspense(ControlFinanciero) },
+          { path: 'proyectos/:projectId/presupuesto', element: withSuspense(PresupuestoDetalle) },
+          { path: 'proyectos/:projectId/calidad', element: withSuspense(QualityControlPage) },
+          { path: 'proyectos/:projectId/insumos', element: withSuspense(InsumosPage) },
+          { path: 'cubicaciones', element: withSuspense(CubicacionesHub) },
+          { path: 'proyectos/:projectId/cubicaciones', element: withSuspense(CubicacionesPage) },
+          { path: 'proyectos/:projectId/cubicaciones/:contratoId', element: withSuspense(CubicacionContratoPage) },
+          { path: 'proyectos/:projectId/cubicaciones/:contratoId/imprimir', element: withSuspense(CubicacionImprimirPage) },
+          { path: 'proyectos/:projectId/cubicaciones/:contratoId/contrato', element: withSuspense(ContratoFirmaPage) },
+          { path: 'nominas', element: withSuspense(ReportesObra) },
+          { path: 'nominas/:periodId', element: withSuspense(PayrollEditor) },
+          { path: 'finanzas', element: withSuspense(FinanzasHub) },
+          { path: 'presupuesto', element: withSuspense(PresupuestoHub) },
+          { path: 'cxp', element: withSuspense(CxPHub) },
+          { path: 'cxp/consolidado', element: withSuspense(CxPConsolidadoTodos) },
+          { path: 'cxp/:projectId', element: withSuspense(CxPDetalle) },
+          { path: 'reportes', element: withSuspense(Reportes) },
+          { path: 'prestamos', element: withSuspense(Loans) },
+          { path: 'contratistas', element: withSuspense(Contractors) },
+          { path: 'contratistas/:contractorId', element: withSuspense(ContractorDetail) },
+          { path: 'suplidores', element: withSuspense(Suppliers) },
+          { path: 'configuracion', element: withSuspense(Settings) },
+          { path: 'ordenes-compra', element: withSuspense(PurchaseOrders) },
+          { path: 'ordenes-compra/:orderId', element: withSuspense(PurchaseOrderDetail) },
+          { path: 'calendario', element: withSuspense(Calendario) },
+          { path: 'historial-precios', element: withSuspense(HistorialPrecios) },
+          { path: 'proyectos/:projectId/bitacora', element: withSuspense(BitacoraPage) },
+          { path: 'proyectos/:projectId/asistencia', element: withSuspense(AsistenciaPage) },
+          { path: 'proyectos/:projectId/inventario', element: withSuspense(InventarioPage) },
+          { path: 'proyectos/:projectId/cronograma', element: withSuspense(CronogramaPage) },
         ],
       },
     ],

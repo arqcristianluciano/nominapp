@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo } from 'react'
 import { transactionService, type TransactionWithRelations } from '@/services/transactionService'
 import { budgetCategoryService } from '@/services/budgetCategoryService'
 import { calcBudgetSpent } from '@/utils/financialCalculations'
+import { getErrorMessage } from '@/utils/errors'
 import type { BudgetCategory } from '@/types/database'
 
 export interface BudgetRow {
@@ -29,8 +30,8 @@ export function useBudgetDetail(projectId: string | undefined) {
       ])
       setCategories(cats)
       setTransactions(txns)
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e) {
+      setError(getErrorMessage(e))
     } finally {
       setLoading(false)
     }
@@ -41,8 +42,8 @@ export function useBudgetDetail(projectId: string | undefined) {
     try {
       const updated = await budgetCategoryService.updateBudgetAmount(categoryId, amount)
       setCategories((prev) => prev.map((c) => (c.id === categoryId ? updated : c)))
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e) {
+      setError(getErrorMessage(e))
     } finally {
       setSaving(false)
     }

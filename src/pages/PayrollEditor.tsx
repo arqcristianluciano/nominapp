@@ -14,13 +14,14 @@ import type { Supplier } from '@/types/database'
 export default function PayrollEditor() {
   const { periodId } = useParams<{ periodId: string }>()
   const payroll = usePayroll(periodId)
+  const loadPayroll = payroll.load
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [showAddMaterial, setShowAddMaterial] = useState(false)
 
   useEffect(() => {
-    payroll.load()
+    loadPayroll()
     supplierService.getAll().then(setSuppliers)
-  }, [payroll.load])
+  }, [loadPayroll])
 
   if (payroll.loading) return <div className="text-sm text-app-muted p-4">Cargando nómina...</div>
   if (!payroll.period) return <div className="text-sm text-app-muted p-4">Nómina no encontrada</div>

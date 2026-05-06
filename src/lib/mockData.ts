@@ -24,7 +24,7 @@ const bank2 = 'ba000000-0000-0000-0000-000000000002'
 const now = new Date().toISOString()
 const company = { id: companyId, name: 'Constructora Quisqueya SRL', rnc: '130-45678-9', created_at: now, updated_at: now }
 
-export const SEED_DATA: Record<string, any[]> = {
+export const SEED_DATA: Record<string, Record<string, unknown>[]> = {
   companies: [company],
 
   projects: [
@@ -32,12 +32,14 @@ export const SEED_DATA: Record<string, any[]> = {
       id: projectId1, company_id: companyId, name: 'RESIDENCIAL CAPULLO',    code: 'RC-2026',
       location: 'Arroyo Hondo, Santo Domingo',    status: 'active',
       dt_percent: 10, admin_percent: 1,   transport_percent: 0.5, planning_fee: 25000,
+      custom_indirects: [],
       created_at: '2026-01-15T10:00:00Z', updated_at: now, company,
     },
     {
       id: projectId2, company_id: companyId, name: 'TORRE MIRADOR DEL ESTE', code: 'TME-2026',
       location: 'Los Cacicazgos, Santo Domingo',  status: 'active',
       dt_percent: 8,  admin_percent: 1.5, transport_percent: 1,   planning_fee: 50000,
+      custom_indirects: [],
       created_at: '2026-02-01T10:00:00Z', updated_at: now, company,
     },
   ],

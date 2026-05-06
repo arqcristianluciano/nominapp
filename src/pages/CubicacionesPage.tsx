@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Plus, Layers, ChevronRight, Trash2 } from 'lucide-react'
 import { Breadcrumb } from '@/components/ui/Breadcrumb'
@@ -10,6 +10,7 @@ import { Modal } from '@/components/ui/Modal'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { formatRD } from '@/utils/currency'
 import type { Contractor } from '@/types/database'
+import { getErrorMessage } from '@/utils/errors'
 
 export default function CubicacionesPage() {
   const { projectId } = useParams<{ projectId: string }>()
@@ -32,15 +33,16 @@ export default function CubicacionesPage() {
     contractorService.getAll().then(setContractors).catch(() => {})
   }, [projects.length, fetchProjects])
 
-  useEffect(() => {
-    if (projectId) load()
+  const load = useCallback(async () => {
+    if (!projectId) return
+    setLoading(true)
+    try { setContracts(await contractService.getByProject(projectId)) }
+    finally { setLoading(false) }
   }, [projectId])
 
-  async function load() {
-    setLoading(true)
-    try { setContracts(await contractService.getByProject(projectId!)) }
-    finally { setLoading(false) }
-  }
+  useEffect(() => {
+    load()
+  }, [load])
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
@@ -57,13 +59,14 @@ export default function CubicacionesPage() {
       setShowForm(false)
       setForm({ contractor_id: '', retention_percent: '5', signed_date: '', notes: '' })
       navigate(`/proyectos/${projectId}/cubicaciones/${created.id}`)
-    } catch (err: any) {
-      setFormError(err?.message || 'Error al crear el contrato. Verifica que las tablas del módulo de cubicación existan en Supabase.')
+    } catch (err) {
+
+      setFormError(getErrorMessage(err) || 'Error al crear el contrato. Verifica que las tablas del módulo de cubicación existan en Supabase.')
     } finally { setSaving(false) }
   }
 
   async function handleDelete(id: string) {
-    await import('@/services/cubicationService').then((m) => m.contractService.delete(id))
+    await contractService.delete(id)
     await load()
     setDeleteTargetId(null)
   }

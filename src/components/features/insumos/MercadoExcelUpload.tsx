@@ -5,6 +5,7 @@ import { mercadoBudgetService, mercadoBudgetLineService } from '@/services/merca
 import { CATEGORY_LABELS, CATEGORY_COLORS } from '@/types/mercadoBudget'
 import type { ParsedMercadoLine, MercadoCategory } from '@/types/mercadoBudget'
 import { formatRD } from '@/utils/currency'
+import { getErrorMessage } from '@/utils/errors'
 
 const CATEGORIES: MercadoCategory[] = ['AJUSTES', 'MANO_DE_OBRA', 'EQUIPOS', 'MATERIALES']
 
@@ -32,8 +33,9 @@ export function MercadoExcelUpload({ projectId, hasExisting, onImported }: Props
         return
       }
       setLines(parsed)
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e) {
+
+      setError(getErrorMessage(e))
     }
   }
 
@@ -57,8 +59,9 @@ export function MercadoExcelUpload({ projectId, hasExisting, onImported }: Props
       })
       await mercadoBudgetLineService.bulkInsert(budget.id, lines)
       onImported()
-    } catch (e: any) {
-      setError(e.message || 'Error al guardar el presupuesto')
+    } catch (e) {
+
+      setError(getErrorMessage(e) || 'Error al guardar el presupuesto')
     } finally {
       setSaving(false)
     }

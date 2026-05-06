@@ -4,6 +4,7 @@ import { Modal } from '@/components/ui/Modal'
 import { SignatureCanvas } from '@/components/features/purchase-orders/SignatureCanvas'
 import { approvalCode } from '@/utils/approvalCode'
 import { useAuthStore } from '@/stores/authStore'
+import { getErrorMessage } from '@/utils/errors'
 
 interface Props {
   open: boolean
@@ -36,8 +37,9 @@ export function CorteApprovalModal({ open, onClose, corteNum, amount, onApprove 
     try {
       await onApprove(approvedBy.trim(), signature)
       reset()
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e) {
+
+      setError(getErrorMessage(e))
     } finally {
       setLoading(false)
     }

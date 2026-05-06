@@ -10,6 +10,41 @@ export interface AppNotification {
   link: string
 }
 
+interface ProjectLite {
+  id: string
+  name: string
+  code: string
+}
+
+interface BudgetCategoryLite {
+  project_id: string
+  budgeted_amount: number | null
+}
+
+interface TransactionLite {
+  id: string
+  description: string
+  total: number | null
+  date: string
+  project_id: string
+  supplier?: { name?: string | null } | null
+}
+
+interface ContractorDocumentLite {
+  id: string
+  name: string
+  contractor_id: string
+  expiry_date: string | null
+  contractor?: { name?: string | null } | null
+}
+
+interface OverdueQualityControlLite {
+  id: string
+  element: string
+  pour_date: string
+  project_id: string
+}
+
 const DAYS_APPROACHING = 15
 const DAYS_OVERDUE = 28
 const CXP_WARNING_DAYS = 30
@@ -32,8 +67,8 @@ export const notificationService = {
     const [poRes, qcOverdueRes, qcFailedRes, txnDangerRes, txnWarningRes,
            budgetCatRes, transactionsRes, projectsRes, docsRes] = await Promise.all([
       supabase
-        .from('purchase_orders')
-        .select('id, order_number, project:projects(name)')
+        .from('purchase_requisitions')
+        .select('id, req_number, project:projects(name)')
         .eq('status', 'pending_approval'),
       supabase
         .from('quality_control')
@@ -67,17 +102,17 @@ export const notificationService = {
 
     const notifications: AppNotification[] = []
 
-    for (const po of (poRes.data || []) as any[]) {
+    for (const po of (poRes.data || []) as { id: string; req_number: string; project?: { name?: string } | null }[]) {
       notifications.push({
         id: `po-${po.id}`,
         level: 'warning',
         title: 'OC pendiente de aprobación',
-        description: `${po.order_number}${po.project ? ` — ${po.project.name}` : ''}`,
+        description: `${po.req_number}${po.project ? ` — ${po.project.name}` : ''}`,
         link: `/ordenes-compra/${po.id}`,
       })
     }
 
-    for (const qc of (qcOverdueRes.data || []) as any[]) {
+    for (const qc of (qcOverdueRes.data || []) as OverdueQualityControlLite[]) {
       const daysSince = Math.floor(
         (today.getTime() - new Date(qc.pour_date).getTime()) / 86_400_000
       )
@@ -91,8 +126,8 @@ export const notificationService = {
       })
     }
 
-    const overduIds = new Set((qcOverdueRes.data || []).map((q: any) => q.id))
-    for (const qc of (qcFailedRes.data || []) as any[]) {
+    const overduIds = new Set((qcOverdueRes.data || []).map((q: { id: string }) => q.id))
+    for (const qc of (qcFailedRes.data || []) as { id: string; element: string; project_id: string }[]) {
       if (overduIds.has(qc.id)) continue
       notifications.push({
         id: `qc-failed-${qc.id}`,
@@ -103,32 +138,32 @@ export const notificationService = {
       })
     }
 
-    for (const txn of (txnDangerRes.data || []) as any[]) {
+    for (const txn of (txnDangerRes.data || []) as TransactionLite[]) {
       const days = Math.floor((today.getTime() - new Date(txn.date).getTime()) / 86400000)
       notifications.push({
         id: `cxp-danger-${txn.id}`,
         level: 'danger',
         title: 'CxP vencida (+60 días)',
-        description: `${(txn.supplier as any)?.name ?? txn.description} — ${days}d sin pagar`,
+        description: `${txn.supplier?.name ?? txn.description} — ${days}d sin pagar`,
         link: `/proyectos/${txn.project_id}/control`,
       })
     }
 
-    for (const txn of (txnWarningRes.data || []) as any[]) {
+    for (const txn of (txnWarningRes.data || []) as TransactionLite[]) {
       const days = Math.floor((today.getTime() - new Date(txn.date).getTime()) / 86400000)
       notifications.push({
         id: `cxp-warning-${txn.id}`,
         level: 'warning',
         title: 'CxP por vencer (31-60 días)',
-        description: `${(txn.supplier as any)?.name ?? txn.description} — ${days}d sin pagar`,
+        description: `${txn.supplier?.name ?? txn.description} — ${days}d sin pagar`,
         link: `/proyectos/${txn.project_id}/control`,
       })
     }
 
     // --- Desviación presupuestaria ---
-    const allProjects: any[] = projectsRes.data ?? []
-    const allTransactions: any[] = transactionsRes.data ?? []
-    const allCategories: any[] = budgetCatRes.data ?? []
+    const allProjects = (projectsRes.data ?? []) as ProjectLite[]
+    const allTransactions = (transactionsRes.data ?? []) as { project_id: string; total: number | null }[]
+    const allCategories = (budgetCatRes.data ?? []) as BudgetCategoryLite[]
 
     const projectMap = Object.fromEntries(allProjects.map((p) => [p.id, p]))
     const totalBudgetByProject: Record<string, number> = {}
@@ -167,7 +202,7 @@ export const notificationService = {
 
     // --- Documentos de contratistas vencidos o por vencer ---
     const todayStr = today.toISOString().split('T')[0]
-    for (const doc of (docsRes.data ?? []) as any[]) {
+    for (const doc of (docsRes.data ?? []) as ContractorDocumentLite[]) {
       if (!doc.expiry_date) continue
       const contractorName = doc.contractor?.name ?? 'Contratista'
       if (doc.expiry_date < todayStr) {

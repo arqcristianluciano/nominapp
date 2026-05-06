@@ -22,7 +22,7 @@ export type ContractSummary = AdjustmentContract & {
   completion_percent: number
 }
 
-function computeSummary(partidas: ContractPartida[], cortes: ContractCorte[], retentionPct: number): Omit<ContractSummary, keyof AdjustmentContract> {
+function computeSummary(partidas: ContractPartida[], cortes: ContractCorte[]): Omit<ContractSummary, keyof AdjustmentContract> {
   const acordado = partidas.reduce((s, p) => s + p.agreed_quantity * p.unit_price, 0)
   const acumulado = cortes.reduce((s, c) => s + c.amount, 0)
   const retenido = cortes.reduce((s, c) => s + c.retention_amount, 0)
@@ -53,7 +53,7 @@ export const contractService = {
           partidaService.getByContract(c.id),
           corteService.getByContract(c.id),
         ])
-        return { ...c, ...computeSummary(partidas, cortes, c.retention_percent) }
+        return { ...c, ...computeSummary(partidas, cortes) }
       })
     )
   },
@@ -207,15 +207,22 @@ export async function getProjectsProgress(): Promise<Record<string, { acordado: 
 
   const result: Record<string, { acordado: number; acumulado: number; contractor_count: number; avg_completion: number }> = {}
 
-  for (const contract of contracts as any[]) {
+  type ContractRow = { id: string; project_id: string }
+  type PartidaRow = { contract_id: string; unit_price: number; agreed_quantity: number }
+  type CorteRow = { contract_id: string; amount: number }
+
+  const partidasArr = (partidas ?? []) as PartidaRow[]
+  const cortesArr = (cortes ?? []) as CorteRow[]
+
+  for (const contract of contracts as ContractRow[]) {
     const pid = contract.project_id
     if (!result[pid]) result[pid] = { acordado: 0, acumulado: 0, contractor_count: 0, avg_completion: 0 }
     result[pid].contractor_count += 1
 
-    const cPartidas = (partidas as any[]).filter((p) => p.contract_id === contract.id)
-    const cCortes = (cortes as any[]).filter((c) => c.contract_id === contract.id)
-    result[pid].acordado += cPartidas.reduce((s: number, p: any) => s + p.unit_price * p.agreed_quantity, 0)
-    result[pid].acumulado += cCortes.reduce((s: number, c: any) => s + c.amount, 0)
+    const cPartidas = partidasArr.filter((p) => p.contract_id === contract.id)
+    const cCortes = cortesArr.filter((c) => c.contract_id === contract.id)
+    result[pid].acordado += cPartidas.reduce((s, p) => s + p.unit_price * p.agreed_quantity, 0)
+    result[pid].acumulado += cCortes.reduce((s, c) => s + c.amount, 0)
   }
 
   for (const pid of Object.keys(result)) {
@@ -238,7 +245,7 @@ export async function getCortesByPayroll(
   if (error) throw error
   return (cortes as ContractCorte[]).map((c) => ({
     ...c,
-    contract: (contracts as any[])?.find((ac) => ac.id === c.contract_id) ?? null,
+    contract: (contracts as AdjustmentContract[] | null)?.find((ac) => ac.id === c.contract_id) ?? null,
   }))
 }
 
@@ -251,7 +258,7 @@ export async function getApprovedCortesByProject(
     .eq('project_id', projectId)
   if (!contracts?.length) return []
   const groups = await Promise.all(
-    (contracts as any[]).map(async (contract) => {
+    (contracts as unknown as AdjustmentContract[]).map(async (contract) => {
       const { data: cortes } = await supabase
         .from('contract_cortes')
         .select('*, partida:contract_partidas(*)')

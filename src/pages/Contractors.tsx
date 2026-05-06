@@ -8,6 +8,8 @@ import { SkeletonCards } from '@/components/ui/Skeleton'
 import { useToast } from '@/components/ui/Toast'
 import type { Contractor } from '@/types/database'
 
+type CreateContractorInput = Parameters<typeof contractorService.create>[0]
+
 const METHOD_LABEL: Record<string, string> = {
   cash: 'Efectivo',
   check: 'Cheque',
@@ -31,7 +33,7 @@ export default function Contractors() {
     finally { setLoading(false) }
   }
 
-  async function handleCreate(data: Parameters<typeof contractorService.create>[0]) {
+  async function handleCreate(data: CreateContractorInput) {
     setSaving(true)
     try {
       await contractorService.create(data)
@@ -42,11 +44,11 @@ export default function Contractors() {
     finally { setSaving(false) }
   }
 
-  async function handleUpdate(data: Parameters<typeof contractorService.create>[0]) {
+  async function handleUpdate(data: CreateContractorInput) {
     if (!editing) return
     setSaving(true)
     try {
-      await contractorService.update(editing.id, data as any)
+      await contractorService.update(editing.id, data)
       setEditing(undefined)
       await load()
       success('Contratista actualizado')

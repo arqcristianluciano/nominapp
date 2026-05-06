@@ -4,6 +4,7 @@ import { Modal } from '@/components/ui/Modal'
 import { SignatureCanvas } from './SignatureCanvas'
 import { approvalCode } from '@/utils/approvalCode'
 import type { PurchaseQuote } from '@/types/purchaseOrder'
+import { getErrorMessage } from '@/utils/errors'
 
 type Tab = 'approve' | 'return' | 'reject'
 
@@ -37,7 +38,8 @@ export function ApprovalModal({ open, onClose, quotes, onApprove, onReturn, onRe
 
   const withLoading = async (fn: () => Promise<void>) => {
     setError(null); setLoading(true)
-    try { await fn(); reset() } catch (e: any) { setError(e.message) } finally { setLoading(false) }
+    try { await fn(); reset() } catch (e) {
+ setError(getErrorMessage(e)) } finally { setLoading(false) }
   }
 
   const handleApprove = () => withLoading(async () => {

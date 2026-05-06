@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import type { Project } from '@/types/database'
+import type { CustomIndirect, Project } from '@/types/database'
 
 export const projectService = {
   async getAll() {
@@ -30,10 +30,11 @@ export const projectService = {
     admin_percent?: number
     transport_percent?: number
     planning_fee?: number
+    custom_indirects?: CustomIndirect[]
   }) {
     const { data, error } = await supabase
       .from('projects')
-      .insert(project)
+      .insert({ ...project, custom_indirects: project.custom_indirects ?? [] })
       .select('*, company:companies(*)')
       .single()
     if (error) throw error

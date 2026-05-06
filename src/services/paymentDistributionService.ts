@@ -13,7 +13,22 @@ export const paymentDistributionService = {
     return data as DistributionWithAccount[]
   },
 
-  async create(dist: Omit<PaymentDistribution, 'id'>): Promise<DistributionWithAccount> {
+  async create(
+    dist: Omit<PaymentDistribution, 'id'>,
+    periodGrandTotal?: number,
+  ): Promise<DistributionWithAccount> {
+    if (dist.amount <= 0) {
+      throw new Error('El monto debe ser mayor que cero.')
+    }
+
+    if (periodGrandTotal !== undefined) {
+      const current = await this.getByPeriod(dist.payroll_period_id)
+      const currentTotal = current.reduce((sum, row) => sum + row.amount, 0)
+      if (currentTotal + dist.amount > periodGrandTotal + 0.0001) {
+        throw new Error('El monto excede el total pendiente por distribuir.')
+      }
+    }
+
     const { data, error } = await supabase
       .from('payment_distributions')
       .insert(dist)

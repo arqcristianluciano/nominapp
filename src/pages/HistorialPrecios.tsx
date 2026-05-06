@@ -24,6 +24,20 @@ interface MaterialHistory {
   trendPct: number
 }
 
+interface ProjectLite {
+  id: string
+  name: string
+}
+
+interface TxnLite {
+  description: string
+  unit_price: number
+  quantity: number | null
+  date: string
+  project_id: string
+  supplier?: { name?: string | null } | null
+}
+
 export default function HistorialPrecios() {
   const [history, setHistory] = useState<MaterialHistory[]>([])
   const [loading, setLoading] = useState(true)
@@ -45,11 +59,11 @@ export default function HistorialPrecios() {
       ])
 
       const projectMap: Record<string, string> = Object.fromEntries(
-        (projectRes.data ?? []).map((p: any) => [p.id, p.name])
+        ((projectRes.data ?? []) as ProjectLite[]).map((p) => [p.id, p.name])
       )
 
       const grouped: Record<string, PriceEntry[]> = {}
-      for (const txn of (txnRes.data ?? []) as any[]) {
+      for (const txn of (txnRes.data ?? []) as TxnLite[]) {
         if (!txn.unit_price || txn.unit_price <= 0) continue
         const key = `${(txn.supplier?.name ?? txn.description).toLowerCase().trim()}`
         if (!grouped[key]) grouped[key] = []

@@ -1,5 +1,15 @@
 import { supabase } from '@/lib/supabase'
-import type { Contractor } from '@/types/database'
+import type { Contractor, Project, LaborLineItem, PayrollPeriod } from '@/types/database'
+
+interface LaborItemWithPeriod extends LaborLineItem {
+  payroll_period?: PayrollPeriod & { project_id: string }
+}
+
+interface CubicationRow {
+  id: string
+  contractor_id: string
+  [key: string]: unknown
+}
 
 export const contractorService = {
   async getAll() {
@@ -18,7 +28,7 @@ export const contractorService = {
     phone?: string
     bank_account?: string
     bank_name?: string
-    payment_method?: string
+    payment_method?: 'cash' | 'check' | 'transfer'
     notes?: string
   }) {
     const { data, error } = await supabase
@@ -55,11 +65,11 @@ export const contractorService = {
       supabase.from('contract_cubications').select('*').eq('contractor_id', contractorId),
     ])
 
-    const items = (itemsRes.data || []) as any[]
-    const projects = (projectsRes.data || []) as any[]
-    const cubications = (cubicationsRes.data || []) as any[]
+    const items = (itemsRes.data || []) as LaborItemWithPeriod[]
+    const projects = (projectsRes.data || []) as Project[]
+    const cubications = (cubicationsRes.data || []) as CubicationRow[]
 
-    const projectMap = Object.fromEntries(projects.map((p: any) => [p.id, p]))
+    const projectMap = Object.fromEntries(projects.map((p) => [p.id, p]))
 
     const enrichedItems = items.map((item) => ({
       ...item,

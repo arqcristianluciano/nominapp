@@ -264,15 +264,39 @@ export const payrollService = {
     calculated_amount: number
     fixed_amount?: number
   }[]) {
+    const { data: existing } = await supabase
+      .from('indirect_costs')
+      .select('type, is_active')
+      .eq('payroll_period_id', periodId)
+    const activeByType = new Map<string, boolean>()
+    for (const r of (existing || []) as Pick<IndirectCost, 'type' | 'is_active'>[]) {
+      activeByType.set(r.type, r.is_active)
+    }
+
     await supabase.from('indirect_costs').delete().eq('payroll_period_id', periodId)
     if (costs.length === 0) return []
-    const rows = costs.map((c) => ({ ...c, payroll_period_id: periodId }))
+    const rows = costs.map((c) => ({
+      ...c,
+      payroll_period_id: periodId,
+      is_active: activeByType.get(c.type) ?? true,
+    }))
     const { data, error } = await supabase
       .from('indirect_costs')
       .insert(rows)
       .select()
     if (error) throw error
     return data as IndirectCost[]
+  },
+
+  async setIndirectActive(id: string, isActive: boolean) {
+    const { data, error } = await supabase
+      .from('indirect_costs')
+      .update({ is_active: isActive })
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+    return data as IndirectCost
   },
 
   // === FILE ATTACHMENTS ===

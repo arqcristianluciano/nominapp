@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { FileText, Download, Printer } from 'lucide-react'
-import * as XLSX from 'xlsx'
 import { useProjectStore } from '@/stores/projectStore'
 import { transactionService } from '@/services/transactionService'
 import { budgetCategoryService } from '@/services/budgetCategoryService'
@@ -97,8 +96,21 @@ export default function Reportes() {
     { totalIncurrido: 0, presupuesto: 0, cxp: 0, cashDisponible: 0 }
   )
 
-  function exportToExcel() {
-    const rows = reports.map((r) => ({
+  async function exportToExcel() {
+    type ExportRow = {
+      'Proyecto': string
+      'Código': string
+      'Total incurrido (RD$)': number
+      'Presupuesto (RD$)': number
+      '% Avance financiero': string
+      'CxP (RD$)': number
+      'Cash disponible (RD$)': number
+      'Acordado cubicaciones (RD$)': number
+      'Acumulado cubicaciones (RD$)': number
+      'Pendiente cubicaciones (RD$)': number
+      '% Avance cubicaciones': string
+    }
+    const rows: ExportRow[] = reports.map((r) => ({
       'Proyecto': r.name,
       'Código': r.code,
       'Total incurrido (RD$)': r.totalIncurrido,
@@ -124,8 +136,9 @@ export default function Reportes() {
       'Acumulado cubicaciones (RD$)': 0,
       'Pendiente cubicaciones (RD$)': 0,
       '% Avance cubicaciones': '',
-    } as any)
+    })
 
+    const XLSX = await import('xlsx')
     const ws = XLSX.utils.json_to_sheet(rows)
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, 'Resumen Financiero')
@@ -149,7 +162,7 @@ export default function Reportes() {
               <Printer className="w-4 h-4" /> Imprimir / PDF
             </button>
             <button
-              onClick={exportToExcel}
+              onClick={() => { void exportToExcel() }}
               className="flex items-center gap-2 px-4 py-2 border border-app-border bg-app-surface text-sm font-medium text-app-muted rounded-xl hover:bg-app-hover transition-colors"
             >
               <Download className="w-4 h-4" /> Exportar Excel

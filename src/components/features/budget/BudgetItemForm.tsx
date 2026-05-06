@@ -3,6 +3,7 @@ import { X, Search } from 'lucide-react'
 import type { BudgetItem, BudgetCategory, PriceListItem } from '@/types/database'
 import { MEASURE_UNITS } from '@/constants/measureUnits'
 import { formatRD } from '@/utils/currency'
+import { getErrorMessage } from '@/utils/errors'
 
 interface Props {
   category: BudgetCategory
@@ -80,8 +81,8 @@ export default function BudgetItemForm({ category, priceList, editItem, onSave, 
         notes: form.notes.trim() || null,
       })
       onClose()
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e) {
+      setError(getErrorMessage(e))
     } finally {
       setSaving(false)
     }

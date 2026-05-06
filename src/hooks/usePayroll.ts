@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import { payrollService } from '@/services/payrollService'
-import { calcLaborTotal, calcMaterialsTotal, calcIndirectCosts, calcGrandTotal } from '@/utils/calculations'
+import { calcLaborTotal, calcMaterialsTotal, calcIndirectCosts, calcGrandTotal, buildIndirectCostRows } from '@/utils/calculations'
+import { getErrorMessage } from '@/utils/errors'
 import type { PayrollPeriod, LaborLineItem, MaterialInvoice, IndirectCost, Project } from '@/types/database'
 
 export function usePayroll(periodId: string | undefined) {
@@ -22,8 +23,8 @@ export function usePayroll(periodId: string | undefined) {
       setLaborItems(data.laborItems)
       setMaterialInvoices(data.materialInvoices)
       setIndirectCosts(data.indirectCosts)
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e) {
+      setError(getErrorMessage(e))
     } finally {
       setLoading(false)
     }
@@ -38,27 +39,36 @@ export function usePayroll(periodId: string | undefined) {
     const laborTotal = calcLaborTotal(items)
     const materialsTotal = calcMaterialsTotal(invoices)
     const indirect = calcIndirectCosts(laborTotal, materialsTotal, project)
-    const grandTotal = calcGrandTotal(laborTotal, materialsTotal, indirect.total)
 
-    const costRows = [
-      { type: 'direction_technique', description: `Dirección técnica ${project.dt_percent}%`, percentage: project.dt_percent, base_amount: indirect.base, calculated_amount: indirect.direction_technique.amount },
-      { type: 'administration', description: `Administración ${project.admin_percent}%`, percentage: project.admin_percent, base_amount: indirect.base, calculated_amount: indirect.administration.amount },
-      { type: 'transport', description: `Transporte ${project.transport_percent}%`, percentage: project.transport_percent, base_amount: indirect.base, calculated_amount: indirect.transport.amount },
-    ]
-    if (project.planning_fee > 0) {
-      costRows.push({ type: 'planning', description: 'Planificación de proyecto', percentage: 0, base_amount: 0, calculated_amount: project.planning_fee })
-    }
+    const costRows = buildIndirectCostRows(project, indirect)
+    const activeByType = new Map(indirectCosts.map((c) => [c.type, c.is_active]))
+    const totalActive = costRows
+      .filter((r) => activeByType.get(r.type) !== false)
+      .reduce((acc, r) => acc + r.calculated_amount, 0)
+    const grandTotal = calcGrandTotal(laborTotal, materialsTotal, totalActive)
 
-    await payrollService.saveIndirectCosts(periodId, costRows)
+    const saved = await payrollService.saveIndirectCosts(periodId, costRows)
+    setIndirectCosts(saved)
     await payrollService.updatePeriodTotals(periodId, {
       total_labor: laborTotal,
       total_materials: materialsTotal,
-      total_indirect: indirect.total,
+      total_indirect: totalActive,
       grand_total: grandTotal,
     })
 
-    setPeriod(prev => prev ? { ...prev, total_labor: laborTotal, total_materials: materialsTotal, total_indirect: indirect.total, grand_total: grandTotal } : null)
-  }, [periodId])
+    setPeriod(prev => prev ? { ...prev, total_labor: laborTotal, total_materials: materialsTotal, total_indirect: totalActive, grand_total: grandTotal } : null)
+  }, [periodId, indirectCosts])
+
+  const setIndirectActive = useCallback(async (id: string, isActive: boolean) => {
+    if (!period || !periodId) return
+    const updated = await payrollService.setIndirectActive(id, isActive)
+    const next = indirectCosts.map((c) => (c.id === id ? updated : c))
+    const total = next.filter((c) => c.is_active).reduce((a, c) => a + c.calculated_amount, 0)
+    const grand = calcGrandTotal(period.total_labor, period.total_materials, total)
+    await payrollService.updatePeriodTotals(periodId, { total_labor: period.total_labor, total_materials: period.total_materials, total_indirect: total, grand_total: grand })
+    setIndirectCosts(next)
+    setPeriod(prev => prev ? { ...prev, total_indirect: total, grand_total: grand } : null)
+  }, [indirectCosts, period, periodId])
 
   const addLaborItem = useCallback(async (item: {
     contractor_id: string
@@ -81,8 +91,8 @@ export function usePayroll(periodId: string | undefined) {
       const updated = [...laborItems, newItem]
       setLaborItems(updated)
       await recalcTotals(updated, materialInvoices, period?.project as Project)
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e) {
+      setError(getErrorMessage(e))
     } finally {
       setSaving(false)
     }
@@ -95,8 +105,8 @@ export function usePayroll(periodId: string | undefined) {
       const items = laborItems.map(i => i.id === id ? updated : i)
       setLaborItems(items)
       await recalcTotals(items, materialInvoices, period?.project as Project)
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e) {
+      setError(getErrorMessage(e))
     } finally {
       setSaving(false)
     }
@@ -109,8 +119,8 @@ export function usePayroll(periodId: string | undefined) {
       const items = laborItems.filter(i => i.id !== id)
       setLaborItems(items)
       await recalcTotals(items, materialInvoices, period?.project as Project)
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e) {
+      setError(getErrorMessage(e))
     } finally {
       setSaving(false)
     }
@@ -132,8 +142,8 @@ export function usePayroll(periodId: string | undefined) {
       const updated = [...materialInvoices, newInvoice]
       setMaterialInvoices(updated)
       await recalcTotals(laborItems, updated, period?.project as Project)
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e) {
+      setError(getErrorMessage(e))
     } finally {
       setSaving(false)
     }
@@ -146,8 +156,8 @@ export function usePayroll(periodId: string | undefined) {
       const invoices = materialInvoices.filter(i => i.id !== id)
       setMaterialInvoices(invoices)
       await recalcTotals(laborItems, invoices, period?.project as Project)
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e) {
+      setError(getErrorMessage(e))
     } finally {
       setSaving(false)
     }
@@ -170,8 +180,8 @@ export function usePayroll(periodId: string | undefined) {
       const updated = await payrollService.updatePeriodStatus(periodId, status)
       setPeriod(prev => prev ? { ...prev, ...updated } : null)
       setError(null)
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e) {
+      setError(getErrorMessage(e))
     } finally {
       setSaving(false)
     }
@@ -182,5 +192,6 @@ export function usePayroll(periodId: string | undefined) {
     loading, saving, error,
     load, addLaborItem, updateLaborItem, deleteLaborItem,
     addMaterialInvoice, deleteMaterialInvoice, updateStatus,
+    setIndirectActive,
   }
 }

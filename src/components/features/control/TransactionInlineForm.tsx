@@ -3,6 +3,7 @@ import { Plus } from 'lucide-react'
 import type { BudgetCategory, Supplier } from '@/types/database'
 import { PAYMENT_CONDITIONS } from '@/constants/indirectCosts'
 import { DOMINICAN_BANKS } from '@/constants/banks'
+import type { Transaction } from '@/types/database'
 
 export function TransactionInlineForm({
   projectId,
@@ -14,7 +15,7 @@ export function TransactionInlineForm({
   projectId: string
   budgetCategories: BudgetCategory[]
   suppliers: Supplier[]
-  onSubmit: (data: any) => void
+  onSubmit: (data: Omit<Transaction, 'id' | 'created_at'>) => void
   saving: boolean
 }) {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
@@ -50,6 +51,7 @@ export function TransactionInlineForm({
       check_number: checkNumber || null,
       bank: bank || null,
       cashed_date: cashedDate || null,
+      payroll_period_id: null,
       notes: notes || null,
     })
 

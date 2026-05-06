@@ -10,7 +10,7 @@ interface Props {
     phone?: string
     bank_account?: string
     bank_name?: string
-    payment_method?: string
+    payment_method?: 'cash' | 'check' | 'transfer'
     notes?: string
   }) => Promise<void>
   onCancel: () => void
@@ -24,7 +24,7 @@ export function ContractorForm({ initial, onSubmit, onCancel, saving }: Props) {
   const [phone, setPhone] = useState(initial?.phone || '')
   const [bankAccount, setBankAccount] = useState(initial?.bank_account || '')
   const [bankName, setBankName] = useState(initial?.bank_name || '')
-  const [paymentMethod, setPaymentMethod] = useState<string>(initial?.payment_method || 'cash')
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'check' | 'transfer'>(initial?.payment_method || 'cash')
   const [notes, setNotes] = useState(initial?.notes || '')
 
   async function handleSubmit(e: React.FormEvent) {
@@ -62,7 +62,7 @@ export function ContractorForm({ initial, onSubmit, onCancel, saving }: Props) {
         </div>
         <div>
           <label className="block text-xs font-medium text-app-muted mb-1">Método de pago</label>
-          <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value as 'cash' | 'check' | 'transfer')} className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
             <option value="cash">Efectivo</option>
             <option value="check">Cheque</option>
             <option value="transfer">Transferencia</option>

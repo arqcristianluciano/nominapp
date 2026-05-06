@@ -1,4 +1,3 @@
-import * as XLSX from 'xlsx'
 import type { MercadoCategory, ParsedMercadoLine } from '@/types/mercadoBudget'
 
 const CATEGORY_KEYWORDS: Array<[string, MercadoCategory]> = [
@@ -35,18 +34,19 @@ export function parseMercadoExcel(file: File): Promise<ParsedMercadoLine[]> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
 
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
+        const XLSX = await import('xlsx')
         const wb = XLSX.read(e.target?.result, { type: 'binary' })
         const ws = wb.Sheets[wb.SheetNames[0]]
-        const raw = XLSX.utils.sheet_to_json<any[]>(ws, { header: 1, defval: '' })
+        const raw = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, defval: '' })
 
         const lines: ParsedMercadoLine[] = []
         let currentCategory: MercadoCategory | null = null
         let sortOrder = 0
 
         for (const row of raw) {
-          const cells: string[] = row.map((v: any) => String(v ?? '').trim())
+          const cells: string[] = row.map((v: unknown) => String(v ?? '').trim())
           const [colA, colB, colC, colD, colE] = cells
 
           if (!colA && !colB && !colC) continue
