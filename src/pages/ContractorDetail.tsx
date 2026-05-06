@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, HardHat, Phone, CreditCard, Layers, FileText, Building2, FileCheck, Plus, Trash2, AlertTriangle, CheckCircle, Clock } from 'lucide-react'
+import { HardHat, Phone, CreditCard, Layers, FileText, Building2, FileCheck, Plus, Trash2, AlertTriangle, CheckCircle, Clock } from 'lucide-react'
+import { Breadcrumb } from '@/components/ui/Breadcrumb'
 import { contractorService } from '@/services/contractorService'
 import { contractorDocService, DOC_TYPES, type ContractorDocument, type ContractorDocFormData } from '@/services/contractorDocService'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
@@ -139,14 +140,13 @@ export default function ContractorDetail() {
 
   return (
     <div className="space-y-6 max-w-4xl">
-      <div className="flex items-center gap-3">
-        <Link to="/contratistas" className="p-2 text-app-subtle hover:text-app-muted rounded-lg hover:bg-app-hover-strong">
-          <ArrowLeft className="w-4 h-4" />
-        </Link>
-        <div>
-          <h1 className="text-2xl font-semibold text-app-text">{contractor.name}</h1>
-          <p className="text-sm text-app-muted">{contractor.specialty || 'Sin especialidad'}</p>
-        </div>
+      <div>
+        <Breadcrumb items={[
+          { label: 'Contratistas', to: '/contratistas' },
+          { label: contractor.name },
+        ]} />
+        <h1 className="text-2xl font-semibold text-app-text">{contractor.name}</h1>
+        <p className="text-sm text-app-muted">{contractor.specialty || 'Sin especialidad'}</p>
       </div>
 
       {/* Contractor Info */}

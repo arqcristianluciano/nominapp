@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Plus, Pencil, Trash2, FlaskConical, CheckCircle2, XCircle, Clock, CalendarClock } from 'lucide-react'
+import { useParams } from 'react-router-dom'
+import { Plus, Pencil, Trash2, FlaskConical, CheckCircle2, XCircle, Clock, CalendarClock } from 'lucide-react'
+import { Breadcrumb } from '@/components/ui/Breadcrumb'
 import { useProjectStore } from '@/stores/projectStore'
 import { qualityControlService } from '@/services/qualityControlService'
 import { Modal } from '@/components/ui/Modal'
@@ -90,9 +91,11 @@ export default function QualityControlPage() {
   return (
     <div className="space-y-5">
       <div>
-        <Link to={`/proyectos/${projectId}`} className="flex items-center gap-1 text-sm text-app-muted hover:text-app-muted mb-2">
-          <ArrowLeft className="w-4 h-4" /> {project?.name || 'Proyecto'}
-        </Link>
+        <Breadcrumb items={[
+          { label: 'Proyectos', to: '/proyectos' },
+          { label: project?.name ?? 'Proyecto', to: `/proyectos/${projectId}` },
+          { label: 'Calidad' },
+        ]} />
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold text-app-text">Control de Calidad</h1>

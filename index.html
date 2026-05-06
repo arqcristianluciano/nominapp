@@ -16,15 +16,19 @@
       (function () {
         try {
           var raw = localStorage.getItem('nominaapp-theme')
-          if (!raw) return
-          var p = JSON.parse(raw)
-          var t = p.state && p.state.theme
-          if (t !== 'dark' && t !== 'light') return
+          var t = 'light'
+          if (raw) {
+            var p = JSON.parse(raw)
+            var stored = p.state && p.state.theme
+            if (stored === 'dark' || stored === 'light') t = stored
+          }
           if (t === 'dark') {
             document.documentElement.classList.add('dark')
             document.documentElement.style.colorScheme = 'dark'
+            document.documentElement.style.backgroundColor = '#0a0f1a'
           } else {
             document.documentElement.style.colorScheme = 'light'
+            document.documentElement.style.backgroundColor = '#f1f5f9'
           }
         } catch (e) {}
       })()

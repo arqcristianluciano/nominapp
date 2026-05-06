@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { Upload, FileSpreadsheet, CheckCircle, AlertTriangle, RefreshCw } from 'lucide-react'
+import { Upload, FileSpreadsheet, CheckCircle, RefreshCw } from 'lucide-react'
 import { parseMercadoExcel, computeBudgetTotals } from '@/utils/parseMercadoExcel'
 import { mercadoBudgetService, mercadoBudgetLineService } from '@/services/mercadoBudgetService'
 import { CATEGORY_LABELS, CATEGORY_COLORS } from '@/types/mercadoBudget'

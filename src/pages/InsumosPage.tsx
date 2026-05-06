@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, FileSpreadsheet, RefreshCw, ExternalLink, FileX } from 'lucide-react'
+import { FileSpreadsheet, RefreshCw, ExternalLink, FileX } from 'lucide-react'
+import { Breadcrumb } from '@/components/ui/Breadcrumb'
 import { useProjectStore } from '@/stores/projectStore'
 import { mercadoBudgetService, mercadoBudgetLineService } from '@/services/mercadoBudgetService'
 import { contractorService } from '@/services/contractorService'
@@ -75,9 +76,12 @@ export default function InsumosPage() {
     <div className="space-y-5">
       {/* Header */}
       <div>
-        <Link to={`/proyectos/${projectId}`} className="flex items-center gap-1 text-sm text-app-muted hover:text-app-text mb-2">
-          <ArrowLeft className="w-4 h-4" /> {project?.name || 'Proyecto'}
-        </Link>
+        <Breadcrumb items={[
+          { label: 'Proyectos', to: '/proyectos' },
+          { label: project?.name ?? 'Proyecto', to: `/proyectos/${projectId}` },
+          { label: 'Presupuesto', to: `/proyectos/${projectId}/presupuesto` },
+          { label: 'Insumos' },
+        ]} />
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold text-app-text">Listado de Insumos</h1>

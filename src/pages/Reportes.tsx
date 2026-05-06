@@ -78,7 +78,8 @@ export default function Reportes() {
         }
 
         setReports(results)
-      } catch {
+      } catch (err) {
+        console.error('Reportes loadReports failed', err)
       } finally {
         setLoading(false)
       }

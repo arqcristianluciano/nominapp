@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Copy, X } from 'lucide-react'
-import type { Project, PriceListItem } from '@/types/database'
+import type { Project } from '@/types/database'
 
 interface Props {
   sourceProjectName: string

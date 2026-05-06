@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   Building2, DollarSign, CreditCard, ClipboardList,
@@ -40,6 +40,19 @@ export default function Dashboard() {
   const [progressMap, setProgressMap] = useState<Record<string, ProjectProgress>>({})
   const [pendingCortes, setPendingCortes] = useState<PendingCorteItem[]>([])
 
+  const loadProgress = useCallback(async () => {
+    try {
+      const data = await getProjectsProgress()
+      const mapped: Record<string, ProjectProgress> = {}
+      for (const [pid, g] of Object.entries(data)) {
+        mapped[pid] = { project_id: pid, avg_completion: g.avg_completion, acordado: g.acordado, acumulado: g.acumulado, contractor_count: g.contractor_count }
+      }
+      setProgressMap(mapped)
+    } catch (err) {
+      console.error('Dashboard loadProgress failed', err)
+    }
+  }, [])
+
   useEffect(() => {
     fetchProjects()
     dashboardService.getKPIs().then((kpis) => {
@@ -49,27 +62,19 @@ export default function Dashboard() {
       if ('prevInvested' in kpis) {
         setKpiTrend({ investedPrev: (kpis as any).prevInvested, payrollsPrev: (kpis as any).prevPayrolls, cxpPrev: (kpis as any).prevCxp })
       }
-    }).catch(() => {})
-    dashboardService.getRecentActivity().then(setActivities).catch(() => {})
+    }).catch((err) => console.error('Dashboard getKPIs failed', err))
+    dashboardService.getRecentActivity().then(setActivities).catch((err) => console.error('Dashboard getRecentActivity failed', err))
     loadProgress()
-    corteService.getPendingApproved().then(setPendingCortes).catch(() => {})
-  }, [fetchProjects])
+    corteService.getPendingApproved().then(setPendingCortes).catch((err) => console.error('Dashboard getPendingApproved failed', err))
+  }, [fetchProjects, loadProgress])
 
-  async function loadProgress() {
-    try {
-      const data = await getProjectsProgress()
-      const mapped: Record<string, ProjectProgress> = {}
-      for (const [pid, g] of Object.entries(data)) {
-        mapped[pid] = { project_id: pid, avg_completion: g.avg_completion, acordado: g.acordado, acumulado: g.acumulado, contractor_count: g.contractor_count }
-      }
-      setProgressMap(mapped)
-    } catch {}
-  }
+  const activeProjects = useMemo(() => projects.filter((p) => p.status === 'active'), [projects])
 
-  const activeProjects = projects.filter((p) => p.status === 'active')
+  // Snapshot taken once per render cycle to keep timeAgo pure relative to a single render.
+  const nowMs = useMemo(() => Date.now(), [activities])
 
   function timeAgo(dateStr: string) {
-    const diff = Date.now() - new Date(dateStr).getTime()
+    const diff = nowMs - new Date(dateStr).getTime()
     const mins = Math.floor(diff / 60000)
     if (mins < 60) return `hace ${mins}m`
     const hrs = Math.floor(mins / 60)

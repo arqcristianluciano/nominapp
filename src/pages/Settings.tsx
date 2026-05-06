@@ -26,7 +26,8 @@ export default function Settings() {
     try {
       const data = await bankAccountService.getAll()
       setAccounts(data)
-    } catch {
+    } catch (err) {
+      console.error('Settings loadAccounts failed', err)
     } finally {
       setLoading(false)
     }
@@ -38,7 +39,8 @@ export default function Settings() {
       await bankAccountService.create(data)
       setShowForm(false)
       loadAccounts()
-    } catch {
+    } catch (err) {
+      console.error('Settings createAccount failed', err)
     } finally {
       setSaving(false)
     }
@@ -51,7 +53,8 @@ export default function Settings() {
       await bankAccountService.update(editing.id, data)
       setEditing(undefined)
       loadAccounts()
-    } catch {
+    } catch (err) {
+      console.error('Settings updateAccount failed', err)
     } finally {
       setSaving(false)
     }

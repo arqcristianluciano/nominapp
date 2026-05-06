@@ -1,0 +1,14 @@
+feat: breadcrumbs unificados, cache headers Vercel y mejoras de calidad
+
+- UX: migrar 6 paginas de ArrowLeft a Breadcrumb (QualityControl,
+  CubicacionContrato, CxPDetalle, CxPConsolidado, ContractorDetail,
+  PurchaseOrderDetail) + InsumosPage y atajo Insumos desde Presupuesto
+- Infra: vercel.json con cache-control inmutable para /assets y
+  must-revalidate para HTML; anti-flash de tema en index.html con
+  background-color directo
+- Calidad: reemplazar catch silenciosos por console.error en Header,
+  NotificationDropdown, Dashboard, Settings, Reportes; useCallback en
+  usePendingApprovals/usePendingCortes; useMemo para resultados de
+  busqueda en Header y paginacion en ControlFinanciero; limpiar
+  imports sin uso (BitacoraPage, CubicacionesPage, Loans,
+  MercadoExcelUpload, CopyPriceListModal)

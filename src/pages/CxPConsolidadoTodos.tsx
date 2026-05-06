@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { ArrowLeft, CreditCard } from 'lucide-react'
+import { CreditCard } from 'lucide-react'
+import { Breadcrumb } from '@/components/ui/Breadcrumb'
 import { CxPProjectFilterBar } from '@/components/features/control/CxPProjectFilterBar'
 import { useProjectStore } from '@/stores/projectStore'
 import { transactionService } from '@/services/transactionService'
@@ -83,9 +83,10 @@ export default function CxPConsolidadoTodos() {
   return (
     <div className="space-y-6">
       <div>
-        <Link to="/cxp" className="flex items-center gap-1 text-sm text-app-muted hover:text-app-muted mb-2">
-          <ArrowLeft className="w-4 h-4" /> Cuentas por pagar
-        </Link>
+        <Breadcrumb items={[
+          { label: 'Cuentas por pagar', to: '/cxp' },
+          { label: 'Consolidado' },
+        ]} />
         <h1 className="text-2xl font-semibold text-app-text">CxP consolidado</h1>
         <p className="text-sm text-app-muted mt-1">
           {projectFilter === 'all'

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, ShoppingCart, Eye, Package, Search } from 'lucide-react'
+import { Plus, Eye, Package, Search } from 'lucide-react'
 import { requisitionService } from '@/services/requisitionService'
 import { supabase } from '@/lib/supabase'
 import type { PurchaseRequisition } from '@/types/purchaseOrder'

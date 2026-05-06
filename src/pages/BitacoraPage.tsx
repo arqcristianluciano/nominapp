@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import {
-  BookOpen, ArrowLeft, Plus, Sun, Cloud, CloudRain, Thermometer,
+  BookOpen, ArrowLeft, Plus, Sun, Cloud, CloudRain,
   Users, AlertTriangle, ChevronDown, ChevronUp, Pencil, Trash2,
 } from 'lucide-react'
 import { bitacoraService, type BitacoraEntry, type BitacoraFormData } from '@/services/bitacoraService'

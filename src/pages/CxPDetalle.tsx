@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ArrowLeft } from 'lucide-react'
+import { Breadcrumb } from '@/components/ui/Breadcrumb'
 import { CxPView } from '@/components/features/control/CxPView'
 import { useProjectStore } from '@/stores/projectStore'
 import { transactionService, type TransactionWithRelations } from '@/services/transactionService'
@@ -58,9 +58,10 @@ export default function CxPDetalle() {
   return (
     <div className="space-y-6">
       <div>
-        <Link to="/cxp" className="flex items-center gap-1 text-sm text-app-muted hover:text-app-muted mb-2">
-          <ArrowLeft className="w-4 h-4" /> Cuentas por pagar
-        </Link>
+        <Breadcrumb items={[
+          { label: 'Cuentas por pagar', to: '/cxp' },
+          { label: project?.name ?? 'Proyecto' },
+        ]} />
         <h1 className="text-2xl font-semibold text-app-text">Cuentas por Pagar</h1>
         <p className="text-sm text-app-muted mt-1">
           {project ? `${project.name} · ${project.code}` : 'Cargando proyecto...'}

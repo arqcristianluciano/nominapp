@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
-import { ArrowLeft, Plus, Send, Truck, ShieldCheck, ImageIcon, Trash2, AlertTriangle } from 'lucide-react'
+import { useParams, useNavigate } from 'react-router-dom'
+import { Plus, Send, Truck, ShieldCheck, ImageIcon, Trash2, AlertTriangle } from 'lucide-react'
+import { Breadcrumb } from '@/components/ui/Breadcrumb'
 import { requisitionService } from '@/services/requisitionService'
 import { quoteService } from '@/services/quoteService'
 import { supplierService } from '@/services/supplierService'
@@ -102,19 +103,18 @@ export default function PurchaseOrderDetail() {
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-start gap-3">
-        <Link to="/ordenes-compra" className="text-app-subtle hover:text-app-muted mt-1">
-          <ArrowLeft className="w-5 h-5" />
-        </Link>
-        <div className="flex-1">
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-xl font-bold text-app-text">{req.req_number}</h1>
-            <span className={`px-3 py-1 rounded-full text-xs font-medium ${REQ_STATUS_COLOR[req.status]}`}>
-              {REQ_STATUS_LABEL[req.status]}
-            </span>
-          </div>
-          <p className="text-sm text-app-muted mt-0.5">{req.description}</p>
+      <div>
+        <Breadcrumb items={[
+          { label: 'Órdenes de compra', to: '/ordenes-compra' },
+          { label: req.req_number },
+        ]} />
+        <div className="flex items-center gap-3 flex-wrap">
+          <h1 className="text-xl font-bold text-app-text">{req.req_number}</h1>
+          <span className={`px-3 py-1 rounded-full text-xs font-medium ${REQ_STATUS_COLOR[req.status]}`}>
+            {REQ_STATUS_LABEL[req.status]}
+          </span>
         </div>
+        <p className="text-sm text-app-muted mt-0.5">{req.description}</p>
       </div>
 
       {/* Banner de revisión */}

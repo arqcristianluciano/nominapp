@@ -76,7 +76,7 @@ export default function CronogramaPage() {
     const totalDays = Math.ceil((maxDate.getTime() - minDate.getTime()) / 86400000) + 1
 
     const months: { label: string; left: number; width: number }[] = []
-    let d = new Date(minDate)
+    const d = new Date(minDate)
     while (d <= maxDate) {
       const monthStart = new Date(d.getFullYear(), d.getMonth(), 1)
       const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0)

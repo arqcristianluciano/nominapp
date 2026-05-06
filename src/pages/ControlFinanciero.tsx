@@ -35,6 +35,11 @@ export default function ControlFinanciero() {
     txns.load()
   }, [txns.load])
 
+  const pagedTransactions = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE
+    return txns.transactions.slice(start, start + PAGE_SIZE)
+  }, [txns.transactions, page])
+
   if (!project) return <div className="text-sm text-app-muted">Cargando proyecto...</div>
 
   const now = new Date()
@@ -56,10 +61,6 @@ export default function ControlFinanciero() {
   }
 
   const totalPages = Math.max(1, Math.ceil(txns.transactions.length / PAGE_SIZE))
-  const pagedTransactions = useMemo(() => {
-    const start = (page - 1) * PAGE_SIZE
-    return txns.transactions.slice(start, start + PAGE_SIZE)
-  }, [txns.transactions, page, PAGE_SIZE])
 
   const tabs: { key: Tab; label: string }[] = [
     { key: 'diario', label: 'Libro Diario' },

@@ -36,8 +36,11 @@ export function NotificationDropdown() {
     try {
       const data = await notificationService.getAll()
       setNotifications(data)
-    } catch {}
-    finally { setLoading(false) }
+    } catch (err) {
+      console.error('NotificationDropdown load failed', err)
+    } finally {
+      setLoading(false)
+    }
   }
 
   function dismiss(id: string, e: React.MouseEvent) {

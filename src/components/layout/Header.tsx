@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { LogOut, Menu, Search, X } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
@@ -44,7 +44,6 @@ export function Header({ onMenuClick }: HeaderProps) {
   const logout = useAuthStore((s) => s.logout)
   const { projects } = useProjectStore()
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState<SearchResult[]>([])
   const [showResults, setShowResults] = useState(false)
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
   const [allItems, setAllItems] = useState<SearchResult[]>([])
@@ -83,15 +82,17 @@ export function Header({ onMenuClick }: HeaderProps) {
             url: '/suplidores',
           })),
         ])
-      } catch {}
+      } catch (err) {
+        console.error('Failed to load search data', err)
+      }
     }
     loadSearchData()
   }, [projects])
 
-  useEffect(() => {
-    if (!query.trim()) { setResults([]); return }
+  const results = useMemo(() => {
+    if (!query.trim()) return []
     const q = query.toLowerCase()
-    setResults(allItems.filter((item) => item.name.toLowerCase().includes(q)).slice(0, 8))
+    return allItems.filter((item) => item.name.toLowerCase().includes(q)).slice(0, 8)
   }, [query, allItems])
 
   useEffect(() => {

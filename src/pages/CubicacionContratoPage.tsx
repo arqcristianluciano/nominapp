@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, FileText, Scissors, Wallet, Printer, Banknote, FileSignature } from 'lucide-react'
+import { FileText, Scissors, Wallet, Printer, Banknote, FileSignature } from 'lucide-react'
+import { Breadcrumb } from '@/components/ui/Breadcrumb'
 import { contractService } from '@/services/cubicationService'
 import { useProjectStore } from '@/stores/projectStore'
 import { formatRD } from '@/utils/currency'
@@ -67,9 +68,12 @@ export default function CubicacionContratoPage() {
     <div className="space-y-5">
       {/* Header */}
       <div>
-        <Link to={`/proyectos/${projectId}/cubicaciones`} className="flex items-center gap-1 text-sm text-app-muted hover:text-app-text mb-2">
-          <ArrowLeft className="w-4 h-4" /> {project?.name || 'Cubicaciones'}
-        </Link>
+        <Breadcrumb items={[
+          { label: 'Proyectos', to: '/proyectos' },
+          { label: project?.name ?? 'Proyecto', to: `/proyectos/${projectId}` },
+          { label: 'Cubicaciones', to: `/proyectos/${projectId}/cubicaciones` },
+          { label: contrato.contractor?.name ?? 'Contrato' },
+        ]} />
         <div className="flex items-start justify-between">
           <div>
           <h1 className="text-2xl font-semibold text-app-text">{contrato.contractor?.name}</h1>

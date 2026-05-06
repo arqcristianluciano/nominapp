@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Plus, Banknote, CheckCircle, XCircle, Search, ChevronDown, ChevronUp } from 'lucide-react'
-import { loanService, calcInstallmentAmount } from '@/services/loanService'
+import { loanService } from '@/services/loanService'
 import { contractorService } from '@/services/contractorService'
 import { Modal } from '@/components/ui/Modal'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'

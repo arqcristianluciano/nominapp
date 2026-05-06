@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { FileUp, ListOrdered } from 'lucide-react'
+import { FileUp, ListOrdered, PackageSearch } from 'lucide-react'
 import { Breadcrumb } from '@/components/ui/Breadcrumb'
 import { useProjectStore } from '@/stores/projectStore'
 import { useBudgetDetail } from '@/hooks/useBudgetDetail'
@@ -116,6 +116,12 @@ export default function PresupuestoDetalle() {
           Lista de precios
           <span className="text-[10px] text-app-subtle">({budgetItems.priceList.length})</span>
         </button>
+        <Link
+          to={`/proyectos/${projectId}/insumos`}
+          className="flex items-center gap-1.5 px-4 py-1.5 rounded-md text-xs font-medium transition-colors text-app-muted hover:text-app-text"
+        >
+          <PackageSearch className="w-3.5 h-3.5" /> Insumos
+        </Link>
       </div>
 
       {tab === 'presupuesto' && (
