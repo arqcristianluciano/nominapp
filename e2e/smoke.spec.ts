@@ -7,6 +7,13 @@ async function loginDemo(page: import('@playwright/test').Page) {
   await expect(page).toHaveURL('/')
 }
 
+async function openFirstProjectBudget(page: import('@playwright/test').Page) {
+  await page.goto('/presupuesto')
+  const projectBudgetLink = page.locator('a[href^="/proyectos/"][href$="/presupuesto"]').first()
+  await expect(projectBudgetLink).toBeVisible()
+  await projectBudgetLink.click()
+}
+
 test('exportar excel desde Reportes', async ({ page }) => {
   await loginDemo(page)
   await page.goto('/reportes')
@@ -22,8 +29,7 @@ test('exportar excel desde Reportes', async ({ page }) => {
 
 test('abrir modal de importar presupuesto excel', async ({ page }) => {
   await loginDemo(page)
-  await page.goto('/presupuesto')
-  await page.getByRole('link', { name: 'RESIDENCIAL CAPULLO' }).first().click()
+  await openFirstProjectBudget(page)
 
   await page.getByRole('button', { name: 'Importar Excel' }).click()
   await expect(page.getByRole('heading', { name: 'Importar presupuesto desde Excel' })).toBeVisible()
@@ -32,8 +38,7 @@ test('abrir modal de importar presupuesto excel', async ({ page }) => {
 
 test('mostrar carga de mercado excel en Insumos', async ({ page }) => {
   await loginDemo(page)
-  await page.goto('/presupuesto')
-  await page.getByRole('link', { name: 'RESIDENCIAL CAPULLO' }).first().click()
+  await openFirstProjectBudget(page)
   await page.getByRole('link', { name: 'Insumos' }).click()
 
   await expect(page.getByRole('heading', { name: 'Importar presupuesto Mercado' })).toBeVisible()
