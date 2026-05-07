@@ -1,0 +1,27 @@
+name: Post Deploy Healthcheck
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: '0 * * * *'
+
+jobs:
+  production-healthcheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run production health-check
+        env:
+          HEALTHCHECK_URL: https://nominapp-rd.vercel.app
+        run: node scripts/postDeployHealthcheck.mjs
