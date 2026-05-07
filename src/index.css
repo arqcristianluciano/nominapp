@@ -83,6 +83,14 @@ html.dark {
   textarea,
   select {
     color-scheme: light;
+    background-color: var(--app-input-bg);
+    color: var(--app-text);
+    border-color: var(--app-border);
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--app-subtle);
   }
 
   select option {
@@ -94,6 +102,10 @@ html.dark {
   html.dark textarea,
   html.dark select {
     color-scheme: dark;
+  }
+
+  html.dark input[type='date']::-webkit-calendar-picker-indicator {
+    filter: invert(0.85);
   }
 
   /* Scrollbar styling */

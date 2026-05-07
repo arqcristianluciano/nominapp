@@ -72,8 +72,8 @@ export function TransactionRow({
     setEditing(false)
   }
 
-  const inputClass = 'w-full px-1.5 py-1 border border-app-border rounded text-xs bg-app-input-bg text-app-text focus:ring-1 focus:ring-blue-500'
-  const selectClass = 'w-full px-1 py-1 border border-app-border rounded text-xs bg-app-input-bg text-app-text'
+  const inputClass = 'w-full px-1.5 py-1 border border-app-border rounded text-xs bg-app-input-bg text-app-text [color-scheme:light] dark:[color-scheme:dark] focus:ring-1 focus:ring-blue-500 focus:border-blue-500'
+  const selectClass = 'w-full px-1 py-1 border border-app-border rounded text-xs bg-app-input-bg text-app-text [color-scheme:light] dark:[color-scheme:dark] focus:ring-1 focus:ring-blue-500 focus:border-blue-500'
   const rowBg = isCurrentMonth ? 'bg-amber-50 dark:bg-amber-950/20' : 'bg-app-surface'
 
   if (editing) {
