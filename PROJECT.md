@@ -91,6 +91,8 @@ src/
   lib/              ← supabase, mockSupabase (+ mockSupabase.types), mockData,
                        seedCapullo, seedTorreMirador, router
 e2e/                ← smoke.spec.ts (flujos críticos UI)
+scripts/            ← postDeployHealthcheck.mjs (validación HTTP de producción)
+.github/workflows/  ← post-deploy-healthcheck.yml (health-check automático)
 ```
 
 ---
@@ -231,3 +233,4 @@ Canvases oficiales en `canvases/`:
 
 - Unit: `npm test`
 - E2E smoke: `npm run test:e2e`
+- Health-check prod (manual): `node scripts/postDeployHealthcheck.mjs`
