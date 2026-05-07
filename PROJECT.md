@@ -27,11 +27,13 @@ src/
       calendar/      ← CalendarMonthGrid, CalendarSidePanels
       payroll/      ← AddLaborItemForm, AddMaterialForm, CreatePayrollForm,
                        PayrollTotalsCards, LaborItemsSection, MaterialInvoicesSection, IndirectCostsSection
+      payroll-print/ ← PayrollPrintSections, payrollPrintTypes
       payrollReports/ ← ProjectSummaryBar, ProjectReportsSection, EmptyProjectsPanel,
                         CreateReportModalContent
       contractors/  ← ContractorForm, ContractorProfileCard, ContractorKpiGrid,
-                       ContractorProjectsSummary, ContractorCubicationsList, ContractorLaborItemsTable
-      suppliers/    ← SupplierForm
+                       ContractorProjectsSummary, ContractorCubicationsList, ContractorLaborItemsTable,
+                       ContractorsSections
+      suppliers/    ← SupplierForm, SuppliersSections
       projects/     ← ProjectForm
                       ProjectModulesGrid, ProjectBudgetSummary, ProjectRecentTransactions,
                       ProjectPayrollSection, ProjectsHeader, ProjectsTable, EmptyProjects
@@ -39,12 +41,13 @@ src/
       settings/     ← BankAccountForm, SettingsPanels
       schedule/     ← ScheduleStats, ScheduleTaskForm, ScheduleTaskTable, ScheduleGantt
       control/      ← TransactionInlineForm, TransactionRow, CxPView, CxPProjectFilterBar,
-                       ChequesEfectivoView, FinancialIndicators, DiarioTab
+                       ChequesEfectivoView, FinancialIndicators, DiarioTab, CxPConsolidadoSections
       cubicacion/   ← PartidaSection, CorteSection, AdelantoSection,
-                       CubicacionesSummaryCards, ContractsTable, CreateContractModal
+                       CubicacionesSummaryCards, ContractsTable, CreateContractModal,
+                       ContractPrintSections, ContratoFirmaSections, CubicacionContratoSections
       budget/       ← BudgetItemForm, BudgetPartidaRow, ExcelImportModal, PriceListPanel,
                        PriceListInlineForm, CopyPriceListModal, BudgetTabs, BudgetSummaryCards,
-                       BudgetHierarchyTable, BudgetAmountEditModal
+                       BudgetHierarchyTable, BudgetAmountEditModal, BudgetDetailSections
       insumos/      ← MercadoExcelUpload, CreateContractFromLineModal, InsumosImportCard,
                        InsumosSummary, InsumosLinesTable
       inventory/    ← InventoryLowStockAlert, InventoryTabs, InventoryForms, InventoryTables
@@ -54,15 +57,19 @@ src/
       priceHistory/ ← PriceHistorySummary, PriceHistorySearch, PriceHistoryTable
       purchase-orders/ ← PurchaseOrderHeader, PurchaseOrderMeta, PurchaseOrderActions,
                           PurchaseOrderQuotesSection, PurchaseOrderSignatureCard,
-                          ApprovalModal, QuoteForm, QuotesPanel
+                          ApprovalModal, QuoteForm, QuotesPanel,
+                          PurchaseOrdersListSections, purchaseOrdersConfig,
+                          PurchaseOrderDetailModals
       payments/     ← PaymentDistributionsSection
-      quality/      ← QualityControlForm
+      quality/      ← QualityControlForm, QualityStatsCards, QualityRecordsTable, qualityUtils
+      login/        ← LoginSections
       dashboard/    ← StatCard, ProjectCard, QuickAction, ProjectsSkeleton
     ui/             ← Modal
   services/         ← authService + servicios de dominio (ver tabla)
   stores/           ← projectStore, payrollStore, themeStore, authStore (sesión demo, localStorage)
   hooks/            ← usePayroll, useTransactions, useBudgetDetail, useBudgetItems,
-                       useDashboardData, useCalendarEvents, useProjectReports, usePriceHistory
+                       useDashboardData, useCalendarEvents, useProjectReports, usePriceHistory,
+                       usePurchaseOrderDetail, useCxPConsolidadoTodos
   utils/            ← currency, money (Decimal helpers), calculations,
                        financialCalculations, priceCodeGenerator, approvalCode,
                        errors, parseMercadoExcel

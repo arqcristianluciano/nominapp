@@ -8,7 +8,7 @@ import type { ContractSummary } from '@/services/cubicationService'
 import { contractorService } from '@/services/contractorService'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { CubicacionesSummaryCards } from '@/components/features/cubicacion/CubicacionesSummaryCards'
-import { ContractsTable } from '@/components/features/cubicacion\ContractsTable'
+import { ContractsTable } from '@/components/features/cubicacion/ContractsTable'
 import { CreateContractModal } from '@/components/features/cubicacion/CreateContractModal'
 import type { Contractor } from '@/types/database'
 import { getErrorMessage } from '@/utils/errors'
@@ -101,8 +101,7 @@ export default function CubicacionesPage() {
       <ContractsTable
         loading={loading}
         contracts={contracts}
-        projectId={projectId!}
-        onOpen={(contractId) => navigate(`/proyectos/${projectId}/cubicaciones/${contractId}`)}
+        onOpen={(contractId: string) => navigate(`/proyectos/${projectId}/cubicaciones/${contractId}`)}
         onDelete={setDeleteTargetId}
         onCreateFirst={() => setShowForm(true)}
       />

@@ -1,25 +1,27 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
-import { FileText, Scissors, Wallet, Printer, Banknote, FileSignature } from 'lucide-react'
-import { Breadcrumb } from '@/components/ui/Breadcrumb'
+import { useParams } from 'react-router-dom'
 import { contractService } from '@/services/cubicationService'
 import { useProjectStore } from '@/stores/projectStore'
-import { formatRD } from '@/utils/currency'
 import { PartidaSection } from '@/components/features/cubicacion/PartidaSection'
 import { CorteSection } from '@/components/features/cubicacion/CorteSection'
 import { AdelantoSection } from '@/components/features/cubicacion/AdelantoSection'
 import { PrestamoSection } from '@/components/features/cubicacion/PrestamoSection'
+import {
+  CubicacionContratoHeader,
+  CubicacionContratoKpis,
+  CubicacionContratoProgress,
+  CubicacionContratoTabs,
+  type CubicacionTab,
+} from '@/components/features/cubicacion/CubicacionContratoSections'
 import type { ContractWithContractor } from '@/services/cubicationService'
 import type { ContractPartida, ContractCorte, ContractAdelanto } from '@/types/database'
-
-type Tab = 'partidas' | 'cortes' | 'adelantos' | 'prestamos'
 
 export default function CubicacionContratoPage() {
   const { projectId, contratoId } = useParams<{ projectId: string; contratoId: string }>()
   const { projects, fetchProjects } = useProjectStore()
   const [contrato, setContrato] = useState<ContractWithContractor | null>(null)
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState<Tab>('partidas')
+  const [tab, setTab] = useState<CubicacionTab>('partidas')
 
   const project = projects.find((p) => p.id === projectId)
 
@@ -50,88 +52,14 @@ export default function CubicacionContratoPage() {
   const adelantosTotal = adelantos.reduce((s, a) => s + a.amount, 0)
   const pendiente = acordado - acumulado
 
-  const kpis = [
-    { label: 'Acordado (A)', value: formatRD(acordado), color: 'text-app-text' },
-    { label: 'Acumulado (B)', value: formatRD(acumulado), color: 'text-blue-700' },
-    { label: 'Pendiente (A-B)', value: formatRD(pendiente), color: pendiente >= 0 ? 'text-green-700' : 'text-red-600' },
-    { label: `Retenido (${contrato.retention_percent}%)`, value: formatRD(retenido), color: 'text-amber-700' },
-  ]
-
-  const tabs: { id: Tab; label: string; icon: React.ReactNode; count: number }[] = [
-    { id: 'partidas',  label: 'Partidas',  icon: <FileText className="w-3.5 h-3.5" />,  count: partidas.length },
-    { id: 'cortes',    label: 'Cortes',    icon: <Scissors className="w-3.5 h-3.5" />,   count: cortes.length },
-    { id: 'adelantos', label: 'Avances',   icon: <Wallet className="w-3.5 h-3.5" />,     count: adelantos.length },
-    { id: 'prestamos', label: 'Préstamos', icon: <Banknote className="w-3.5 h-3.5" />,   count: 0 },
-  ]
-
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div>
-        <Breadcrumb items={[
-          { label: 'Proyectos', to: '/proyectos' },
-          { label: project?.name ?? 'Proyecto', to: `/proyectos/${projectId}` },
-          { label: 'Cubicaciones', to: `/proyectos/${projectId}/cubicaciones` },
-          { label: contrato.contractor?.name ?? 'Contrato' },
-        ]} />
-        <div className="flex items-start justify-between">
-          <div>
-          <h1 className="text-2xl font-semibold text-app-text">{contrato.contractor?.name}</h1>
-          <p className="text-sm text-app-muted mt-0.5">
-            {contrato.contractor?.specialty}
-            {contrato.signed_date && <span className="ml-3">· Firmado: {new Date(contrato.signed_date).toLocaleDateString('es-DO')}</span>}
-            {adelantosTotal > 0 && <span className="ml-3">· Adelantos: {formatRD(adelantosTotal)}</span>}
-          </p>
-          {contrato.notes && <p className="text-xs text-app-muted mt-1 italic">{contrato.notes}</p>}
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <Link to={`/proyectos/${projectId}/cubicaciones/${contratoId}/contrato`}
-              className="flex items-center gap-2 px-3 py-2 text-sm text-white bg-blue-600 border border-blue-600 rounded-lg hover:bg-blue-700">
-              <FileSignature className="w-4 h-4" /> Generar contrato
-            </Link>
-            <Link to={`/proyectos/${projectId}/cubicaciones/${contratoId}/imprimir`}
-              className="flex items-center gap-2 px-3 py-2 text-sm text-app-muted border border-app-border rounded-lg hover:bg-app-hover">
-              <Printer className="w-4 h-4" /> Reporte
-            </Link>
-          </div>
-        </div>
-      </div>
+      <CubicacionContratoHeader projectId={projectId!} contratoId={contratoId!} projectName={project?.name ?? 'Proyecto'} contrato={contrato} adelantosTotal={adelantosTotal} />
+      <CubicacionContratoKpis acordado={acordado} acumulado={acumulado} pendiente={pendiente} retenido={retenido} retentionPercent={contrato.retention_percent} />
+      <CubicacionContratoProgress acordado={acordado} acumulado={acumulado} />
 
-      {/* KPIs */}
-      <div className="grid grid-cols-4 gap-3">
-        {kpis.map((k) => (
-          <div key={k.label} className="bg-app-surface border border-app-border rounded-xl p-4">
-            <p className="text-xs text-app-muted">{k.label}</p>
-            <p className={`text-xl font-semibold mt-1 ${k.color}`}>{k.value}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Progress bar */}
-      {acordado > 0 && (
-        <div className="bg-app-surface border border-app-border rounded-xl p-4">
-          <div className="flex justify-between text-xs text-app-muted mb-2">
-            <span>Avance general</span>
-            <span>{Math.min((acumulado / acordado) * 100, 100).toFixed(1)}%</span>
-          </div>
-          <div className="h-2 bg-app-chip rounded-full overflow-hidden">
-            <div className="h-full bg-blue-600 rounded-full transition-all" style={{ width: `${Math.min((acumulado / acordado) * 100, 100)}%` }} />
-          </div>
-        </div>
-      )}
-
-      {/* Tabs */}
       <div className="bg-app-surface border border-app-border rounded-xl overflow-hidden">
-        <div className="flex border-b border-app-border">
-          {tabs.map((t) => (
-            <button key={t.id} onClick={() => setTab(t.id)}
-              className={`flex items-center gap-2 px-5 py-3 text-sm font-medium transition-colors ${tab === t.id ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50 dark:bg-blue-950/20' : 'text-app-muted hover:text-app-text'}`}>
-              {t.icon}
-              {t.label}
-              {t.count > 0 && <span className="ml-0.5 text-[10px] bg-app-chip text-app-muted px-1.5 py-0.5 rounded-full">{t.count}</span>}
-            </button>
-          ))}
-        </div>
+        <CubicacionContratoTabs tab={tab} partidasCount={partidas.length} cortesCount={cortes.length} adelantosCount={adelantos.length} onChange={setTab} />
         <div className="p-5">
           {tab === 'partidas' && (
             <PartidaSection contractId={contratoId!} projectId={projectId!} partidas={partidas} cortes={cortes} onRefresh={load} />

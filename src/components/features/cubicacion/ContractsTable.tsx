@@ -5,14 +5,12 @@ import type { ContractSummary } from '@/services/cubicationService'
 export function ContractsTable({
   loading,
   contracts,
-  projectId,
   onOpen,
   onDelete,
   onCreateFirst,
 }: {
   loading: boolean
   contracts: ContractSummary[]
-  projectId: string
   onOpen: (contractId: string) => void
   onDelete: (contractId: string) => void
   onCreateFirst: () => void

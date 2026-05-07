@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { Plus, Pencil, Trash2, FlaskConical, CheckCircle2, XCircle, Clock, CalendarClock } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { Breadcrumb } from '@/components/ui/Breadcrumb'
 import { useProjectStore } from '@/stores/projectStore'
 import { qualityControlService } from '@/services/qualityControlService'
 import { Modal } from '@/components/ui/Modal'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { QualityControlForm } from '@/components/features/quality/QualityControlForm'
+import { QualityStatsCards } from '@/components/features/quality/QualityStatsCards'
+import { QualityRecordsTable } from '@/components/features/quality/QualityRecordsTable'
 import type { QualityControl } from '@/types/database'
 
 export default function QualityControlPage() {
@@ -60,33 +62,9 @@ export default function QualityControlPage() {
     setDeletingId(null)
   }
 
-  function calcExpectedTestDate(pourDate: string, testAge: string | null): string | null {
-    if (!pourDate || !testAge) return null
-    const days = parseInt(testAge)
-    if (isNaN(days)) return null
-    const d = new Date(pourDate)
-    d.setDate(d.getDate() + days)
-    return d.toLocaleDateString('es-DO')
-  }
-
-  function daysUntilTest(pourDate: string, testAge: string | null): number | null {
-    if (!pourDate || !testAge) return null
-    const days = parseInt(testAge)
-    if (isNaN(days)) return null
-    const testDate = new Date(pourDate)
-    testDate.setDate(testDate.getDate() + days)
-    return Math.ceil((testDate.getTime() - Date.now()) / 86400000)
-  }
-
   const passed = records.filter((r) => r.status === 'passed').length
   const failed = records.filter((r) => r.status === 'failed').length
   const pending = records.filter((r) => !r.status).length
-
-  function StatusBadge({ status }: { status: QualityControl['status'] }) {
-    if (status === 'passed') return <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-green-50 text-green-700"><CheckCircle2 className="w-3 h-3" />Aprobado</span>
-    if (status === 'failed') return <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-red-50 text-red-700"><XCircle className="w-3 h-3" />Fallido</span>
-    return <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-app-chip text-app-muted"><Clock className="w-3 h-3" />Pendiente</span>
-  }
 
   return (
     <div className="space-y-5">
@@ -107,93 +85,14 @@ export default function QualityControlPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
-          <CheckCircle2 className="w-5 h-5 text-green-600 mx-auto mb-1" />
-          <p className="text-2xl font-bold text-green-700">{passed}</p>
-          <p className="text-xs text-green-600">Aprobados</p>
-        </div>
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-center">
-          <XCircle className="w-5 h-5 text-red-600 mx-auto mb-1" />
-          <p className="text-2xl font-bold text-red-700">{failed}</p>
-          <p className="text-xs text-red-600">Fallidos</p>
-        </div>
-        <div className="bg-app-bg border border-app-border rounded-xl p-4 text-center">
-          <Clock className="w-5 h-5 text-app-subtle mx-auto mb-1" />
-          <p className="text-2xl font-bold text-app-muted">{pending}</p>
-          <p className="text-xs text-app-muted">Pendientes</p>
-        </div>
-      </div>
-
-      {loading ? (
-        <div className="text-sm text-app-muted">Cargando ensayos...</div>
-      ) : records.length === 0 ? (
-        <div className="bg-app-surface rounded-xl border border-app-border p-10 text-center">
-          <FlaskConical className="w-10 h-10 text-app-subtle mx-auto mb-3" />
-          <p className="text-app-muted">No hay ensayos registrados</p>
-          <button onClick={() => setShowForm(true)} className="mt-3 text-sm text-blue-600 hover:text-blue-800 font-medium">Registrar primer ensayo</button>
-        </div>
-      ) : (
-        <div className="bg-app-surface rounded-xl border border-app-border overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-app-bg border-b border-app-border">
-                <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-app-muted uppercase">Elemento</th>
-                <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-app-muted uppercase">Colada</th>
-                <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-app-muted uppercase hidden sm:table-cell">Edad</th>
-                <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-app-muted uppercase hidden lg:table-cell">Fecha ensayo</th>
-                <th className="px-3 py-2.5 text-right text-[10px] font-semibold text-app-muted uppercase">Esperada</th>
-                <th className="px-3 py-2.5 text-right text-[10px] font-semibold text-app-muted uppercase">Real</th>
-                <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-app-muted uppercase hidden md:table-cell">Proveedor</th>
-                <th className="px-3 py-2.5 text-center text-[10px] font-semibold text-app-muted uppercase">Estado</th>
-                <th className="w-16" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-app-border">
-              {records.map((r) => {
-                const expectedDate = calcExpectedTestDate(r.pour_date, r.test_age)
-                const daysLeft = !r.status ? daysUntilTest(r.pour_date, r.test_age) : null
-                return (
-                  <tr key={r.id} className="hover:bg-app-hover">
-                    <td className="px-3 py-2.5 font-medium text-app-text text-xs">{r.element}</td>
-                    <td className="px-3 py-2.5 text-app-muted text-xs">{new Date(r.pour_date).toLocaleDateString('es-DO')}</td>
-                    <td className="px-3 py-2.5 text-app-muted text-xs hidden sm:table-cell">{r.test_age || '—'}</td>
-                    <td className="px-3 py-2.5 text-xs hidden lg:table-cell">
-                      {expectedDate ? (
-                        <span className={`flex items-center gap-1 ${
-                          daysLeft !== null && daysLeft <= 3 && daysLeft >= 0
-                            ? 'text-amber-600 font-medium'
-                            : daysLeft !== null && daysLeft < 0
-                            ? 'text-red-600 font-medium'
-                            : 'text-app-muted'
-                        }`}>
-                          <CalendarClock className="w-3 h-3" />
-                          {expectedDate}
-                          {daysLeft !== null && daysLeft <= 7 && (
-                            <span className="text-[10px]">({daysLeft < 0 ? `${Math.abs(daysLeft)}d vencido` : `en ${daysLeft}d`})</span>
-                          )}
-                        </span>
-                      ) : '—'}
-                    </td>
-                    <td className="px-3 py-2.5 text-app-muted text-xs text-right">{r.expected_resistance ? `${r.expected_resistance} kg/cm²` : '—'}</td>
-                    <td className={`px-3 py-2.5 text-xs font-semibold text-right ${r.status === 'failed' ? 'text-red-600' : r.status === 'passed' ? 'text-green-600' : 'text-app-subtle'}`}>
-                      {r.actual_resistance ? `${r.actual_resistance} kg/cm²` : '—'}
-                    </td>
-                    <td className="px-3 py-2.5 text-app-muted text-xs hidden md:table-cell">{r.concrete_supplier || '—'}</td>
-                    <td className="px-3 py-2.5 text-center"><StatusBadge status={r.status} /></td>
-                    <td className="px-2 py-2.5">
-                      <div className="flex items-center gap-1">
-                        <button onClick={() => setEditing(r)} className="p-1 text-app-subtle hover:text-blue-500"><Pencil className="w-3.5 h-3.5" /></button>
-                        <button onClick={() => setDeletingId(r.id)} className="p-1 text-app-subtle hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button>
-                      </div>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <QualityStatsCards passed={passed} failed={failed} pending={pending} />
+      <QualityRecordsTable
+        loading={loading}
+        records={records}
+        onCreate={() => setShowForm(true)}
+        onEdit={setEditing}
+        onDelete={setDeletingId}
+      />
 
       <Modal open={showForm} onClose={() => setShowForm(false)} title="Nuevo ensayo de hormigón">
         <QualityControlForm projectId={projectId!} saving={saving} onSubmit={handleSubmit} onCancel={() => setShowForm(false)} />
