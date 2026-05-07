@@ -1,16 +1,13 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, CheckCircle, Send, CreditCard, Printer } from 'lucide-react'
+import { useParams } from 'react-router-dom'
 import { usePayroll } from '@/hooks/usePayroll'
 import { supplierService } from '@/services/supplierService'
 import { contractorService } from '@/services/contractorService'
 import { priceListService } from '@/services/priceListService'
-import { Modal } from '@/components/ui/Modal'
-import { AddMaterialForm } from '@/components/features/payroll/AddMaterialForm'
-import { AddLaborItemForm } from '@/components/features/payroll/AddLaborItemForm'
 import { PaymentDistributionsSection } from '@/components/features/payments/PaymentDistributionsSection'
 import { LoanDeductionSection } from '@/components/features/payroll/LoanDeductionSection'
 import { CubicacionesPayrollSection } from '@/components/features/cubicacion/CubicacionesPayrollSection'
+import { PayrollEditorHeader, PayrollEditorModals } from '@/components/features/payroll/PayrollEditorSections'
 import { PayrollTotalsCards } from '@/components/features/payroll/PayrollTotalsCards'
 import { LaborItemsSection } from '@/components/features/payroll/LaborItemsSection'
 import { MaterialInvoicesSection } from '@/components/features/payroll/MaterialInvoicesSection'
@@ -50,46 +47,11 @@ export default function PayrollEditor() {
   if (!payroll.period) return <div className="text-sm text-app-muted p-4">Nómina no encontrada</div>
 
   const { period } = payroll
-  const project = period.project
   const isDraft = period.status === 'draft'
-
-  const nextStatus: Record<string, { label: string; status: 'submitted' | 'approved' | 'paid'; icon: typeof Send }> = {
-    draft: { label: 'Enviar para aprobación', status: 'submitted', icon: Send },
-    submitted: { label: 'Aprobar reporte', status: 'approved', icon: CheckCircle },
-    approved: { label: 'Marcar como pagado', status: 'paid', icon: CreditCard },
-  }
-  const next = nextStatus[period.status]
-
-  const statusColors: Record<string, string> = { draft: 'bg-app-chip text-app-muted', submitted: 'bg-blue-50 text-blue-700', approved: 'bg-green-50 text-green-700', paid: 'bg-emerald-50 text-emerald-700' }
-  const statusLabels: Record<string, string> = { draft: 'Borrador', submitted: 'Enviado', approved: 'Aprobado', paid: 'Pagado' }
 
   return (
     <div className="space-y-6 max-w-5xl">
-      <div>
-        <Link to={project ? `/proyectos/${project.id}` : '/proyectos'} className="flex items-center gap-1 text-sm text-app-muted hover:text-app-muted mb-2">
-          <ArrowLeft className="w-4 h-4" /> {project?.name || 'Proyecto'}
-        </Link>
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <div>
-            <h1 className="text-2xl font-semibold text-app-text">Reporte No. {period.period_number}</h1>
-            <p className="text-sm text-app-muted mt-0.5">
-              {new Date(period.report_date).toLocaleDateString('es-DO', { year: 'numeric', month: 'long', day: 'numeric' })}
-              {period.reported_by && ` · ${period.reported_by}`}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className={`px-3 py-1 text-sm font-medium rounded-full ${statusColors[period.status]}`}>{statusLabels[period.status]}</span>
-            <Link to={`/nominas/${period.id}/imprimir`} target="_blank" className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-app-muted border border-app-border rounded-lg hover:bg-app-hover">
-              <Printer className="w-4 h-4" /> Imprimir
-            </Link>
-            {next && (
-              <button onClick={() => payroll.updateStatus(next.status)} disabled={payroll.saving} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50">
-                <next.icon className="w-4 h-4" />{next.label}
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
+      <PayrollEditorHeader period={period} saving={payroll.saving} onUpdateStatus={payroll.updateStatus} />
 
       {payroll.error && <div className="text-sm text-red-600 bg-red-50 rounded-lg px-4 py-3">{payroll.error}</div>}
 
@@ -113,25 +75,19 @@ export default function PayrollEditor() {
         <PaymentDistributionsSection periodId={period.id} grandTotal={period.grand_total || 0} />
       )}
 
-      <Modal open={showAddMaterial} onClose={() => setShowAddMaterial(false)} title="Agregar factura de materiales">
-        <AddMaterialForm
-          suppliers={suppliers}
-          onSubmit={async (inv) => { await payroll.addMaterialInvoice(inv); setShowAddMaterial(false) }}
-          onCancel={() => setShowAddMaterial(false)}
-          saving={payroll.saving}
-        />
-      </Modal>
-
-      <Modal open={showAddLabor} onClose={() => setShowAddLabor(false)} title="Agregar partida de mano de obra">
-        <AddLaborItemForm
-          contractors={contractors}
-          laborTasks={laborTasks}
-          onSubmit={async (item) => { await payroll.addLaborItem(item); setShowAddLabor(false) }}
-          onCancel={() => setShowAddLabor(false)}
-          saving={payroll.saving}
-          onContractorCreated={(contractor) => setContractors((prev) => [contractor, ...prev])}
-        />
-      </Modal>
+      <PayrollEditorModals
+        showAddMaterial={showAddMaterial}
+        showAddLabor={showAddLabor}
+        suppliers={suppliers}
+        contractors={contractors}
+        laborTasks={laborTasks}
+        saving={payroll.saving}
+        onCloseAddMaterial={() => setShowAddMaterial(false)}
+        onCloseAddLabor={() => setShowAddLabor(false)}
+        onAddMaterial={async (invoice) => { await payroll.addMaterialInvoice(invoice); setShowAddMaterial(false) }}
+        onAddLabor={async (item) => { await payroll.addLaborItem(item); setShowAddLabor(false) }}
+        onContractorCreated={(contractor) => setContractors((prev) => [contractor, ...prev])}
+      />
     </div>
   )
 }

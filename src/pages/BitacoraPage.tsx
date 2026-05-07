@@ -1,15 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import {
-  BookOpen, Plus,
-} from 'lucide-react'
-import { Breadcrumb } from '@/components/ui/Breadcrumb'
 import { useProjectStore } from '@/stores/projectStore'
 import { bitacoraService, type BitacoraEntry, type BitacoraFormData } from '@/services/bitacoraService'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { EMPTY_BITACORA_FORM } from '@/components/features/bitacora/bitacoraConfig'
 import { BitacoraEntryForm } from '@/components/features/bitacora/BitacoraEntryForm'
 import { BitacoraEntriesList } from '@/components/features/bitacora/BitacoraEntriesList'
+import { BitacoraEmptyState, BitacoraHeader, BitacoraLoadingState } from '@/components/features/bitacora/BitacoraSections'
 
 export default function BitacoraPage() {
   const { projectId } = useParams<{ projectId: string }>()
@@ -73,27 +70,15 @@ export default function BitacoraPage() {
     await load()
   }
 
+  function handleNew() {
+    setShowForm(true)
+    setEditId(null)
+    setForm({ ...EMPTY_BITACORA_FORM, project_id: projectId! })
+  }
+
   return (
     <div className="p-4 lg:p-6 space-y-5 max-w-4xl mx-auto">
-      <div>
-        <Breadcrumb items={[
-          { label: 'Proyectos', to: '/proyectos' },
-          { label: project?.name ?? 'Proyecto', to: `/proyectos/${projectId}` },
-          { label: 'Bitácora' },
-        ]} />
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-blue-600" />
-            <h1 className="text-xl font-bold text-app-text">Bitácora de Obra</h1>
-          </div>
-          <button
-            onClick={() => { setShowForm(true); setEditId(null); setForm({ ...EMPTY_BITACORA_FORM, project_id: projectId! }) }}
-            className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-          >
-            <Plus className="w-4 h-4" />Nuevo registro
-          </button>
-        </div>
-      </div>
+      <BitacoraHeader projectId={projectId!} projectName={project?.name ?? 'Proyecto'} onNew={handleNew} />
 
       {showForm && (
         <BitacoraEntryForm
@@ -107,12 +92,9 @@ export default function BitacoraPage() {
       )}
 
       {loading ? (
-        <div className="text-center py-12 text-app-muted text-sm">Cargando...</div>
+        <BitacoraLoadingState />
       ) : entries.length === 0 ? (
-        <div className="text-center py-12 text-app-muted">
-          <BookOpen className="w-10 h-10 mx-auto mb-2 opacity-30" />
-          <p>No hay registros en la bitácora aún.</p>
-        </div>
+        <BitacoraEmptyState />
       ) : (
         <BitacoraEntriesList
           entries={entries}

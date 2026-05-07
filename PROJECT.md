@@ -26,10 +26,12 @@ src/
     features/
       calendar/      ← CalendarMonthGrid, CalendarSidePanels
       payroll/      ← AddLaborItemForm, AddMaterialForm, CreatePayrollForm,
-                       PayrollTotalsCards, LaborItemsSection, MaterialInvoicesSection, IndirectCostsSection
+                       PayrollTotalsCards, LaborItemsSection, MaterialInvoicesSection, IndirectCostsSection,
+                       PayrollEditorSections
       payroll-print/ ← PayrollPrintSections, payrollPrintTypes
       payrollReports/ ← ProjectSummaryBar, ProjectReportsSection, EmptyProjectsPanel,
-                        CreateReportModalContent
+                        CreateReportModalContent, ReportesObraHeader,
+                        ReportesObraEmptyState, ReportesObraModals
       contractors/  ← ContractorForm, ContractorProfileCard, ContractorKpiGrid,
                        ContractorProjectsSummary, ContractorCubicationsList, ContractorLaborItemsTable,
                        ContractorsSections
@@ -38,7 +40,7 @@ src/
                       ProjectModulesGrid, ProjectBudgetSummary, ProjectRecentTransactions,
                       ProjectPayrollSection, ProjectsHeader, ProjectsTable, EmptyProjects,
                       ProjectDetailHeader, ProjectDetailModals
-      loans/        ← LoanForm, LoanTable
+      loans/        ← LoanForm, LoanTable, LoansSections
       settings/     ← BankAccountForm, SettingsPanels
       schedule/     ← ScheduleStats, ScheduleTaskForm, ScheduleTaskTable, ScheduleGantt
       control/      ← TransactionInlineForm, TransactionRow, CxPView, CxPProjectFilterBar,
@@ -49,12 +51,15 @@ src/
                        ContractPrintSections, ContratoFirmaSections, CubicacionContratoSections
       budget/       ← BudgetItemForm, BudgetPartidaRow, ExcelImportModal, PriceListPanel,
                        PriceListInlineForm, CopyPriceListModal, BudgetTabs, BudgetSummaryCards,
-                       BudgetHierarchyTable, BudgetAmountEditModal, BudgetDetailSections
+                       BudgetHierarchyTable, BudgetAmountEditModal, BudgetDetailSections,
+                       BudgetDetailModals
       insumos/      ← MercadoExcelUpload, CreateContractFromLineModal, InsumosImportCard,
                        InsumosSummary, InsumosLinesTable
-      inventory/    ← InventoryLowStockAlert, InventoryTabs, InventoryForms, InventoryTables
-      bitacora/     ← BitacoraEntryForm, BitacoraEntriesList
-      attendance/   ← AttendanceSummaryCards, AttendanceForm, AttendanceHistoryTable
+      inventory/    ← InventoryLowStockAlert, InventoryTabs, InventoryForms, InventoryTables,
+                      InventoryPageSections
+      bitacora/     ← BitacoraEntryForm, BitacoraEntriesList, BitacoraSections
+      attendance/   ← AttendanceSummaryCards, AttendanceForm, AttendanceHistoryTable,
+                      AttendancePageSections
       reports/      ← ReportsSummaryCards, ReportsTables
       priceHistory/ ← PriceHistorySummary, PriceHistorySearch, PriceHistoryTable
       purchase-orders/ ← PurchaseOrderHeader, PurchaseOrderMeta, PurchaseOrderActions,

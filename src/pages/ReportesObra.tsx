@@ -1,17 +1,14 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Plus, FileText } from 'lucide-react'
 import { payrollService } from '@/services/payrollService'
 import { projectService } from '@/services/projectService'
-import { Modal } from '@/components/ui/Modal'
-import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import type { PayrollPeriod, Project } from '@/types/database'
 import { ProjectReportsSection } from '@/components/features/payrollReports/ProjectReportsSection'
 import { EmptyProjectsPanel } from '@/components/features/payrollReports/EmptyProjectsPanel'
-import { CreateReportModalContent } from '@/components/features/payrollReports/CreateReportModalContent'
+import { ReportesObraHeader } from '@/components/features/payrollReports/ReportesObraHeader'
+import { ReportesObraEmptyState } from '@/components/features/payrollReports/ReportesObraEmptyState'
+import { ReportesObraModals } from '@/components/features/payrollReports/ReportesObraModals'
 
 export default function ReportesObra() {
-  const navigate = useNavigate()
   const [periods, setPeriods] = useState<PayrollPeriod[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
@@ -77,32 +74,12 @@ export default function ReportesObra() {
 
   return (
     <div className="space-y-6 max-w-4xl">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-app-text">Reportes</h1>
-          <p className="text-sm text-app-muted mt-0.5">{periods.length} reporte{periods.length !== 1 ? 's' : ''} registrado{periods.length !== 1 ? 's' : ''}</p>
-        </div>
-        <button
-          onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
-        >
-          <Plus className="w-4 h-4" /> Nuevo reporte
-        </button>
-      </div>
+      <ReportesObraHeader periodsCount={periods.length} onCreate={() => setShowCreate(true)} />
 
       {loading ? (
         <div className="text-sm text-app-muted">Cargando reportes...</div>
       ) : periods.length === 0 ? (
-        <div className="bg-app-surface rounded-xl border border-app-border p-12 text-center">
-          <FileText className="w-10 h-10 text-app-subtle mx-auto mb-3" />
-          <p className="text-app-muted font-medium">No hay reportes registrados</p>
-          <button
-            onClick={() => setShowCreate(true)}
-            className="mt-3 text-sm text-blue-600 hover:text-blue-800 font-medium"
-          >
-            Crear el primer reporte
-          </button>
-        </div>
+        <ReportesObraEmptyState onCreate={() => setShowCreate(true)} />
       ) : (
         <div className="space-y-6">
           {grouped.map(({ project, periods: projectPeriods }) => (
@@ -126,26 +103,16 @@ export default function ReportesObra() {
         </div>
       )}
 
-      <ConfirmModal
-        open={!!confirmDeleteId}
-        title="Eliminar borrador"
-        message="¿Eliminar este reporte en borrador? Esta acción no se puede deshacer."
-        confirmLabel="Eliminar"
-        onConfirm={() => confirmDeleteId && handleDelete(confirmDeleteId)}
-        onCancel={() => setConfirmDeleteId(null)}
+      <ReportesObraModals
+        projects={projects}
+        showCreate={showCreate}
+        selectedProjectId={selectedProjectId}
+        confirmDeleteId={confirmDeleteId}
+        onCloseCreate={() => setShowCreate(false)}
+        onProjectChange={setSelectedProjectId}
+        onConfirmDelete={handleDelete}
+        onCancelDelete={() => setConfirmDeleteId(null)}
       />
-
-      <Modal open={showCreate} onClose={() => setShowCreate(false)} title="Nuevo reporte">
-        {showCreate && (
-          <CreateReportModalContent
-            projects={projects}
-            selectedProjectId={selectedProjectId}
-            onProjectChange={setSelectedProjectId}
-            onCreated={(periodId) => { setShowCreate(false); navigate(`/nominas/${periodId}`) }}
-            onCancel={() => setShowCreate(false)}
-          />
-        )}
-      </Modal>
     </div>
   )
 }
