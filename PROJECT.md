@@ -210,6 +210,17 @@ Todas las rutas (excepto `/login`) protegidas con `RequireAuth` y cargadas con `
 
 ---
 
+## Canvases de auditoría
+
+Canvases oficiales en `canvases/`:
+
+- `nominapp-audit-index.canvas.tsx`
+- `nominapp-audit-bugs-finance.canvas.tsx`
+- `nominapp-audit-architecture-ux.canvas.tsx`
+- `nominapp-audit-roadmap.canvas.tsx`
+
+---
+
 ## Testing rápido
 
 - Unit: `npm test`
