@@ -1,5 +1,10 @@
 import { ArrowUpCircle, Package, Plus } from 'lucide-react'
 import { Breadcrumb } from '@/components/ui/Breadcrumb'
+import type { InventoryItem, InventoryMovement } from '@/services/inventoryService'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
+import { InventoryItemForm, InventoryMovementForm } from '@/components/features/inventory/InventoryForms'
+import { InventoryMovementsTable, InventoryStockTable } from '@/components/features/inventory/InventoryTables'
+import type { InventoryTab } from '@/components/features/inventory/inventoryConfig'
 
 export function InventoryPageHeader({
   projectId,
@@ -22,4 +27,112 @@ export function InventoryPageHeader({
 
 export function InventoryLoadingState() {
   return <div className="text-center py-8 text-app-muted text-sm">Cargando...</div>
+}
+
+type ItemFormState = {
+  name: string
+  unit: string
+  current_stock: number
+  min_stock: number
+  unit_cost: number
+}
+
+type MovementFormState = Pick<InventoryMovement, 'item_id' | 'type' | 'quantity' | 'date' | 'notes'>
+
+interface InventoryActionFormsSectionProps {
+  showItemForm: boolean
+  showMovementForm: boolean
+  itemForm: ItemFormState
+  movementForm: MovementFormState
+  items: InventoryItem[]
+  saving: boolean
+  onItemFormChange: (next: ItemFormState) => void
+  onMovementFormChange: (next: MovementFormState) => void
+  onCloseItemForm: () => void
+  onCloseMovementForm: () => void
+  onSaveItem: () => void
+  onSaveMovement: () => void
+}
+
+export function InventoryActionFormsSection({
+  showItemForm,
+  showMovementForm,
+  itemForm,
+  movementForm,
+  items,
+  saving,
+  onItemFormChange,
+  onMovementFormChange,
+  onCloseItemForm,
+  onCloseMovementForm,
+  onSaveItem,
+  onSaveMovement,
+}: InventoryActionFormsSectionProps) {
+  return (
+    <>
+      {showItemForm && (
+        <InventoryItemForm
+          form={itemForm}
+          saving={saving}
+          onChange={onItemFormChange}
+          onCancel={onCloseItemForm}
+          onSave={onSaveItem}
+        />
+      )}
+
+      {showMovementForm && (
+        <InventoryMovementForm
+          form={movementForm}
+          items={items}
+          saving={saving}
+          onChange={onMovementFormChange}
+          onCancel={onCloseMovementForm}
+          onSave={onSaveMovement}
+        />
+      )}
+    </>
+  )
+}
+
+interface InventoryContentSectionProps {
+  loading: boolean
+  tab: InventoryTab
+  items: InventoryItem[]
+  movements: InventoryMovement[]
+  onDeleteItem: (itemId: string) => void
+}
+
+export function InventoryContentSection({
+  loading,
+  tab,
+  items,
+  movements,
+  onDeleteItem,
+}: InventoryContentSectionProps) {
+  if (loading) return <InventoryLoadingState />
+  if (tab === 'stock') return <InventoryStockTable items={items} onDelete={onDeleteItem} />
+  return <InventoryMovementsTable movements={movements} />
+}
+
+interface InventoryDeleteModalSectionProps {
+  deleteId: string | null
+  onConfirm: () => void
+  onCancel: () => void
+}
+
+export function InventoryDeleteModalSection({
+  deleteId,
+  onConfirm,
+  onCancel,
+}: InventoryDeleteModalSectionProps) {
+  return (
+    <ConfirmModal
+      open={Boolean(deleteId)}
+      title="Eliminar material"
+      message="¿Eliminar este material del inventario? Se perderá el historial de movimientos."
+      variant="danger"
+      onConfirm={onConfirm}
+      onCancel={onCancel}
+    />
+  )
 }

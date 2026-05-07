@@ -1,5 +1,5 @@
 import { Cloud, CloudRain, Sun } from 'lucide-react'
-import type { BitacoraFormData } from '@/services/bitacoraService'
+import type { BitacoraEntry, BitacoraFormData } from '@/services/bitacoraService'
 
 export const WEATHER_OPTIONS = [
   { value: 'soleado', label: 'Soleado', icon: Sun },
@@ -20,4 +20,24 @@ export const EMPTY_BITACORA_FORM: BitacoraFormData = {
   incidents: '',
   notes: '',
   created_by: 'Admin',
+}
+
+export function createBitacoraForm(projectId: string): BitacoraFormData {
+  return { ...EMPTY_BITACORA_FORM, project_id: projectId }
+}
+
+export function buildBitacoraFormFromEntry(entry: BitacoraEntry): BitacoraFormData {
+  return {
+    project_id: entry.project_id,
+    date: entry.date,
+    weather: entry.weather,
+    temp_c: entry.temp_c,
+    work_summary: entry.work_summary,
+    workforce_count: entry.workforce_count,
+    equipment: entry.equipment ?? '',
+    visitors: entry.visitors ?? '',
+    incidents: entry.incidents ?? '',
+    notes: entry.notes ?? '',
+    created_by: entry.created_by,
+  }
 }

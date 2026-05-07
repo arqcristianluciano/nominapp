@@ -31,7 +31,8 @@ src/
       payroll-print/ ← PayrollPrintSections, payrollPrintTypes
       payrollReports/ ← ProjectSummaryBar, ProjectReportsSection, EmptyProjectsPanel,
                         CreateReportModalContent, ReportesObraHeader,
-                        ReportesObraEmptyState, ReportesObraModals
+                        ReportesObraEmptyState, ReportesObraModals,
+                        ReportesObraContent, useReportesObraState
       contractors/  ← ContractorForm, ContractorProfileCard, ContractorKpiGrid,
                        ContractorProjectsSummary, ContractorCubicationsList, ContractorLaborItemsTable,
                        ContractorsSections
@@ -39,25 +40,26 @@ src/
       projects/     ← ProjectForm
                       ProjectModulesGrid, ProjectBudgetSummary, ProjectRecentTransactions,
                       ProjectPayrollSection, ProjectsHeader, ProjectsTable, EmptyProjects,
-                      ProjectDetailHeader, ProjectDetailModals
+                      ProjectDetailHeader, ProjectDetailModals,
+                      ProjectsSearchInput, ProjectsModals
       loans/        ← LoanForm, LoanTable, LoansSections
-      settings/     ← BankAccountForm, SettingsPanels
+      settings/     ← BankAccountForm, SettingsPanels, BankAccountsSection, SettingsTabsBar
       schedule/     ← ScheduleStats, ScheduleTaskForm, ScheduleTaskTable, ScheduleGantt
       control/      ← TransactionInlineForm, TransactionRow, CxPView, CxPProjectFilterBar,
                        ChequesEfectivoView, FinancialIndicators, DiarioTab, CxPConsolidadoSections,
-                       ControlFinancieroSections
+                       ControlFinancieroSections, ControlFinancieroTabContent
       cubicacion/   ← PartidaSection, CorteSection, AdelantoSection,
                        CubicacionesSummaryCards, ContractsTable, CreateContractModal,
                        ContractPrintSections, ContratoFirmaSections, CubicacionContratoSections
       budget/       ← BudgetItemForm, BudgetPartidaRow, ExcelImportModal, PriceListPanel,
                        PriceListInlineForm, CopyPriceListModal, BudgetTabs, BudgetSummaryCards,
                        BudgetHierarchyTable, BudgetAmountEditModal, BudgetDetailSections,
-                       BudgetDetailModals
+                       BudgetDetailModals, BudgetDetailTabContent
       insumos/      ← MercadoExcelUpload, CreateContractFromLineModal, InsumosImportCard,
                        InsumosSummary, InsumosLinesTable
       inventory/    ← InventoryLowStockAlert, InventoryTabs, InventoryForms, InventoryTables,
                       InventoryPageSections
-      bitacora/     ← BitacoraEntryForm, BitacoraEntriesList, BitacoraSections
+      bitacora/     ← BitacoraEntryForm, BitacoraEntriesList, BitacoraSections, useBitacoraPage
       attendance/   ← AttendanceSummaryCards, AttendanceForm, AttendanceHistoryTable,
                       AttendancePageSections
       reports/      ← ReportsSummaryCards, ReportsTables
@@ -68,15 +70,19 @@ src/
                           PurchaseOrdersListSections, purchaseOrdersConfig,
                           PurchaseOrderDetailModals
       payments/     ← PaymentDistributionsSection
-      quality/      ← QualityControlForm, QualityStatsCards, QualityRecordsTable, qualityUtils
+      quality/      ← QualityControlForm, QualityStatsCards, QualityRecordsTable, qualityUtils,
+                      QualityControlPageSections
       login/        ← LoginSections
-      dashboard/    ← StatCard, ProjectCard, QuickAction, ProjectsSkeleton
+      dashboard/    ← StatCard, ProjectCard, QuickAction, ProjectsSkeleton,
+                      DashboardSections, DashboardSideSections
     ui/             ← Modal
   services/         ← authService + servicios de dominio (ver tabla)
   stores/           ← projectStore, payrollStore, themeStore, authStore (sesión demo, localStorage)
   hooks/            ← usePayroll, useTransactions, useBudgetDetail, useBudgetItems,
                        useDashboardData, useCalendarEvents, useProjectReports, usePriceHistory,
-                       usePurchaseOrderDetail, useCxPConsolidadoTodos
+                       usePurchaseOrderDetail, useCxPConsolidadoTodos, useControlFinancieroState,
+                       useBudgetDetailPage, useLoansPage, useProjectDetailPage, useProjectsPage,
+                       useQualityControlPage, useSettingsBankAccounts, useAttendancePage
   utils/            ← currency, money (Decimal helpers), calculations,
                        financialCalculations, priceCodeGenerator, approvalCode,
                        errors, parseMercadoExcel
