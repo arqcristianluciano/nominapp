@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { requisitionService } from '@/services/requisitionService'
 import { supabase } from '@/lib/supabase'
 import type { PurchaseRequisition } from '@/types/purchaseOrder'
@@ -25,9 +25,7 @@ export default function PurchaseOrders() {
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const { success, error } = useToast()
 
-  useEffect(() => { loadAll() }, [])
-
-  async function loadAll() {
+  const loadAll = useCallback(async () => {
     setLoading(true)
     try {
       const [reqs, { data: projs }] = await Promise.all([
@@ -36,30 +34,49 @@ export default function PurchaseOrders() {
       ])
       setRequisitions(reqs)
       setProjects((projs as Project[]) || [])
-    } finally { setLoading(false) }
-  }
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
-  async function handleCreate(payload: Parameters<typeof requisitionService.create>[0]) {
+  useEffect(() => {
+    void loadAll()
+  }, [loadAll])
+
+  const handleCreate = useCallback(async (payload: Parameters<typeof requisitionService.create>[0]) => {
     setSaving(true)
     try {
       const req = await requisitionService.create(payload)
       setShowForm(false)
       setRequisitions((prev) => [req, ...prev])
       success('Solicitud de compra creada')
-    } catch { error('No se pudo crear la solicitud') }
-    finally { setSaving(false) }
-  }
+    } catch {
+      error('No se pudo crear la solicitud')
+    } finally {
+      setSaving(false)
+    }
+  }, [error, success])
 
-  const filtered = requisitions.filter((r) => {
-    const term = search.toLowerCase()
-    const matchesSearch = !term || r.description.toLowerCase().includes(term) || r.req_number.toLowerCase().includes(term) || r.requested_by.toLowerCase().includes(term)
-    const matchesStatus = statusFilter === 'all' || r.status === statusFilter
-    return matchesSearch && matchesStatus
-  })
+  const normalizedSearch = useMemo(() => search.toLowerCase(), [search])
+
+  const filtered = useMemo(() => {
+    return requisitions.filter((requisition) => {
+      const matchesSearch =
+        !normalizedSearch ||
+        requisition.description.toLowerCase().includes(normalizedSearch) ||
+        requisition.req_number.toLowerCase().includes(normalizedSearch) ||
+        requisition.requested_by.toLowerCase().includes(normalizedSearch)
+      const matchesStatus = statusFilter === 'all' || requisition.status === statusFilter
+      return matchesSearch && matchesStatus
+    })
+  }, [normalizedSearch, requisitions, statusFilter])
+
+  const openCreateModal = useCallback(() => setShowForm(true), [])
+  const closeCreateModal = useCallback(() => setShowForm(false), [])
 
   return (
     <div className="space-y-6">
-      <PurchaseOrdersHeader filteredCount={filtered.length} totalCount={requisitions.length} onNew={() => setShowForm(true)} />
+      <PurchaseOrdersHeader filteredCount={filtered.length} totalCount={requisitions.length} onNew={openCreateModal} />
       <PurchaseOrdersFilters
         search={search}
         statusFilter={statusFilter}
@@ -71,16 +88,16 @@ export default function PurchaseOrders() {
       {loading ? (
         <SkeletonTable rows={5} cols={6} />
       ) : filtered.length === 0 ? (
-        <EmptyPurchaseOrders onNew={() => setShowForm(true)} />
+        <EmptyPurchaseOrders onNew={openCreateModal} />
       ) : (
         <PurchaseOrdersTable requisitions={filtered} />
       )}
 
-      <Modal open={showForm} onClose={() => setShowForm(false)} title="Nueva Solicitud de Compra">
+      <Modal open={showForm} onClose={closeCreateModal} title="Nueva Solicitud de Compra">
         <RequisitionForm
           projects={projects}
           onSubmit={handleCreate}
-          onCancel={() => setShowForm(false)}
+          onCancel={closeCreateModal}
           saving={saving}
         />
       </Modal>

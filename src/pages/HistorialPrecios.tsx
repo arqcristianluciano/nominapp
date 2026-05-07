@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { PriceHistorySearch } from '@/components/features/priceHistory/PriceHistorySearch'
 import { PriceHistorySummary } from '@/components/features/priceHistory/PriceHistorySummary'
 import { PriceHistoryTable } from '@/components/features/priceHistory/PriceHistoryTable'
@@ -9,14 +9,26 @@ export default function HistorialPrecios() {
   const [search, setSearch] = useState('')
   const [expanded, setExpanded] = useState<string | null>(null)
 
-  const filtered = useMemo(() => {
-    if (!search.trim()) return history
-    const q = search.toLowerCase()
-    return history.filter((h) => h.key.includes(q) || h.supplier?.toLowerCase().includes(q))
-  }, [history, search])
+  const normalizedSearch = useMemo(() => search.trim().toLowerCase(), [search])
 
-  const rising = history.filter((h) => h.trend === 'up').length
-  const falling = history.filter((h) => h.trend === 'down').length
+  const filtered = useMemo(() => {
+    if (!normalizedSearch) return history
+    return history.filter((h) => h.key.includes(normalizedSearch) || h.supplier?.toLowerCase().includes(normalizedSearch))
+  }, [history, normalizedSearch])
+
+  const trendCounts = useMemo(() => {
+    let rising = 0
+    let falling = 0
+    for (const item of history) {
+      if (item.trend === 'up') rising += 1
+      if (item.trend === 'down') falling += 1
+    }
+    return { rising, falling }
+  }, [history])
+
+  const handleToggleExpanded = useCallback((key: string) => {
+    setExpanded((current) => (current === key ? null : key))
+  }, [])
 
   return (
     <div className="p-4 lg:p-6 space-y-5 max-w-5xl mx-auto">
@@ -27,7 +39,7 @@ export default function HistorialPrecios() {
         </div>
       </div>
 
-      <PriceHistorySummary tracked={history.length} rising={rising} falling={falling} />
+      <PriceHistorySummary tracked={history.length} rising={trendCounts.rising} falling={trendCounts.falling} />
 
       <PriceHistorySearch value={search} onChange={setSearch} />
 
@@ -36,7 +48,7 @@ export default function HistorialPrecios() {
       ) : filtered.length === 0 ? (
         <div className="text-center py-8 text-app-muted text-sm">Sin resultados.</div>
       ) : (
-        <PriceHistoryTable items={filtered} expanded={expanded} onToggle={(key) => setExpanded(expanded === key ? null : key)} />
+        <PriceHistoryTable items={filtered} expanded={expanded} onToggle={handleToggleExpanded} />
       )}
     </div>
   )

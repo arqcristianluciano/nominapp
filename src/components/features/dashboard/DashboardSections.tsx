@@ -81,7 +81,7 @@ export function DashboardProjectsSection({
           Ver todos <ArrowRight className="h-3 w-3" />
         </Link>
       </div>
-      {loading ? <ProjectsSkeleton /> : projects.length === 0 ? <EmptyProjects /> : (
+      {loading && projects.length === 0 ? <ProjectsSkeleton /> : projects.length === 0 ? <EmptyProjects /> : (
         <div className="space-y-2.5">
           {projects.slice(0, 4).map((project) => (
             <ProjectCard key={project.id} project={project} progress={progressMap[project.id]} />

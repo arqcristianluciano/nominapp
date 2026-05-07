@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 
 export function ProjectsSkeleton() {
   return (
-    <div className="space-y-2.5">
+    <div className="space-y-2.5" role="status" aria-live="polite" aria-label="Cargando proyectos activos">
       {[1, 2, 3].map((item) => (
         <div key={item} className="animate-pulse rounded-xl border border-app-border bg-app-surface p-4">
           <div className="flex items-center gap-3">
@@ -15,6 +15,7 @@ export function ProjectsSkeleton() {
           </div>
         </div>
       ))}
+      <p className="text-xs text-app-muted text-center">Cargando proyectos activos...</p>
     </div>
   )
 }
@@ -26,10 +27,10 @@ export function EmptyProjects() {
         <Building2 className="h-6 w-6 text-blue-600 dark:text-blue-400" />
       </div>
       <p className="mb-1 text-sm font-medium text-app-text">Sin proyectos activos</p>
-      <p className="mb-4 text-xs text-app-muted">Crea tu primer proyecto para empezar</p>
+      <p className="mb-4 text-xs text-app-muted">Aun no hay proyectos en curso. Crea uno para empezar.</p>
       <Link
         to="/proyectos"
-        className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-blue-700"
+        className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-app-surface"
       >
         <Building2 className="h-3.5 w-3.5" />
         Ir a Proyectos
