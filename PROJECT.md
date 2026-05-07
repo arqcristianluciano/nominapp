@@ -36,12 +36,14 @@ src/
       suppliers/    ← SupplierForm, SuppliersSections
       projects/     ← ProjectForm
                       ProjectModulesGrid, ProjectBudgetSummary, ProjectRecentTransactions,
-                      ProjectPayrollSection, ProjectsHeader, ProjectsTable, EmptyProjects
+                      ProjectPayrollSection, ProjectsHeader, ProjectsTable, EmptyProjects,
+                      ProjectDetailHeader, ProjectDetailModals
       loans/        ← LoanForm, LoanTable
       settings/     ← BankAccountForm, SettingsPanels
       schedule/     ← ScheduleStats, ScheduleTaskForm, ScheduleTaskTable, ScheduleGantt
       control/      ← TransactionInlineForm, TransactionRow, CxPView, CxPProjectFilterBar,
-                       ChequesEfectivoView, FinancialIndicators, DiarioTab, CxPConsolidadoSections
+                       ChequesEfectivoView, FinancialIndicators, DiarioTab, CxPConsolidadoSections,
+                       ControlFinancieroSections
       cubicacion/   ← PartidaSection, CorteSection, AdelantoSection,
                        CubicacionesSummaryCards, ContractsTable, CreateContractModal,
                        ContractPrintSections, ContratoFirmaSections, CubicacionContratoSections
