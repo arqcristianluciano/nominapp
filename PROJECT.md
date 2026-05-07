@@ -26,33 +26,42 @@ src/
     features/
       calendar/      ← CalendarMonthGrid, CalendarSidePanels
       payroll/      ← AddLaborItemForm, AddMaterialForm, CreatePayrollForm,
-                       PayrollTotalsCards, LaborItemsSection, MaterialInvoicesSection, IndirectCostsSection
+                       PayrollTotalsCards, LaborItemsSection, MaterialInvoicesSection, IndirectCostsSection,
+                       PayrollEditorSections
       payroll-print/ ← PayrollPrintSections, payrollPrintTypes
       payrollReports/ ← ProjectSummaryBar, ProjectReportsSection, EmptyProjectsPanel,
-                        CreateReportModalContent
+                        CreateReportModalContent, ReportesObraHeader,
+                        ReportesObraEmptyState, ReportesObraModals,
+                        ReportesObraContent, useReportesObraState
       contractors/  ← ContractorForm, ContractorProfileCard, ContractorKpiGrid,
                        ContractorProjectsSummary, ContractorCubicationsList, ContractorLaborItemsTable,
                        ContractorsSections
       suppliers/    ← SupplierForm, SuppliersSections
       projects/     ← ProjectForm
                       ProjectModulesGrid, ProjectBudgetSummary, ProjectRecentTransactions,
-                      ProjectPayrollSection, ProjectsHeader, ProjectsTable, EmptyProjects
-      loans/        ← LoanForm, LoanTable
-      settings/     ← BankAccountForm, SettingsPanels
+                      ProjectPayrollSection, ProjectsHeader, ProjectsTable, EmptyProjects,
+                      ProjectDetailHeader, ProjectDetailModals,
+                      ProjectsSearchInput, ProjectsModals
+      loans/        ← LoanForm, LoanTable, LoansSections
+      settings/     ← BankAccountForm, SettingsPanels, BankAccountsSection, SettingsTabsBar
       schedule/     ← ScheduleStats, ScheduleTaskForm, ScheduleTaskTable, ScheduleGantt
       control/      ← TransactionInlineForm, TransactionRow, CxPView, CxPProjectFilterBar,
-                       ChequesEfectivoView, FinancialIndicators, DiarioTab, CxPConsolidadoSections
+                       ChequesEfectivoView, FinancialIndicators, DiarioTab, CxPConsolidadoSections,
+                       ControlFinancieroSections, ControlFinancieroTabContent
       cubicacion/   ← PartidaSection, CorteSection, AdelantoSection,
                        CubicacionesSummaryCards, ContractsTable, CreateContractModal,
                        ContractPrintSections, ContratoFirmaSections, CubicacionContratoSections
       budget/       ← BudgetItemForm, BudgetPartidaRow, ExcelImportModal, PriceListPanel,
                        PriceListInlineForm, CopyPriceListModal, BudgetTabs, BudgetSummaryCards,
-                       BudgetHierarchyTable, BudgetAmountEditModal, BudgetDetailSections
+                       BudgetHierarchyTable, BudgetAmountEditModal, BudgetDetailSections,
+                       BudgetDetailModals, BudgetDetailTabContent
       insumos/      ← MercadoExcelUpload, CreateContractFromLineModal, InsumosImportCard,
                        InsumosSummary, InsumosLinesTable
-      inventory/    ← InventoryLowStockAlert, InventoryTabs, InventoryForms, InventoryTables
-      bitacora/     ← BitacoraEntryForm, BitacoraEntriesList
-      attendance/   ← AttendanceSummaryCards, AttendanceForm, AttendanceHistoryTable
+      inventory/    ← InventoryLowStockAlert, InventoryTabs, InventoryForms, InventoryTables,
+                      InventoryPageSections
+      bitacora/     ← BitacoraEntryForm, BitacoraEntriesList, BitacoraSections, useBitacoraPage
+      attendance/   ← AttendanceSummaryCards, AttendanceForm, AttendanceHistoryTable,
+                      AttendancePageSections
       reports/      ← ReportsSummaryCards, ReportsTables
       priceHistory/ ← PriceHistorySummary, PriceHistorySearch, PriceHistoryTable
       purchase-orders/ ← PurchaseOrderHeader, PurchaseOrderMeta, PurchaseOrderActions,
@@ -61,15 +70,19 @@ src/
                           PurchaseOrdersListSections, purchaseOrdersConfig,
                           PurchaseOrderDetailModals
       payments/     ← PaymentDistributionsSection
-      quality/      ← QualityControlForm, QualityStatsCards, QualityRecordsTable, qualityUtils
+      quality/      ← QualityControlForm, QualityStatsCards, QualityRecordsTable, qualityUtils,
+                      QualityControlPageSections
       login/        ← LoginSections
-      dashboard/    ← StatCard, ProjectCard, QuickAction, ProjectsSkeleton
+      dashboard/    ← StatCard, ProjectCard, QuickAction, ProjectsSkeleton,
+                      DashboardSections, DashboardSideSections
     ui/             ← Modal
   services/         ← authService + servicios de dominio (ver tabla)
   stores/           ← projectStore, payrollStore, themeStore, authStore (sesión demo, localStorage)
   hooks/            ← usePayroll, useTransactions, useBudgetDetail, useBudgetItems,
                        useDashboardData, useCalendarEvents, useProjectReports, usePriceHistory,
-                       usePurchaseOrderDetail, useCxPConsolidadoTodos
+                       usePurchaseOrderDetail, useCxPConsolidadoTodos, useControlFinancieroState,
+                       useBudgetDetailPage, useLoansPage, useProjectDetailPage, useProjectsPage,
+                       useQualityControlPage, useSettingsBankAccounts, useAttendancePage
   utils/            ← currency, money (Decimal helpers), calculations,
                        financialCalculations, priceCodeGenerator, approvalCode,
                        errors, parseMercadoExcel
@@ -200,6 +213,17 @@ Todas las rutas (excepto `/login`) protegidas con `RequireAuth` y cargadas con `
 - [ ] Autenticación real (Supabase Auth); hoy: login demo en cliente (`authStore` + `demoUsers`)
 - [ ] Notificaciones (ensayos fallidos, CxP vencidos)
 - [ ] Multi-empresa con permisos por usuario
+
+---
+
+## Canvases de auditoría
+
+Canvases oficiales en `canvases/`:
+
+- `nominapp-audit-index.canvas.tsx`
+- `nominapp-audit-bugs-finance.canvas.tsx`
+- `nominapp-audit-architecture-ux.canvas.tsx`
+- `nominapp-audit-roadmap.canvas.tsx`
 
 ---
 

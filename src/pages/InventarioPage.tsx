@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useState, useMemo } from 'react'
 import { useParams } from 'react-router-dom'
-import { ArrowUpCircle, Package, Plus } from 'lucide-react'
-import { Breadcrumb } from '@/components/ui/Breadcrumb'
 import { useProjectStore } from '@/stores/projectStore'
 import { inventoryService, type InventoryItem, type InventoryMovement } from '@/services/inventoryService'
-import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { InventoryLowStockAlert } from '@/components/features/inventory/InventoryLowStockAlert'
-import { InventoryItemForm, InventoryMovementForm } from '@/components/features/inventory/InventoryForms'
+import {
+  InventoryActionFormsSection,
+  InventoryContentSection,
+  InventoryDeleteModalSection,
+  InventoryPageHeader,
+} from '@/components/features/inventory/InventoryPageSections'
 import { InventoryTabs } from '@/components/features/inventory/InventoryTabs'
-import { InventoryMovementsTable, InventoryStockTable } from '@/components/features/inventory/InventoryTables'
 import { EMPTY_ITEM_FORM, EMPTY_MOVEMENT_FORM, type InventoryTab } from '@/components/features/inventory/inventoryConfig'
 
 export default function InventarioPage() {
@@ -41,6 +42,13 @@ export default function InventarioPage() {
   useEffect(() => { loadAll() }, [loadAll])
 
   const lowStock = useMemo(() => inventoryService.getLowStockItems(items), [items])
+  const projectName = project?.name ?? 'Proyecto'
+  const handleMovementFormChange = useCallback(
+    (next: Pick<InventoryMovement, 'item_id' | 'type' | 'quantity' | 'date' | 'notes'>) => {
+      setMovForm((prev) => ({ ...prev, ...next }))
+    },
+    [],
+  )
 
   async function handleAddItem() {
     if (!itemForm.name.trim()) return
@@ -73,60 +81,42 @@ export default function InventarioPage() {
 
   return (
     <div className="p-4 lg:p-6 space-y-5 max-w-5xl mx-auto">
-      <div>
-        <Breadcrumb items={[
-          { label: 'Proyectos', to: '/proyectos' },
-          { label: project?.name ?? 'Proyecto', to: `/proyectos/${projectId}` },
-          { label: 'Inventario' },
-        ]} />
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Package className="w-5 h-5 text-blue-600" />
-            <h1 className="text-xl font-bold text-app-text">Inventario de Materiales</h1>
-          </div>
-          <div className="flex gap-2">
-            <button onClick={() => setShowMovForm(true)} className="flex items-center gap-2 px-3 py-2 border border-app-border text-app-muted rounded-lg text-sm hover:bg-app-hover transition-colors">
-              <ArrowUpCircle className="w-4 h-4" />Movimiento
-            </button>
-            <button onClick={() => setShowItemForm(true)} className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
-              <Plus className="w-4 h-4" />Material
-            </button>
-          </div>
-        </div>
-      </div>
+      <InventoryPageHeader
+        projectId={projectId!}
+        projectName={projectName}
+        onOpenMovement={() => setShowMovForm(true)}
+        onOpenItem={() => setShowItemForm(true)}
+      />
 
       <InventoryLowStockAlert items={lowStock} />
 
-      {showItemForm && (
-        <InventoryItemForm form={itemForm} saving={saving} onChange={setItemForm} onCancel={() => setShowItemForm(false)} onSave={handleAddItem} />
-      )}
-
-      {showMovForm && (
-        <InventoryMovementForm
-          form={movForm}
-          items={items}
-          saving={saving}
-          onChange={(next) => setMovForm({ ...movForm, ...next })}
-          onCancel={() => setShowMovForm(false)}
-          onSave={handleAddMovement}
-        />
-      )}
+      <InventoryActionFormsSection
+        showItemForm={showItemForm}
+        showMovementForm={showMovForm}
+        itemForm={itemForm}
+        movementForm={movForm}
+        items={items}
+        saving={saving}
+        onItemFormChange={setItemForm}
+        onMovementFormChange={handleMovementFormChange}
+        onCloseItemForm={() => setShowItemForm(false)}
+        onCloseMovementForm={() => setShowMovForm(false)}
+        onSaveItem={handleAddItem}
+        onSaveMovement={handleAddMovement}
+      />
 
       <InventoryTabs tab={tab} onChange={setTab} />
 
-      {loading ? (
-        <div className="text-center py-8 text-app-muted text-sm">Cargando...</div>
-      ) : tab === 'stock' ? (
-        <InventoryStockTable items={items} onDelete={setDeleteId} />
-      ) : (
-        <InventoryMovementsTable movements={movements} />
-      )}
+      <InventoryContentSection
+        loading={loading}
+        tab={tab}
+        items={items}
+        movements={movements}
+        onDeleteItem={setDeleteId}
+      />
 
-      <ConfirmModal
-        open={!!deleteId}
-        title="Eliminar material"
-        message="¿Eliminar este material del inventario? Se perderá el historial de movimientos."
-        variant="danger"
+      <InventoryDeleteModalSection
+        deleteId={deleteId}
         onConfirm={handleDelete}
         onCancel={() => setDeleteId(null)}
       />
