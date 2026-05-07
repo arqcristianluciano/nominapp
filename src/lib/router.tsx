@@ -1,46 +1,47 @@
-/* eslint-disable react-refresh/only-export-components */
-import { Suspense, lazy, type ComponentType, type LazyExoticComponent } from 'react'
+import { Suspense, type ComponentType, type LazyExoticComponent } from 'react'
 import { createBrowserRouter } from 'react-router-dom'
 import { RequireAuth } from '@/components/auth/RequireAuth'
 import { AppLayout } from '@/components/layout/AppLayout'
+import RouterErrorBoundary from '@/components/RouterErrorBoundary'
 import Login from '@/pages/Login'
 import NotFound from '@/pages/NotFound'
+import { lazyWithRetry } from '@/utils/lazyWithRetry'
 
-const Dashboard = lazy(() => import('@/pages/Dashboard'))
-const Projects = lazy(() => import('@/pages/Projects'))
-const ProjectDetail = lazy(() => import('@/pages/ProjectDetail'))
-const PayrollList = lazy(() => import('@/pages/PayrollList'))
-const PayrollEditor = lazy(() => import('@/pages/PayrollEditor'))
-const ControlFinanciero = lazy(() => import('@/pages/ControlFinanciero'))
-const PresupuestoDetalle = lazy(() => import('@/pages/PresupuestoDetalle'))
-const FinanzasHub = lazy(() => import('@/pages/FinanzasHub'))
-const PresupuestoHub = lazy(() => import('@/pages/PresupuestoHub'))
-const CxPHub = lazy(() => import('@/pages/CxPHub'))
-const CxPDetalle = lazy(() => import('@/pages/CxPDetalle'))
-const CxPConsolidadoTodos = lazy(() => import('@/pages/CxPConsolidadoTodos'))
-const Reportes = lazy(() => import('@/pages/Reportes'))
-const Contractors = lazy(() => import('@/pages/Contractors'))
-const Suppliers = lazy(() => import('@/pages/Suppliers'))
-const Settings = lazy(() => import('@/pages/Settings'))
-const QualityControlPage = lazy(() => import('@/pages/QualityControlPage'))
-const CubicacionesPage = lazy(() => import('@/pages/CubicacionesPage'))
-const CubicacionesHub = lazy(() => import('@/pages/CubicacionesHub'))
-const CubicacionContratoPage = lazy(() => import('@/pages/CubicacionContratoPage'))
-const CubicacionImprimirPage = lazy(() => import('@/pages/CubicacionImprimirPage'))
-const ContratoFirmaPage = lazy(() => import('@/pages/ContratoFirmaPage'))
-const PayrollPrint = lazy(() => import('@/pages/PayrollPrint'))
-const PurchaseOrders = lazy(() => import('@/pages/PurchaseOrders'))
-const PurchaseOrderDetail = lazy(() => import('@/pages/PurchaseOrderDetail'))
-const ContractorDetail = lazy(() => import('@/pages/ContractorDetail'))
-const ReportesObra = lazy(() => import('@/pages/ReportesObra'))
-const Loans = lazy(() => import('@/pages/Loans'))
-const InsumosPage = lazy(() => import('@/pages/InsumosPage'))
-const Calendario = lazy(() => import('@/pages/Calendario'))
-const BitacoraPage = lazy(() => import('@/pages/BitacoraPage'))
-const AsistenciaPage = lazy(() => import('@/pages/AsistenciaPage'))
-const InventarioPage = lazy(() => import('@/pages/InventarioPage'))
-const CronogramaPage = lazy(() => import('@/pages/CronogramaPage'))
-const HistorialPrecios = lazy(() => import('@/pages/HistorialPrecios'))
+const Dashboard = lazyWithRetry(() => import('@/pages/Dashboard'))
+const Projects = lazyWithRetry(() => import('@/pages/Projects'))
+const ProjectDetail = lazyWithRetry(() => import('@/pages/ProjectDetail'))
+const PayrollList = lazyWithRetry(() => import('@/pages/PayrollList'))
+const PayrollEditor = lazyWithRetry(() => import('@/pages/PayrollEditor'))
+const ControlFinanciero = lazyWithRetry(() => import('@/pages/ControlFinanciero'))
+const PresupuestoDetalle = lazyWithRetry(() => import('@/pages/PresupuestoDetalle'))
+const FinanzasHub = lazyWithRetry(() => import('@/pages/FinanzasHub'))
+const PresupuestoHub = lazyWithRetry(() => import('@/pages/PresupuestoHub'))
+const CxPHub = lazyWithRetry(() => import('@/pages/CxPHub'))
+const CxPDetalle = lazyWithRetry(() => import('@/pages/CxPDetalle'))
+const CxPConsolidadoTodos = lazyWithRetry(() => import('@/pages/CxPConsolidadoTodos'))
+const Reportes = lazyWithRetry(() => import('@/pages/Reportes'))
+const Contractors = lazyWithRetry(() => import('@/pages/Contractors'))
+const Suppliers = lazyWithRetry(() => import('@/pages/Suppliers'))
+const Settings = lazyWithRetry(() => import('@/pages/Settings'))
+const QualityControlPage = lazyWithRetry(() => import('@/pages/QualityControlPage'))
+const CubicacionesPage = lazyWithRetry(() => import('@/pages/CubicacionesPage'))
+const CubicacionesHub = lazyWithRetry(() => import('@/pages/CubicacionesHub'))
+const CubicacionContratoPage = lazyWithRetry(() => import('@/pages/CubicacionContratoPage'))
+const CubicacionImprimirPage = lazyWithRetry(() => import('@/pages/CubicacionImprimirPage'))
+const ContratoFirmaPage = lazyWithRetry(() => import('@/pages/ContratoFirmaPage'))
+const PayrollPrint = lazyWithRetry(() => import('@/pages/PayrollPrint'))
+const PurchaseOrders = lazyWithRetry(() => import('@/pages/PurchaseOrders'))
+const PurchaseOrderDetail = lazyWithRetry(() => import('@/pages/PurchaseOrderDetail'))
+const ContractorDetail = lazyWithRetry(() => import('@/pages/ContractorDetail'))
+const ReportesObra = lazyWithRetry(() => import('@/pages/ReportesObra'))
+const Loans = lazyWithRetry(() => import('@/pages/Loans'))
+const InsumosPage = lazyWithRetry(() => import('@/pages/InsumosPage'))
+const Calendario = lazyWithRetry(() => import('@/pages/Calendario'))
+const BitacoraPage = lazyWithRetry(() => import('@/pages/BitacoraPage'))
+const AsistenciaPage = lazyWithRetry(() => import('@/pages/AsistenciaPage'))
+const InventarioPage = lazyWithRetry(() => import('@/pages/InventarioPage'))
+const CronogramaPage = lazyWithRetry(() => import('@/pages/CronogramaPage'))
+const HistorialPrecios = lazyWithRetry(() => import('@/pages/HistorialPrecios'))
 
 function withSuspense(Component: LazyExoticComponent<ComponentType>) {
   return (
@@ -51,11 +52,12 @@ function withSuspense(Component: LazyExoticComponent<ComponentType>) {
 }
 
 export const router = createBrowserRouter([
-  { path: '/login', element: <Login /> },
-  { path: '*', element: <NotFound /> },
+  { path: '/login', element: <Login />, errorElement: <RouterErrorBoundary /> },
+  { path: '*', element: <NotFound />, errorElement: <RouterErrorBoundary /> },
   {
     path: '/',
     element: <RequireAuth />,
+    errorElement: <RouterErrorBoundary />,
     children: [
       // Impresión sin sidebar — requiere sesión
       { path: 'nominas/:periodId/imprimir', element: withSuspense(PayrollPrint) },
