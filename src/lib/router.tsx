@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { Suspense, lazy, type ComponentType, type LazyExoticComponent } from 'react'
-import { createBrowserRouter } from 'react-router-dom'
+import { Navigate, createBrowserRouter } from 'react-router-dom'
 import { RequireAuth } from '@/components/auth/RequireAuth'
 import { AppLayout } from '@/components/layout/AppLayout'
 import Login from '@/pages/Login'
@@ -63,6 +63,7 @@ export const router = createBrowserRouter([
         element: <AppLayout />,
         children: [
           { index: true, element: withSuspense(Dashboard) },
+          { path: 'projects', element: <Navigate to="/proyectos" replace /> },
           { path: 'proyectos', element: withSuspense(Projects) },
           { path: 'proyectos/:projectId', element: withSuspense(ProjectDetail) },
           { path: 'proyectos/:projectId/nominas', element: withSuspense(PayrollList) },

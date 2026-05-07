@@ -129,7 +129,13 @@ export function Sidebar({ open, onClose }: SidebarProps) {
             </div>
             <span className="text-base font-semibold text-white tracking-tight">NominaAPP</span>
           </div>
-          <button onClick={onClose} className="lg:hidden p-1 text-white/70 hover:text-white rounded-md hover:bg-white/10 transition-colors">
+          <button
+            type="button"
+            onClick={onClose}
+            className="lg:hidden p-1 text-white/70 hover:text-white rounded-md hover:bg-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
+            title="Cerrar menú"
+            aria-label="Cerrar menú lateral"
+          >
             <X className="w-4 h-4" />
           </button>
         </div>

@@ -1,4 +1,5 @@
 import { Pencil, Plus, Search, Truck } from 'lucide-react'
+import { useCallback, useMemo, type MouseEvent } from 'react'
 import type { Supplier } from '@/types/database'
 
 export function SuppliersHeader({
@@ -40,6 +41,21 @@ export function SuppliersTable({
   suppliers: Supplier[]
   onEdit: (supplier: Supplier) => void
 }) {
+  const suppliersById = useMemo(
+    () => new Map(suppliers.map((supplier) => [supplier.id, supplier])),
+    [suppliers],
+  )
+
+  const handleEditClick = useCallback(
+    (event: MouseEvent<HTMLButtonElement>) => {
+      const supplierId = event.currentTarget.dataset.supplierId
+      if (!supplierId) return
+      const supplier = suppliersById.get(supplierId)
+      if (supplier) onEdit(supplier)
+    },
+    [onEdit, suppliersById],
+  )
+
   return (
     <div className="bg-app-surface rounded-xl border border-app-border overflow-hidden shadow-xs">
       <table className="w-full text-sm">
@@ -51,7 +67,7 @@ export function SuppliersTable({
               <td className="px-4 py-3.5 text-sm text-app-muted hidden sm:table-cell">{supplier.rnc || <span className="text-app-subtle">—</span>}</td>
               <td className="px-4 py-3.5 text-sm text-app-muted hidden md:table-cell">{supplier.payment_terms || <span className="text-app-subtle">—</span>}</td>
               <td className="px-4 py-3.5"><span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${supplier.is_active ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300' : 'bg-app-chip text-app-subtle'}`}>{supplier.is_active ? 'Activo' : 'Inactivo'}</span></td>
-              <td className="px-2 py-3.5"><button onClick={() => onEdit(supplier)} className="p-1.5 rounded-lg text-app-subtle hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 opacity-0 group-hover:opacity-100 transition-all" title="Editar"><Pencil className="w-3.5 h-3.5" /></button></td>
+              <td className="px-2 py-3.5"><button data-supplier-id={supplier.id} onClick={handleEditClick} className="p-1.5 rounded-lg text-app-subtle hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 opacity-0 group-hover:opacity-100 transition-all" title="Editar"><Pencil className="w-3.5 h-3.5" /></button></td>
             </tr>
           ))}
         </tbody>

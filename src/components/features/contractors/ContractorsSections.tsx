@@ -1,4 +1,5 @@
 import { ChevronRight, HardHat, Pencil, Phone, Plus, Search } from 'lucide-react'
+import { useCallback, useMemo, type MouseEvent } from 'react'
 import { Link } from 'react-router-dom'
 import type { Contractor } from '@/types/database'
 
@@ -47,6 +48,21 @@ export function ContractorsGrid({
   contractors: Contractor[]
   onEdit: (contractor: Contractor) => void
 }) {
+  const contractorsById = useMemo(
+    () => new Map(contractors.map((contractor) => [contractor.id, contractor])),
+    [contractors],
+  )
+
+  const handleEditClick = useCallback(
+    (event: MouseEvent<HTMLButtonElement>) => {
+      const contractorId = event.currentTarget.dataset.contractorId
+      if (!contractorId) return
+      const contractor = contractorsById.get(contractorId)
+      if (contractor) onEdit(contractor)
+    },
+    [contractorsById, onEdit],
+  )
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
       {contractors.map((contractor) => (
@@ -61,7 +77,7 @@ export function ContractorsGrid({
                 <div className="flex items-center gap-2 mt-2"><span className="text-[11px] px-2 py-0.5 rounded-full bg-app-chip text-app-muted font-medium">{METHOD_LABEL[contractor.payment_method] || contractor.payment_method}</span><span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${contractor.is_active ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300' : 'bg-app-chip text-app-subtle'}`}>{contractor.is_active ? 'Activo' : 'Inactivo'}</span></div>
               </div>
             </Link>
-            <div className="flex flex-col items-center gap-1 shrink-0"><button onClick={() => onEdit(contractor)} className="p-1.5 rounded-lg text-app-subtle hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 opacity-0 group-hover:opacity-100 transition-all" title="Editar"><Pencil className="w-3.5 h-3.5" /></button><Link to={`/contratistas/${contractor.id}`} className="p-1.5 rounded-lg text-app-subtle hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors" title="Ver detalle"><ChevronRight className="w-4 h-4" /></Link></div>
+            <div className="flex flex-col items-center gap-1 shrink-0"><button data-contractor-id={contractor.id} onClick={handleEditClick} className="p-1.5 rounded-lg text-app-subtle hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 opacity-0 group-hover:opacity-100 transition-all" title="Editar"><Pencil className="w-3.5 h-3.5" /></button><Link to={`/contratistas/${contractor.id}`} className="p-1.5 rounded-lg text-app-subtle hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors" title="Ver detalle"><ChevronRight className="w-4 h-4" /></Link></div>
           </div>
         </div>
       ))}

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { loanService } from '@/services/loanService'
 import { contractorService } from '@/services/contractorService'
 import type { ContractorLoan, Contractor } from '@/types/database'
+import { getErrorMessage } from '@/utils/errors'
 
 type LoanCreateInput = Parameters<typeof loanService.create>[0]
 
@@ -42,7 +43,7 @@ function filterLoans(loans: ContractorLoan[], search: string) {
   )
 }
 
-function useLoansData() {
+function useLoansData(onError: (message: string) => void) {
   const [loans, setLoans] = useState<ContractorLoan[]>([])
   const [contractors, setContractors] = useState<Contractor[]>([])
   const [paidMap, setPaidMap] = useState<Record<string, number>>({})
@@ -55,10 +56,12 @@ function useLoansData() {
       setLoans(data.loans)
       setContractors(data.contractors)
       setPaidMap(data.paidMap)
+    } catch (loadError) {
+      onError(`No se pudieron cargar préstamos: ${getErrorMessage(loadError)}`)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [onError])
 
   useEffect(() => {
     void refresh()
@@ -141,7 +144,7 @@ function useLoanHandlers(
 
 export function useLoansPage({ success, error }: ToastHandlers) {
   const ui = useLoansUiState()
-  const { loans, contractors, paidMap, loading, refresh } = useLoansData()
+  const { loans, contractors, paidMap, loading, refresh } = useLoansData(error)
   const { activeLoans, otherLoans } = useLoanFilters(loans, ui.search)
   const actionContext = useMemo(() => ({ refresh, success, error }), [error, refresh, success])
   const { handleCreate, handleMarkPaid, handleCancel } = useLoanHandlers(

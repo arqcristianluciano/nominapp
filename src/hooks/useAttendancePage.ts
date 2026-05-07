@@ -3,6 +3,8 @@ import { attendanceService, type AttendanceFormData, type AttendanceRecord } fro
 import { contractorService } from '@/services/contractorService'
 import type { Contractor } from '@/types/database'
 import { ATTENDANCE_PAGE_SIZE, EMPTY_ATTENDANCE_FORM } from '@/components/features/attendance/attendanceConfig'
+import { useToast } from '@/components/ui/Toast'
+import { getErrorMessage } from '@/utils/errors'
 
 interface UseAttendancePageResult {
   records: AttendanceRecord[]
@@ -30,6 +32,7 @@ interface UseAttendancePageResult {
 }
 
 export function useAttendancePage(projectId: string | undefined): UseAttendancePageResult {
+  const { error } = useToast()
   const [records, setRecords] = useState<AttendanceRecord[]>([])
   const [contractors, setContractors] = useState<Contractor[]>([])
   const [loading, setLoading] = useState(true)
@@ -56,10 +59,12 @@ export function useAttendancePage(projectId: string | undefined): UseAttendanceP
       ])
       setRecords(attendanceRecords)
       setContractors(contractorsList)
+    } catch (loadError) {
+      error(`No se pudo cargar asistencia: ${getErrorMessage(loadError)}`)
     } finally {
       setLoading(false)
     }
-  }, [projectId])
+  }, [error, projectId])
 
   useEffect(() => {
     void loadAll()
@@ -104,17 +109,23 @@ export function useAttendancePage(projectId: string | undefined): UseAttendanceP
       setShowForm(false)
       setForm({ ...EMPTY_ATTENDANCE_FORM })
       await loadAll()
+    } catch (saveError) {
+      error(`No se pudo registrar asistencia: ${getErrorMessage(saveError)}`)
     } finally {
       setSaving(false)
     }
-  }, [form, loadAll, projectId])
+  }, [error, form, loadAll, projectId])
 
   const handleDelete = useCallback(async () => {
     if (!deleteId) return
-    await attendanceService.delete(deleteId)
-    setDeleteId(null)
-    await loadAll()
-  }, [deleteId, loadAll])
+    try {
+      await attendanceService.delete(deleteId)
+      setDeleteId(null)
+      await loadAll()
+    } catch (deleteError) {
+      error(`No se pudo eliminar asistencia: ${getErrorMessage(deleteError)}`)
+    }
+  }, [deleteId, error, loadAll])
 
   return {
     records,

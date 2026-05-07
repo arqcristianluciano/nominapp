@@ -27,8 +27,11 @@ export function AppLayout() {
               </span>
             </div>
             <button
+              type="button"
               onClick={() => setDemoDismissed(true)}
-              className="p-1 rounded text-amber-500 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors shrink-0"
+              className="p-1 rounded text-amber-500 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 focus-visible:ring-offset-amber-50 dark:focus-visible:ring-offset-amber-950/30"
+              title="Cerrar aviso de modo demo"
+              aria-label="Cerrar aviso de modo demo"
             >
               <X className="w-3.5 h-3.5" />
             </button>
