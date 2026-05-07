@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<title>NominaAPP — Explicación técnica para tesis de maestría</title>
+<style>
+  @page {
+    size: Letter;
+    margin: 2.2cm 2cm 2.5cm 2cm;
+    @bottom-center {
+      content: "Página " counter(page) " de " counter(pages);
+      font-family: Georgia, serif;
+      font-size: 9pt;
+      color: #666;
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 11.5pt;
+    line-height: 1.55;
+    color: #1f2937;
+    margin: 0;
+    padding: 0;
+    text-align: justify;
+    hyphens: auto;
+  }
+
+  .cover {
+    page-break-after: always;
+    text-align: center;
+    padding-top: 4cm;
+  }
+
+  .cover h1 {
+    font-size: 28pt;
+    margin: 0 0 0.3cm 0;
+    color: #0f172a;
+    letter-spacing: -0.5px;
+  }
+
+  .cover .subtitle {
+    font-size: 14pt;
+    color: #475569;
+    font-style: italic;
+    margin-bottom: 2cm;
+  }
+
+  .cover .meta {
+    font-size: 11pt;
+    color: #334155;
+    line-height: 2;
+    border-top: 2px solid #0f172a;
+    border-bottom: 2px solid #0f172a;
+    padding: 1cm 0;
+    max-width: 14cm;
+    margin: 0 auto;
+  }
+
+  .cover .meta strong {
+    color: #0f172a;
+  }
+
+  .cover .footer {
+    margin-top: 3cm;
+    font-size: 10pt;
+    color: #64748b;
+  }
+
+  h1 {
+    font-size: 18pt;
+    color: #0f172a;
+    border-bottom: 2px solid #0f172a;
+    padding-bottom: 6pt;
+    margin-top: 24pt;
+    margin-bottom: 14pt;
+    page-break-after: avoid;
+  }
+
+  h2 {
+    font-size: 13.5pt;
+    color: #1e293b;
+    margin-top: 18pt;
+    margin-bottom: 8pt;
+    page-break-after: avoid;
+  }
+
+  h3 {
+    font-size: 12pt;
+    color: #334155;
+    margin-top: 14pt;
+    margin-bottom: 6pt;
+    font-style: italic;
+    page-break-after: avoid;
+  }
+
+  p {
+    margin: 0 0 8pt 0;
+  }
+
+  ul, ol {
+    margin: 0 0 10pt 0;
+    padding-left: 22pt;
+  }
+
+  li {
+    margin-bottom: 4pt;
+  }
+
+  strong {
+    color: #0f172a;
+  }
+
+  code {
+    font-family: "Courier New", monospace;
+    font-size: 10pt;
+    background: #f1f5f9;
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: #0f172a;
+  }
+
+  pre {
+    background: #0f172a;
+    color: #f1f5f9;
+    padding: 12pt;
+    border-radius: 4px;
+    font-family: "Courier New", monospace;
+    font-size: 9pt;
+    line-height: 1.4;
+    overflow-x: auto;
+    page-break-inside: avoid;
+    text-align: left;
+  }
+
+  pre.diagram {
+    background: #f8fafc;
+    color: #1e293b;
+    border: 1px solid #cbd5e1;
+    text-align: center;
+    font-size: 9.5pt;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10pt 0;
+    page-break-inside: avoid;
+    font-size: 10.5pt;
+  }
+
+  th {
+    background: #0f172a;
+    color: white;
+    padding: 8pt 10pt;
+    text-align: left;
+    font-weight: bold;
+  }
+
+  td {
+    padding: 7pt 10pt;
+    border-bottom: 1px solid #e2e8f0;
+    vertical-align: top;
+  }
+
+  tr:nth-child(even) td {
+    background: #f8fafc;
+  }
+
+  blockquote {
+    border-left: 4px solid #0f172a;
+    background: #f8fafc;
+    padding: 12pt 16pt;
+    margin: 12pt 0;
+    font-style: italic;
+    color: #1e293b;
+    page-break-inside: avoid;
+  }
+
+  .toc {
+    page-break-after: always;
+  }
+
+  .toc h1 {
+    border-bottom: 2px solid #0f172a;
+  }
+
+  .toc ol {
+    list-style: none;
+    padding-left: 0;
+    counter-reset: toc;
+  }
+
+  .toc ol li {
+    counter-increment: toc;
+    padding: 5pt 0;
+    border-bottom: 1px dotted #cbd5e1;
+  }
+
+  .toc ol li::before {
+    content: counter(toc) ". ";
+    font-weight: bold;
+    color: #0f172a;
+  }
+
+  .section {
+    page-break-inside: auto;
+  }
+
+  .glosario dt {
+    font-weight: bold;
+    color: #0f172a;
+    margin-top: 6pt;
+  }
+
+  .glosario dd {
+    margin-left: 0;
+    margin-bottom: 4pt;
+    padding-left: 12pt;
+  }
+
+  .one-line {
+    background: #fef3c7;
+    border-left: 5px solid #f59e0b;
+    padding: 14pt 18pt;
+    margin: 16pt 0;
+    font-style: italic;
+    font-size: 12pt;
+    line-height: 1.5;
+    page-break-inside: avoid;
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ PORTADA ============ -->
+<section class="cover">
+  <h1>NominaAPP</h1>
+  <p class="subtitle">Sistema de administración de construcción asistido por inteligencia artificial</p>
+
+  <div class="meta">
+    <p><strong>Documento:</strong> Explicación técnica del proyecto en lenguaje llano</p>
+    <p><strong>Propósito:</strong> Tesis de maestría</p>
+    <p><strong>Empresa:</strong> THE HOUSE &amp; CO LUCIANO SARKIS, S.R.L.</p>
+    <p><strong>Año:</strong> 2026</p>
+  </div>
+
+  <p class="footer">
+    Documento descriptivo de la arquitectura, herramientas, alojamiento y metodología<br/>
+    de desarrollo asistido por inteligencia artificial.
+  </p>
+</section>
+
+<!-- ============ ÍNDICE ============ -->
+<section class="toc">
+  <h1>Índice</h1>
+  <ol>
+    <li>¿Dónde se escribe la aplicación?</li>
+    <li>¿En qué idioma se le habla a la computadora?</li>
+    <li>¿Cómo está organizada la aplicación por dentro?</li>
+    <li>¿Dónde se guarda toda la información?</li>
+    <li>¿Cómo se conecta la inteligencia artificial al desarrollo?</li>
+    <li>¿Qué inteligencia artificial se usa exactamente?</li>
+    <li>¿Dónde "vive" la aplicación una vez terminada?</li>
+    <li>¿Cómo es el ciclo completo de trabajo?</li>
+    <li>¿Cómo se prueba que la aplicación funcione bien?</li>
+    <li>¿Por qué se eligió este conjunto de herramientas?</li>
+    <li>Resumen visual del sistema</li>
+    <li>Mini glosario para el jurado</li>
+    <li>Síntesis en una sola frase</li>
+  </ol>
+</section>
+
+<!-- ============ CONTENIDO ============ -->
+
+<section class="section">
+<h1>1. ¿Dónde se escribe la aplicación?</h1>
+
+<p>La aplicación se escribe en un programa llamado <strong>Cursor</strong>. Cursor es como Microsoft Word, pero en vez de servir para escribir cartas o documentos, sirve para escribir las instrucciones (el código) que la computadora va a ejecutar.</p>
+
+<p>Cursor está basado en otro programa muy popular llamado <strong>Visual Studio Code</strong>, pero con una diferencia importante: trae integrada la inteligencia artificial dentro del propio editor. Es decir, mientras el desarrollador escribe, puede pedirle a la IA que escriba o modifique partes del código por él, sin tener que salir del programa.</p>
+
+<p>Cursor funciona en cualquier computadora moderna: Windows, Mac o Linux.</p>
+</section>
+
+<section class="section">
+<h1>2. ¿En qué idioma se le habla a la computadora?</h1>
+
+<p>Las computadoras no entienden español ni inglés, entienden lenguajes de programación. La aplicación está escrita principalmente en un lenguaje llamado <strong>TypeScript</strong>.</p>
+
+<p>Una analogía útil: si la computadora fuera un albañil, TypeScript sería como un cuaderno donde le escribimos paso a paso qué tiene que hacer y con qué materiales. La ventaja de TypeScript sobre otros lenguajes es que <strong>revisa los errores antes de ejecutar el trabajo</strong>, igual que un maestro de obra que revisa los planos antes de empezar a construir. Esto es muy importante en un sistema financiero donde un error en una suma puede costar dinero real.</p>
+
+<p>Para que la aplicación se vea como una página web moderna, se usa una herramienta llamada <strong>React</strong>. React permite construir la pantalla por piezas reutilizables, como armar una casa con bloques de Lego: el bloque "tabla de nóminas", el bloque "formulario de contratistas", el bloque "menú lateral", etc. Cada bloque se programa una sola vez y se reutiliza en muchas pantallas.</p>
+
+<p>Los colores, tamaños, espacios y diseño visual se manejan con <strong>Tailwind CSS</strong>, que es como una caja de herramientas de estilos predefinidos: en lugar de inventar cada color y cada margen, se usan clases ya listas (por ejemplo: "fondo blanco", "texto grande", "espacio mediano").</p>
+</section>
+
+<section class="section">
+<h1>3. ¿Cómo está organizada la aplicación por dentro?</h1>
+
+<p>Por dentro la aplicación está dividida en <strong>capas</strong>, como una empresa con departamentos:</p>
+
+<ul>
+  <li><strong>La pantalla</strong> (lo que ve el usuario): solo muestra información y recibe clics. No piensa, no calcula, no guarda nada.</li>
+  <li><strong>El intermediario</strong>: cuando el usuario hace clic en un botón, este intermediario decide qué hay que hacer.</li>
+  <li><strong>El servicio</strong>: es el único que habla con la base de datos. Guarda, busca, modifica o elimina información.</li>
+  <li><strong>La base de datos</strong>: es donde queda guardada toda la información de la empresa (proyectos, contratistas, nóminas, etc.).</li>
+</ul>
+
+<p>¿Por qué dividirlo así? Por la misma razón que en una constructora la persona que recibe al cliente no es la misma que mezcla el cemento. Cada parte hace lo suyo, y si mañana hay que cambiar el proveedor de cemento, no hay que cambiar también a la recepcionista.</p>
+
+<p>Esto permite que la aplicación crezca sin volverse un desorden, y que un error en una parte no afecte a las demás.</p>
+</section>
+
+<section class="section">
+<h1>4. ¿Dónde se guarda toda la información?</h1>
+
+<p>Todos los datos del sistema (proyectos, contratistas, nóminas, presupuestos, cubicaciones, fotos, firmas) se guardan en un servicio llamado <strong>Supabase</strong>.</p>
+
+<p>Supabase es como <strong>alquilar un espacio en un edificio profesional</strong> en lugar de construir uno propio. En vez de comprar servidores, instalarlos, mantenerlos y protegerlos, simplemente se contrata el servicio y Supabase se encarga de todo:</p>
+
+<ul>
+  <li>Guarda la información en una base de datos profesional llamada <strong>PostgreSQL</strong> (una de las más usadas y confiables del mundo).</li>
+  <li>Protege quién puede ver qué (un usuario de una empresa nunca puede ver datos de otra empresa).</li>
+  <li>Hace copias de seguridad automáticas todos los días.</li>
+  <li>Permite que la información se actualice en tiempo real (si dos personas están viendo la misma nómina y una la modifica, la otra ve el cambio al instante).</li>
+  <li>Guarda archivos como fotos de obra, firmas digitales y documentos.</li>
+</ul>
+
+<p>La gran ventaja: <strong>no hay servidores físicos que mantener ni administradores de sistemas que pagar</strong>. Todo se gestiona desde una página web.</p>
+
+<p>Para presentaciones o pruebas, la aplicación tiene un <strong>modo demostración</strong> que funciona sin conectarse a Supabase, usando datos de ejemplo guardados temporalmente en el navegador.</p>
+</section>
+
+<section class="section">
+<h1>5. ¿Cómo se conecta la inteligencia artificial al desarrollo?</h1>
+
+<p>La inteligencia artificial se conecta a través del editor Cursor. El desarrollador escribe instrucciones en español, como si le hablara a un asistente, y la IA responde escribiendo o modificando el código.</p>
+
+<p>Hay tres formas de pedirle ayuda a la IA:</p>
+
+<h2>5.1 Conversación (Chat)</h2>
+<p>El desarrollador escribe algo como: <em>"agrega un campo para registrar el porcentaje de retención del 5% en la tabla de cubicaciones"</em>. La IA lee el código relacionado, propone los cambios y se los muestra al desarrollador, que decide si acepta o rechaza cada modificación, línea por línea.</p>
+
+<p>Es como tener un programador asistente al lado, al que se le explica qué se quiere y él lo redacta, pero el desarrollador siempre tiene la última palabra.</p>
+
+<h2>5.2 Sugerencias automáticas</h2>
+<p>Mientras el desarrollador escribe, la IA va adivinando qué quiere escribir a continuación y lo sugiere en gris. Si el desarrollador está de acuerdo, presiona la tecla Tab y la sugerencia se inserta. Es similar al teclado predictivo del celular, pero para código.</p>
+
+<h2>5.3 Modo Agente (autónomo)</h2>
+<p>Es la modalidad más avanzada. En vez de proponer cambios uno por uno, el desarrollador le da una tarea completa: <em>"crea un módulo de préstamos a contratistas con descuento automático por nómina"</em>. La IA trabaja sola: lee los archivos que necesita, escribe el código en varios sitios a la vez, ejecuta las pruebas, corrige errores y al final reporta lo que hizo.</p>
+
+<h2>5.4 Las "reglas de la casa" (.cursorrules)</h2>
+<p>En el proyecto hay un archivo especial llamado <code>.cursorrules</code> que funciona como un <strong>manual de la empresa para la IA</strong>. En ese archivo está escrito:</p>
+
+<ul>
+  <li>Qué tecnologías se usan.</li>
+  <li>Cómo se debe escribir el código (estilo, nombres, formato).</li>
+  <li>Las reglas del negocio dominicano: el ITBIS es 18%, las cédulas tienen este formato, el descuento por cheque es 0.15%, etc.</li>
+  <li>Los límites: ningún archivo puede tener más de 200 líneas, ninguna función más de 40 líneas.</li>
+</ul>
+
+<p>Cada vez que el desarrollador le pide algo a la IA, Cursor le entrega también este manual. Así la IA respeta las reglas del proyecto y no inventa cosas que no encajan.</p>
+
+<h2>5.5 Conexión directa con la base de datos</h2>
+<p>Cursor tiene una funcionalidad llamada <strong>MCP</strong> (un puente que conecta la IA con servicios externos). Gracias a esto, la IA puede mirar directamente cómo está organizada la base de datos en Supabase, hacer consultas y proponer cambios al esquema, sin que el desarrollador tenga que copiarle y pegarle nada manualmente.</p>
+
+<h2>5.6 Agentes en la nube</h2>
+<p>Cursor permite delegar tareas a "trabajadores virtuales" que corren en computadoras remotas. El desarrollador les asigna una tarea (por ejemplo: <em>"agrega un módulo de control de calidad para ensayos de hormigón"</em>) y el trabajador virtual hace todo el trabajo solo: descarga el proyecto, escribe el código, prueba que funcione, y deja una propuesta lista para que el desarrollador la revise y la apruebe.</p>
+
+<p>Esto permite avanzar en varias funcionalidades al mismo tiempo, como tener un equipo de programadores asistentes trabajando en paralelo.</p>
+</section>
+
+<section class="section">
+<h1>6. ¿Qué inteligencia artificial se usa exactamente?</h1>
+
+<p>El proyecto usa principalmente la familia de modelos llamada <strong>Claude</strong>, desarrollados por una empresa llamada <strong>Anthropic</strong>. Hay dos versiones:</p>
+
+<ul>
+  <li><strong>Claude Sonnet</strong>: la versión equilibrada, rápida y suficientemente inteligente para la mayoría de las tareas. Se usa día a día.</li>
+  <li><strong>Claude Opus</strong>: la versión más potente, pero más lenta y costosa. Se reserva para tareas complicadas: diseñar arquitectura nueva, modificar la base de datos a gran escala, o resolver problemas que requieren analizar muchas partes del sistema a la vez.</li>
+</ul>
+
+<p>La decisión de cuál modelo usar para cada tipo de tarea también está documentada en el archivo de reglas del proyecto.</p>
+</section>
+
+<section class="section">
+<h1>7. ¿Dónde "vive" la aplicación una vez terminada?</h1>
+
+<p>La aplicación está dividida en dos partes que viven en sitios diferentes:</p>
+
+<h2>7.1 La parte visible (lo que el usuario ve en su navegador)</h2>
+<p>Vive en un servicio llamado <strong>Vercel</strong>. Vercel es como <strong>una empresa de mensajería global</strong>: cuando un usuario en Sosúa abre la aplicación, los archivos se le entregan desde un servidor cercano (Miami, por ejemplo), no desde el otro lado del mundo. Esto hace que la aplicación cargue muy rápido sin importar dónde esté el usuario.</p>
+
+<p>Vercel también se encarga de:</p>
+
+<ul>
+  <li><strong>Publicar automáticamente cada cambio</strong>: cada vez que el desarrollador termina un cambio y lo guarda, Vercel lo publica solo, sin intervención manual.</li>
+  <li><strong>Crear versiones de prueba</strong>: cada propuesta de cambio genera una dirección web única donde se puede probar la nueva funcionalidad antes de publicarla oficialmente.</li>
+  <li><strong>Dar seguridad</strong> (HTTPS) y un dominio gratis.</li>
+</ul>
+
+<p>Vercel tiene un plan gratuito suficiente para el tamaño de este proyecto académico.</p>
+
+<h2>7.2 La parte invisible (la base de datos y la información)</h2>
+<p>Vive en <strong>Supabase</strong>, que a su vez funciona sobre la infraestructura de <strong>Amazon Web Services (AWS)</strong>, la nube más grande del mundo. AWS es donde alojan sus servicios empresas como Netflix, Airbnb o Spotify, así que la confiabilidad es de nivel industrial.</p>
+
+<h2>7.3 El código fuente (las instrucciones originales)</h2>
+<p>Vive en <strong>GitHub</strong>, que es como un <strong>Google Drive especializado para código</strong>. GitHub guarda la historia completa del proyecto: quién cambió qué, cuándo y por qué. Si algo se rompe, se puede volver a una versión anterior con un clic.</p>
+
+<p>GitHub está conectado con Vercel: cada vez que se sube un cambio a GitHub, Vercel lo recibe automáticamente, lo prepara y lo publica.</p>
+</section>
+
+<section class="section">
+<h1>8. ¿Cómo es el ciclo completo de trabajo?</h1>
+
+<p>Un día típico de desarrollo se ve así:</p>
+
+<ol>
+  <li><strong>Idea</strong>: el desarrollador identifica algo que falta o que hay que mejorar.</li>
+  <li><strong>Consulta</strong>: revisa el documento <code>PROJECT.md</code>, donde está escrito el estado actual del proyecto y qué módulos ya existen.</li>
+  <li><strong>Petición a la IA</strong>: le explica a la IA en español qué quiere construir.</li>
+  <li><strong>Propuesta de la IA</strong>: la IA escribe el código y muestra los cambios.</li>
+  <li><strong>Revisión</strong>: el desarrollador acepta lo que está bien, corrige lo que no y rechaza lo que sobra.</li>
+  <li><strong>Pruebas</strong>: se ejecutan automáticamente las pruebas que verifican que nada se rompió.</li>
+  <li><strong>Publicación</strong>: el cambio se sube a GitHub, y Vercel lo publica solo.</li>
+  <li><strong>Documentación</strong>: se actualiza el documento del proyecto con lo nuevo.</li>
+</ol>
+
+<p>Todo este ciclo, que tradicionalmente podía tomar muchas horas, con asistencia de IA puede completarse en minutos para tareas sencillas y en menos tiempo del normal para tareas complejas.</p>
+</section>
+
+<section class="section">
+<h1>9. ¿Cómo se prueba que la aplicación funcione bien?</h1>
+
+<p>El sistema tiene dos tipos de pruebas automáticas:</p>
+
+<ul>
+  <li><strong>Pruebas de partes pequeñas (unitarias)</strong>: con una herramienta llamada <strong>Vitest</strong>. Verifican que las cuentas matemáticas estén bien (que el ITBIS calcule 18%, que la validación de cédula funcione, que las conversiones de moneda sean exactas). Hoy hay 51 pruebas de este tipo.</li>
+  <li><strong>Pruebas de flujos completos</strong>: con una herramienta llamada <strong>Playwright</strong>. Simulan a un usuario real abriendo el navegador, dándole clic a botones y completando procesos enteros: por ejemplo, "crear una nómina, aprobarla e imprimirla". Si en algún paso algo falla, la prueba avisa.</li>
+</ul>
+
+<p>Estas pruebas se corren automáticamente cada vez que se hace un cambio, así nadie publica accidentalmente algo roto.</p>
+</section>
+
+<section class="section">
+<h1>10. ¿Por qué se eligió este conjunto de herramientas?</h1>
+
+<p>La elección no fue arbitraria. Se basó en cuatro criterios:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width: 25%">Criterio</th>
+      <th>Razón</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Costo</strong></td>
+      <td>Todas las herramientas tienen versiones gratuitas suficientes para el tamaño del proyecto. No hay que pagar servidores, ni licencias, ni administradores.</td>
+    </tr>
+    <tr>
+      <td><strong>Velocidad</strong></td>
+      <td>Combinar React + Supabase + IA permite construir en semanas lo que antes tomaba meses con métodos tradicionales.</td>
+    </tr>
+    <tr>
+      <td><strong>Estándares</strong></td>
+      <td>Son las herramientas más usadas en la industria de software actualmente. Cualquier programador del mundo las conoce, lo que facilita contratar ayuda en el futuro.</td>
+    </tr>
+    <tr>
+      <td><strong>Crecimiento</strong></td>
+      <td>Si mañana el sistema tiene que atender 10 veces más usuarios, la infraestructura crece sola sin tener que reconstruir nada.</td>
+    </tr>
+  </tbody>
+</table>
+</section>
+
+<section class="section">
+<h1>11. Resumen visual del sistema</h1>
+
+<pre class="diagram">
+   El desarrollador trabaja en Cursor (con ayuda de la IA Claude)
+                              |
+                              v
+              Sube los cambios a GitHub (almacén de código)
+                              |
+                              v
+                Vercel los publica automáticamente
+                              |
+                              v
+              El usuario abre la aplicación en su navegador
+                              |
+                              v
+              La aplicación pide y guarda datos en Supabase
+                  (base de datos en la nube de Amazon)
+</pre>
+</section>
+
+<section class="section">
+<h1>12. Mini glosario para el jurado</h1>
+
+<dl class="glosario">
+  <dt>Código</dt>
+  <dd>Las instrucciones escritas que la computadora ejecuta.</dd>
+
+  <dt>Editor</dt>
+  <dd>El programa donde se escribe el código (Cursor, en este caso).</dd>
+
+  <dt>Framework</dt>
+  <dd>Una caja de herramientas pre-fabricadas que evita tener que empezar de cero (React, en este caso).</dd>
+
+  <dt>Base de datos</dt>
+  <dd>El lugar donde se guarda la información de forma organizada.</dd>
+
+  <dt>Servidor</dt>
+  <dd>Una computadora siempre encendida que atiende peticiones de los usuarios.</dd>
+
+  <dt>Nube</dt>
+  <dd>Servidores que están en internet, alquilados a empresas como Amazon, Microsoft o Google.</dd>
+
+  <dt>IA o LLM</dt>
+  <dd>Inteligencia artificial capaz de entender y escribir texto (incluyendo código).</dd>
+
+  <dt>Repositorio</dt>
+  <dd>La carpeta donde vive todo el código del proyecto, con su historia completa.</dd>
+
+  <dt>Despliegue</dt>
+  <dd>El acto de publicar la aplicación para que el usuario la use.</dd>
+
+  <dt>Hosting</dt>
+  <dd>El servicio que aloja la aplicación en internet.</dd>
+</dl>
+</section>
+
+<section class="section">
+<h1>13. Síntesis en una sola frase</h1>
+
+<div class="one-line">
+  "La aplicación se escribe en un editor llamado Cursor que tiene inteligencia artificial integrada, se programa en un lenguaje llamado TypeScript usando React para las pantallas, guarda toda su información en una base de datos en la nube llamada Supabase, su código vive en GitHub y se publica automáticamente en Vercel para que cualquier usuario pueda usarla desde su navegador."
+</div>
+</section>
+
+</body>
+</html>
