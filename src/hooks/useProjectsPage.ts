@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useProjectStore } from '@/stores/projectStore'
 import { projectService } from '@/services/projectService'
+import { supabase } from '@/lib/supabase'
 import { useToast } from '@/components/ui/Toast'
 import type { Project } from '@/types/database'
 
-type ProjectFormInput = Parameters<typeof projectService.create>[0]
+type ProjectFormInput = Parameters<typeof projectService.create>[0] & {
+  new_company?: { name: string; rnc: string | null }
+}
 
 function matchesSearch(project: Project, term: string) {
   return (
@@ -46,12 +49,24 @@ function useProjectActions({ fetchProjects, editing, setEditing, setShowCreate }
   const handleCreate = async (data: ProjectFormInput) => {
     setSaving(true)
     try {
-      await projectService.create(data)
+      const { new_company, ...projectInput } = data
+      let companyId = projectInput.company_id
+      if (new_company) {
+        const { data: created, error: companyError } = await supabase
+          .from('companies')
+          .insert({ name: new_company.name, rnc: new_company.rnc })
+          .select('id')
+          .single()
+        if (companyError) throw companyError
+        companyId = (created as { id: string }).id
+      }
+      await projectService.create({ ...projectInput, company_id: companyId })
       setShowCreate(false)
       await fetchProjects()
       success('Proyecto creado correctamente')
-    } catch {
-      error('No se pudo crear el proyecto')
+    } catch (err) {
+      const message = err instanceof Error && err.message ? err.message : 'No se pudo crear el proyecto'
+      error(message)
     } finally {
       setSaving(false)
     }
