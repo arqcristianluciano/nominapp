@@ -14,6 +14,7 @@ type ProjectFormData = {
   planning_fee: number
   custom_indirects: CustomIndirect[]
   status?: 'active' | 'completed' | 'paused'
+  new_company?: { name: string; rnc: string | null }
 }
 
 interface Props {
@@ -54,9 +55,13 @@ export function ProjectForm({ initial, onSubmit, onCancel, saving }: Props) {
   const [customIndirects, setCustomIndirects] = useState<CustomIndirect[]>(initial?.custom_indirects ?? [])
   const [status, setStatus] = useState<'active' | 'completed' | 'paused'>(initial?.status || 'active')
   const [companies, setCompanies] = useState<Company[]>([])
+  const [companiesLoaded, setCompaniesLoaded] = useState(false)
   const [companyId, setCompanyId] = useState(initial?.company_id || '')
+  const [newCompanyName, setNewCompanyName] = useState('')
+  const [newCompanyRnc, setNewCompanyRnc] = useState('')
 
   const isEditing = !!initial
+  const needsNewCompany = !isEditing && companiesLoaded && companies.length === 0
 
   useEffect(() => {
     if (isEditing) return
@@ -65,11 +70,13 @@ export function ProjectForm({ initial, onSubmit, onCancel, saving }: Props) {
         setCompanies(data)
         setCompanyId((prev) => prev || data[0].id)
       }
+      setCompaniesLoaded(true)
     })
   }, [isEditing])
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    const trimmedNewCompanyName = newCompanyName.trim()
     onSubmit({
       name: name.toUpperCase(),
       code: code.toUpperCase(),
@@ -81,8 +88,19 @@ export function ProjectForm({ initial, onSubmit, onCancel, saving }: Props) {
       planning_fee: planningFee,
       custom_indirects: customIndirects.filter((c) => c.name.trim() && c.value > 0),
       status,
+      new_company: needsNewCompany && trimmedNewCompanyName
+        ? { name: trimmedNewCompanyName, rnc: newCompanyRnc.trim() || null }
+        : undefined,
     })
   }
+
+  const submitDisabled =
+    saving ||
+    !name ||
+    !code ||
+    (!isEditing && !companiesLoaded) ||
+    (needsNewCompany && !newCompanyName.trim()) ||
+    (!isEditing && !needsNewCompany && !companyId)
 
   const inputClass = 'w-full px-3 py-2 border border-app-border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
   const labelClass = 'text-xs font-medium text-app-muted mb-1 block'
@@ -130,13 +148,28 @@ export function ProjectForm({ initial, onSubmit, onCancel, saving }: Props) {
             </select>
           </div>
         )}
-        {!isEditing && companies.length > 1 && (
+        {!isEditing && companies.length > 0 && (
           <div className="col-span-2">
             <label className={labelClass}>Empresa</label>
             <select value={companyId} onChange={(e) => setCompanyId(e.target.value)} className={inputClass}>
               {companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
+        )}
+        {needsNewCompany && (
+          <>
+            <div className="col-span-2">
+              <p className="text-xs text-app-muted">No hay empresas registradas. Crea la primera empresa al registrar este proyecto.</p>
+            </div>
+            <div>
+              <label className={labelClass}>Nombre de la empresa *</label>
+              <input type="text" value={newCompanyName} onChange={(e) => setNewCompanyName(e.target.value)} className={inputClass} placeholder="Ej: MI EMPRESA, S.R.L." required />
+            </div>
+            <div>
+              <label className={labelClass}>RNC (opcional)</label>
+              <input type="text" value={newCompanyRnc} onChange={(e) => setNewCompanyRnc(e.target.value)} className={inputClass} placeholder="Ej: 1-32-66032-3" />
+            </div>
+          </>
         )}
       </div>
 
@@ -171,7 +204,7 @@ export function ProjectForm({ initial, onSubmit, onCancel, saving }: Props) {
         <button type="button" onClick={onCancel} className="px-4 py-2 text-sm text-app-muted border border-app-border rounded-lg hover:bg-app-hover">
           Cancelar
         </button>
-        <button type="submit" disabled={saving || !name || !code} className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50">
+        <button type="submit" disabled={submitDisabled} className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50">
           {saving ? 'Guardando...' : isEditing ? 'Guardar cambios' : 'Crear proyecto'}
         </button>
       </div>
