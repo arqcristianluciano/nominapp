@@ -9,6 +9,7 @@ interface Props {
   category: BudgetCategory
   priceList: PriceListItem[]
   editItem?: BudgetItem | null
+  nextSortOrder?: number
   onSave: (data: Omit<BudgetItem, 'id'>) => Promise<void>
   onClose: () => void
 }
@@ -22,7 +23,7 @@ const EMPTY_FORM = {
   notes: '',
 }
 
-export default function BudgetItemForm({ category, priceList, editItem, onSave, onClose }: Props) {
+export default function BudgetItemForm({ category, priceList, editItem, nextSortOrder = 1, onSave, onClose }: Props) {
   const [form, setForm] = useState(EMPTY_FORM)
   const [priceQuery, setPriceQuery] = useState('')
   const [showPriceList, setShowPriceList] = useState(false)
@@ -69,7 +70,8 @@ export default function BudgetItemForm({ category, priceList, editItem, onSave, 
     setSaving(true)
     setError(null)
     try {
-      const sort_order = editItem?.sort_order ?? Date.now()
+      // sort_order es INTEGER en la BD (max 2_147_483_647); Date.now() lo desborda.
+      const sort_order = editItem?.sort_order ?? nextSortOrder
       await onSave({
         budget_category_id: category.id,
         code: form.code.trim() || null,

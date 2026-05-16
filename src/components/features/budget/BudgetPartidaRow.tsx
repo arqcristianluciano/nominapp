@@ -145,6 +145,7 @@ export default function BudgetPartidaRow({
           category={category}
           priceList={priceList}
           editItem={editItem}
+          nextSortOrder={items.reduce((max, it) => Math.max(max, it.sort_order), 0) + 1}
           onSave={handleSave}
           onClose={() => { setShowForm(false); setEditItem(null) }}
         />
