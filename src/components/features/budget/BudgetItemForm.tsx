@@ -121,23 +121,26 @@ export default function BudgetItemForm({ category, priceList, editItem, onSave, 
               />
             </div>
             {showPriceList && priceQuery && (
-              <div className="absolute z-10 w-full mt-1 bg-app-surface border border-app-border rounded-lg shadow-lg max-h-40 overflow-y-auto">
-                {filteredPrices.length === 0 ? (
-                  <p className="text-xs text-app-subtle p-3">Sin resultados</p>
-                ) : (
-                  filteredPrices.map((p) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => applyPrice(p)}
-                      className="w-full text-left px-3 py-2 hover:bg-blue-50 border-b border-app-border last:border-0"
-                    >
-                      <p className="text-xs font-medium text-app-text">{p.description}</p>
-                      <p className="text-[10px] text-app-muted">{p.unit} · {formatRD(p.unit_price)}</p>
-                    </button>
-                  ))
-                )}
-              </div>
+              <>
+                <div className="fixed inset-0 z-0" onClick={() => setShowPriceList(false)} />
+                <div className="absolute z-10 w-full mt-1 bg-app-surface border border-app-border rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                  {filteredPrices.length === 0 ? (
+                    <p className="text-xs text-app-subtle p-3">Sin resultados</p>
+                  ) : (
+                    filteredPrices.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => applyPrice(p)}
+                        className="w-full text-left px-3 py-2 hover:bg-blue-50 border-b border-app-border last:border-0"
+                      >
+                        <p className="text-xs font-medium text-app-text">{p.description}</p>
+                        <p className="text-[10px] text-app-muted">{p.unit} · {formatRD(p.unit_price)}</p>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </>
             )}
           </div>
 
