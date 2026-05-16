@@ -1,4 +1,4 @@
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2, Paperclip } from 'lucide-react'
 import { formatRD } from '@/utils/currency'
 import type { MaterialInvoice } from '@/types/database'
 
@@ -22,7 +22,7 @@ export function MaterialInvoicesSection({ invoices, isDraft, total, onOpenAdd, o
               {invoices.map((invoice) => (
                 <tr key={invoice.id} className="hover:bg-app-hover">
                   <td className="px-4 py-2.5 text-app-text">{invoice.supplier?.name || '—'}</td>
-                  <td className="px-4 py-2.5 text-app-muted">{invoice.description}{invoice.invoice_reference && <span className="text-xs text-app-subtle ml-1">{invoice.invoice_reference}</span>}</td>
+                  <td className="px-4 py-2.5 text-app-muted">{invoice.description}{invoice.invoice_reference && <span className="text-xs text-app-subtle ml-1">{invoice.invoice_reference}</span>}{invoice.attachment_path && <span className="inline-flex items-center gap-1 text-[10px] text-app-subtle ml-2" title={invoice.attachment_path}><Paperclip className="w-3 h-3" /> {invoice.attachment_path}</span>}</td>
                   <td className="px-4 py-2.5 text-right font-medium text-app-text">{formatRD(invoice.amount)}</td>
                   {isDraft && <td className="px-2 py-2.5"><button onClick={() => onDelete(invoice.id)} className="p-1 text-app-subtle hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button></td>}
                 </tr>

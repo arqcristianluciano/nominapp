@@ -21,6 +21,7 @@ export default function PayrollEditor() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [contractors, setContractors] = useState<Contractor[]>([])
   const [laborTasks, setLaborTasks] = useState<PriceListItem[]>([])
+  const [materialPriceList, setMaterialPriceList] = useState<PriceListItem[]>([])
   const [showAddLabor, setShowAddLabor] = useState(false)
   const [showAddMaterial, setShowAddMaterial] = useState(false)
 
@@ -39,8 +40,11 @@ export default function PayrollEditor() {
     if (!payroll.period?.project_id) return
     priceListService
       .getByProject(payroll.period.project_id)
-      .then((items) => setLaborTasks(items.filter((item) => item.category === 'labor')))
-      .catch(() => setLaborTasks([]))
+      .then((items) => {
+        setLaborTasks(items.filter((item) => item.category === 'labor'))
+        setMaterialPriceList(items.filter((item) => item.category === 'material'))
+      })
+      .catch(() => { setLaborTasks([]); setMaterialPriceList([]) })
   }, [payroll.period?.project_id])
 
   if (payroll.loading) return <div className="text-sm text-app-muted p-4">Cargando nómina...</div>
@@ -81,12 +85,18 @@ export default function PayrollEditor() {
         suppliers={suppliers}
         contractors={contractors}
         laborTasks={laborTasks}
+        materialPriceList={materialPriceList}
+        periodId={period.id}
         saving={payroll.saving}
         onCloseAddMaterial={() => setShowAddMaterial(false)}
         onCloseAddLabor={() => setShowAddLabor(false)}
-        onAddMaterial={async (invoice) => { await payroll.addMaterialInvoice(invoice); setShowAddMaterial(false) }}
+        onAddMaterial={async (invoices) => {
+          for (const inv of invoices) await payroll.addMaterialInvoice(inv)
+          setShowAddMaterial(false)
+        }}
         onAddLabor={async (item) => { await payroll.addLaborItem(item); setShowAddLabor(false) }}
         onContractorCreated={(contractor) => setContractors((prev) => [contractor, ...prev])}
+        onSupplierCreated={(supplier) => setSuppliers((prev) => [supplier, ...prev])}
       />
     </div>
   )

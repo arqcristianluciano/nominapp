@@ -3,6 +3,7 @@ import { Check, X } from 'lucide-react'
 import type { PriceListItem, PriceListCategory } from '@/types/database'
 import { MEASURE_UNITS } from '@/constants/measureUnits'
 import { generatePriceCode } from '@/utils/priceCodeGenerator'
+import { getErrorMessage } from '@/utils/errors'
 
 const CATEGORIES: { value: PriceListCategory; label: string }[] = [
   { value: 'material',   label: 'Material' },
@@ -44,6 +45,7 @@ export default function PriceListInlineForm({
     unit_price:  initial?.unit_price  ?? '',
   })
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   // Auto-generar código solo al crear, y re-generar si cambia categoría sin código manual
   useEffect(() => {
@@ -63,8 +65,12 @@ export default function PriceListInlineForm({
   }
 
   const handleSave = async () => {
-    if (!form.description.trim()) return
+    if (!form.description.trim()) {
+      setError('La descripción es requerida')
+      return
+    }
     setSaving(true)
+    setError(null)
     try {
       await onSave({
         project_id: projectId,
@@ -74,13 +80,26 @@ export default function PriceListInlineForm({
         unit:        form.unit,
         unit_price:  Number(form.unit_price) || 0,
       })
+    } catch (e) {
+      setError(getErrorMessage(e))
     } finally {
       setSaving(false)
     }
   }
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      void handleSave()
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      onCancel()
+    }
+  }
+
   return (
-    <tr className="bg-blue-50/40 border-b border-blue-100">
+    <>
+    <tr className="bg-blue-50/40 border-b border-blue-100" onKeyDown={handleKeyDown}>
       <td className="px-3 py-1.5">
         <select
           value={form.category}
@@ -129,14 +148,21 @@ export default function PriceListInlineForm({
             onClick={handleSave}
             disabled={saving || !form.description.trim()}
             className="p-1 text-green-600 hover:bg-green-50 rounded disabled:opacity-40"
+            title={saving ? 'Guardando…' : 'Guardar (Enter)'}
           >
             <Check className="w-3.5 h-3.5" />
           </button>
-          <button onClick={onCancel} className="p-1 text-app-subtle hover:bg-app-hover-strong rounded">
+          <button onClick={onCancel} className="p-1 text-app-subtle hover:bg-app-hover-strong rounded" title="Cancelar (Esc)">
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
       </td>
     </tr>
+    {error && (
+      <tr className="bg-red-50 border-b border-red-100">
+        <td colSpan={6} className="px-3 py-1.5 text-[11px] text-red-700">{error}</td>
+      </tr>
+    )}
+    </>
   )
 }

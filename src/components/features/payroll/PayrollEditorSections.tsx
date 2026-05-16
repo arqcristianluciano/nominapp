@@ -38,27 +38,33 @@ export function PayrollEditorModals({
   suppliers,
   contractors,
   laborTasks,
+  materialPriceList,
+  periodId,
   saving,
   onCloseAddMaterial,
   onCloseAddLabor,
   onAddMaterial,
   onAddLabor,
   onContractorCreated,
+  onSupplierCreated,
 }: {
   showAddMaterial: boolean
   showAddLabor: boolean
   suppliers: Supplier[]
   contractors: Contractor[]
   laborTasks: PriceListItem[]
+  materialPriceList: PriceListItem[]
+  periodId: string | undefined
   saving: boolean
   onCloseAddMaterial: () => void
   onCloseAddLabor: () => void
-  onAddMaterial: (inv: {
+  onAddMaterial: (invoices: Array<{
     supplier_id: string
     description: string
     invoice_reference?: string
     amount: number
-  }) => Promise<void>
+    attachment_path?: string | null
+  }>) => Promise<void>
   onAddLabor: (item: {
     contractor_id: string
     description: string
@@ -69,10 +75,11 @@ export function PayrollEditorModals({
     is_advance_deduction: boolean
   }) => Promise<void>
   onContractorCreated: (contractor: Contractor) => void
+  onSupplierCreated: (supplier: Supplier) => void
 }) {
   return (
     <>
-      <Modal open={showAddMaterial} onClose={onCloseAddMaterial} title="Agregar factura de materiales"><AddMaterialForm suppliers={suppliers} onSubmit={onAddMaterial} onCancel={onCloseAddMaterial} saving={saving} /></Modal>
+      <Modal open={showAddMaterial} onClose={onCloseAddMaterial} title="Agregar factura de materiales" width="max-w-2xl"><AddMaterialForm suppliers={suppliers} priceListMaterials={materialPriceList} periodId={periodId} onSubmit={onAddMaterial} onCancel={onCloseAddMaterial} saving={saving} onSupplierCreated={onSupplierCreated} /></Modal>
       <Modal open={showAddLabor} onClose={onCloseAddLabor} title="Agregar partida de mano de obra"><AddLaborItemForm contractors={contractors} laborTasks={laborTasks} onSubmit={onAddLabor} onCancel={onCloseAddLabor} saving={saving} onContractorCreated={onContractorCreated} /></Modal>
     </>
   )

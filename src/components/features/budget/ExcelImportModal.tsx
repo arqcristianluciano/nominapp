@@ -32,6 +32,22 @@ function matchCategory(categories: BudgetCategory[], rawCode: string, desc: stri
   ) ?? null
 }
 
+// Detecta si una fila es una subpartida (vs cabecera de partida).
+// Acepta varios indicios para tolerar plantillas Excel diversas:
+// - Tiene unidad + cantidad > 0
+// - Tiene cantidad > 0 + precio > 0
+// - El código tiene formato "N.N" (p. ej. 1.1, 3.2.5) y existe descripción
+function looksLikeSubpartida(colA: string, colB: string, colC: string, qty: number, price: number): boolean {
+  const hasUnit = !!colC
+  const hasQty = !isNaN(qty) && qty > 0
+  const hasPrice = !isNaN(price) && price > 0
+  const codeIsSubpartida = /^\d+\.\d+/.test(colA)
+  if (hasUnit && hasQty) return true
+  if (hasQty && hasPrice) return true
+  if (codeIsSubpartida && !!colB) return true
+  return false
+}
+
 function parseRows(rows: unknown[][], categories: BudgetCategory[]): ParsedRow[] {
   const parsed: ParsedRow[] = []
   let currentCategory: BudgetCategory | null = null
@@ -42,7 +58,7 @@ function parseRows(rows: unknown[][], categories: BudgetCategory[]): ParsedRow[]
 
     const qty = parseFloat(colD.replace(/,/g, '.'))
     const price = parseFloat(colE.replace(/,/g, '.'))
-    const isSubpartida = colC && !isNaN(qty) && qty > 0
+    const isSubpartida = looksLikeSubpartida(colA, colB, colC, qty, price)
 
     if (!isSubpartida) {
       // Es cabecera de partida
@@ -55,11 +71,14 @@ function parseRows(rows: unknown[][], categories: BudgetCategory[]): ParsedRow[]
       parsed.push({
         categoryId: '', categoryName: 'Sin partida',
         code: colA, description: colB, unit: colC,
-        quantity: qty, unit_price: isNaN(price) ? 0 : price,
-        valid: false, error: 'No se detectó partida principal',
+        quantity: isNaN(qty) ? 0 : qty, unit_price: isNaN(price) ? 0 : price,
+        valid: false, error: 'No se detectó partida principal antes de esta fila',
       })
       continue
     }
+
+    const finalQty = isNaN(qty) ? 0 : qty
+    const finalPrice = isNaN(price) ? 0 : price
 
     parsed.push({
       categoryId: currentCategory.id,
@@ -67,8 +86,8 @@ function parseRows(rows: unknown[][], categories: BudgetCategory[]): ParsedRow[]
       code: colA,
       description: colB,
       unit: colC,
-      quantity: qty,
-      unit_price: isNaN(price) ? 0 : price,
+      quantity: finalQty,
+      unit_price: finalPrice,
       valid: true,
     })
   }
@@ -157,8 +176,22 @@ export default function ExcelImportModal({ categories, onImport, onClose }: Prop
           <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-700 space-y-1">
             <p className="font-medium">Formato esperado (columnas A–E):</p>
             <p>A: Código · B: Descripción · C: Unidad · D: Cantidad · E: Precio unitario</p>
-            <p className="text-blue-500">Las filas sin Unidad/Cantidad se detectan como cabeceras de partida.</p>
+            <p className="text-blue-500">
+              Una fila se detecta como subpartida si tiene unidad+cantidad, cantidad+precio,
+              o un código tipo &quot;1.1&quot;. Las demás se interpretan como cabeceras de partida.
+            </p>
           </div>
+
+          {rows.length > 0 && validCount === 0 && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-700">
+              <p className="font-medium mb-1">No se detectaron subpartidas válidas.</p>
+              <p>
+                Verifique que el Excel tenga las columnas en el orden A–E, que cada subpartida tenga
+                cantidad o precio numérico, y que las cabeceras de partida coincidan con los nombres
+                o el orden de las partidas del proyecto.
+              </p>
+            </div>
+          )}
 
           {/* Drop zone */}
           {!rows.length && (
