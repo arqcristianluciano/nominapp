@@ -87,6 +87,7 @@ export default function PayrollEditor() {
         onAddMaterial={async (invoice) => { await payroll.addMaterialInvoice(invoice); setShowAddMaterial(false) }}
         onAddLabor={async (item) => { await payroll.addLaborItem(item); setShowAddLabor(false) }}
         onContractorCreated={(contractor) => setContractors((prev) => [contractor, ...prev])}
+        onSupplierCreated={(supplier) => setSuppliers((prev) => [supplier, ...prev])}
       />
     </div>
   )

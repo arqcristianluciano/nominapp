@@ -249,6 +249,7 @@ export const payrollService = {
     invoice_reference?: string
     amount: number
     notes?: string
+    attachment_path?: string | null
   }) {
     const { data, error } = await supabase
       .from('material_invoices')

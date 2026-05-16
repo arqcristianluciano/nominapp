@@ -79,10 +79,11 @@ export default function BudgetPartidaRow({
           ) : (
             <button
               onClick={(e) => { e.stopPropagation(); onEditBudgetAmount() }}
-              className="text-xs text-app-muted hover:text-blue-600 cursor-pointer"
-              title="Click para editar monto"
+              className="inline-flex items-center gap-1 text-xs text-app-muted hover:text-blue-600 cursor-pointer"
+              title="Editar monto presupuestado"
             >
               {formatRD(budgeted)}
+              <Pencil className="w-3 h-3 opacity-70" />
             </button>
           )}
         </td>
@@ -92,10 +93,10 @@ export default function BudgetPartidaRow({
         <td className="px-3 py-2.5 text-right">
           <button
             onClick={(e) => { e.stopPropagation(); setShowForm(true); setEditItem(null) }}
-            className="inline-flex items-center gap-1 px-2 py-1 text-[10px] text-blue-600 hover:bg-blue-50 rounded transition-colors"
-            title="Agregar subpartida"
+            className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-white bg-blue-600 hover:bg-blue-700 rounded transition-colors"
+            title="Agregar subpartida a esta partida"
           >
-            <Plus className="w-3 h-3" /> Sub
+            <Plus className="w-3 h-3" /> Subpartida
           </button>
         </td>
       </tr>

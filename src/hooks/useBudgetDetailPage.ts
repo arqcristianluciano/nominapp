@@ -70,8 +70,12 @@ function useBudgetEditHandlers(args: EditHandlersArgs) {
 
   const saveEdit = useCallback(async () => {
     if (!editingId) return
-    await budget.updateBudget(editingId, Number(editValue) || 0)
-    setEditingId(null)
+    try {
+      await budget.updateBudget(editingId, Number(editValue) || 0)
+    } finally {
+      // Cierra el modal aunque haya error: el error queda visible en el banner global del presupuesto.
+      setEditingId(null)
+    }
   }, [budget, editValue, editingId, setEditingId])
 
   return { startEdit, saveEdit }

@@ -133,6 +133,7 @@ export function usePayroll(periodId: string | undefined) {
     description: string
     invoice_reference?: string
     amount: number
+    attachment_path?: string | null
   }) => {
     if (!periodId) return
     setSaving(true)
