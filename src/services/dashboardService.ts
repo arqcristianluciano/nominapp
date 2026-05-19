@@ -1,9 +1,11 @@
 import { supabase } from '@/lib/supabase'
 import { calcTotalCxP, type FinancialTransaction } from '@/utils/financialCalculations'
+import { COMMITTED_PAYROLL_STATUSES } from '@/services/payrollService'
 
 interface PayrollKpiRow {
   grand_total: number | null
   created_at: string
+  status: string | null
 }
 
 interface TransactionKpiRow {
@@ -21,7 +23,8 @@ export const dashboardService = {
     const [payrollRes, transactionsRes] = await Promise.all([
       supabase
         .from('payroll_periods')
-        .select('id, grand_total, created_at, project_id'),
+        .select('id, grand_total, created_at, project_id, status')
+        .in('status', COMMITTED_PAYROLL_STATUSES),
       supabase
         .from('transactions')
         .select('id, total, payment_condition, date, description, project_id, created_at')
