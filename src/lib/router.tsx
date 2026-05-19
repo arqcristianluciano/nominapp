@@ -2,6 +2,7 @@
 import { Suspense, lazy, type ComponentType, type LazyExoticComponent } from 'react'
 import { Navigate, createBrowserRouter } from 'react-router-dom'
 import { RequireAuth } from '@/components/auth/RequireAuth'
+import { RequireDirector } from '@/components/auth/RequireDirector'
 import { AppLayout } from '@/components/layout/AppLayout'
 import Login from '@/pages/Login'
 import NotFound from '@/pages/NotFound'
@@ -107,7 +108,12 @@ export const router = createBrowserRouter([
           { path: 'proyectos/:projectId/flujo-caja', element: withSuspense(FlujoCajaPage) },
           { path: 'proyectos/:projectId/avances', element: withSuspense(AvancesPage) },
           { path: 'materiales', element: withSuspense(MaterialsCatalogPage) },
-          { path: 'director', element: withSuspense(DirectorDashboard) },
+          {
+            element: <RequireDirector />,
+            children: [
+              { path: 'director', element: withSuspense(DirectorDashboard) },
+            ],
+          },
           { path: 'aprobaciones', element: withSuspense(AprobacionesPage) },
         ],
       },
