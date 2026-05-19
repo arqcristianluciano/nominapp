@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { X, Upload, FileSpreadsheet, AlertTriangle, CheckCircle, Sparkles } from 'lucide-react'
+import { X, Upload, FileSpreadsheet, AlertTriangle, CheckCircle, Sparkles, Download } from 'lucide-react'
 import type { BudgetCategory, BudgetItem } from '@/types/database'
 import { formatRD } from '@/utils/currency'
 import { getErrorMessage } from '@/utils/errors'
@@ -176,6 +176,24 @@ export default function ExcelImportModal({ categories, onImport, onClose }: Prop
     if (file) handleFile(file)
   }
 
+  const handleDownloadTemplate = async () => {
+    const XLSX = await import('xlsx')
+    const aoa: (string | number)[][] = [
+      ['Código', 'Descripción', 'Unidad', 'Cantidad', 'Precio unitario'],
+      [1, 'PRELIMINARES', '', '', ''],
+      ['1.01', 'Campamento', 'pa', 1, 1000000],
+      ['1.02', 'Limpieza inicial del terreno', 'm2', 250, 350],
+      [2, 'MOVIMIENTO DE TIERRA', '', '', ''],
+      ['2.01', 'Corte y bote', 'm3', 1500, 650],
+      ['2.02', 'Relleno compactado', 'm3', 800, 750],
+    ]
+    const ws = XLSX.utils.aoa_to_sheet(aoa)
+    ws['!cols'] = [{ wch: 10 }, { wch: 35 }, { wch: 8 }, { wch: 10 }, { wch: 16 }]
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Presupuesto')
+    XLSX.writeFile(wb, 'plantilla-presupuesto.xlsx')
+  }
+
   const handleConfirm = async () => {
     const valid = items.filter((r) => r.valid)
     if (valid.length === 0) return
@@ -224,14 +242,66 @@ export default function ExcelImportModal({ categories, onImport, onClose }: Prop
         </div>
 
         <div className="p-5 overflow-y-auto flex-1 space-y-4">
-          <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-700 space-y-1">
-            <p className="font-medium">Formato esperado (columnas A–E):</p>
+          <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-700 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <p className="font-medium">Formato esperado (columnas A–E):</p>
+              <button
+                onClick={handleDownloadTemplate}
+                className="flex items-center gap-1 px-2 py-1 text-[11px] text-blue-700 bg-white border border-blue-200 rounded hover:bg-blue-100 transition-colors"
+                title="Descargar plantilla de ejemplo"
+              >
+                <Download className="w-3 h-3" /> Descargar plantilla
+              </button>
+            </div>
             <p>A: Código · B: Descripción · C: Unidad · D: Cantidad · E: Precio unitario</p>
-            <p className="text-blue-500">
-              Las filas sin Unidad/Cantidad se detectan como capítulos (partidas). Si el
-              nombre no coincide con una partida existente, se creará una nueva
-              automáticamente.
-            </p>
+            <div className="bg-white border border-blue-100 rounded overflow-hidden mt-1">
+              <table className="w-full text-[11px] text-blue-900">
+                <thead>
+                  <tr className="bg-blue-100/60 text-blue-700">
+                    <th className="px-2 py-1 text-left font-semibold">A · Código</th>
+                    <th className="px-2 py-1 text-left font-semibold">B · Descripción</th>
+                    <th className="px-2 py-1 text-center font-semibold">C · Unidad</th>
+                    <th className="px-2 py-1 text-right font-semibold">D · Cantidad</th>
+                    <th className="px-2 py-1 text-right font-semibold">E · P. Unit.</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-t border-blue-100 bg-blue-50/60 font-semibold">
+                    <td className="px-2 py-1">1</td>
+                    <td className="px-2 py-1">PRELIMINARES</td>
+                    <td className="px-2 py-1 text-center text-blue-400">—</td>
+                    <td className="px-2 py-1 text-right text-blue-400">—</td>
+                    <td className="px-2 py-1 text-right text-blue-400">—</td>
+                  </tr>
+                  <tr className="border-t border-blue-100">
+                    <td className="px-2 py-1">1.01</td>
+                    <td className="px-2 py-1">Campamento</td>
+                    <td className="px-2 py-1 text-center">pa</td>
+                    <td className="px-2 py-1 text-right">1</td>
+                    <td className="px-2 py-1 text-right">1,000,000</td>
+                  </tr>
+                  <tr className="border-t border-blue-100 bg-blue-50/60 font-semibold">
+                    <td className="px-2 py-1">2</td>
+                    <td className="px-2 py-1">MOVIMIENTO DE TIERRA</td>
+                    <td className="px-2 py-1 text-center text-blue-400">—</td>
+                    <td className="px-2 py-1 text-right text-blue-400">—</td>
+                    <td className="px-2 py-1 text-right text-blue-400">—</td>
+                  </tr>
+                  <tr className="border-t border-blue-100">
+                    <td className="px-2 py-1">2.01</td>
+                    <td className="px-2 py-1">Corte y bote</td>
+                    <td className="px-2 py-1 text-center">m3</td>
+                    <td className="px-2 py-1 text-right">1,500</td>
+                    <td className="px-2 py-1 text-right">650</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <ul className="list-disc pl-4 space-y-0.5 text-blue-600">
+              <li>Las filas <strong>sin Unidad ni Cantidad</strong> se detectan como capítulos (partidas).</li>
+              <li>Si el nombre del capítulo no coincide con una partida existente, se crea una nueva automáticamente.</li>
+              <li>Las cantidades y precios deben ser numéricos (sin símbolo RD$).</li>
+            </ul>
           </div>
 
           {!items.length && (
