@@ -5,6 +5,7 @@ import {
   PaymentConditionsPanel,
   SystemPanel,
 } from '@/components/features/settings/SettingsPanels'
+import { PushNotificationsSection } from '@/components/features/settings/PushNotificationsSection'
 import { SettingsTabsBar } from '@/components/features/settings/SettingsTabsBar'
 import { type SettingsTab } from '@/components/features/settings/settingsTabs'
 import { useSettingsBankAccounts } from '@/hooks/useSettingsBankAccounts'
@@ -29,6 +30,7 @@ export default function Settings() {
     ),
     condiciones: <PaymentConditionsPanel />,
     categorias: <BudgetCategoriesPanel />,
+    notificaciones: <PushNotificationsSection />,
     sistema: <SystemPanel />,
   }
 

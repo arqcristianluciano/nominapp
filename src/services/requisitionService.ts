@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import type { PurchaseRequisition, PurchaseQuote, RequisitionStatus } from '@/types/purchaseOrder'
 import { approvalsService } from '@/services/approvalsService'
+import { pushNotificationService } from '@/services/pushNotificationService'
 
 function generateReqNumber(): string {
   const year = new Date().getFullYear()
@@ -161,6 +162,21 @@ export const requisitionService = {
         : null,
       metadata: { req_number: row.req_number, project_id: row.project_id },
     })
+
+    // Notificación push a directores + planificación + gerente cuando se
+    // crea una solicitud en pendiente_validacion (requiere validación de
+    // excedente). Falla silenciosa si la edge function no está configurada.
+    if (initialStatus === 'pendiente_validacion') {
+      void pushNotificationService
+        .notifyProjectRole(
+          row.project_id,
+          ['gerente_proyecto', 'planificacion', 'director_general'],
+          'Solicitud excede plan',
+          `${row.req_number}: ${row.description.slice(0, 80)}`,
+          `/ordenes-compra/${row.id}`,
+        )
+        .catch(() => {})
+    }
 
     return row
   },
