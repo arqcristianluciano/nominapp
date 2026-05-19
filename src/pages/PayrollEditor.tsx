@@ -5,6 +5,7 @@ import { supplierService } from '@/services/supplierService'
 import { contractorService } from '@/services/contractorService'
 import { priceListService } from '@/services/priceListService'
 import { budgetCategoryService } from '@/services/budgetCategoryService'
+import { useProjectRoles } from '@/hooks/useProjectRoles'
 import { PaymentDistributionsSection } from '@/components/features/payments/PaymentDistributionsSection'
 import { LoanDeductionSection } from '@/components/features/payroll/LoanDeductionSection'
 import { CubicacionesPayrollSection } from '@/components/features/cubicacion/CubicacionesPayrollSection'
@@ -50,6 +51,8 @@ export default function PayrollEditor() {
       .catch(() => setBudgetCategories([]))
   }, [payroll.period?.project_id])
 
+  const roles = useProjectRoles(payroll.period?.project_id)
+
   if (payroll.loading) return <div className="text-sm text-app-muted p-4">Cargando nómina...</div>
   if (!payroll.period) return <div className="text-sm text-app-muted p-4">Nómina no encontrada</div>
 
@@ -58,7 +61,7 @@ export default function PayrollEditor() {
 
   return (
     <div className="space-y-6 max-w-5xl">
-      <PayrollEditorHeader period={period} saving={payroll.saving} onUpdateStatus={payroll.updateStatus} />
+      <PayrollEditorHeader period={period} saving={payroll.saving} canApprove={roles.canApprovePayroll} onUpdateStatus={payroll.updateStatus} />
 
       {payroll.error && <div className="text-sm text-red-600 bg-red-50 rounded-lg px-4 py-3">{payroll.error}</div>}
 

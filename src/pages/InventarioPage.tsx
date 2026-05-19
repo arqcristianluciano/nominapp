@@ -18,11 +18,14 @@ import {
   type InventoryMovementFormState,
   type InventoryTab,
 } from '@/components/features/inventory/inventoryConfig'
+import { StockOverrideModal } from '@/components/features/inventory/StockOverrideModal'
+import { useProjectRoles } from '@/hooks/useProjectRoles'
 
 export default function InventarioPage() {
   const { projectId } = useParams<{ projectId: string }>()
   const { projects } = useProjectStore()
   const project = projects.find((p) => p.id === projectId)
+  const roles = useProjectRoles(projectId)
   const [items, setItems] = useState<InventoryItem[]>([])
   const [movements, setMovements] = useState<InventoryMovement[]>([])
   const [loading, setLoading] = useState(true)
@@ -33,6 +36,7 @@ export default function InventarioPage() {
   const [movForm, setMovForm] = useState(EMPTY_MOVEMENT_FORM)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [overrideOpen, setOverrideOpen] = useState(false)
 
   const loadAll = useCallback(async () => {
     setLoading(true)
@@ -70,30 +74,39 @@ export default function InventarioPage() {
     } finally { setSaving(false) }
   }
 
+  async function performAddMovement(override?: { motivo: string }) {
+    await inventoryService.addMovement({
+      item_id: movForm.item_id,
+      project_id: projectId!,
+      type: movForm.type,
+      quantity: movForm.quantity,
+      date: movForm.date,
+      notes: movForm.notes ?? null,
+      supplier_id: movForm.supplier_id ?? null,
+      budget_category_id: movForm.budget_category_id ?? null,
+      budget_item_id: movForm.budget_item_id ?? null,
+      purchase_order_id: movForm.purchase_order_id ?? null,
+      unit_cost: movForm.unit_cost ?? null,
+      created_by: user?.displayName ?? null,
+      override: override ? { motivo: override.motivo, actor: user?.displayName ?? 'desconocido' } : null,
+    })
+  }
+
   async function handleAddMovement() {
     if (!movForm.item_id) return
     setSaving(true)
     try {
-      await inventoryService.addMovement({
-        item_id: movForm.item_id,
-        project_id: projectId!,
-        type: movForm.type,
-        quantity: movForm.quantity,
-        date: movForm.date,
-        notes: movForm.notes ?? null,
-        supplier_id: movForm.supplier_id ?? null,
-        budget_category_id: movForm.budget_category_id ?? null,
-        budget_item_id: movForm.budget_item_id ?? null,
-        purchase_order_id: movForm.purchase_order_id ?? null,
-        unit_cost: movForm.unit_cost ?? null,
-        created_by: user?.displayName ?? null,
-      })
+      await performAddMovement()
       setShowMovForm(false)
       setMovForm(EMPTY_MOVEMENT_FORM)
       success('Movimiento registrado')
       await loadAll()
     } catch (e) {
       if (e instanceof InventoryError) {
+        if (e.code === 'INSUFFICIENT_STOCK' && roles.canOverrideStock) {
+          setOverrideOpen(true)
+          return
+        }
         toastError(e.message)
       } else {
         toastError('No se pudo registrar el movimiento')
@@ -102,6 +115,28 @@ export default function InventarioPage() {
       setSaving(false)
     }
   }
+
+  async function handleConfirmOverride(motivo: string) {
+    setSaving(true)
+    try {
+      await performAddMovement({ motivo })
+      setShowMovForm(false)
+      setOverrideOpen(false)
+      setMovForm(EMPTY_MOVEMENT_FORM)
+      success('Salida registrada con override del Gerente')
+      await loadAll()
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const overrideContext = (() => {
+    const item = items.find((it) => it.id === movForm.item_id)
+    return {
+      currentStock: Number(item?.current_stock ?? 0),
+      requested: Number(movForm.quantity ?? 0),
+    }
+  })()
 
   async function handleDelete() {
     if (!deleteId) return
@@ -151,6 +186,15 @@ export default function InventarioPage() {
         deleteId={deleteId}
         onConfirm={handleDelete}
         onCancel={() => setDeleteId(null)}
+      />
+
+      <StockOverrideModal
+        open={overrideOpen}
+        onClose={() => setOverrideOpen(false)}
+        onConfirm={handleConfirmOverride}
+        defaultActor={user?.displayName}
+        currentStock={overrideContext.currentStock}
+        requested={overrideContext.requested}
       />
     </div>
   )

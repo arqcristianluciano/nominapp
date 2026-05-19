@@ -3,6 +3,7 @@ import { Send, ShieldCheck, Trash2, Truck } from 'lucide-react'
 interface Props {
   canEdit: boolean
   canSubmit: boolean
+  canApprove?: boolean
   status: string
   placingOrder: boolean
   onSubmitForApproval: () => void
@@ -15,6 +16,7 @@ interface Props {
 export function PurchaseOrderActions({
   canEdit,
   canSubmit,
+  canApprove = true,
   status,
   placingOrder,
   onSubmitForApproval,
@@ -26,7 +28,8 @@ export function PurchaseOrderActions({
   return (
     <div className="flex flex-wrap gap-3 pt-2">
       {canSubmit && <button onClick={onSubmitForApproval} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700"><Send className="w-4 h-4" />{status === 'needs_revision' ? 'Reenviar a aprobación' : 'Enviar a aprobación'}</button>}
-      {status === 'pending_approval' && <button onClick={onOpenApproval} className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700"><ShieldCheck className="w-4 h-4" /> Revisar y aprobar</button>}
+      {status === 'pending_approval' && canApprove && <button onClick={onOpenApproval} className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700"><ShieldCheck className="w-4 h-4" /> Revisar y aprobar (Gerente)</button>}
+      {status === 'pending_approval' && !canApprove && <p className="text-sm text-app-muted italic">Pendiente de aprobación por el Gerente de Proyecto.</p>}
       {status === 'approved' && (
         <>
           <button onClick={onPlaceCash} disabled={placingOrder} className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50"><Truck className="w-4 h-4" /> Colocar orden — Contado</button>
