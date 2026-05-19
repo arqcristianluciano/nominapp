@@ -79,6 +79,8 @@ export default function BudgetItemForm({ category, priceList, editItem, onSave, 
         unit_price: Number(form.unit_price) || 0,
         sort_order,
         notes: form.notes.trim() || null,
+        start_date: null,
+        end_date: null,
       })
       onClose()
     } catch (e) {

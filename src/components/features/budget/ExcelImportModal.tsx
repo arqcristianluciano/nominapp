@@ -125,6 +125,8 @@ export default function ExcelImportModal({ categories, onImport, onClose }: Prop
         unit_price: r.unit_price,
         sort_order: i + 1,
         notes: null,
+        start_date: null,
+        end_date: null,
       }))
       await onImport(items)
       setDone(true)

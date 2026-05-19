@@ -78,6 +78,8 @@ export interface BudgetCategory {
   name: string
   sort_order: number
   budgeted_amount: number
+  start_date: string | null
+  end_date: string | null
 }
 
 export interface BudgetItem {
@@ -90,6 +92,8 @@ export interface BudgetItem {
   unit_price: number
   sort_order: number
   notes: string | null
+  start_date: string | null
+  end_date: string | null
 }
 
 export type PriceListCategory = 'material' | 'labor' | 'equipment' | 'adjustment'
