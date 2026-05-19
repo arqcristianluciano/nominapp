@@ -3,11 +3,13 @@ import { Outlet } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { Header } from './Header'
 import { isDemoMode } from '@/lib/supabase'
-import { FlaskConical, X } from 'lucide-react'
+import { FlaskConical, WifiOff, X } from 'lucide-react'
+import { useOfflineQueue } from '@/hooks/useOfflineQueue'
 
 export function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [demoDismissed, setDemoDismissed] = useState(false)
+  const { online, pendingCount, flushNow } = useOfflineQueue()
 
   return (
     <div className="flex h-screen bg-app-bg">
@@ -35,6 +37,33 @@ export function AppLayout() {
             >
               <X className="w-3.5 h-3.5" />
             </button>
+          </div>
+        )}
+
+        {(!online || pendingCount > 0) && (
+          <div className="flex items-center justify-between gap-3 px-4 py-2 bg-slate-900 text-white text-xs shrink-0">
+            <div className="flex items-center gap-2">
+              <WifiOff className="w-3.5 h-3.5 shrink-0" />
+              {!online ? (
+                <span>
+                  <strong>Sin conexión.</strong> Las solicitudes y avances se guardan localmente y se sincronizan
+                  cuando vuelva la red.
+                </span>
+              ) : (
+                <span>
+                  <strong>{pendingCount}</strong>{' '}
+                  {pendingCount === 1 ? 'cambio pendiente' : 'cambios pendientes'} de sincronizar.
+                </span>
+              )}
+            </div>
+            {online && pendingCount > 0 && (
+              <button
+                onClick={() => void flushNow()}
+                className="px-2 py-1 rounded bg-white/10 hover:bg-white/20"
+              >
+                Sincronizar
+              </button>
+            )}
           </div>
         )}
 
