@@ -3,20 +3,86 @@ import type { InventoryItem } from '@/services/inventoryService'
 import type { BudgetCategory, BudgetItem } from '@/types/database'
 import { budgetCategoryService } from '@/services/budgetCategoryService'
 import { budgetItemService } from '@/services/budgetItemService'
+import {
+  materialsCatalogService,
+  type MaterialCatalogItem,
+} from '@/services/materialsCatalogService'
 import type { InventoryMovementFormState } from './inventoryConfig'
 
+export interface ItemFormState {
+  name: string
+  unit: string
+  current_stock: number
+  min_stock: number
+  unit_cost: number
+  material_catalog_id: string | null
+}
+
 interface ItemFormProps {
-  form: { name: string; unit: string; current_stock: number; min_stock: number; unit_cost: number }
+  form: ItemFormState
   saving: boolean
-  onChange: (next: { name: string; unit: string; current_stock: number; min_stock: number; unit_cost: number }) => void
+  onChange: (next: ItemFormState) => void
   onCancel: () => void
   onSave: () => void
 }
 
 export function InventoryItemForm({ form, saving, onChange, onCancel, onSave }: ItemFormProps) {
+  const [catalog, setCatalog] = useState<MaterialCatalogItem[]>([])
+
+  useEffect(() => {
+    let cancelled = false
+    materialsCatalogService
+      .getAll()
+      .then((items) => {
+        if (!cancelled) setCatalog(items)
+      })
+      .catch(() => {
+        if (!cancelled) setCatalog([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  function handleCatalogPick(catalogId: string) {
+    if (!catalogId) {
+      onChange({ ...form, material_catalog_id: null })
+      return
+    }
+    const item = catalog.find((c) => c.id === catalogId)
+    if (!item) return
+    onChange({
+      ...form,
+      material_catalog_id: item.id,
+      name: form.name || item.description,
+      unit: item.unit,
+      min_stock: form.min_stock || item.default_min_stock,
+    })
+  }
+
   return (
     <div className="bg-app-surface border border-app-border rounded-xl p-4 space-y-3">
       <h3 className="font-semibold text-app-text">Nuevo material</h3>
+      {catalog.length > 0 && (
+        <div>
+          <label className="text-xs text-app-muted block mb-1">Material del catálogo global (opcional)</label>
+          <select
+            value={form.material_catalog_id ?? ''}
+            onChange={(e) => handleCatalogPick(e.target.value)}
+            className="w-full px-3 py-2 text-sm border border-app-border rounded-lg bg-app-bg text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">— Material libre —</option>
+            {catalog.map((c) => (
+              <option key={c.id} value={c.id}>
+                [{c.code}] {c.description} · {c.unit}
+              </option>
+            ))}
+          </select>
+          <p className="text-[10px] text-app-subtle mt-1">
+            Seleccionar enlaza este ítem al código global y habilita el histórico transversal de precios.
+          </p>
+        </div>
+      )}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="sm:col-span-2"><label className="text-xs text-app-muted block mb-1">Nombre *</label><input value={form.name} onChange={(e) => onChange({ ...form, name: e.target.value })} placeholder="Ej: Cemento Portland" className="w-full px-3 py-2 text-sm border border-app-border rounded-lg bg-app-bg text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
         <div><label className="text-xs text-app-muted block mb-1">Unidad</label><input value={form.unit} onChange={(e) => onChange({ ...form, unit: e.target.value })} placeholder="sacos, m3, unid" className="w-full px-3 py-2 text-sm border border-app-border rounded-lg bg-app-bg text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>

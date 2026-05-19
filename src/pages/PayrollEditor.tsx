@@ -4,6 +4,7 @@ import { usePayroll } from '@/hooks/usePayroll'
 import { supplierService } from '@/services/supplierService'
 import { contractorService } from '@/services/contractorService'
 import { priceListService } from '@/services/priceListService'
+import { budgetCategoryService } from '@/services/budgetCategoryService'
 import { PaymentDistributionsSection } from '@/components/features/payments/PaymentDistributionsSection'
 import { LoanDeductionSection } from '@/components/features/payroll/LoanDeductionSection'
 import { CubicacionesPayrollSection } from '@/components/features/cubicacion/CubicacionesPayrollSection'
@@ -12,7 +13,7 @@ import { PayrollTotalsCards } from '@/components/features/payroll/PayrollTotalsC
 import { LaborItemsSection } from '@/components/features/payroll/LaborItemsSection'
 import { MaterialInvoicesSection } from '@/components/features/payroll/MaterialInvoicesSection'
 import { IndirectCostsSection } from '@/components/features/payroll/IndirectCostsSection'
-import type { Contractor, PriceListItem, Supplier } from '@/types/database'
+import type { BudgetCategory, Contractor, PriceListItem, Supplier } from '@/types/database'
 
 export default function PayrollEditor() {
   const { periodId } = useParams<{ periodId: string }>()
@@ -21,6 +22,7 @@ export default function PayrollEditor() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [contractors, setContractors] = useState<Contractor[]>([])
   const [laborTasks, setLaborTasks] = useState<PriceListItem[]>([])
+  const [budgetCategories, setBudgetCategories] = useState<BudgetCategory[]>([])
   const [showAddLabor, setShowAddLabor] = useState(false)
   const [showAddMaterial, setShowAddMaterial] = useState(false)
 
@@ -37,10 +39,15 @@ export default function PayrollEditor() {
 
   useEffect(() => {
     if (!payroll.period?.project_id) return
+    const pid = payroll.period.project_id
     priceListService
-      .getByProject(payroll.period.project_id)
+      .getByProject(pid)
       .then((items) => setLaborTasks(items.filter((item) => item.category === 'labor')))
       .catch(() => setLaborTasks([]))
+    budgetCategoryService
+      .getByProject(pid)
+      .then(setBudgetCategories)
+      .catch(() => setBudgetCategories([]))
   }, [payroll.period?.project_id])
 
   if (payroll.loading) return <div className="text-sm text-app-muted p-4">Cargando nómina...</div>
@@ -81,6 +88,7 @@ export default function PayrollEditor() {
         suppliers={suppliers}
         contractors={contractors}
         laborTasks={laborTasks}
+        budgetCategories={budgetCategories}
         saving={payroll.saving}
         onCloseAddMaterial={() => setShowAddMaterial(false)}
         onCloseAddLabor={() => setShowAddLabor(false)}

@@ -8,6 +8,7 @@ export const EMPTY_ITEM_FORM = {
   current_stock: 0,
   min_stock: 10,
   unit_cost: 0,
+  material_catalog_id: null as string | null,
 }
 
 export type InventoryMovementFormState = Pick<

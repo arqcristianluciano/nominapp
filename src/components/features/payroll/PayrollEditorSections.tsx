@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Modal } from '@/components/ui/Modal'
 import { AddLaborItemForm } from '@/components/features/payroll/AddLaborItemForm'
 import { AddMaterialForm } from '@/components/features/payroll/AddMaterialForm'
-import type { Contractor, PayrollPeriod, PriceListItem, Supplier } from '@/types/database'
+import type { BudgetCategory, Contractor, PayrollPeriod, PriceListItem, Supplier } from '@/types/database'
 
 const NEXT_STATUS: Record<string, { label: string; status: 'submitted' | 'approved' | 'paid'; icon: typeof Send }> = {
   draft: { label: 'Enviar para aprobación', status: 'submitted', icon: Send },
@@ -38,6 +38,7 @@ export function PayrollEditorModals({
   suppliers,
   contractors,
   laborTasks,
+  budgetCategories,
   saving,
   onCloseAddMaterial,
   onCloseAddLabor,
@@ -50,6 +51,7 @@ export function PayrollEditorModals({
   suppliers: Supplier[]
   contractors: Contractor[]
   laborTasks: PriceListItem[]
+  budgetCategories?: BudgetCategory[]
   saving: boolean
   onCloseAddMaterial: () => void
   onCloseAddLabor: () => void
@@ -67,13 +69,14 @@ export function PayrollEditorModals({
     unit_price: number
     is_advance: boolean
     is_advance_deduction: boolean
+    budget_category_id?: string | null
   }) => Promise<void>
   onContractorCreated: (contractor: Contractor) => void
 }) {
   return (
     <>
       <Modal open={showAddMaterial} onClose={onCloseAddMaterial} title="Agregar factura de materiales"><AddMaterialForm suppliers={suppliers} onSubmit={onAddMaterial} onCancel={onCloseAddMaterial} saving={saving} /></Modal>
-      <Modal open={showAddLabor} onClose={onCloseAddLabor} title="Agregar partida de mano de obra"><AddLaborItemForm contractors={contractors} laborTasks={laborTasks} onSubmit={onAddLabor} onCancel={onCloseAddLabor} saving={saving} onContractorCreated={onContractorCreated} /></Modal>
+      <Modal open={showAddLabor} onClose={onCloseAddLabor} title="Agregar partida de mano de obra"><AddLaborItemForm contractors={contractors} laborTasks={laborTasks} budgetCategories={budgetCategories} onSubmit={onAddLabor} onCancel={onCloseAddLabor} saving={saving} onContractorCreated={onContractorCreated} /></Modal>
     </>
   )
 }

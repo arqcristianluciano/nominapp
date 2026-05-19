@@ -80,6 +80,8 @@ export function usePayroll(periodId: string | undefined) {
     is_advance_deduction?: boolean
     sort_order?: number
     notes?: string
+    budget_category_id?: string | null
+    budget_item_id?: string | null
   }) => {
     if (!periodId) return
     setSaving(true)

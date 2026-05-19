@@ -45,6 +45,7 @@ const MaterialsCatalogPage = lazy(() => import('@/pages/MaterialsCatalogPage'))
 const DirectorDashboard = lazy(() => import('@/pages/DirectorDashboard'))
 const CubicacionMensualPage = lazy(() => import('@/pages/CubicacionMensualPage'))
 const FlujoCajaPage = lazy(() => import('@/pages/FlujoCajaPage'))
+const AvancesPage = lazy(() => import('@/pages/AvancesPage'))
 
 function withSuspense(Component: LazyExoticComponent<ComponentType>) {
   return (
@@ -103,6 +104,7 @@ export const router = createBrowserRouter([
           { path: 'proyectos/:projectId/cronograma', element: withSuspense(CronogramaPage) },
           { path: 'proyectos/:projectId/cubicacion-mensual', element: withSuspense(CubicacionMensualPage) },
           { path: 'proyectos/:projectId/flujo-caja', element: withSuspense(FlujoCajaPage) },
+          { path: 'proyectos/:projectId/avances', element: withSuspense(AvancesPage) },
           { path: 'materiales', element: withSuspense(MaterialsCatalogPage) },
           { path: 'director', element: withSuspense(DirectorDashboard) },
         ],

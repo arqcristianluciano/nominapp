@@ -35,6 +35,7 @@ type ItemFormState = {
   current_stock: number
   min_stock: number
   unit_cost: number
+  material_catalog_id: string | null
 }
 
 interface InventoryActionFormsSectionProps {
