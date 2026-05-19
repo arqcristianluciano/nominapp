@@ -46,6 +46,7 @@ const DirectorDashboard = lazy(() => import('@/pages/DirectorDashboard'))
 const CubicacionMensualPage = lazy(() => import('@/pages/CubicacionMensualPage'))
 const FlujoCajaPage = lazy(() => import('@/pages/FlujoCajaPage'))
 const AvancesPage = lazy(() => import('@/pages/AvancesPage'))
+const AprobacionesPage = lazy(() => import('@/pages/AprobacionesPage'))
 
 function withSuspense(Component: LazyExoticComponent<ComponentType>) {
   return (
@@ -107,6 +108,7 @@ export const router = createBrowserRouter([
           { path: 'proyectos/:projectId/avances', element: withSuspense(AvancesPage) },
           { path: 'materiales', element: withSuspense(MaterialsCatalogPage) },
           { path: 'director', element: withSuspense(DirectorDashboard) },
+          { path: 'aprobaciones', element: withSuspense(AprobacionesPage) },
         ],
       },
     ],
