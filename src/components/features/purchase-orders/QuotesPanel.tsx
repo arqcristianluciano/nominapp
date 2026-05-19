@@ -40,7 +40,7 @@ export function QuotesPanel({ quotes, approvedQuoteId, canDelete, canNegotiate, 
   if (!quotes.length) {
     return (
       <div className="border-2 border-dashed border-app-border rounded-xl p-10 text-center text-app-subtle">
-        <p className="text-sm">No hay cotizaciones. Agregue al menos 3 suplidores.</p>
+        <p className="text-sm">No hay cotizaciones. Agregue al menos 2 suplidores (o 1 con justificación al aprobar).</p>
       </div>
     )
   }

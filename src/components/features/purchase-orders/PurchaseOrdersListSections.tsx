@@ -69,7 +69,7 @@ export function EmptyPurchaseOrders({ onNew }: { onNew: () => void }) {
     <div className="bg-app-surface rounded-xl border border-app-border p-12 text-center">
       <div className="w-14 h-14 rounded-2xl bg-blue-100 dark:bg-blue-950/60 flex items-center justify-center mx-auto mb-4"><Package className="w-7 h-7 text-blue-600 dark:text-blue-400" /></div>
       <p className="text-base font-semibold text-app-text mb-1">Sin solicitudes de compra</p>
-      <p className="text-sm text-app-muted mb-5">Crea una solicitud y agrega mínimo 3 cotizaciones para aprobar</p>
+      <p className="text-sm text-app-muted mb-5">Crea una solicitud y agrega mínimo 2 cotizaciones (o 1 con justificación) para aprobar</p>
       <button onClick={onNew} className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-colors shadow-sm"><Plus className="w-4 h-4" /> Nueva solicitud</button>
     </div>
   )

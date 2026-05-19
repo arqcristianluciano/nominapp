@@ -12,7 +12,12 @@ interface Props {
   open: boolean
   onClose: () => void
   quotes: PurchaseQuote[]
-  onApprove: (quoteId: string, approvedBy: string, signature: string) => Promise<void>
+  onApprove: (
+    quoteId: string,
+    approvedBy: string,
+    signature: string,
+    singleQuoteJustification?: string | null,
+  ) => Promise<void>
   onReturn: (notes: string) => Promise<void>
   onReject: (reason: string) => Promise<void>
 }
@@ -25,12 +30,16 @@ export function ApprovalModal({ open, onClose, quotes, onApprove, onReturn, onRe
   const [signature, setSignature] = useState<string | null>(null)
   const [returnNotes, setReturnNotes] = useState('')
   const [rejectReason, setRejectReason] = useState('')
+  const [singleQuoteJustification, setSingleQuoteJustification] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const isSingleQuote = quotes.length === 1
+
   const reset = () => {
     setCode(''); setApprovedBy(''); setSignature(null)
-    setReturnNotes(''); setRejectReason(''); setError(null); setTab('approve')
+    setReturnNotes(''); setRejectReason(''); setSingleQuoteJustification('')
+    setError(null); setTab('approve')
     setSelectedQuoteId(quotes[0]?.id || '')
   }
 
@@ -47,7 +56,15 @@ export function ApprovalModal({ open, onClose, quotes, onApprove, onReturn, onRe
     if (!approvalCode.validate(code)) throw new Error('Código de aprobación incorrecto')
     if (!approvedBy.trim()) throw new Error('Ingrese su nombre')
     if (!signature) throw new Error('Se requiere la firma digital')
-    await onApprove(selectedQuoteId, approvedBy.trim(), signature)
+    if (isSingleQuote && !singleQuoteJustification.trim()) {
+      throw new Error('Justificación obligatoria para aprobar con 1 sola cotización')
+    }
+    await onApprove(
+      selectedQuoteId,
+      approvedBy.trim(),
+      signature,
+      isSingleQuote ? singleQuoteJustification.trim() : null,
+    )
   })
 
   const handleReturn = () => withLoading(async () => {
@@ -84,6 +101,15 @@ export function ApprovalModal({ open, onClose, quotes, onApprove, onReturn, onRe
 
         {tab === 'approve' && (
           <div className="space-y-4">
+            {isSingleQuote && (
+              <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 rounded-lg p-3 text-xs text-amber-800 dark:text-amber-200">
+                <p className="font-semibold mb-1">Aprobación con 1 sola cotización</p>
+                <p>
+                  Para liberar esta OC se requiere justificación escrita obligatoria
+                  (urgencia, exclusividad de proveedor, etc.) además de la firma del Gerente.
+                </p>
+              </div>
+            )}
             <div>
               <label className="block text-xs font-medium text-app-muted mb-2">
                 Seleccione la cotización a aprobar
@@ -143,6 +169,21 @@ export function ApprovalModal({ open, onClose, quotes, onApprove, onReturn, onRe
               <label className="block text-xs font-medium text-app-muted mb-1">Firma digital</label>
               <SignatureCanvas onChange={setSignature} />
             </div>
+
+            {isSingleQuote && (
+              <div>
+                <label className="block text-xs font-medium text-app-muted mb-1">
+                  Justificación obligatoria (1 sola cotización) *
+                </label>
+                <textarea
+                  value={singleQuoteJustification}
+                  onChange={(e) => setSingleQuoteJustification(e.target.value)}
+                  rows={3}
+                  placeholder="Ej: Proveedor exclusivo del material XYZ; urgencia por vaciado del próximo lunes…"
+                  className="w-full border border-app-border rounded-lg px-3 py-2 text-sm resize-none"
+                />
+              </div>
+            )}
 
             {error && <p className="text-sm text-red-600">{error}</p>}
             <button onClick={handleApprove} disabled={loading}

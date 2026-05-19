@@ -6,7 +6,10 @@ import { supplierService } from '@/services/supplierService'
 import type { Supplier } from '@/types/database'
 import type { PurchaseRequisition } from '@/types/purchaseOrder'
 
-const MIN_QUOTES = 3
+// Regla 7.2: ≥2 cotizaciones para flujo estándar de liberación del Gerente.
+// Regla 7.3: 1 cotización es válida si el Gerente registra justificación escrita
+// obligatoria al momento de aprobar (ver ApprovalModal).
+const MIN_QUOTES = 2
 
 export function usePurchaseOrderDetail() {
   const { orderId } = useParams<{ orderId: string }>()
@@ -64,9 +67,16 @@ export function usePurchaseOrderDetail() {
     await load()
   }
 
-  async function handleApprove(quoteId: string, approvedBy: string, signature: string) {
+  async function handleApprove(
+    quoteId: string,
+    approvedBy: string,
+    signature: string,
+    singleQuoteJustification?: string | null,
+  ) {
     if (!orderId) return
-    await requisitionService.approve(orderId, quoteId, approvedBy, signature)
+    await requisitionService.approve(orderId, quoteId, approvedBy, signature, {
+      singleQuoteJustification: singleQuoteJustification ?? null,
+    })
     setApprovalModal(false)
     await load()
   }
