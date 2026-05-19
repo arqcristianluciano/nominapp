@@ -10,6 +10,13 @@
 -- policy authenticated-only sin filtro de proyecto.
 -- Pre-requisito: tener al menos un user_profile con is_director=true,
 -- creado vía el flujo de bootstrap del admin.
+--
+-- IMPORTANTE: la propia tabla project_members queda excluida de este
+-- loop porque una policy "EXISTS(SELECT FROM project_members ...)"
+-- aplicada a project_members se autoreferencia y provoca "infinite
+-- recursion detected in policy for relation 'project_members'", lo que
+-- bloquearía todas las queries de la app. La policy de project_members
+-- se define explícitamente en la migración 024.
 -- =====================================================
 
 DO $$
@@ -23,6 +30,7 @@ BEGIN
     JOIN pg_namespace n ON c.relnamespace = n.oid
     WHERE n.nspname = 'public' AND c.relkind = 'r'
       AND c.relrowsecurity = true
+      AND c.relname <> 'project_members'
   LOOP
     SELECT EXISTS (
       SELECT 1 FROM information_schema.columns
