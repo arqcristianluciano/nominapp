@@ -23,12 +23,12 @@ export default function Login() {
 
   if (hydrated && user) return <Navigate to={from} replace />
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setError(null)
     setSubmitting(true)
     try {
-      const ok = login(username, password)
+      const ok = await login(username, password)
       if (!ok) {
         setError('Usuario o contraseña incorrectos.')
         setSubmitting(false)

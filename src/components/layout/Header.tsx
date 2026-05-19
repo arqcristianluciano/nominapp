@@ -244,7 +244,7 @@ export function Header({ onMenuClick }: HeaderProps) {
               </div>
               <button
                 type="button"
-                onClick={() => { logout(); navigate('/login', { replace: true }) }}
+                onClick={async () => { await logout(); navigate('/login', { replace: true }) }}
                 className="p-2 rounded-lg text-app-muted hover:bg-app-hover hover:text-app-text transition-colors"
                 title="Cerrar sesión"
               >
