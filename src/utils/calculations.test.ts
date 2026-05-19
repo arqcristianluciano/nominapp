@@ -22,6 +22,8 @@ const labor = (overrides: Partial<LaborLineItem>): LaborLineItem => ({
   is_advance_deduction: false,
   sort_order: 1,
   notes: null,
+  budget_category_id: null,
+  budget_item_id: null,
   ...overrides,
 })
 

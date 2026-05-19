@@ -78,6 +78,8 @@ export interface BudgetCategory {
   name: string
   sort_order: number
   budgeted_amount: number
+  start_date: string | null
+  end_date: string | null
 }
 
 export interface BudgetItem {
@@ -90,6 +92,8 @@ export interface BudgetItem {
   unit_price: number
   sort_order: number
   notes: string | null
+  start_date: string | null
+  end_date: string | null
 }
 
 export type PriceListCategory = 'material' | 'labor' | 'equipment' | 'adjustment'
@@ -140,6 +144,8 @@ export interface LaborLineItem {
   is_advance_deduction: boolean
   sort_order: number
   notes: string | null
+  budget_category_id: string | null
+  budget_item_id: string | null
   contractor?: Contractor
 }
 
@@ -151,6 +157,7 @@ export interface MaterialInvoice {
   invoice_reference: string | null
   amount: number
   budget_category_id: string | null
+  budget_item_id: string | null
   attachment_path: string | null
   notes: string | null
   supplier?: Supplier

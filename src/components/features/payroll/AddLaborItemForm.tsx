@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { UserPlus, X, AlertTriangle } from 'lucide-react'
-import type { Contractor, PriceListItem } from '@/types/database'
+import type { BudgetCategory, Contractor, PriceListItem } from '@/types/database'
 import { MEASURE_UNITS } from '@/constants/measureUnits'
 import { contractorService } from '@/services/contractorService'
 import { mul, round2 } from '@/utils/money'
@@ -10,6 +10,7 @@ const NEW_CONTRACTOR_VALUE = '__NEW__'
 interface Props {
   contractors: Contractor[]
   laborTasks: PriceListItem[]
+  budgetCategories?: BudgetCategory[]
   onSubmit: (item: {
     contractor_id: string
     description: string
@@ -18,18 +19,20 @@ interface Props {
     unit_price: number
     is_advance: boolean
     is_advance_deduction: boolean
+    budget_category_id?: string | null
   }) => Promise<void>
   onCancel: () => void
   saving: boolean
   onContractorCreated?: (contractor: Contractor) => void
 }
 
-export function AddLaborItemForm({ contractors, laborTasks, onSubmit, onCancel, saving, onContractorCreated }: Props) {
+export function AddLaborItemForm({ contractors, laborTasks, budgetCategories = [], onSubmit, onCancel, saving, onContractorCreated }: Props) {
   const [contractorId, setContractorId] = useState('')
   const [selectedTaskId, setSelectedTaskId] = useState('')
   const [quantity, setQuantity] = useState('')
   const [unit, setUnit] = useState('M2')
   const [unitPrice, setUnitPrice] = useState('')
+  const [budgetCategoryId, setBudgetCategoryId] = useState('')
   const [isAdvance, setIsAdvance] = useState(false)
   const [isDeduction, setIsDeduction] = useState(false)
 
@@ -96,6 +99,7 @@ export function AddLaborItemForm({ contractors, laborTasks, onSubmit, onCancel, 
       unit_price: parseFloat(unitPrice),
       is_advance: isAdvance,
       is_advance_deduction: isDeduction,
+      budget_category_id: budgetCategoryId || null,
     })
   }
 
@@ -215,6 +219,24 @@ export function AddLaborItemForm({ contractors, laborTasks, onSubmit, onCancel, 
           />
         </div>
       </div>
+
+      {budgetCategories.length > 0 && (
+        <div>
+          <label className="block text-xs font-medium text-app-muted mb-1">Capítulo imputado (opcional)</label>
+          <select
+            value={budgetCategoryId}
+            onChange={(e) => setBudgetCategoryId(e.target.value)}
+            className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">— Sin imputación específica —</option>
+            {budgetCategories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.code} {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div className="flex items-center gap-4">
         <label className="flex items-center gap-2 text-sm">

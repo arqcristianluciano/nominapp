@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { approvalsService } from '@/services/approvalsService'
 
 export interface InventoryItem {
   id: string
@@ -20,8 +21,39 @@ export interface InventoryMovement {
   date: string
   supplier_id: string | null
   notes: string | null
+  budget_item_id: string | null
+  budget_category_id: string | null
+  purchase_order_id: string | null
+  unit_cost: number | null
+  created_by: string | null
+  override_motivo: string | null
   created_at: string
   item?: { id: string; name: string; unit: string }
+}
+
+export interface AddMovementInput {
+  item_id: string
+  project_id: string
+  type: 'in' | 'out'
+  quantity: number
+  date: string
+  notes?: string | null
+  supplier_id?: string | null
+  budget_item_id?: string | null
+  budget_category_id?: string | null
+  purchase_order_id?: string | null
+  unit_cost?: number | null
+  created_by?: string | null
+  override?: { motivo: string; actor: string } | null
+}
+
+export class InventoryError extends Error {
+  code: 'OUT_REQUIRES_PARTIDA' | 'INSUFFICIENT_STOCK' | 'ITEM_NOT_FOUND'
+  constructor(code: InventoryError['code'], message: string) {
+    super(message)
+    this.code = code
+    this.name = 'InventoryError'
+  }
 }
 
 export const inventoryService = {
@@ -65,29 +97,85 @@ export const inventoryService = {
     return data ?? []
   },
 
-  async addMovement(
-    movement: Omit<InventoryMovement, 'id' | 'created_at' | 'item'>
-  ): Promise<void> {
-    const now = new Date().toISOString()
-    const { error: mvErr } = await supabase
-      .from('inventory_movements')
-      .insert({ ...movement, created_at: now })
-    if (mvErr) throw mvErr
+  async addMovement(movement: AddMovementInput): Promise<void> {
+    // Regla 7.4: toda salida debe imputarse a una partida.
+    if (movement.type === 'out' && !movement.budget_item_id && !movement.budget_category_id) {
+      throw new InventoryError(
+        'OUT_REQUIRES_PARTIDA',
+        'Toda salida de almacén debe imputarse a una partida del presupuesto.',
+      )
+    }
 
     const { data: item } = await supabase
       .from('inventory_items')
-      .select('current_stock')
+      .select('id, current_stock, unit_cost')
       .eq('id', movement.item_id)
       .single()
+    if (!item) throw new InventoryError('ITEM_NOT_FOUND', 'Material no encontrado.')
 
+    const currentStock = Number(item.current_stock ?? 0)
+    const currentCost = Number(item.unit_cost ?? 0)
     const delta = movement.type === 'in' ? movement.quantity : -movement.quantity
-    const newStock = (item?.current_stock ?? 0) + delta
+    const newStock = currentStock + delta
+
+    // Regla 7.5: stock negativo bloqueado salvo override del Gerente con motivo.
+    if (newStock < 0 && !movement.override) {
+      throw new InventoryError(
+        'INSUFFICIENT_STOCK',
+        `Stock insuficiente: disponible ${currentStock}, solicitado ${movement.quantity}.`,
+      )
+    }
+
+    const now = new Date().toISOString()
+    const { data: inserted, error: mvErr } = await supabase
+      .from('inventory_movements')
+      .insert({
+        item_id: movement.item_id,
+        project_id: movement.project_id,
+        type: movement.type,
+        quantity: movement.quantity,
+        date: movement.date,
+        notes: movement.notes ?? null,
+        supplier_id: movement.supplier_id ?? null,
+        budget_item_id: movement.budget_item_id ?? null,
+        budget_category_id: movement.budget_category_id ?? null,
+        purchase_order_id: movement.purchase_order_id ?? null,
+        unit_cost: movement.unit_cost ?? null,
+        created_by: movement.created_by ?? null,
+        override_motivo: movement.override?.motivo ?? null,
+        created_at: now,
+      })
+      .select()
+      .single()
+    if (mvErr) throw mvErr
+
+    // Recalcular costo promedio ponderado en entradas (sección 6.4 / punto 10).
+    let nextCost = currentCost
+    if (movement.type === 'in' && movement.unit_cost != null && movement.unit_cost > 0) {
+      const incomingValue = movement.quantity * movement.unit_cost
+      const currentValue = currentStock * currentCost
+      const totalQty = currentStock + movement.quantity
+      nextCost = totalQty > 0 ? (currentValue + incomingValue) / totalQty : movement.unit_cost
+    }
 
     const { error: updateErr } = await supabase
       .from('inventory_items')
-      .update({ current_stock: Math.max(0, newStock) })
+      .update({ current_stock: newStock, unit_cost: nextCost })
       .eq('id', movement.item_id)
     if (updateErr) throw updateErr
+
+    if (movement.override) {
+      await approvalsService.log({
+        entity_type: 'inventory_movement',
+        entity_id: (inserted as { id: string }).id,
+        action: 'override_stock',
+        actor_display_name: movement.override.actor,
+        payload_before: { current_stock: currentStock },
+        payload_after: { new_stock: newStock, quantity_out: movement.quantity },
+        motivo: movement.override.motivo,
+        metadata: { item_id: movement.item_id, project_id: movement.project_id },
+      })
+    }
   },
 
   getLowStockItems(items: InventoryItem[]): InventoryItem[] {

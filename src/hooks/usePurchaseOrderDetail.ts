@@ -6,7 +6,10 @@ import { supplierService } from '@/services/supplierService'
 import type { Supplier } from '@/types/database'
 import type { PurchaseRequisition } from '@/types/purchaseOrder'
 
-const MIN_QUOTES = 3
+// Regla 7.2: ≥2 cotizaciones para flujo estándar de liberación del Gerente.
+// Regla 7.3: 1 cotización es válida si el Gerente registra justificación escrita
+// obligatoria al momento de aprobar (ver ApprovalModal).
+const MIN_QUOTES = 2
 
 export function usePurchaseOrderDetail() {
   const { orderId } = useParams<{ orderId: string }>()
@@ -21,6 +24,7 @@ export function usePurchaseOrderDetail() {
   const [placingOrder, setPlacingOrder] = useState(false)
   const [deleteQuoteId, setDeleteQuoteId] = useState<string | null>(null)
   const [confirmDeleteReq, setConfirmDeleteReq] = useState(false)
+  const [excessModal, setExcessModal] = useState(false)
 
   const load = useCallback(async () => {
     if (!orderId) return
@@ -64,9 +68,16 @@ export function usePurchaseOrderDetail() {
     await load()
   }
 
-  async function handleApprove(quoteId: string, approvedBy: string, signature: string) {
+  async function handleApprove(
+    quoteId: string,
+    approvedBy: string,
+    signature: string,
+    singleQuoteJustification?: string | null,
+  ) {
     if (!orderId) return
-    await requisitionService.approve(orderId, quoteId, approvedBy, signature)
+    await requisitionService.approve(orderId, quoteId, approvedBy, signature, {
+      singleQuoteJustification: singleQuoteJustification ?? null,
+    })
     setApprovalModal(false)
     await load()
   }
@@ -102,6 +113,13 @@ export function usePurchaseOrderDetail() {
     }
   }
 
+  async function handleValidateExcess(validatedBy: string, motivo: string) {
+    if (!orderId) return
+    await requisitionService.validateExcess(orderId, validatedBy, motivo)
+    setExcessModal(false)
+    await load()
+  }
+
   async function handleDelete() {
     if (!orderId) return
     await requisitionService.delete(orderId)
@@ -125,6 +143,7 @@ export function usePurchaseOrderDetail() {
     placingOrder,
     deleteQuoteId,
     confirmDeleteReq,
+    excessModal,
     quotes,
     canEdit,
     canNegotiate,
@@ -134,6 +153,7 @@ export function usePurchaseOrderDetail() {
     setApprovalModal,
     setDeleteQuoteId,
     setConfirmDeleteReq,
+    setExcessModal,
     handleAddQuote,
     handleNegotiate,
     handleDeleteQuote,
@@ -142,6 +162,7 @@ export function usePurchaseOrderDetail() {
     handleReject,
     handleSubmitForApproval,
     handlePlaceOrder,
+    handleValidateExcess,
     handleDelete,
   }
 }

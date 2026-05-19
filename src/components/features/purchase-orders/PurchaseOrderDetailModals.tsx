@@ -39,7 +39,12 @@ export function PurchaseOrderDetailModals({
   onCloseAddQuote: () => void
   onSubmitQuote: (payload: Parameters<typeof quoteService.create>[0]) => Promise<void>
   onCloseApproval: () => void
-  onApprove: (quoteId: string, approvedBy: string, signature: string) => Promise<void>
+  onApprove: (
+    quoteId: string,
+    approvedBy: string,
+    signature: string,
+    singleQuoteJustification?: string | null,
+  ) => Promise<void>
   onReturn: (notes: string) => Promise<void>
   onReject: (reason: string) => Promise<void>
   onConfirmDeleteQuote: (quoteId: string) => Promise<void>

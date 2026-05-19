@@ -14,6 +14,17 @@ import {
   calcLaborTotal,
   calcMaterialsTotal,
 } from '@/utils/calculations'
+import { approvalsService, type ApprovalAction } from '@/services/approvalsService'
+
+// Estados en los que una nómina ya se considera comprometida (regla 7.6).
+// Cubicación, dashboard y plan-vs-real deben filtrar usando este conjunto.
+export const COMMITTED_PAYROLL_STATUSES: PayrollStatus[] = ['approved', 'paid']
+
+function actionForStatus(status: PayrollStatus): ApprovalAction {
+  if (status === 'submitted') return 'submit_for_approval'
+  if (status === 'approved') return 'approve'
+  return 'status_change'
+}
 
 export const payrollService = {
   // === PAYROLL PERIODS ===
@@ -89,9 +100,18 @@ export const payrollService = {
     return (data?.[0] as PayrollPeriod) ?? null
   },
 
-  async updatePeriodStatus(id: string, status: PayrollStatus) {
+  async updatePeriodStatus(id: string, status: PayrollStatus, actor?: { displayName?: string }) {
+    const { data: before } = await supabase
+      .from('payroll_periods')
+      .select('id, status, period_number, project_id')
+      .eq('id', id)
+      .single()
+
     const updates: Record<string, unknown> = { status }
-    if (status === 'approved') updates.approved_at = new Date().toISOString()
+    if (status === 'approved') {
+      updates.approved_at = new Date().toISOString()
+      if (actor?.displayName) updates.approved_by = actor.displayName
+    }
     const { data, error } = await supabase
       .from('payroll_periods')
       .update(updates)
@@ -99,6 +119,19 @@ export const payrollService = {
       .select()
       .single()
     if (error) throw error
+
+    await approvalsService.log({
+      entity_type: 'payroll_period',
+      entity_id: id,
+      action: actionForStatus(status),
+      actor_display_name: actor?.displayName,
+      payload_before: before ? { status: before.status } : null,
+      payload_after: { status },
+      metadata: before
+        ? { period_number: before.period_number, project_id: before.project_id }
+        : {},
+    })
+
     return data as PayrollPeriod
   },
 
@@ -203,6 +236,8 @@ export const payrollService = {
     is_advance_deduction?: boolean
     sort_order?: number
     notes?: string
+    budget_category_id?: string | null
+    budget_item_id?: string | null
   }) {
     const { data, error } = await supabase
       .from('labor_line_items')

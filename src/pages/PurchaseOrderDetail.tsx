@@ -4,7 +4,11 @@ import { PurchaseOrderActions } from '@/components/features/purchase-orders/Purc
 import { PurchaseOrderDetailModals } from '@/components/features/purchase-orders/PurchaseOrderDetailModals'
 import { PurchaseOrderQuotesSection } from '@/components/features/purchase-orders/PurchaseOrderQuotesSection'
 import { PurchaseOrderSignatureCard } from '@/components/features/purchase-orders/PurchaseOrderSignatureCard'
+import { ExcessValidationModal } from '@/components/features/purchase-orders/ExcessValidationModal'
 import { usePurchaseOrderDetail } from '@/hooks/usePurchaseOrderDetail'
+import { useProjectRoles } from '@/hooks/useProjectRoles'
+import { useAuthStore } from '@/stores/authStore'
+import { ShieldCheck } from 'lucide-react'
 
 export default function PurchaseOrderDetail() {
   const {
@@ -18,6 +22,7 @@ export default function PurchaseOrderDetail() {
     placingOrder,
     deleteQuoteId,
     confirmDeleteReq,
+    excessModal,
     quotes,
     canEdit,
     canNegotiate,
@@ -27,6 +32,7 @@ export default function PurchaseOrderDetail() {
     setApprovalModal,
     setDeleteQuoteId,
     setConfirmDeleteReq,
+    setExcessModal,
     handleAddQuote,
     handleNegotiate,
     handleDeleteQuote,
@@ -35,8 +41,12 @@ export default function PurchaseOrderDetail() {
     handleReject,
     handleSubmitForApproval,
     handlePlaceOrder,
+    handleValidateExcess,
     handleDelete,
   } = usePurchaseOrderDetail()
+
+  const roles = useProjectRoles(req?.project_id)
+  const user = useAuthStore((s) => s.user)
 
   if (loading) return <div className="p-8 text-center text-app-subtle">Cargando…</div>
   if (!req) return <div className="p-8 text-center text-app-muted">Solicitud no encontrada</div>
@@ -45,6 +55,15 @@ export default function PurchaseOrderDetail() {
     <div className="p-6 max-w-6xl mx-auto space-y-6">
       <PurchaseOrderHeader req={req} />
       <PurchaseOrderMeta req={req} />
+
+      {req.status === 'pendiente_validacion' && roles.canApproveExcess && (
+        <button
+          onClick={() => setExcessModal(true)}
+          className="w-full sm:w-auto flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
+        >
+          <ShieldCheck className="w-4 h-4" /> Validar excedente (Planificación / Gerente)
+        </button>
+      )}
 
       <PurchaseOrderQuotesSection
         quotes={quotes}
@@ -61,6 +80,7 @@ export default function PurchaseOrderDetail() {
       <PurchaseOrderActions
         canEdit={canEdit}
         canSubmit={canSubmit}
+        canApprove={roles.canReleasePurchaseOrder}
         status={req.status}
         placingOrder={placingOrder}
         onSubmitForApproval={handleSubmitForApproval}
@@ -90,6 +110,13 @@ export default function PurchaseOrderDetail() {
         onCancelDeleteQuote={() => setDeleteQuoteId(null)}
         onConfirmDeleteRequest={handleDelete}
         onCancelDeleteRequest={() => setConfirmDeleteReq(false)}
+      />
+
+      <ExcessValidationModal
+        open={excessModal}
+        onClose={() => setExcessModal(false)}
+        onValidate={handleValidateExcess}
+        defaultValidator={user?.displayName}
       />
     </div>
   )

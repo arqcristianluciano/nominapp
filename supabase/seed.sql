@@ -3,13 +3,14 @@
 -- Datos reales de THE HOUSE & CO
 -- =====================================================
 
--- EMPRESAS
+-- EMPRESAS (las 6 del grupo según estado deseado, sección 1)
 INSERT INTO companies (id, name, rnc) VALUES
   ('c1000000-0000-0000-0000-000000000001', 'THE HOUSE & CO LUCIANO SARKIS, S.R.L.', '1-32-66032-3'),
   ('c1000000-0000-0000-0000-000000000002', 'PLAYA ALICIA HOLDINGS, S.R.L.', '1-31-94439-6'),
   ('c1000000-0000-0000-0000-000000000003', 'THE HOUSE & CO 0970, S.R.L.', '1-31-79127-1'),
   ('c1000000-0000-0000-0000-000000000004', 'WFRONT S.R.L.', '1-32-01723-4'),
-  ('c1000000-0000-0000-0000-000000000005', 'CORPORACIÓN SUERTEPAS, S.R.L.', NULL);
+  ('c1000000-0000-0000-0000-000000000005', 'CORPORACIÓN SUERTEPAS, S.R.L.', NULL),
+  ('c1000000-0000-0000-0000-000000000006', 'MCZ VENTURES, S.R.L.', '1-32-76438-2');
 
 -- PROYECTOS
 INSERT INTO projects (id, company_id, name, code, location, status, dt_percent, admin_percent, transport_percent) VALUES

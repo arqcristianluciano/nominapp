@@ -4,7 +4,7 @@ import type { InventoryItem, InventoryMovement } from '@/services/inventoryServi
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { InventoryItemForm, InventoryMovementForm } from '@/components/features/inventory/InventoryForms'
 import { InventoryMovementsTable, InventoryStockTable } from '@/components/features/inventory/InventoryTables'
-import type { InventoryTab } from '@/components/features/inventory/inventoryConfig'
+import type { InventoryMovementFormState, InventoryTab } from '@/components/features/inventory/inventoryConfig'
 
 export function InventoryPageHeader({
   projectId,
@@ -35,19 +35,19 @@ type ItemFormState = {
   current_stock: number
   min_stock: number
   unit_cost: number
+  material_catalog_id: string | null
 }
-
-type MovementFormState = Pick<InventoryMovement, 'item_id' | 'type' | 'quantity' | 'date' | 'notes'>
 
 interface InventoryActionFormsSectionProps {
   showItemForm: boolean
   showMovementForm: boolean
   itemForm: ItemFormState
-  movementForm: MovementFormState
+  movementForm: InventoryMovementFormState
   items: InventoryItem[]
+  projectId: string
   saving: boolean
   onItemFormChange: (next: ItemFormState) => void
-  onMovementFormChange: (next: MovementFormState) => void
+  onMovementFormChange: (next: InventoryMovementFormState) => void
   onCloseItemForm: () => void
   onCloseMovementForm: () => void
   onSaveItem: () => void
@@ -60,6 +60,7 @@ export function InventoryActionFormsSection({
   itemForm,
   movementForm,
   items,
+  projectId,
   saving,
   onItemFormChange,
   onMovementFormChange,
@@ -84,6 +85,7 @@ export function InventoryActionFormsSection({
         <InventoryMovementForm
           form={movementForm}
           items={items}
+          projectId={projectId}
           saving={saving}
           onChange={onMovementFormChange}
           onCancel={onCloseMovementForm}
