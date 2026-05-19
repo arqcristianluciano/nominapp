@@ -43,4 +43,24 @@ export const budgetCategoryService = {
     if (error) throw error
     return (data as BudgetCategory[]).sort((a, b) => a.sort_order - b.sort_order)
   },
+
+  async bulkCreate(
+    projectId: string,
+    items: { code: string; name: string; sort_order: number }[],
+  ): Promise<BudgetCategory[]> {
+    if (items.length === 0) return []
+    const rows = items.map((c) => ({
+      project_id: projectId,
+      code: c.code,
+      name: c.name,
+      sort_order: c.sort_order,
+      budgeted_amount: 0,
+    }))
+    const { data, error } = await supabase
+      .from('budget_categories')
+      .insert(rows)
+      .select()
+    if (error) throw error
+    return data as BudgetCategory[]
+  },
 }

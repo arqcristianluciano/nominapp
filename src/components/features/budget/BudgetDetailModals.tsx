@@ -1,7 +1,7 @@
 import { BudgetAmountEditModal } from '@/components/features/budget/BudgetAmountEditModal'
 import CopyPriceListModal from '@/components/features/budget/CopyPriceListModal'
-import ExcelImportModal from '@/components/features/budget/ExcelImportModal'
-import type { BudgetCategory, BudgetItem, PriceListItem, Project } from '@/types/database'
+import ExcelImportModal, { type ImportPayload } from '@/components/features/budget/ExcelImportModal'
+import type { BudgetCategory, PriceListItem, Project } from '@/types/database'
 
 export function BudgetDetailModals({
   showCopyModal,
@@ -36,7 +36,7 @@ export function BudgetDetailModals({
   onCloseCopyModal: () => void
   onCopyPriceList: (targetProjectId: string) => Promise<void>
   onCloseImport: () => void
-  onImport: (items: Omit<BudgetItem, 'id'>[]) => Promise<void>
+  onImport: (payload: ImportPayload) => Promise<void>
 }) {
   return (
     <>
