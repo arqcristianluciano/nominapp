@@ -1,4 +1,4 @@
-import type { InventoryMovement } from '@/services/inventoryService'
+import type { AddMovementInput } from '@/services/inventoryService'
 
 export type InventoryTab = 'stock' | 'movements'
 
@@ -10,11 +10,29 @@ export const EMPTY_ITEM_FORM = {
   unit_cost: 0,
 }
 
-export const EMPTY_MOVEMENT_FORM: Pick<InventoryMovement, 'item_id' | 'type' | 'quantity' | 'date' | 'supplier_id' | 'notes'> = {
+export type InventoryMovementFormState = Pick<
+  AddMovementInput,
+  | 'item_id'
+  | 'type'
+  | 'quantity'
+  | 'date'
+  | 'notes'
+  | 'supplier_id'
+  | 'budget_category_id'
+  | 'budget_item_id'
+  | 'purchase_order_id'
+  | 'unit_cost'
+>
+
+export const EMPTY_MOVEMENT_FORM: InventoryMovementFormState = {
   item_id: '',
   type: 'in',
   quantity: 1,
   date: new Date().toISOString().split('T')[0],
   supplier_id: null,
   notes: '',
+  budget_category_id: null,
+  budget_item_id: null,
+  purchase_order_id: null,
+  unit_cost: null,
 }

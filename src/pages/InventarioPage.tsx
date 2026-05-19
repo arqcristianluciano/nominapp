@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState, useMemo } from 'react'
 import { useParams } from 'react-router-dom'
 import { useProjectStore } from '@/stores/projectStore'
-import { inventoryService, type InventoryItem, type InventoryMovement } from '@/services/inventoryService'
+import { inventoryService, InventoryError, type InventoryItem, type InventoryMovement } from '@/services/inventoryService'
+import { useToast } from '@/components/ui/Toast'
+import { useAuthStore } from '@/stores/authStore'
 import { InventoryLowStockAlert } from '@/components/features/inventory/InventoryLowStockAlert'
 import {
   InventoryActionFormsSection,
@@ -10,7 +12,12 @@ import {
   InventoryPageHeader,
 } from '@/components/features/inventory/InventoryPageSections'
 import { InventoryTabs } from '@/components/features/inventory/InventoryTabs'
-import { EMPTY_ITEM_FORM, EMPTY_MOVEMENT_FORM, type InventoryTab } from '@/components/features/inventory/inventoryConfig'
+import {
+  EMPTY_ITEM_FORM,
+  EMPTY_MOVEMENT_FORM,
+  type InventoryMovementFormState,
+  type InventoryTab,
+} from '@/components/features/inventory/inventoryConfig'
 
 export default function InventarioPage() {
   const { projectId } = useParams<{ projectId: string }>()
@@ -43,9 +50,11 @@ export default function InventarioPage() {
 
   const lowStock = useMemo(() => inventoryService.getLowStockItems(items), [items])
   const projectName = project?.name ?? 'Proyecto'
+  const { success, error: toastError } = useToast()
+  const user = useAuthStore((s) => s.user)
   const handleMovementFormChange = useCallback(
-    (next: Pick<InventoryMovement, 'item_id' | 'type' | 'quantity' | 'date' | 'notes'>) => {
-      setMovForm((prev) => ({ ...prev, ...next }))
+    (next: InventoryMovementFormState) => {
+      setMovForm(next)
     },
     [],
   )
@@ -65,11 +74,33 @@ export default function InventarioPage() {
     if (!movForm.item_id) return
     setSaving(true)
     try {
-      await inventoryService.addMovement({ ...movForm, project_id: projectId!, supplier_id: null })
+      await inventoryService.addMovement({
+        item_id: movForm.item_id,
+        project_id: projectId!,
+        type: movForm.type,
+        quantity: movForm.quantity,
+        date: movForm.date,
+        notes: movForm.notes ?? null,
+        supplier_id: movForm.supplier_id ?? null,
+        budget_category_id: movForm.budget_category_id ?? null,
+        budget_item_id: movForm.budget_item_id ?? null,
+        purchase_order_id: movForm.purchase_order_id ?? null,
+        unit_cost: movForm.unit_cost ?? null,
+        created_by: user?.displayName ?? null,
+      })
       setShowMovForm(false)
       setMovForm(EMPTY_MOVEMENT_FORM)
+      success('Movimiento registrado')
       await loadAll()
-    } finally { setSaving(false) }
+    } catch (e) {
+      if (e instanceof InventoryError) {
+        toastError(e.message)
+      } else {
+        toastError('No se pudo registrar el movimiento')
+      }
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function handleDelete() {
@@ -96,6 +127,7 @@ export default function InventarioPage() {
         itemForm={itemForm}
         movementForm={movForm}
         items={items}
+        projectId={projectId!}
         saving={saving}
         onItemFormChange={setItemForm}
         onMovementFormChange={handleMovementFormChange}
