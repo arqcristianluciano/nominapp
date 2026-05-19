@@ -23,12 +23,11 @@ export default function Login() {
 
   if (hydrated && user) return <Navigate to={from} replace />
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault()
+  async function performLogin(u: string, p: string) {
     setError(null)
     setSubmitting(true)
     try {
-      const ok = await login(username, password)
+      const ok = await login(u, p)
       if (!ok) {
         setError('Usuario o contraseña incorrectos.')
         setSubmitting(false)
@@ -37,15 +36,19 @@ export default function Login() {
       navigate(from, { replace: true })
     } catch {
       setError('No se pudo iniciar sesión. Intenta de nuevo.')
-    } finally {
       setSubmitting(false)
     }
   }
 
-  function fillDemo(username: string, password: string) {
-    setUsername(username)
-    setPassword(password)
-    setError(null)
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault()
+    await performLogin(username, password)
+  }
+
+  async function quickLogin(u: string, p: string) {
+    setUsername(u)
+    setPassword(p)
+    await performLogin(u, p)
   }
 
   return (
@@ -60,7 +63,7 @@ export default function Login() {
         onUsernameChange={setUsername}
         onPasswordChange={setPassword}
         onSubmit={handleSubmit}
-        onPickDemoUser={fillDemo}
+        onQuickLogin={quickLogin}
       />
     </div>
   )
