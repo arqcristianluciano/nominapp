@@ -1,12 +1,31 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import { sentryVitePlugin } from '@sentry/vite-plugin'
 
-// TODO(observability): para release tracking y subida de source maps a Sentry
-// agregar `@sentry/vite-plugin` aquí. Requiere `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`
-// y `SENTRY_PROJECT` configurados en el entorno de CI/Vercel.
+const SENTRY_AUTH_TOKEN = process.env.SENTRY_AUTH_TOKEN
+const SENTRY_ORG = process.env.SENTRY_ORG
+const SENTRY_PROJECT = process.env.SENTRY_PROJECT
+const sentryEnabled = !!(SENTRY_AUTH_TOKEN && SENTRY_ORG && SENTRY_PROJECT)
+
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  build: {
+    sourcemap: sentryEnabled,
+  },
+  plugins: [
+    react(),
+    tailwindcss(),
+    ...(sentryEnabled
+      ? [
+          sentryVitePlugin({
+            authToken: SENTRY_AUTH_TOKEN,
+            org: SENTRY_ORG,
+            project: SENTRY_PROJECT,
+            telemetry: false,
+          }),
+        ]
+      : []),
+  ],
   resolve: {
     alias: { '@': '/src' },
   },
