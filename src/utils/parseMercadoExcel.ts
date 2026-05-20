@@ -1,4 +1,5 @@
 import type { MercadoCategory, ParsedMercadoLine } from '@/types/mercadoBudget'
+import { parseExcelNumber, readExcelRowsFromFile, rowToCells } from '@/utils/excel'
 
 const CATEGORY_KEYWORDS: Array<[string, MercadoCategory]> = [
   ['mano de obra', 'MANO_DE_OBRA'],
@@ -16,11 +17,6 @@ function detectCategory(text: string): MercadoCategory | null {
   return null
 }
 
-function parseNumber(raw: string): number {
-  const n = parseFloat(raw.replace(/,/g, '.'))
-  return isNaN(n) ? 0 : n
-}
-
 function isCategoryHeader(cells: string[]): MercadoCategory | null {
   for (const cell of cells.slice(0, 3)) {
     if (!cell) continue
@@ -30,64 +26,52 @@ function isCategoryHeader(cells: string[]): MercadoCategory | null {
   return null
 }
 
-export function parseMercadoExcel(file: File): Promise<ParsedMercadoLine[]> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
+export async function parseMercadoExcel(file: File): Promise<ParsedMercadoLine[]> {
+  let rows: unknown[][]
+  try {
+    rows = await readExcelRowsFromFile(file)
+  } catch {
+    throw new Error('No se pudo leer el archivo. Verifique que sea un Excel válido.')
+  }
 
-    reader.onload = async (e) => {
-      try {
-        const XLSX = await import('xlsx')
-        const wb = XLSX.read(e.target?.result, { type: 'binary' })
-        const ws = wb.Sheets[wb.SheetNames[0]]
-        const raw = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, defval: '' })
+  const lines: ParsedMercadoLine[] = []
+  let currentCategory: MercadoCategory | null = null
+  let sortOrder = 0
 
-        const lines: ParsedMercadoLine[] = []
-        let currentCategory: MercadoCategory | null = null
-        let sortOrder = 0
+  for (const row of rows) {
+    const cells = rowToCells(row)
+    const [colA, colB, colC, colD, colE] = cells
 
-        for (const row of raw) {
-          const cells: string[] = row.map((v: unknown) => String(v ?? '').trim())
-          const [colA, colB, colC, colD, colE] = cells
+    if (!colA && !colB && !colC) continue
 
-          if (!colA && !colB && !colC) continue
+    // Primero: si tiene unidad + cantidad válida, es un ítem — nunca un header.
+    // Esto evita que descripciones como "Ajuste de nivelación" sean tomadas como header.
+    const qty = parseExcelNumber(colD)
+    const isLineItem = !!colC && qty > 0
 
-          // Primero: si tiene unidad + cantidad válida, es un ítem — nunca un header.
-          // Esto evita que descripciones como "Ajuste de nivelación" sean tomadas como header.
-          const qty = parseNumber(colD)
-          const isLineItem = !!colC && qty > 0
-
-          if (!isLineItem) {
-            // Solo buscar categoría en filas que no son ítems
-            const cat = isCategoryHeader(cells)
-            if (cat) currentCategory = cat
-            continue
-          }
-
-          if (!currentCategory) continue
-
-          const price = parseNumber(colE)
-
-          lines.push({
-            category: currentCategory,
-            code: colA || null,
-            description: colB || colA,
-            unit: colC,
-            budgeted_quantity: qty,
-            budgeted_unit_price: price,
-            budgeted_total: qty * price,
-            sort_order: ++sortOrder,
-          })
-        }
-
-        resolve(lines)
-      } catch {
-        reject(new Error('No se pudo leer el archivo. Verifique que sea un Excel válido.'))
-      }
+    if (!isLineItem) {
+      const cat = isCategoryHeader(cells)
+      if (cat) currentCategory = cat
+      continue
     }
 
-    reader.onerror = () => reject(new Error('Error al leer el archivo.'))
-    reader.readAsBinaryString(file)
-  })
+    if (!currentCategory) continue
+
+    const price = parseExcelNumber(colE)
+
+    lines.push({
+      category: currentCategory,
+      code: colA || null,
+      description: colB || colA,
+      unit: colC,
+      budgeted_quantity: qty,
+      budgeted_unit_price: isNaN(price) ? 0 : price,
+      budgeted_total: qty * (isNaN(price) ? 0 : price),
+      sort_order: ++sortOrder,
+    })
+  }
+
+  return lines
 }
 
 export function computeBudgetTotals(lines: ParsedMercadoLine[]) {
