@@ -9,3 +9,4 @@ playwright-report
 test-results
 .env*.local
 .commit-msg.tmp
+.claude/worktrees/
