@@ -29,6 +29,7 @@ export interface UseAppRolesResult {
 
   // Acciones app-wide derivadas (atajos cuando la accion abre selector de proyecto)
   canCreateAnyRequisition: boolean    // DG, IO
+  canCreateProject: boolean           // DG, DP, PL (RLS exige tener el rol en algun proyecto existente)
 }
 
 // Roles que el modo demo asume para todos.
@@ -111,5 +112,6 @@ export function useAppRoles(): UseAppRolesResult {
     canViewReportes: isDirector,
     canViewPriceHistory: isDirector,
     canCreateAnyRequisition: hasAny('ingeniero_obra'),
+    canCreateProject: hasAny('director_proyecto', 'planificacion'),
   }
 }
