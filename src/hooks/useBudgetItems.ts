@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { budgetItemService } from '@/services/budgetItemService'
+import { budgetCategoryService } from '@/services/budgetCategoryService'
 import { priceListService } from '@/services/priceListService'
 import { getErrorMessage } from '@/utils/errors'
 import type { BudgetItem, BudgetCategory, PriceListItem } from '@/types/database'
@@ -8,6 +9,14 @@ export interface BudgetPartida {
   category: BudgetCategory
   items: BudgetItem[]
   total: number
+}
+
+export interface BulkImportPayload {
+  newCategories: { key: string; code: string; name: string; sort_order: number }[]
+  items: (Omit<BudgetItem, 'id' | 'budget_category_id'> & {
+    budget_category_id: string | null
+    new_category_key: string | null
+  })[]
 }
 
 export function useBudgetItems(projectId: string | undefined) {
@@ -64,18 +73,50 @@ export function useBudgetItems(projectId: string | undefined) {
     }))
   }, [])
 
-  const bulkImport = useCallback(async (items: Omit<BudgetItem, 'id'>[]) => {
-    const created = await budgetItemService.bulkCreate(items)
+  const bulkImport = useCallback(async (payload: BulkImportPayload) => {
+    if (!projectId) throw new Error('Proyecto no seleccionado')
+
+    const createdCategories = payload.newCategories.length
+      ? await budgetCategoryService.bulkCreate(
+          projectId,
+          payload.newCategories.map((c) => ({ code: c.code, name: c.name, sort_order: c.sort_order })),
+        )
+      : []
+
+    const createdBySortOrder = new Map<number, BudgetCategory>()
+    for (const cat of createdCategories) createdBySortOrder.set(cat.sort_order, cat)
+    const categoryByKey = new Map<string, BudgetCategory>()
+    for (const draft of payload.newCategories) {
+      const created = createdBySortOrder.get(draft.sort_order)
+      if (created) categoryByKey.set(draft.key, created)
+    }
+
+    const itemsToInsert: Omit<BudgetItem, 'id'>[] = []
+    for (const item of payload.items) {
+      let categoryId = item.budget_category_id
+      if (!categoryId && item.new_category_key) {
+        categoryId = categoryByKey.get(item.new_category_key)?.id ?? null
+      }
+      if (!categoryId) continue
+      const { new_category_key: _unused, ...rest } = item
+      void _unused
+      itemsToInsert.push({ ...rest, budget_category_id: categoryId })
+    }
+
+    const created = await budgetItemService.bulkCreate(itemsToInsert)
     setItemsByCategory((prev) => {
       const next = { ...prev }
+      for (const cat of createdCategories) {
+        if (!next[cat.id]) next[cat.id] = []
+      }
       for (const item of created) {
         const cid = item.budget_category_id
         next[cid] = [...(next[cid] ?? []), item]
       }
       return next
     })
-    return created
-  }, [])
+    return { createdCategories, createdItems: created }
+  }, [projectId])
 
   const addPriceListItem = useCallback(async (item: Omit<PriceListItem, 'id'>) => {
     const created = await priceListService.create(item)

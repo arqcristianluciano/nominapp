@@ -78,8 +78,11 @@ export default function PresupuestoDetalle() {
           await budgetItems.copyPriceListToProject(targetProjectId)
         }}
         onCloseImport={() => setShowImport(false)}
-        onImport={async (items) => {
-          await budgetItems.bulkImport(items)
+        onImport={async (payload) => {
+          const result = await budgetItems.bulkImport(payload)
+          if (result.createdCategories.length > 0) {
+            await budget.load()
+          }
         }}
       />
 

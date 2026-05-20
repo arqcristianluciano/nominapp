@@ -1,84 +1,27 @@
 import { useState, useRef } from 'react'
-import { X, Upload, FileSpreadsheet, AlertTriangle, CheckCircle } from 'lucide-react'
-import type { BudgetCategory, BudgetItem } from '@/types/database'
+import { X, Upload, FileSpreadsheet, AlertTriangle, CheckCircle, Sparkles, Download } from 'lucide-react'
+import type { BudgetCategory } from '@/types/database'
 import { formatRD } from '@/utils/currency'
 import { getErrorMessage } from '@/utils/errors'
+import {
+  parseRows,
+  type ImportPayload,
+  type NewCategoryDraft,
+  type ParsedItem,
+} from './parseBudgetExcel'
 
-interface ParsedRow {
-  categoryId: string
-  categoryName: string
-  code: string
-  description: string
-  unit: string
-  quantity: number
-  unit_price: number
-  valid: boolean
-  error?: string
-}
+export type { ImportPayload, NewCategoryDraft, ParsedItem } from './parseBudgetExcel'
 
 interface Props {
   categories: BudgetCategory[]
-  onImport: (items: Omit<BudgetItem, 'id'>[]) => Promise<void>
+  onImport: (payload: ImportPayload) => Promise<void>
   onClose: () => void
-}
-
-function matchCategory(categories: BudgetCategory[], rawCode: string, desc: string): BudgetCategory | null {
-  const code = rawCode?.toString().trim()
-  const name = desc?.toString().trim().toLowerCase()
-  return categories.find((c) =>
-    c.sort_order.toString() === code ||
-    c.code.toLowerCase().includes(name) ||
-    c.name.toLowerCase().includes(name)
-  ) ?? null
-}
-
-function parseRows(rows: unknown[][], categories: BudgetCategory[]): ParsedRow[] {
-  const parsed: ParsedRow[] = []
-  let currentCategory: BudgetCategory | null = null
-
-  for (const row of rows) {
-    const [colA, colB, colC, colD, colE] = row.map((v: unknown) => String(v ?? '').trim())
-    if (!colA && !colB) continue
-
-    const qty = parseFloat(colD.replace(/,/g, '.'))
-    const price = parseFloat(colE.replace(/,/g, '.'))
-    const isSubpartida = colC && !isNaN(qty) && qty > 0
-
-    if (!isSubpartida) {
-      // Es cabecera de partida
-      const matched = matchCategory(categories, colA, colB || colA)
-      if (matched) currentCategory = matched
-      continue
-    }
-
-    if (!currentCategory) {
-      parsed.push({
-        categoryId: '', categoryName: 'Sin partida',
-        code: colA, description: colB, unit: colC,
-        quantity: qty, unit_price: isNaN(price) ? 0 : price,
-        valid: false, error: 'No se detectó partida principal',
-      })
-      continue
-    }
-
-    parsed.push({
-      categoryId: currentCategory.id,
-      categoryName: currentCategory.name,
-      code: colA,
-      description: colB,
-      unit: colC,
-      quantity: qty,
-      unit_price: isNaN(price) ? 0 : price,
-      valid: true,
-    })
-  }
-
-  return parsed
 }
 
 export default function ExcelImportModal({ categories, onImport, onClose }: Props) {
   const inputRef = useRef<HTMLInputElement>(null)
-  const [rows, setRows] = useState<ParsedRow[]>([])
+  const [items, setItems] = useState<ParsedItem[]>([])
+  const [newCategories, setNewCategories] = useState<NewCategoryDraft[]>([])
   const [fileName, setFileName] = useState('')
   const [importing, setImporting] = useState(false)
   const [done, setDone] = useState(false)
@@ -96,7 +39,8 @@ export default function ExcelImportModal({ categories, onImport, onClose }: Prop
         const ws = wb.Sheets[wb.SheetNames[0]]
         const rawRows = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, defval: '' })
         const parsed = parseRows(rawRows, categories)
-        setRows(parsed)
+        setItems(parsed.items)
+        setNewCategories(parsed.newCategories)
       } catch {
         setError('No se pudo leer el archivo. Verifique que sea un Excel válido.')
       }
@@ -110,36 +54,57 @@ export default function ExcelImportModal({ categories, onImport, onClose }: Prop
     if (file) handleFile(file)
   }
 
+  const handleDownloadTemplate = async () => {
+    const XLSX = await import('xlsx')
+    const aoa: (string | number)[][] = [
+      ['Código', 'Descripción', 'Unidad', 'Cantidad', 'Precio unitario'],
+      [1, 'PRELIMINARES', '', '', ''],
+      ['1.01', 'Campamento', 'pa', 1, 1000000],
+      ['1.02', 'Limpieza inicial del terreno', 'm2', 250, 350],
+      [2, 'MOVIMIENTO DE TIERRA', '', '', ''],
+      ['2.01', 'Corte y bote', 'm3', 1500, 650],
+      ['2.02', 'Relleno compactado', 'm3', 800, 750],
+    ]
+    const ws = XLSX.utils.aoa_to_sheet(aoa)
+    ws['!cols'] = [{ wch: 10 }, { wch: 35 }, { wch: 8 }, { wch: 10 }, { wch: 16 }]
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Presupuesto')
+    XLSX.writeFile(wb, 'plantilla-presupuesto.xlsx')
+  }
+
   const handleConfirm = async () => {
-    const valid = rows.filter((r) => r.valid)
+    const valid = items.filter((r) => r.valid)
     if (valid.length === 0) return
     setImporting(true)
     setError(null)
     try {
-      const items: Omit<BudgetItem, 'id'>[] = valid.map((r, i) => ({
-        budget_category_id: r.categoryId,
-        code: r.code || null,
-        description: r.description,
-        unit: r.unit,
-        quantity: r.quantity,
-        unit_price: r.unit_price,
-        sort_order: i + 1,
-        notes: null,
-        start_date: null,
-        end_date: null,
-      }))
-      await onImport(items)
+      const payload: ImportPayload = {
+        newCategories,
+        items: valid.map((r, i) => ({
+          budget_category_id: r.categoryId,
+          new_category_key: r.newCategoryKey,
+          code: r.code || null,
+          description: r.description,
+          unit: r.unit,
+          quantity: r.quantity,
+          unit_price: r.unit_price,
+          sort_order: i + 1,
+          notes: null,
+          start_date: null,
+          end_date: null,
+        })),
+      }
+      await onImport(payload)
       setDone(true)
     } catch (e) {
-
       setError(getErrorMessage(e))
     } finally {
       setImporting(false)
     }
   }
 
-  const validCount = rows.filter((r) => r.valid).length
-  const invalidCount = rows.filter((r) => !r.valid).length
+  const validCount = items.filter((r) => r.valid).length
+  const invalidCount = items.filter((r) => !r.valid).length
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
@@ -155,15 +120,69 @@ export default function ExcelImportModal({ categories, onImport, onClose }: Prop
         </div>
 
         <div className="p-5 overflow-y-auto flex-1 space-y-4">
-          {/* Instrucciones */}
-          <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-700 space-y-1">
-            <p className="font-medium">Formato esperado (columnas A–E):</p>
+          <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-700 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <p className="font-medium">Formato esperado (columnas A–E):</p>
+              <button
+                onClick={handleDownloadTemplate}
+                className="flex items-center gap-1 px-2 py-1 text-[11px] text-blue-700 bg-white border border-blue-200 rounded hover:bg-blue-100 transition-colors"
+                title="Descargar plantilla de ejemplo"
+              >
+                <Download className="w-3 h-3" /> Descargar plantilla
+              </button>
+            </div>
             <p>A: Código · B: Descripción · C: Unidad · D: Cantidad · E: Precio unitario</p>
-            <p className="text-blue-500">Las filas sin Unidad/Cantidad se detectan como cabeceras de partida.</p>
+            <div className="bg-white border border-blue-100 rounded overflow-hidden mt-1">
+              <table className="w-full text-[11px] text-blue-900">
+                <thead>
+                  <tr className="bg-blue-100/60 text-blue-700">
+                    <th className="px-2 py-1 text-left font-semibold">A · Código</th>
+                    <th className="px-2 py-1 text-left font-semibold">B · Descripción</th>
+                    <th className="px-2 py-1 text-center font-semibold">C · Unidad</th>
+                    <th className="px-2 py-1 text-right font-semibold">D · Cantidad</th>
+                    <th className="px-2 py-1 text-right font-semibold">E · P. Unit.</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-t border-blue-100 bg-blue-50/60 font-semibold">
+                    <td className="px-2 py-1">1</td>
+                    <td className="px-2 py-1">PRELIMINARES</td>
+                    <td className="px-2 py-1 text-center text-blue-400">—</td>
+                    <td className="px-2 py-1 text-right text-blue-400">—</td>
+                    <td className="px-2 py-1 text-right text-blue-400">—</td>
+                  </tr>
+                  <tr className="border-t border-blue-100">
+                    <td className="px-2 py-1">1.01</td>
+                    <td className="px-2 py-1">Campamento</td>
+                    <td className="px-2 py-1 text-center">pa</td>
+                    <td className="px-2 py-1 text-right">1</td>
+                    <td className="px-2 py-1 text-right">1,000,000</td>
+                  </tr>
+                  <tr className="border-t border-blue-100 bg-blue-50/60 font-semibold">
+                    <td className="px-2 py-1">2</td>
+                    <td className="px-2 py-1">MOVIMIENTO DE TIERRA</td>
+                    <td className="px-2 py-1 text-center text-blue-400">—</td>
+                    <td className="px-2 py-1 text-right text-blue-400">—</td>
+                    <td className="px-2 py-1 text-right text-blue-400">—</td>
+                  </tr>
+                  <tr className="border-t border-blue-100">
+                    <td className="px-2 py-1">2.01</td>
+                    <td className="px-2 py-1">Corte y bote</td>
+                    <td className="px-2 py-1 text-center">m3</td>
+                    <td className="px-2 py-1 text-right">1,500</td>
+                    <td className="px-2 py-1 text-right">650</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <ul className="list-disc pl-4 space-y-0.5 text-blue-600">
+              <li>Las filas <strong>sin Unidad ni Cantidad</strong> se detectan como capítulos (partidas).</li>
+              <li>Si el nombre del capítulo no coincide con una partida existente, se crea una nueva automáticamente.</li>
+              <li>Las cantidades y precios deben ser numéricos (sin símbolo RD$).</li>
+            </ul>
           </div>
 
-          {/* Drop zone */}
-          {!rows.length && (
+          {!items.length && (
             <div
               onDragOver={(e) => e.preventDefault()}
               onDrop={handleDrop}
@@ -183,8 +202,7 @@ export default function ExcelImportModal({ categories, onImport, onClose }: Prop
             </div>
           )}
 
-          {/* Resumen */}
-          {rows.length > 0 && (
+          {items.length > 0 && (
             <>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3 text-xs">
@@ -197,14 +215,30 @@ export default function ExcelImportModal({ categories, onImport, onClose }: Prop
                       <AlertTriangle className="w-3.5 h-3.5" /> {invalidCount} con errores
                     </span>
                   )}
+                  {newCategories.length > 0 && (
+                    <span className="text-blue-600 flex items-center gap-1">
+                      <Sparkles className="w-3.5 h-3.5" /> {newCategories.length} partidas nuevas
+                    </span>
+                  )}
                 </div>
                 <button
-                  onClick={() => { setRows([]); setFileName('') }}
+                  onClick={() => { setItems([]); setNewCategories([]); setFileName('') }}
                   className="text-xs text-app-subtle hover:text-app-muted"
                 >
                   Cambiar archivo
                 </button>
               </div>
+
+              {newCategories.length > 0 && (
+                <div className="bg-blue-50/60 border border-blue-100 rounded-lg p-3 text-xs text-blue-700">
+                  <p className="font-medium mb-1">Se crearán estas partidas nuevas:</p>
+                  <ul className="list-disc pl-5 space-y-0.5">
+                    {newCategories.map((c) => (
+                      <li key={c.key}>{c.name}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               <div className="border border-app-border rounded-lg overflow-hidden">
                 <table className="w-full text-xs">
@@ -220,12 +254,19 @@ export default function ExcelImportModal({ categories, onImport, onClose }: Prop
                     </tr>
                   </thead>
                   <tbody>
-                    {rows.map((row, i) => (
+                    {items.map((row, i) => (
                       <tr
                         key={i}
                         className={`border-b border-app-border ${row.valid ? 'hover:bg-app-hover' : 'bg-amber-50'}`}
                       >
-                        <td className="px-3 py-1.5 text-app-muted max-w-[120px] truncate">{row.categoryName}</td>
+                        <td className="px-3 py-1.5 text-app-muted max-w-[160px] truncate">
+                          <span>{row.categoryName}</span>
+                          {row.isNewCategory && (
+                            <span className="ml-1 text-[9px] uppercase tracking-wide text-blue-600 font-semibold">
+                              nueva
+                            </span>
+                          )}
+                        </td>
                         <td className="px-3 py-1.5 text-app-subtle font-mono">{row.code}</td>
                         <td className="px-3 py-1.5 text-app-text max-w-[200px] truncate">{row.description}</td>
                         <td className="px-3 py-1.5 text-center text-app-muted">{row.unit}</td>
