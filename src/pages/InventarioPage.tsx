@@ -123,7 +123,7 @@ export default function InventarioPage() {
       setShowMovForm(false)
       setOverrideOpen(false)
       setMovForm(EMPTY_MOVEMENT_FORM)
-      success('Salida registrada con override del Gerente')
+      success('Salida registrada con override del Director')
       await loadAll()
     } finally {
       setSaving(false)

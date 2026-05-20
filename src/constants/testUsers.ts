@@ -18,10 +18,10 @@ export const TEST_USERS: TestUser[] = [
     roleLabel: 'Director General',
   },
   {
-    email: 'gerente@nominapp.local',
+    email: 'director@nominapp.local',
     password: 'Demo2026!',
-    displayName: 'Gerente',
-    roleLabel: 'Gerente de Proyecto',
+    displayName: 'Director',
+    roleLabel: 'Director de Proyecto',
   },
   {
     email: 'planificacion@nominapp.local',

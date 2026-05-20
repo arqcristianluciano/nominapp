@@ -11,7 +11,7 @@ export function BankAccountsPanel({
 }: {
   loading: boolean
   accounts: BankAccount[]
-  onEdit: (account: BankAccount) => void
+  onEdit?: (account: BankAccount) => void
 }) {
   if (loading) return <div className="text-sm text-app-muted">Cargando...</div>
   if (accounts.length === 0) {
@@ -37,7 +37,7 @@ export function BankAccountsPanel({
               <td className="px-3 py-2.5 text-xs text-app-muted">{account.account_number}</td>
               <td className="px-3 py-2.5 text-xs text-app-muted">{account.account_type || '—'}</td>
               <td className="px-3 py-2.5 text-xs text-center">{account.is_internal ? <span className="text-green-600 font-medium">Si</span> : <span className="text-app-subtle">No</span>}</td>
-              <td className="px-3 py-2.5"><button onClick={() => onEdit(account)} className="text-xs text-blue-600 hover:text-blue-800">Editar</button></td>
+              <td className="px-3 py-2.5">{onEdit && <button onClick={() => onEdit(account)} className="text-xs text-blue-600 hover:text-blue-800">Editar</button>}</td>
             </tr>
           ))}
         </tbody>

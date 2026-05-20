@@ -34,7 +34,7 @@ export function PurchaseOrderHeader({ req }: { req: PurchaseRequisition }) {
               Excede la cantidad planificada en la partida
             </p>
             <p className="text-sm text-amber-800 dark:text-amber-300 mt-1">
-              Planificación o el Gerente debe validar con motivo escrito antes de pasar a cotización (regla 7.1).
+              Planificación o el Director debe validar con motivo escrito antes de pasar a cotización (regla 7.1).
             </p>
           </div>
         </div>

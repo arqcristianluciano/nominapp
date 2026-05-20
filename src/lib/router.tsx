@@ -2,6 +2,8 @@
 import { Suspense, lazy, type ComponentType, type LazyExoticComponent } from 'react'
 import { Navigate, createBrowserRouter } from 'react-router-dom'
 import { RequireAuth } from '@/components/auth/RequireAuth'
+import { RequireDirector } from '@/components/auth/RequireDirector'
+import { RequireAppCapability } from '@/components/auth/RequireAppCapability'
 import { AppLayout } from '@/components/layout/AppLayout'
 import Login from '@/pages/Login'
 import NotFound from '@/pages/NotFound'
@@ -89,8 +91,6 @@ export const router = createBrowserRouter([
           { path: 'cxp', element: withSuspense(CxPHub) },
           { path: 'cxp/consolidado', element: withSuspense(CxPConsolidadoTodos) },
           { path: 'cxp/:projectId', element: withSuspense(CxPDetalle) },
-          { path: 'reportes', element: withSuspense(Reportes) },
-          { path: 'prestamos', element: withSuspense(Loans) },
           { path: 'contratistas', element: withSuspense(Contractors) },
           { path: 'contratistas/:contractorId', element: withSuspense(ContractorDetail) },
           { path: 'suplidores', element: withSuspense(Suppliers) },
@@ -98,7 +98,24 @@ export const router = createBrowserRouter([
           { path: 'ordenes-compra', element: withSuspense(PurchaseOrders) },
           { path: 'ordenes-compra/:orderId', element: withSuspense(PurchaseOrderDetail) },
           { path: 'calendario', element: withSuspense(Calendario) },
-          { path: 'historial-precios', element: withSuspense(HistorialPrecios) },
+          {
+            element: <RequireAppCapability capability="canViewPriceHistory" />,
+            children: [
+              { path: 'historial-precios', element: withSuspense(HistorialPrecios) },
+            ],
+          },
+          {
+            element: <RequireAppCapability capability="canViewReportes" />,
+            children: [
+              { path: 'reportes', element: withSuspense(Reportes) },
+            ],
+          },
+          {
+            element: <RequireAppCapability capability="canWriteLoans" />,
+            children: [
+              { path: 'prestamos', element: withSuspense(Loans) },
+            ],
+          },
           { path: 'proyectos/:projectId/bitacora', element: withSuspense(BitacoraPage) },
           { path: 'proyectos/:projectId/asistencia', element: withSuspense(AsistenciaPage) },
           { path: 'proyectos/:projectId/inventario', element: withSuspense(InventarioPage) },
@@ -107,8 +124,18 @@ export const router = createBrowserRouter([
           { path: 'proyectos/:projectId/flujo-caja', element: withSuspense(FlujoCajaPage) },
           { path: 'proyectos/:projectId/avances', element: withSuspense(AvancesPage) },
           { path: 'materiales', element: withSuspense(MaterialsCatalogPage) },
-          { path: 'director', element: withSuspense(DirectorDashboard) },
-          { path: 'aprobaciones', element: withSuspense(AprobacionesPage) },
+          {
+            element: <RequireDirector />,
+            children: [
+              { path: 'director', element: withSuspense(DirectorDashboard) },
+            ],
+          },
+          {
+            element: <RequireAppCapability capability="canViewApprovalsLog" />,
+            children: [
+              { path: 'aprobaciones', element: withSuspense(AprobacionesPage) },
+            ],
+          },
         ],
       },
     ],

@@ -170,7 +170,7 @@ export const requisitionService = {
       void pushNotificationService
         .notifyProjectRole(
           row.project_id,
-          ['gerente_proyecto', 'planificacion', 'director_general'],
+          ['director_proyecto', 'planificacion', 'director_general'],
           'Solicitud excede plan',
           `${row.req_number}: ${row.description.slice(0, 80)}`,
           `/ordenes-compra/${row.id}`,
@@ -181,7 +181,7 @@ export const requisitionService = {
     return row
   },
 
-  // Validación expresa de Planificación / Gerente cuando la solicitud excede el plan.
+  // Validación expresa de Planificación / Director cuando la solicitud excede el plan.
   async validateExcess(id: string, validatedBy: string, motivo: string) {
     const before = await this.getById(id)
     if (before.status !== 'pendiente_validacion') {
@@ -281,10 +281,10 @@ export const requisitionService = {
     })
   },
 
-  // Liberación del Gerente para OC con >=2 cotizaciones (regla 7.2).
+  // Liberación del Director para OC con >=2 cotizaciones (regla 7.2).
   // En la app actual approve() ya cumple este rol; release() queda como
   // alias semántico explícito para futuras divisiones de responsabilidad
-  // (Comprador aprueba selección, Gerente libera para emisión).
+  // (Comprador aprueba selección, Director libera para emisión).
   async release(id: string, releasedBy: string) {
     const before = await this.getById(id)
     if (before.status !== 'approved') {

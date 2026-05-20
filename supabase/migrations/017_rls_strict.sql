@@ -40,7 +40,7 @@ DROP POLICY IF EXISTS "rls_budget_categories" ON budget_categories;
 --     )
 --   ) WITH CHECK (
 --     current_user_has_role(budget_categories.project_id,
---       ARRAY['gerente_proyecto','planificacion'])
+--       ARRAY['director_proyecto','planificacion'])
 --   );
 
 -- 3) payroll_periods: ingeniero_obra escribe; gerente aprueba.
@@ -57,12 +57,12 @@ DROP POLICY IF EXISTS "rls_payroll_read" ON payroll_periods;
 -- CREATE POLICY "rls_payroll_write" ON payroll_periods
 --   FOR INSERT TO authenticated WITH CHECK (
 --     current_user_has_role(payroll_periods.project_id,
---       ARRAY['gerente_proyecto','ingeniero_obra','planificacion'])
+--       ARRAY['director_proyecto','ingeniero_obra','planificacion'])
 --   );
 -- CREATE POLICY "rls_payroll_update" ON payroll_periods
 --   FOR UPDATE TO authenticated USING (
 --     current_user_has_role(payroll_periods.project_id,
---       ARRAY['gerente_proyecto','ingeniero_obra'])
+--       ARRAY['director_proyecto','ingeniero_obra'])
 --   );
 
 -- 4) purchase_requisitions: comprador genera; gerente libera.
@@ -78,7 +78,7 @@ DROP POLICY IF EXISTS "allow_all_purchase_orders" ON purchase_requisitions;
 -- CREATE POLICY "rls_requisitions_write" ON purchase_requisitions
 --   FOR INSERT TO authenticated WITH CHECK (
 --     current_user_has_role(purchase_requisitions.project_id,
---       ARRAY['gerente_proyecto','comprador','ingeniero_obra'])
+--       ARRAY['director_proyecto','comprador','ingeniero_obra'])
 --   );
 
 -- 5) inventory_items / inventory_movements: almacenista + ing_obra + gerente.
@@ -92,7 +92,7 @@ DROP POLICY IF EXISTS "Authenticated users full access" ON inventory_items;
 --     )
 --   ) WITH CHECK (
 --     current_user_has_role(inventory_items.project_id,
---       ARRAY['gerente_proyecto','almacenista','ingeniero_obra'])
+--       ARRAY['director_proyecto','almacenista','ingeniero_obra'])
 --   );
 
 -- 6) approvals: read para miembros y director; insert para cualquier autenticado
