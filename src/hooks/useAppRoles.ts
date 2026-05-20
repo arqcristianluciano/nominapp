@@ -5,52 +5,63 @@ import type { ProjectRole } from '@/hooks/useProjectRoles'
 
 export interface UseAppRolesResult {
   roles: ProjectRole[]
+  caps: Set<string>
   loading: boolean
   isDirector: boolean
+  can: (capability: string) => boolean
   hasAny: (...candidates: ProjectRole[]) => boolean
 
-  // Seccion 7 - Finanzas
-  canWriteLedger: boolean       // DG, CT  (libro diario / CxP / cheques)
-  canViewFinanzas: boolean      // DG, DP, CT  (leer libro diario, CxP, flujo de caja)
-  canWriteLoans: boolean        // solo DG  (prestamos a contratistas)
+  // Seccion 7
+  canWriteLedger: boolean
+  canViewFinanzas: boolean
+  canWriteLoans: boolean
 
-  // Seccion 8 - Maestros (app-wide)
-  canWriteContractors: boolean        // DG, CO
-  canWriteSuppliers: boolean          // DG, CO
-  canWriteMaterialsCatalog: boolean   // DG, CO
-  canWriteBankAccounts: boolean       // DG, CT
-  canViewBankAccounts: boolean        // DG, DP, CO, CT
+  // Seccion 8
+  canWriteContractors: boolean
+  canWriteSuppliers: boolean
+  canWriteMaterialsCatalog: boolean
+  canWriteBankAccounts: boolean
+  canViewBankAccounts: boolean
 
-  // Seccion 9 - Cross-empresa (solo DG)
-  canViewDirectorDashboard: boolean   // solo DG
-  canViewApprovalsLog: boolean        // solo DG
-  canViewReportes: boolean            // solo DG
-  canViewPriceHistory: boolean        // solo DG
+  // Seccion 9
+  canViewDirectorDashboard: boolean
+  canViewApprovalsLog: boolean
+  canViewReportes: boolean
+  canViewPriceHistory: boolean
 
-  // Acciones app-wide derivadas (atajos cuando la accion abre selector de proyecto)
-  canCreateAnyRequisition: boolean    // DG, IO
-  canCreateProject: boolean           // DG, DP, PL (RLS exige tener el rol en algun proyecto existente)
+  // Derivados
+  canCreateAnyRequisition: boolean
+  canCreateProject: boolean
+
+  // Admin
+  canManageUsers: boolean
+  canManageRoles: boolean
 }
 
-// Roles que el modo demo asume para todos.
-const DEMO_FALLBACK: ProjectRole[] = [
-  'director_proyecto',
-  'planificacion',
-  'ingeniero_obra',
-  'comprador',
-  'almacenista',
-  'contabilidad',
+const DEMO_CAPS = new Set([
+  'edit_project','edit_budget','create_payroll','edit_payroll','approve_payroll',
+  'create_requisition','load_quotes','release_purchase_order','receive_order',
+  'inventory_write','override_stock',
+  'write_ledger','mark_paid','issue_check','write_loans','view_cashflow',
+  'write_contractors','write_suppliers','write_materials_catalog','write_bank_accounts',
+  'view_director_dashboard','view_approvals_log','view_reportes','view_price_history',
+  'manage_users','manage_roles',
+])
+
+const DEMO_ROLES: ProjectRole[] = [
+  'director_proyecto', 'planificacion', 'ingeniero_obra',
+  'comprador', 'almacenista', 'contabilidad',
 ]
 
 /**
- * Capacidades app-wide (no atadas a un proyecto). Inspecciona TODOS los
- * roles del usuario en project_members y devuelve flags por accion, segun
- * la matriz de permisos v2. Para acciones por proyecto, usar
- * useProjectRoles(projectId).
+ * Capabilities app-wide. Inspecciona los roles del usuario en todos los
+ * proyectos y resuelve sus capabilities efectivas. Para acciones por
+ * proyecto, usar useProjectRoles(projectId).
  */
 export function useAppRoles(): UseAppRolesResult {
   const user = useAuthStore((s) => s.user)
   const [roles, setRoles] = useState<ProjectRole[]>([])
+  const [caps, setCaps] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -59,27 +70,31 @@ export function useAppRoles(): UseAppRolesResult {
       if (!user) {
         if (!cancelled) {
           setRoles([])
+          setCaps(new Set())
           setLoading(false)
         }
         return
       }
       if (isDemoMode) {
         if (!cancelled) {
-          setRoles(DEMO_FALLBACK)
+          setRoles(DEMO_ROLES)
+          setCaps(new Set(DEMO_CAPS))
           setLoading(false)
         }
         return
       }
       try {
-        const { data } = await supabase
-          .from('project_members')
-          .select('role')
-          .eq('user_id', user.id)
+        const [{ data: memberData }, { data: capData }] = await Promise.all([
+          supabase.from('project_members').select('role').eq('user_id', user.id),
+          supabase.rpc('user_app_capabilities'),
+        ])
         if (cancelled) return
-        const list = Array.from(
-          new Set((data ?? []).map((r: { role: ProjectRole }) => r.role)),
+        const memberRoles = Array.from(
+          new Set((memberData ?? []).map((r: { role: ProjectRole }) => r.role)),
         )
-        setRoles(list)
+        const capSlugs = ((capData ?? []) as { capability_slug: string }[]).map((r) => r.capability_slug)
+        setRoles(memberRoles)
+        setCaps(new Set(capSlugs))
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -91,27 +106,32 @@ export function useAppRoles(): UseAppRolesResult {
   }, [user])
 
   const isDirector = user?.isDirector === true
+  const can = (capability: string) => isDirector || caps.has(capability)
   const hasAny = (...candidates: ProjectRole[]) =>
     isDirector || candidates.some((c) => roles.includes(c))
 
   return {
     roles,
+    caps,
     loading,
     isDirector,
+    can,
     hasAny,
-    canWriteLedger: hasAny('contabilidad'),
-    canViewFinanzas: hasAny('director_proyecto', 'contabilidad'),
-    canWriteLoans: isDirector,
-    canWriteContractors: hasAny('comprador'),
-    canWriteSuppliers: hasAny('comprador'),
-    canWriteMaterialsCatalog: hasAny('comprador'),
-    canWriteBankAccounts: hasAny('contabilidad'),
-    canViewBankAccounts: hasAny('director_proyecto', 'comprador', 'contabilidad'),
-    canViewDirectorDashboard: isDirector,
-    canViewApprovalsLog: isDirector,
-    canViewReportes: isDirector,
-    canViewPriceHistory: isDirector,
-    canCreateAnyRequisition: hasAny('ingeniero_obra'),
-    canCreateProject: hasAny('director_proyecto', 'planificacion'),
+    canWriteLedger: can('write_ledger'),
+    canViewFinanzas: can('write_ledger') || can('view_cashflow') || isDirector,
+    canWriteLoans: can('write_loans'),
+    canWriteContractors: can('write_contractors'),
+    canWriteSuppliers: can('write_suppliers'),
+    canWriteMaterialsCatalog: can('write_materials_catalog'),
+    canWriteBankAccounts: can('write_bank_accounts'),
+    canViewBankAccounts: can('write_bank_accounts') || can('mark_paid') || can('issue_check') || can('write_contractors'),
+    canViewDirectorDashboard: can('view_director_dashboard'),
+    canViewApprovalsLog: can('view_approvals_log'),
+    canViewReportes: can('view_reportes'),
+    canViewPriceHistory: can('view_price_history'),
+    canCreateAnyRequisition: can('create_requisition'),
+    canCreateProject: can('edit_project'),
+    canManageUsers: can('manage_users'),
+    canManageRoles: can('manage_roles'),
   }
 }
