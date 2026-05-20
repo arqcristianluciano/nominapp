@@ -44,6 +44,7 @@ export default function ProjectDetail() {
       <ProjectBudgetSummary projectId={projectId} totalBudget={totalBudget} totalInvested={totalInvested} />
       <ProjectRecentTransactions projectId={projectId} transactions={recentTxns} />
       <ProjectPayrollSection
+        projectId={projectId}
         loading={loading}
         periods={periods}
         draftPeriod={draftPeriod}

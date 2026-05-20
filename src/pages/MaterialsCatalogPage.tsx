@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Package, Plus, Search, X } from 'lucide-react'
 import { materialsCatalogService, type MaterialCatalogItem } from '@/services/materialsCatalogService'
 import { useToast } from '@/components/ui/Toast'
+import { useAppRoles } from '@/hooks/useAppRoles'
 
 interface FormState {
   code: string
@@ -29,6 +30,7 @@ export default function MaterialsCatalogPage() {
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
   const { success, error } = useToast()
+  const { canWriteMaterialsCatalog } = useAppRoles()
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -91,12 +93,14 @@ export default function MaterialsCatalogPage() {
           <Package className="w-5 h-5 text-blue-600" />
           <h1 className="text-xl font-bold text-app-text">Catálogo de Materiales</h1>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
-        >
-          <Plus className="w-4 h-4" /> Nuevo material
-        </button>
+        {canWriteMaterialsCatalog && (
+          <button
+            onClick={() => setShowForm(true)}
+            className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
+          >
+            <Plus className="w-4 h-4" /> Nuevo material
+          </button>
+        )}
       </div>
 
       <div className="bg-app-surface border border-app-border rounded-xl p-3">
@@ -233,12 +237,14 @@ export default function MaterialsCatalogPage() {
                     </span>
                   </td>
                   <td className="px-3 py-2 text-right">
-                    <button
-                      onClick={() => handleToggleActive(it)}
-                      className="text-xs text-blue-600 hover:underline"
-                    >
-                      {it.is_active ? 'Desactivar' : 'Activar'}
-                    </button>
+                    {canWriteMaterialsCatalog && (
+                      <button
+                        onClick={() => handleToggleActive(it)}
+                        className="text-xs text-blue-600 hover:underline"
+                      >
+                        {it.is_active ? 'Desactivar' : 'Activar'}
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

@@ -21,13 +21,19 @@ import {
 } from 'lucide-react'
 import { usePendingApprovals } from '@/hooks/usePendingApprovals'
 import { usePendingCortes } from '@/hooks/usePendingCortes'
+import { useAppRoles, type UseAppRolesResult } from '@/hooks/useAppRoles'
 import { ThemeToggle } from '@/components/layout/ThemeToggle'
+
+type CapabilityKey = {
+  [K in keyof UseAppRolesResult]: UseAppRolesResult[K] extends boolean ? K : never
+}[keyof UseAppRolesResult]
 
 interface NavItem {
   to: string
   icon: React.ElementType
   label: string
   badgeKey?: 'approvals' | 'cortes'
+  capability?: CapabilityKey
 }
 
 interface NavSection {
@@ -47,9 +53,9 @@ const NAV_SECTIONS: NavSection[] = [
   {
     label: 'Finanzas',
     items: [
-      { to: '/finanzas', icon: Landmark, label: 'Control Financiero' },
+      { to: '/finanzas', icon: Landmark, label: 'Control Financiero', capability: 'canViewFinanzas' },
       { to: '/presupuesto', icon: BarChart3, label: 'Presupuesto' },
-      { to: '/cxp', icon: CreditCard, label: 'Cuentas por Pagar' },
+      { to: '/cxp', icon: CreditCard, label: 'Cuentas por Pagar', capability: 'canViewFinanzas' },
       { to: '/cubicaciones', icon: Layers, label: 'Cubicaciones', badgeKey: 'cortes' as const },
     ],
   },
@@ -64,20 +70,20 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { to: '/contratistas', icon: HardHat, label: 'Contratistas' },
       { to: '/suplidores', icon: Truck, label: 'Suplidores' },
-      { to: '/prestamos', icon: Banknote, label: 'Préstamos' },
+      { to: '/prestamos', icon: Banknote, label: 'Préstamos', capability: 'canWriteLoans' },
     ],
   },
   {
     label: 'Planificación',
     items: [
-      { to: '/calendario', icon: Calendar, label: 'Calendario de pagos' },
+      { to: '/calendario', icon: Calendar, label: 'Calendario de pagos', capability: 'canViewFinanzas' },
     ],
   },
   {
     label: 'Reportes',
     items: [
-      { to: '/reportes', icon: FileText, label: 'Resumen financiero' },
-      { to: '/historial-precios', icon: TrendingUp, label: 'Historial de precios' },
+      { to: '/reportes', icon: FileText, label: 'Resumen financiero', capability: 'canViewReportes' },
+      { to: '/historial-precios', icon: TrendingUp, label: 'Historial de precios', capability: 'canViewPriceHistory' },
     ],
   },
   {
@@ -96,12 +102,20 @@ interface SidebarProps {
 export function Sidebar({ open, onClose }: SidebarProps) {
   const pendingApprovals = usePendingApprovals()
   const pendingCortes = usePendingCortes()
+  const app = useAppRoles()
 
   function getBadgeCount(item: NavItem): number {
     if (item.to === '/ordenes-compra') return pendingApprovals
     if (item.badgeKey === 'cortes') return pendingCortes
     return 0
   }
+
+  const sections = NAV_SECTIONS
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => !item.capability || app[item.capability]),
+    }))
+    .filter((section) => section.items.length > 0)
 
   return (
     <>
@@ -141,7 +155,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         </div>
 
         <nav className="p-2.5 space-y-5 overflow-y-auto flex-1 min-h-0 pt-3">
-          {NAV_SECTIONS.map((section) => (
+          {sections.map((section) => (
             <div key={section.label}>
               <p className="px-3 mb-1.5 text-[10px] font-bold uppercase tracking-widest text-app-subtle select-none">
                 {section.label}

@@ -2,6 +2,7 @@ import { Eye, Package, Plus, Search } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import type { PurchaseRequisition } from '@/types/purchaseOrder'
 import { REQ_STATUS_COLOR, REQ_STATUS_LABEL } from '@/types/purchaseOrder'
+import { useAppRoles } from '@/hooks/useAppRoles'
 
 export function PurchaseOrdersHeader({
   filteredCount,
@@ -12,10 +13,13 @@ export function PurchaseOrdersHeader({
   totalCount: number
   onNew: () => void
 }) {
+  const { canCreateAnyRequisition } = useAppRoles()
   return (
     <div className="flex items-center justify-between gap-4">
       <div><h1 className="text-2xl font-bold text-app-text">Órdenes de Compra</h1><p className="text-sm text-app-muted mt-0.5">{filteredCount} de {totalCount} solicitud{totalCount !== 1 ? 'es' : ''}</p></div>
-      <button onClick={onNew} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 active:scale-[0.97] transition-all shadow-sm shadow-blue-600/20 shrink-0"><Plus className="w-4 h-4" /> Nueva solicitud</button>
+      {canCreateAnyRequisition && (
+        <button onClick={onNew} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 active:scale-[0.97] transition-all shadow-sm shadow-blue-600/20 shrink-0"><Plus className="w-4 h-4" /> Nueva solicitud</button>
+      )}
     </div>
   )
 }
@@ -65,12 +69,15 @@ export function PurchaseOrdersTable({ requisitions }: { requisitions: PurchaseRe
 }
 
 export function EmptyPurchaseOrders({ onNew }: { onNew: () => void }) {
+  const { canCreateAnyRequisition } = useAppRoles()
   return (
     <div className="bg-app-surface rounded-xl border border-app-border p-12 text-center">
       <div className="w-14 h-14 rounded-2xl bg-blue-100 dark:bg-blue-950/60 flex items-center justify-center mx-auto mb-4"><Package className="w-7 h-7 text-blue-600 dark:text-blue-400" /></div>
       <p className="text-base font-semibold text-app-text mb-1">Sin solicitudes de compra</p>
       <p className="text-sm text-app-muted mb-5">Crea una solicitud y agrega mínimo 2 cotizaciones (o 1 con justificación) para aprobar</p>
-      <button onClick={onNew} className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-colors shadow-sm"><Plus className="w-4 h-4" /> Nueva solicitud</button>
+      {canCreateAnyRequisition && (
+        <button onClick={onNew} className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-colors shadow-sm"><Plus className="w-4 h-4" /> Nueva solicitud</button>
+      )}
     </div>
   )
 }
