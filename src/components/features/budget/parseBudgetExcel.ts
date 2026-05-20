@@ -1,4 +1,5 @@
 import type { BudgetCategory, BudgetItem } from '@/types/database'
+import { normalizeText, parseExcelNumber, rowToCells } from '@/utils/excel'
 
 export interface NewCategoryDraft {
   key: string
@@ -29,17 +30,9 @@ export interface ImportPayload {
   })[]
 }
 
-function normalize(text: string) {
-  return text
-    .trim()
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-}
-
 function isExcelHeaderRow(colA: string, colB: string) {
-  const a = normalize(colA)
-  const b = normalize(colB)
+  const a = normalizeText(colA)
+  const b = normalizeText(colB)
   return (
     (a === 'codigo' || a === 'cod.' || a === 'cod') &&
     (b === 'descripcion' || b === 'desc.' || b === 'desc')
@@ -47,9 +40,9 @@ function isExcelHeaderRow(colA: string, colB: string) {
 }
 
 function matchExistingCategory(categories: BudgetCategory[], name: string): BudgetCategory | null {
-  const target = normalize(name)
+  const target = normalizeText(name)
   if (!target) return null
-  return categories.find((c) => normalize(c.name) === target) ?? null
+  return categories.find((c) => normalizeText(c.name) === target) ?? null
 }
 
 export function parseRows(
@@ -69,12 +62,12 @@ export function parseRows(
   let chapter: ChapterCtx | null = null
 
   for (const row of rows) {
-    const [colA, colB, colC, colD, colE] = row.map((v: unknown) => String(v ?? '').trim())
+    const [colA, colB, colC, colD, colE] = rowToCells(row)
     if (!colA && !colB) continue
     if (isExcelHeaderRow(colA, colB)) continue
 
-    const qty = parseFloat(colD.replace(/,/g, '.'))
-    const price = parseFloat(colE.replace(/,/g, '.'))
+    const qty = parseExcelNumber(colD)
+    const price = parseExcelNumber(colE)
     const looksLikeSubpartida = !!colC && !isNaN(qty) && qty > 0
 
     if (!looksLikeSubpartida) {
@@ -85,7 +78,7 @@ export function parseRows(
       if (existing) {
         chapter = { id: existing.id, key: null, name: existing.name, isNew: false }
       } else {
-        const key = normalize(name)
+        const key = normalizeText(name)
         if (!newCategories.has(key)) {
           nextSortOrder += 1
           newCategories.set(key, {

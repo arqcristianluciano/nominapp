@@ -3,6 +3,7 @@ import { X, Upload, FileSpreadsheet, AlertTriangle, CheckCircle, Sparkles, Downl
 import type { BudgetCategory } from '@/types/database'
 import { formatRD } from '@/utils/currency'
 import { getErrorMessage } from '@/utils/errors'
+import { readExcelRowsFromFile } from '@/utils/excel'
 import {
   parseRows,
   type ImportPayload,
@@ -27,25 +28,18 @@ export default function ExcelImportModal({ categories, onImport, onClose }: Prop
   const [done, setDone] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const handleFile = (file: File) => {
+  const handleFile = async (file: File) => {
     setFileName(file.name)
     setDone(false)
     setError(null)
-    const reader = new FileReader()
-    reader.onload = async (e) => {
-      try {
-        const XLSX = await import('xlsx')
-        const wb = XLSX.read(e.target?.result, { type: 'binary' })
-        const ws = wb.Sheets[wb.SheetNames[0]]
-        const rawRows = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, defval: '' })
-        const parsed = parseRows(rawRows, categories)
-        setItems(parsed.items)
-        setNewCategories(parsed.newCategories)
-      } catch {
-        setError('No se pudo leer el archivo. Verifique que sea un Excel válido.')
-      }
+    try {
+      const rawRows = await readExcelRowsFromFile(file)
+      const parsed = parseRows(rawRows, categories)
+      setItems(parsed.items)
+      setNewCategories(parsed.newCategories)
+    } catch {
+      setError('No se pudo leer el archivo. Verifique que sea un Excel válido.')
     }
-    reader.readAsBinaryString(file)
   }
 
   const handleDrop = (e: React.DragEvent) => {
