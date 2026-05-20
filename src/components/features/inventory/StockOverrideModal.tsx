@@ -46,7 +46,7 @@ export function StockOverrideModal({
           <div>
             Esta operación dejará stock <strong>{currentStock - requested}</strong>. El override
             queda registrado en la auditoría con tu nombre, fecha y motivo (regla 7.5). Solo el
-            Gerente debe usarlo cuando exista una razón operativa justificada.
+            Director debe usarlo cuando exista una razón operativa justificada.
           </div>
         </div>
         {defaultActor && (

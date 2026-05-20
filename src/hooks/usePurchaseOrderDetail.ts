@@ -6,8 +6,8 @@ import { supplierService } from '@/services/supplierService'
 import type { Supplier } from '@/types/database'
 import type { PurchaseRequisition } from '@/types/purchaseOrder'
 
-// Regla 7.2: ≥2 cotizaciones para flujo estándar de liberación del Gerente.
-// Regla 7.3: 1 cotización es válida si el Gerente registra justificación escrita
+// Regla 7.2: ≥2 cotizaciones para flujo estándar de liberación del Director.
+// Regla 7.3: 1 cotización es válida si el Director registra justificación escrita
 // obligatoria al momento de aprobar (ver ApprovalModal).
 const MIN_QUOTES = 2
 

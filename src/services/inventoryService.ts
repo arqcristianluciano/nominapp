@@ -118,7 +118,7 @@ export const inventoryService = {
     const delta = movement.type === 'in' ? movement.quantity : -movement.quantity
     const newStock = currentStock + delta
 
-    // Regla 7.5: stock negativo bloqueado salvo override del Gerente con motivo.
+    // Regla 7.5: stock negativo bloqueado salvo override del Director con motivo.
     if (newStock < 0 && !movement.override) {
       throw new InventoryError(
         'INSUFFICIENT_STOCK',

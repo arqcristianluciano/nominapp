@@ -270,7 +270,7 @@ export function RequisitionForm({ projects, onSubmit, onCancel, saving }: Props)
             {exceedsPlan && (
               <p className="mt-1 font-medium">
                 Excede el plan en {(qtyNum - availability.available).toFixed(2)}. La solicitud
-                quedará en "Pendiente validación" hasta que Planificación o el Gerente la liberen
+                quedará en "Pendiente validación" hasta que Planificación o el Director la liberen
                 con motivo.
               </p>
             )}

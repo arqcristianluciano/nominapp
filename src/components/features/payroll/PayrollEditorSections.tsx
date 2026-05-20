@@ -26,14 +26,14 @@ export function PayrollEditorHeader({
 }) {
   const project = period.project
   const next = NEXT_STATUS[period.status]
-  // Las transiciones submitted->approved y approved->paid son del Gerente.
+  // Las transiciones submitted->approved y approved->paid son del Director.
   // draft->submitted la puede iniciar el ingeniero de obra.
-  const requiresGerente = next?.status === 'approved' || next?.status === 'paid'
-  const showNextButton = next && (canApprove || !requiresGerente)
+  const requiresDirector = next?.status === 'approved' || next?.status === 'paid'
+  const showNextButton = next && (canApprove || !requiresDirector)
   return (
     <div>
       <Link to={project ? `/proyectos/${project.id}` : '/proyectos'} className="flex items-center gap-1 text-sm text-app-muted hover:text-app-muted mb-2"><ArrowLeft className="w-4 h-4" /> {project?.name || 'Proyecto'}</Link>
-      <div className="flex items-center justify-between flex-wrap gap-2"><div><h1 className="text-2xl font-semibold text-app-text">Reporte No. {period.period_number}</h1><p className="text-sm text-app-muted mt-0.5">{new Date(period.report_date).toLocaleDateString('es-DO', { year: 'numeric', month: 'long', day: 'numeric' })}{period.reported_by && ` · ${period.reported_by}`}</p></div><div className="flex items-center gap-2"><span className={`px-3 py-1 text-sm font-medium rounded-full ${STATUS_COLORS[period.status]}`}>{STATUS_LABELS[period.status]}</span><Link to={`/nominas/${period.id}/imprimir`} target="_blank" className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-app-muted border border-app-border rounded-lg hover:bg-app-hover"><Printer className="w-4 h-4" /> Imprimir</Link>{showNextButton && <button onClick={() => onUpdateStatus(next.status)} disabled={saving} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50"><next.icon className="w-4 h-4" />{next.label}</button>}{next && !showNextButton && <span className="text-xs text-app-muted italic">{requiresGerente ? 'Pendiente del Gerente' : ''}</span>}</div></div>
+      <div className="flex items-center justify-between flex-wrap gap-2"><div><h1 className="text-2xl font-semibold text-app-text">Reporte No. {period.period_number}</h1><p className="text-sm text-app-muted mt-0.5">{new Date(period.report_date).toLocaleDateString('es-DO', { year: 'numeric', month: 'long', day: 'numeric' })}{period.reported_by && ` · ${period.reported_by}`}</p></div><div className="flex items-center gap-2"><span className={`px-3 py-1 text-sm font-medium rounded-full ${STATUS_COLORS[period.status]}`}>{STATUS_LABELS[period.status]}</span><Link to={`/nominas/${period.id}/imprimir`} target="_blank" className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-app-muted border border-app-border rounded-lg hover:bg-app-hover"><Printer className="w-4 h-4" /> Imprimir</Link>{showNextButton && <button onClick={() => onUpdateStatus(next.status)} disabled={saving} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50"><next.icon className="w-4 h-4" />{next.label}</button>}{next && !showNextButton && <span className="text-xs text-app-muted italic">{requiresDirector ? 'Pendiente del Director' : ''}</span>}</div></div>
     </div>
   )
 }

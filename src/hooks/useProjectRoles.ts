@@ -4,7 +4,7 @@ import { useAuthStore } from '@/stores/authStore'
 
 export type ProjectRole =
   | 'director_general'
-  | 'gerente_proyecto'
+  | 'director_proyecto'
   | 'planificacion'
   | 'ingeniero_obra'
   | 'supervisor_especializado'
@@ -17,15 +17,15 @@ export interface UseProjectRolesResult {
   loading: boolean
   isDirector: boolean
   hasAny: (...candidates: ProjectRole[]) => boolean
-  canApproveExcess: boolean       // planificacion | gerente_proyecto
-  canReleasePurchaseOrder: boolean // gerente_proyecto
-  canApprovePayroll: boolean       // gerente_proyecto
-  canOverrideStock: boolean        // gerente_proyecto
-  canEditBudget: boolean           // planificacion | gerente_proyecto
+  canApproveExcess: boolean       // planificacion | director_proyecto
+  canReleasePurchaseOrder: boolean // director_proyecto
+  canApprovePayroll: boolean       // director_proyecto
+  canOverrideStock: boolean        // director_proyecto
+  canEditBudget: boolean           // planificacion | director_proyecto
 }
 
 const DEMO_FALLBACK: ProjectRole[] = [
-  'gerente_proyecto',
+  'director_proyecto',
   'planificacion',
   'ingeniero_obra',
   'comprador',
@@ -84,10 +84,10 @@ export function useProjectRoles(projectId: string | undefined): UseProjectRolesR
     loading,
     isDirector,
     hasAny,
-    canApproveExcess: hasAny('planificacion', 'gerente_proyecto'),
-    canReleasePurchaseOrder: hasAny('gerente_proyecto'),
-    canApprovePayroll: hasAny('gerente_proyecto'),
-    canOverrideStock: hasAny('gerente_proyecto'),
-    canEditBudget: hasAny('planificacion', 'gerente_proyecto'),
+    canApproveExcess: hasAny('planificacion', 'director_proyecto'),
+    canReleasePurchaseOrder: hasAny('director_proyecto'),
+    canApprovePayroll: hasAny('director_proyecto'),
+    canOverrideStock: hasAny('director_proyecto'),
+    canEditBudget: hasAny('planificacion', 'director_proyecto'),
   }
 }

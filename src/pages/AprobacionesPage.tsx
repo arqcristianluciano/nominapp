@@ -14,7 +14,7 @@ const ACTION_LABEL: Record<ApprovalAction, string> = {
   approve: 'Aprobada',
   reject: 'Rechazada',
   return_for_revision: 'Devuelta para revisión',
-  release: 'Liberada por Gerente',
+  release: 'Liberada por Director',
   validate_excess: 'Excedente validado',
   override_stock: 'Override de stock',
   budget_edit_post_approval: 'Edición de presupuesto',

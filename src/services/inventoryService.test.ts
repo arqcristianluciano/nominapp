@@ -74,7 +74,7 @@ describe('inventoryService - regla 7.5 (bloqueo stock negativo)', () => {
     ).rejects.toThrow(/Stock insuficiente/)
   })
 
-  it('permite override del Gerente con motivo y deja registro de auditoría', async () => {
+  it('permite override del Director con motivo y deja registro de auditoría', async () => {
     const item = await createItem(`material-${Date.now() + 4}`, 1)
     await expect(
       inventoryService.addMovement({

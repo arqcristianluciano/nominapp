@@ -106,7 +106,7 @@ export function ApprovalModal({ open, onClose, quotes, onApprove, onReturn, onRe
                 <p className="font-semibold mb-1">Aprobación con 1 sola cotización</p>
                 <p>
                   Para liberar esta OC se requiere justificación escrita obligatoria
-                  (urgencia, exclusividad de proveedor, etc.) además de la firma del Gerente.
+                  (urgencia, exclusividad de proveedor, etc.) además de la firma del Director.
                 </p>
               </div>
             )}
