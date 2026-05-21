@@ -27,6 +27,7 @@ export function ContractorDocsSection({ contractorId, docs, onChange }: Props) {
   const [saving, setSaving] = useState(false)
 
   async function handleSave() {
+    if (saving) return
     if (!form.name.trim()) return
     setSaving(true)
     try {
@@ -35,7 +36,7 @@ export function ContractorDocsSection({ contractorId, docs, onChange }: Props) {
       setForm(INITIAL_FORM)
       onChange(await contractorDocService.getByContractor(contractorId))
     } catch (err) {
-      console.error('handleSaveDoc failed', getErrorMessage(err))
+      console.warn('[ContractorDocsSection] handleSave failed', getErrorMessage(err))
     } finally {
       setSaving(false)
     }
@@ -111,7 +112,7 @@ function DocFormPanel({ form, setForm, onCancel, onSave, saving }: {
       </div>
       <div className="flex gap-2 justify-end">
         <button onClick={onCancel} className="px-3 py-1.5 text-xs border border-app-border rounded-lg hover:bg-app-hover text-app-muted">Cancelar</button>
-        <button onClick={onSave} disabled={saving || !form.name.trim()} className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium">
+        <button onClick={onSave} disabled={saving || !form.name.trim()} aria-busy={saving} className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium">
           {saving ? 'Guardando...' : 'Guardar'}
         </button>
       </div>

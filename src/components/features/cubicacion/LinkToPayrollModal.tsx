@@ -31,6 +31,7 @@ export function LinkToPayrollModal({ open, onClose, projectId, contractorId, cor
   }, [open, projectId])
 
   async function handleLink() {
+    if (saving) return
     if (!selectedId || !corte || !partida) return
     setSaving(true)
     try {
@@ -48,6 +49,8 @@ export function LinkToPayrollModal({ open, onClose, projectId, contractorId, cor
       await payrollService.recalculateTotals(selectedId)
       onLinked()
       onClose()
+    } catch (err) {
+      console.warn('[LinkToPayrollModal] handleLink failed', err)
     } finally { setSaving(false) }
   }
 
@@ -93,8 +96,12 @@ export function LinkToPayrollModal({ open, onClose, projectId, contractorId, cor
           )}
         </div>
 
-        <button onClick={handleLink} disabled={saving || !selectedId}
-          className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg text-sm font-medium disabled:opacity-50">
+        <button
+          onClick={handleLink}
+          disabled={saving || !selectedId}
+          aria-busy={saving}
+          className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+        >
           <ScrollText className="w-4 h-4" />
           {saving ? 'Enviando...' : 'Agregar a reporte y marcar pagado'}
         </button>

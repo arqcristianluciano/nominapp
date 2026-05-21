@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Trash2, Award, Pencil, Check, X } from 'lucide-react'
 import type { PurchaseQuote } from '@/types/purchaseOrder'
+import { formatRD } from '@/utils/currency'
 
 interface NegotiationState { price: string; notes: string; editing: boolean }
 
@@ -15,8 +16,6 @@ interface Props {
 
 export function QuotesPanel({ quotes, approvedQuoteId, canDelete, canNegotiate, onDelete, onNegotiate }: Props) {
   const [neg, setNeg] = useState<Record<string, NegotiationState>>({})
-
-  const fmt = (n: number) => n.toLocaleString('es-DO', { style: 'currency', currency: 'DOP' })
 
   const startEdit = (q: PurchaseQuote) => setNeg((p) => ({
     ...p,
@@ -89,10 +88,10 @@ export function QuotesPanel({ quotes, approvedQuoteId, canDelete, canNegotiate, 
                     <tr key={it.id}>
                       <td className="py-1.5 pr-2 text-app-muted">
                         <p>{it.description}</p>
-                        <p className="text-app-subtle">{it.quantity} {it.unit} × {fmt(it.unit_price)}</p>
+                        <p className="text-app-subtle">{it.quantity} {it.unit} × {formatRD(it.unit_price)}</p>
                       </td>
                       <td className="py-1.5 text-right font-medium text-app-text whitespace-nowrap">
-                        {fmt(it.subtotal)}
+                        {formatRD(it.subtotal)}
                       </td>
                     </tr>
                   ))}
@@ -101,20 +100,20 @@ export function QuotesPanel({ quotes, approvedQuoteId, canDelete, canNegotiate, 
 
               <div className="border-t border-app-border pt-2 space-y-0.5 text-xs">
                 <div className="flex justify-between text-app-muted">
-                  <span>Subtotal</span><span>{fmt(q.subtotal)}</span>
+                  <span>Subtotal</span><span>{formatRD(q.subtotal)}</span>
                 </div>
                 <div className="flex justify-between text-app-muted">
                   <span>ITBIS ({q.tax_percent}%)</span>
-                  <span>{fmt(q.subtotal * q.tax_percent / 100)}</span>
+                  <span>{formatRD(q.subtotal * q.tax_percent / 100)}</span>
                 </div>
                 <div className={`flex justify-between font-semibold text-sm pt-1 ${
                   isApproved ? 'text-green-700' : hasNeg ? 'text-app-subtle line-through' : 'text-blue-700'
                 }`}>
-                  <span>Total cotizado</span><span>{fmt(q.total)}</span>
+                  <span>Total cotizado</span><span>{formatRD(q.total)}</span>
                 </div>
                 {hasNeg && !state?.editing && (
                   <div className="flex justify-between font-bold text-sm text-orange-600 bg-orange-50 -mx-1 px-1 py-0.5 rounded">
-                    <span>Precio negociado</span><span>{fmt(q.negotiated_total!)}</span>
+                    <span>Precio negociado</span><span>{formatRD(q.negotiated_total!)}</span>
                   </div>
                 )}
                 {q.negotiated_notes && !state?.editing && (

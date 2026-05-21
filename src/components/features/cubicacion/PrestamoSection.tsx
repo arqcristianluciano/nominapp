@@ -38,6 +38,7 @@ export function PrestamoSection({ contractorId }: Props) {
   useEffect(() => { load() }, [load])
 
   async function handleCreate() {
+    if (saving) return
     if (!form.principal || !form.disbursed_date) return
     setSaving(true)
     try {
@@ -52,6 +53,8 @@ export function PrestamoSection({ contractorId }: Props) {
       setForm(emptyForm)
       setShowAdd(false)
       await load()
+    } catch (err) {
+      console.warn('[PrestamoSection] handleCreate failed', err)
     } finally { setSaving(false) }
   }
 
@@ -103,7 +106,12 @@ export function PrestamoSection({ contractorId }: Props) {
             </div>
             <div className="col-span-2 flex gap-1 items-end justify-end">
               <button onClick={() => { setShowAdd(false); setForm(emptyForm) }} className="px-2 py-1.5 text-xs border border-app-border rounded-md hover:bg-app-hover text-app-muted">Cancelar</button>
-              <button onClick={handleCreate} disabled={saving || !form.principal} className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">
+              <button
+                onClick={handleCreate}
+                disabled={saving || !form.principal || !form.disbursed_date}
+                aria-busy={saving}
+                className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 {saving ? '...' : 'Agregar'}
               </button>
             </div>

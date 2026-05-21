@@ -1,5 +1,6 @@
 import { AlertTriangle, ChevronDown, ChevronUp, Pencil, Trash2, Users } from 'lucide-react'
 import type { BitacoraEntry } from '@/services/bitacoraService'
+import { parseDateLocal } from '@/utils/dateLocal'
 import { WEATHER_OPTIONS } from './bitacoraConfig'
 
 function WeatherIcon({ weather }: { weather: string }) {
@@ -24,7 +25,7 @@ export function BitacoraEntriesList({ entries, expandedId, onToggleExpand, onEdi
         <div key={entry.id} className="bg-app-surface border border-app-border rounded-xl overflow-hidden">
           <button onClick={() => onToggleExpand(entry.id)} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-app-hover transition-colors text-left">
             <div className="flex items-center gap-2 text-app-muted"><WeatherIcon weather={entry.weather} />{entry.temp_c != null && <span className="text-xs">{entry.temp_c}°C</span>}</div>
-            <div className="flex-1 min-w-0"><p className="text-sm font-semibold text-app-text">{new Date(entry.date + 'T12:00:00').toLocaleDateString('es-DO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p><p className="text-xs text-app-muted truncate">{entry.work_summary}</p></div>
+            <div className="flex-1 min-w-0"><p className="text-sm font-semibold text-app-text">{parseDateLocal(entry.date).toLocaleDateString('es-DO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p><p className="text-xs text-app-muted truncate">{entry.work_summary}</p></div>
             <div className="flex items-center gap-3 shrink-0"><span className="flex items-center gap-1 text-xs text-app-muted"><Users className="w-3.5 h-3.5" />{entry.workforce_count}</span>{entry.incidents && <AlertTriangle className="w-4 h-4 text-yellow-500" />}{expandedId === entry.id ? <ChevronUp className="w-4 h-4 text-app-subtle" /> : <ChevronDown className="w-4 h-4 text-app-subtle" />}</div>
           </button>
           {expandedId === entry.id && (

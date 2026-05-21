@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Supplier } from '@/types/database'
 import { PAYMENT_CONDITIONS } from '@/constants/indirectCosts'
+import { isRNC, isPhone } from '@/utils/validators'
 
 interface Props {
   initial?: Supplier
@@ -23,9 +24,24 @@ export function SupplierForm({ initial, onSubmit, onCancel, saving }: Props) {
   const [bankAccount, setBankAccount] = useState(initial?.bank_account || '')
   const [bankName, setBankName] = useState(initial?.bank_name || '')
   const [terms, setTerms] = useState(initial?.payment_terms || '')
+  const [formError, setFormError] = useState<string | null>(null)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    setFormError(null)
+
+    const rncTrimmed = rnc.trim()
+    if (rncTrimmed && !isRNC(rncTrimmed)) {
+      setFormError('RNC inválido (9 u 11 dígitos)')
+      return
+    }
+
+    const phoneTrimmed = phone.trim()
+    if (phoneTrimmed && !isPhone(phoneTrimmed)) {
+      setFormError('Teléfono inválido (10 dígitos)')
+      return
+    }
+
     await onSubmit({
       name,
       rnc: rnc || undefined,
@@ -67,6 +83,10 @@ export function SupplierForm({ initial, onSubmit, onCancel, saving }: Props) {
           <input type="text" value={bankAccount} onChange={(e) => setBankAccount(e.target.value)} className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
         </div>
       </div>
+
+      {formError && (
+        <div className="text-xs text-red-600 dark:text-red-400" role="alert">{formError}</div>
+      )}
 
       <div className="flex justify-end gap-2 pt-2">
         <button type="button" onClick={onCancel} className="px-4 py-2 text-sm text-app-muted">Cancelar</button>

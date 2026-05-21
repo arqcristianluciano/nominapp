@@ -39,6 +39,7 @@ export function CorteSection({ contractId, projectId, contractorId, retentionPer
   const previewRetention = (previewAmount * retentionPercent) / 100
 
   async function handleCreate() {
+    if (saving) return
     if (!form.partida_id || !form.cut_date || !form.measured_quantity) return
     const partida = partidas.find((p) => p.id === form.partida_id)
     if (!partida) return
@@ -51,6 +52,8 @@ export function CorteSection({ contractId, projectId, contractorId, retentionPer
         partida, retentionPercent,
       )
       setForm(emptyForm); setShowAdd(false); onRefresh()
+    } catch (err) {
+      console.warn('[CorteSection] handleCreate failed', err)
     } finally { setSaving(false) }
   }
 
@@ -113,7 +116,12 @@ export function CorteSection({ contractId, projectId, contractorId, retentionPer
             </div>
             <div className="flex gap-1 justify-end">
               <button onClick={() => { setShowAdd(false); setForm(emptyForm) }} className="px-2 py-1.5 text-xs border border-app-border rounded-md hover:bg-app-hover text-app-muted">Cancelar</button>
-              <button onClick={handleCreate} disabled={saving} className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">
+              <button
+                onClick={handleCreate}
+                disabled={saving || !form.partida_id || !form.cut_date || !form.measured_quantity}
+                aria-busy={saving}
+                className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 {saving ? '...' : 'Registrar'}
               </button>
             </div>

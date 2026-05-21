@@ -12,6 +12,7 @@ interface PayrollStore {
   fetchPeriods: (projectId: string) => Promise<void>
   fetchPeriodDetail: (periodId: string) => Promise<void>
   setCurrentPeriod: (period: PayrollPeriod | null) => void
+  reset: () => void
 }
 
 export const usePayrollStore = create<PayrollStore>((set) => ({
@@ -61,4 +62,13 @@ export const usePayrollStore = create<PayrollStore>((set) => ({
   },
 
   setCurrentPeriod: (period) => set({ currentPeriod: period }),
+
+  reset: () =>
+    set({
+      currentPeriod: null,
+      laborItems: [],
+      materialInvoices: [],
+      loading: false,
+      error: null,
+    }),
 }))

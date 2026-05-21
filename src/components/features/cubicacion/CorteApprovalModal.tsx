@@ -5,6 +5,7 @@ import { SignatureCanvas } from '@/components/features/purchase-orders/Signature
 import { approvalCode } from '@/utils/approvalCode'
 import { useAuthStore } from '@/stores/authStore'
 import { getErrorMessage } from '@/utils/errors'
+import { formatRD } from '@/utils/currency'
 
 interface Props {
   open: boolean
@@ -45,13 +46,11 @@ export function CorteApprovalModal({ open, onClose, corteNum, amount, onApprove 
     }
   }
 
-  const fmt = (n: number) => n.toLocaleString('es-DO', { style: 'currency', currency: 'DOP' })
-
   return (
     <Modal open={open} onClose={handleClose} title={`Aprobar corte #${corteNum}`}>
       <div className="space-y-4">
         <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 text-sm text-blue-800 dark:text-blue-200">
-          Monto del corte: <strong>{fmt(amount)}</strong>
+          Monto del corte: <strong>{formatRD(amount)}</strong>
         </div>
 
         <div>

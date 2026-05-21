@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { DOMINICAN_BANKS } from '@/constants/banks'
 import type { BankAccount } from '@/types/database'
+import { isCedula, isRNC } from '@/utils/validators'
 
 interface Props {
   initial?: BankAccount
@@ -16,9 +17,18 @@ export function BankAccountForm({ initial, saving, onSubmit, onCancel }: Props) 
   const [accountType, setAccountType] = useState(initial?.account_type || '')
   const [cedulaRnc, setCedulaRnc] = useState(initial?.cedula_rnc || '')
   const [isInternal, setIsInternal] = useState(initial?.is_internal ?? true)
+  const [formError, setFormError] = useState<string | null>(null)
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    setFormError(null)
+
+    const cedulaRncTrimmed = cedulaRnc.trim()
+    if (cedulaRncTrimmed && !isCedula(cedulaRncTrimmed) && !isRNC(cedulaRncTrimmed)) {
+      setFormError('Cédula/RNC inválido (cédula 11 dígitos, RNC 9 u 11 dígitos)')
+      return
+    }
+
     onSubmit({
       owner_name: ownerName,
       bank_name: bankName,
@@ -69,6 +79,9 @@ export function BankAccountForm({ initial, saving, onSubmit, onCancel }: Props) 
           </label>
         </div>
       </div>
+      {formError && (
+        <div className="text-xs text-red-600 dark:text-red-400" role="alert">{formError}</div>
+      )}
       <div className="flex justify-end gap-2 pt-2">
         <button type="button" onClick={onCancel} className="px-4 py-2 text-sm text-app-muted border border-app-border rounded-lg hover:bg-app-hover">Cancelar</button>
         <button type="submit" disabled={saving} className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50">

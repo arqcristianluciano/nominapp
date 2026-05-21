@@ -2,10 +2,9 @@ import { AlertTriangle } from 'lucide-react'
 import { Breadcrumb } from '@/components/ui/Breadcrumb'
 import type { PurchaseRequisition } from '@/types/purchaseOrder'
 import { REQ_STATUS_COLOR, REQ_STATUS_LABEL } from '@/types/purchaseOrder'
+import { formatNumber } from '@/utils/currency'
 
 export function PurchaseOrderHeader({ req }: { req: PurchaseRequisition }) {
-  const fmt = (n: number | null | undefined) =>
-    typeof n === 'number' ? n.toLocaleString('es-DO', { maximumFractionDigits: 2 }) : '—'
   return (
     <>
       <div>
@@ -14,13 +13,13 @@ export function PurchaseOrderHeader({ req }: { req: PurchaseRequisition }) {
         <p className="text-sm text-app-muted mt-0.5">{req.description}</p>
         {req.quantity_requested != null && (
           <p className="text-xs text-app-subtle mt-1">
-            Solicitado: <strong>{fmt(req.quantity_requested)}</strong> {req.unit ?? ''}
+            Solicitado: <strong>{formatNumber(req.quantity_requested)}</strong> {req.unit ?? ''}
             {req.planned_quantity_at_request != null && (
               <>
                 {' '}
-                · Plan al momento: <strong>{fmt(req.planned_quantity_at_request)}</strong>
+                · Plan al momento: <strong>{req.planned_quantity_at_request != null ? formatNumber(req.planned_quantity_at_request) : '—'}</strong>
                 {' '}
-                · Disponible: <strong>{fmt(req.available_quantity_at_request)}</strong>
+                · Disponible: <strong>{req.available_quantity_at_request != null ? formatNumber(req.available_quantity_at_request) : '—'}</strong>
               </>
             )}
           </p>

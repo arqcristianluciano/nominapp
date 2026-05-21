@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { Contractor } from '@/types/database'
+import { isCedula, isPhone } from '@/utils/validators'
 
 interface Props {
   initial?: Contractor
@@ -26,9 +27,24 @@ export function ContractorForm({ initial, onSubmit, onCancel, saving }: Props) {
   const [bankName, setBankName] = useState(initial?.bank_name || '')
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'check' | 'transfer'>(initial?.payment_method || 'cash')
   const [notes, setNotes] = useState(initial?.notes || '')
+  const [formError, setFormError] = useState<string | null>(null)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    setFormError(null)
+
+    const cedulaTrimmed = cedula.trim()
+    if (cedulaTrimmed && !isCedula(cedulaTrimmed)) {
+      setFormError('Cédula inválida (formato 000-0000000-0)')
+      return
+    }
+
+    const phoneTrimmed = phone.trim()
+    if (phoneTrimmed && !isPhone(phoneTrimmed)) {
+      setFormError('Teléfono inválido (10 dígitos)')
+      return
+    }
+
     await onSubmit({
       name,
       specialty: specialty || undefined,
@@ -81,6 +97,10 @@ export function ContractorForm({ initial, onSubmit, onCancel, saving }: Props) {
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
         </div>
       </div>
+
+      {formError && (
+        <div className="text-xs text-red-600 dark:text-red-400" role="alert">{formError}</div>
+      )}
 
       <div className="flex justify-end gap-2 pt-2">
         <button type="button" onClick={onCancel} className="px-4 py-2 text-sm text-app-muted">Cancelar</button>

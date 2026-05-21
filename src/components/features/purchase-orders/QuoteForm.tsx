@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 import type { Supplier } from '@/types/database'
+import { formatRD } from '@/utils/currency'
 
 interface ItemDraft { description: string; quantity: string; unit: string; unit_price: string }
 
@@ -36,7 +37,6 @@ export function QuoteForm({ suppliers, onSubmit, onCancel, saving }: Props) {
 
   const subtotal = items.reduce((s, i) => s + (parseFloat(i.quantity) || 0) * (parseFloat(i.unit_price) || 0), 0)
   const total = subtotal * (1 + (parseFloat(taxPercent) || 0) / 100)
-  const fmt = (n: number) => n.toLocaleString('es-DO', { style: 'currency', currency: 'DOP' })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -128,8 +128,8 @@ export function QuoteForm({ suppliers, onSubmit, onCancel, saving }: Props) {
             min="0" max="100" className="w-full border border-app-border rounded-lg px-3 py-2 text-sm" />
         </div>
         <div className="text-right text-sm space-y-0.5 pt-1">
-          <p className="text-app-muted">Subtotal: <span className="font-medium text-app-text">{fmt(subtotal)}</span></p>
-          <p className="font-semibold text-app-text">Total: {fmt(total)}</p>
+          <p className="text-app-muted">Subtotal: <span className="font-medium text-app-text">{formatRD(subtotal)}</span></p>
+          <p className="font-semibold text-app-text">Total: {formatRD(total)}</p>
         </div>
       </div>
 

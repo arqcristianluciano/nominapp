@@ -37,8 +37,8 @@ export default function ExcelImportModal({ categories, onImport, onClose }: Prop
       const parsed = parseRows(rawRows, categories)
       setItems(parsed.items)
       setNewCategories(parsed.newCategories)
-    } catch {
-      setError('No se pudo leer el archivo. Verifique que sea un Excel válido.')
+    } catch (e) {
+      setError(getErrorMessage(e))
     }
   }
 
@@ -250,7 +250,7 @@ export default function ExcelImportModal({ categories, onImport, onClose }: Prop
                   <tbody>
                     {items.map((row, i) => (
                       <tr
-                        key={i}
+                        key={`${row.categoryId ?? row.newCategoryKey ?? 'nocat'}-${row.code || 'nocode'}-${row.description}-${i}`}
                         className={`border-b border-app-border ${row.valid ? 'hover:bg-app-hover' : 'bg-amber-50'}`}
                       >
                         <td className="px-3 py-1.5 text-app-muted max-w-[160px] truncate">

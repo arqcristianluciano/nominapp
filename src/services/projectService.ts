@@ -1,5 +1,27 @@
 import { supabase } from '@/lib/supabase'
 import type { CustomIndirect, Project } from '@/types/database'
+import { approvalsService } from '@/services/approvalsService'
+
+const INDIRECT_FIELDS = [
+  'dt_percent',
+  'admin_percent',
+  'transport_percent',
+  'planning_fee',
+  'custom_indirects',
+] as const
+
+type IndirectField = (typeof INDIRECT_FIELDS)[number]
+
+function pickIndirects(source: Partial<Project>): Partial<Pick<Project, IndirectField>> {
+  const result: Partial<Pick<Project, IndirectField>> = {}
+  for (const key of INDIRECT_FIELDS) {
+    if (key in source) {
+      // @ts-expect-error indexed assignment by known keys
+      result[key] = source[key]
+    }
+  }
+  return result
+}
 
 export const projectService = {
   async getAll() {
@@ -42,6 +64,18 @@ export const projectService = {
   },
 
   async update(id: string, updates: Partial<Project>) {
+    const touchesIndirects = INDIRECT_FIELDS.some((key) => key in updates)
+
+    let before: Partial<Pick<Project, IndirectField>> | null = null
+    if (touchesIndirects) {
+      const { data: prev } = await supabase
+        .from('projects')
+        .select(INDIRECT_FIELDS.join(','))
+        .eq('id', id)
+        .single()
+      before = prev ? pickIndirects(prev as unknown as Partial<Project>) : null
+    }
+
     const { data, error } = await supabase
       .from('projects')
       .update({ ...updates, updated_at: new Date().toISOString() })
@@ -49,6 +83,23 @@ export const projectService = {
       .select('*, company:companies(*)')
       .single()
     if (error) throw error
-    return data as Project
+
+    const updated = data as Project
+
+    if (touchesIndirects) {
+      await approvalsService
+        .log({
+          entity_type: 'project',
+          entity_id: id,
+          action: 'update_indirects',
+          payload_before: before,
+          payload_after: pickIndirects(updated),
+        })
+        .catch((err) =>
+          console.warn('[projectService.update] log de auditoria fallo', err),
+        )
+    }
+
+    return updated
   },
 }

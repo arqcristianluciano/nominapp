@@ -8,10 +8,7 @@ import {
 import { exportToExcel } from '@/utils/excelExport'
 import { useToast } from '@/components/ui/Toast'
 import { useProjectStore } from '@/stores/projectStore'
-
-function fmt(n: number): string {
-  return n.toLocaleString('es-DO', { style: 'currency', currency: 'DOP', maximumFractionDigits: 0 })
-}
+import { formatRD } from '@/utils/currency'
 
 export default function CubicacionMensualPage() {
   const { projectId } = useParams<{ projectId: string }>()
@@ -49,10 +46,10 @@ export default function CubicacionMensualPage() {
             Mes: r.month,
             Capítulo: r.category_code ?? '—',
             Nombre: r.category_name ?? '—',
-            'Cubicado (DOP)': r.cubicado,
-            'Costo real (DOP)': r.costo_real,
-            'Desviación (DOP)': r.desviacion,
-            'Desviación %': r.cubicado > 0 ? ((r.desviacion / r.cubicado) * 100).toFixed(2) : '0',
+            'Cubicado (DOP)': formatRD(r.cubicado),
+            'Costo real (DOP)': formatRD(r.costo_real),
+            'Desviación (DOP)': formatRD(r.desviacion),
+            'Desviación %': `${r.cubicado > 0 ? ((r.desviacion / r.cubicado) * 100).toFixed(1) : '0.0'}%`,
           })),
         },
       ])
@@ -101,10 +98,10 @@ export default function CubicacionMensualPage() {
                 <div className="px-3 py-2 bg-app-chip flex justify-between text-sm font-semibold">
                   <span>{month}</span>
                   <span>
-                    Cubicado {fmt(sumCub)} · Real {fmt(sumReal)} ·{' '}
+                    Cubicado {formatRD(sumCub)} · Real {formatRD(sumReal)} ·{' '}
                     <span className={sumDesv > 0 ? 'text-red-600' : 'text-green-600'}>
                       {sumDesv >= 0 ? '+' : ''}
-                      {fmt(sumDesv)}
+                      {formatRD(sumDesv)}
                     </span>
                   </span>
                 </div>
@@ -124,15 +121,15 @@ export default function CubicacionMensualPage() {
                           {r.category_code ? `[${r.category_code}] ` : ''}
                           {r.category_name ?? <span className="text-app-subtle">Sin imputación</span>}
                         </td>
-                        <td className="px-3 py-2 text-right">{fmt(r.cubicado)}</td>
-                        <td className="px-3 py-2 text-right">{fmt(r.costo_real)}</td>
+                        <td className="px-3 py-2 text-right">{formatRD(r.cubicado)}</td>
+                        <td className="px-3 py-2 text-right">{formatRD(r.costo_real)}</td>
                         <td
                           className={`px-3 py-2 text-right font-medium ${
                             r.desviacion > 0 ? 'text-red-600' : 'text-green-600'
                           }`}
                         >
                           {r.desviacion >= 0 ? '+' : ''}
-                          {fmt(r.desviacion)}
+                          {formatRD(r.desviacion)}
                         </td>
                       </tr>
                     ))}

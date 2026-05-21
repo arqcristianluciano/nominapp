@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { adminService, type AdminUser } from '@/services/adminService'
 import { useToast } from '@/components/ui/Toast'
+import { isCedula, isEmail, isPhone } from '@/utils/validators'
 
 interface Props {
   mode: 'create' | 'edit'
@@ -49,6 +50,7 @@ const label = 'text-xs font-medium text-app-muted mb-1 block'
 export function AdminUserForm({ mode, initial, onCancel, onSaved }: Props) {
   const [form, setForm] = useState<FormState>(emptyForm(initial))
   const [saving, setSaving] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
   const { error } = useToast()
 
   const isCreate = mode === 'create'
@@ -60,26 +62,58 @@ export function AdminUserForm({ mode, initial, onCancel, onSaved }: Props) {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     if (saving) return
+    setFormError(null)
     setSaving(true)
     try {
       const displayName =
         form.display_name.trim() ||
         `${form.first_name.trim()} ${form.last_name.trim()}`.trim()
       if (!displayName) {
-        error('El nombre para mostrar no puede quedar vacío')
+        const msg = 'El nombre para mostrar no puede quedar vacío'
+        setFormError(msg)
+        error(msg)
         setSaving(false)
         return
       }
       const salaryNum = form.salary ? Number(form.salary) : null
       if (form.salary && Number.isNaN(salaryNum!)) {
-        error('Salario inválido')
+        const msg = 'Salario inválido'
+        setFormError(msg)
+        error(msg)
+        setSaving(false)
+        return
+      }
+
+      const cedulaTrimmed = form.cedula.trim()
+      if (cedulaTrimmed && !isCedula(cedulaTrimmed)) {
+        const msg = 'Cédula inválida (formato 000-0000000-0)'
+        setFormError(msg)
+        error(msg)
+        setSaving(false)
+        return
+      }
+
+      const phoneTrimmed = form.phone.trim()
+      if (phoneTrimmed && !isPhone(phoneTrimmed)) {
+        const msg = 'Teléfono inválido (10 dígitos)'
+        setFormError(msg)
+        error(msg)
         setSaving(false)
         return
       }
 
       if (isCreate) {
         if (!form.email.trim() || !form.password) {
-          error('Email y contraseña inicial son obligatorios')
+          const msg = 'Email y contraseña inicial son obligatorios'
+          setFormError(msg)
+          error(msg)
+          setSaving(false)
+          return
+        }
+        if (!isEmail(form.email.trim())) {
+          const msg = 'Email inválido'
+          setFormError(msg)
+          error(msg)
           setSaving(false)
           return
         }
@@ -200,6 +234,10 @@ export function AdminUserForm({ mode, initial, onCancel, onSaved }: Props) {
           </div>
         </div>
       </div>
+
+      {formError && (
+        <div className="text-xs text-red-600 dark:text-red-400" role="alert">{formError}</div>
+      )}
 
       <div className="flex justify-end gap-2 pt-2 border-t border-app-border">
         <button type="button" onClick={onCancel} className="px-4 py-2 text-sm border border-app-border rounded-lg text-app-muted hover:bg-app-hover">

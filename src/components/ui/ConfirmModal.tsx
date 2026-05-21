@@ -25,7 +25,7 @@ export function ConfirmModal({
   const isDanger = variant === 'danger'
 
   return (
-    <Modal open={open} onClose={onCancel} title="" width="max-w-sm">
+    <Modal open={open} onClose={onCancel} title="" ariaLabel={title} width="max-w-sm">
       <div className="text-center space-y-4 pb-1">
         <div className={`mx-auto w-12 h-12 rounded-full flex items-center justify-center ${
           isDanger

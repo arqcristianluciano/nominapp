@@ -58,7 +58,7 @@ function PriceHistoryRow({
                     const prev = index > 0 ? history.entries[index - 1].unit_price : null
                     const change = prev ? ((entry.unit_price - prev) / prev) * 100 : null
                     return (
-                      <tr key={`${history.key}-${index}`} className="border-t border-app-border/30">
+                      <tr key={`${history.key}-${entry.date}-${entry.project}-${index}`} className="border-t border-app-border/30">
                         <td className="py-1 pr-4 text-app-muted">{new Date(entry.date + 'T12:00:00').toLocaleDateString('es-DO', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
                         <td className="py-1 pr-4 text-right font-semibold text-app-text">{formatRD(entry.unit_price)}{change !== null && <span className={`ml-1.5 ${change > 0 ? 'text-red-500' : change < 0 ? 'text-green-500' : 'text-app-subtle'}`}>{change > 0 ? '+' : ''}{change.toFixed(1)}%</span>}</td>
                         <td className="py-1 pr-4 text-right text-app-muted">{entry.quantity > 0 ? entry.quantity : '—'}</td>

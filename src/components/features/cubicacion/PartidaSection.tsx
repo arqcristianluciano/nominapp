@@ -82,6 +82,7 @@ export function PartidaSection({ contractId, projectId, partidas, cortes, onRefr
   }
 
   async function handleSave() {
+    if (saving) return
     if (!form.description || !form.unit_price || !form.agreed_quantity) return
     const unitPrice = Number(form.unit_price)
     const agreedQty = Number(form.agreed_quantity)
@@ -109,6 +110,8 @@ export function PartidaSection({ contractId, projectId, partidas, cortes, onRefr
       setForm(EMPTY_FORM)
       setSearch('')
       onRefresh()
+    } catch (err) {
+      console.warn('[PartidaSection] handleSave failed', err)
     } finally { setSaving(false) }
   }
 
@@ -219,7 +222,12 @@ export function PartidaSection({ contractId, projectId, partidas, cortes, onRefr
 
             <div className="col-span-2 flex gap-1 justify-end">
               <button onClick={cancelForm} className="px-2 py-1.5 text-xs border border-app-border rounded-md hover:bg-app-hover text-app-muted">Cancelar</button>
-              <button onClick={handleSave} disabled={saving} className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">
+              <button
+                onClick={handleSave}
+                disabled={saving || !form.description || !form.unit_price || !form.agreed_quantity}
+                aria-busy={saving}
+                className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 {saving ? '...' : editing ? 'Guardar' : 'Agregar'}
               </button>
             </div>

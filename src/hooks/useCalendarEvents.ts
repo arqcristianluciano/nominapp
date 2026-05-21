@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { parseDateLocal, todayISO } from '@/utils/dateLocal'
 
 export interface CalendarEvent {
   id: string
@@ -61,7 +62,7 @@ export function useCalendarEvents() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const today = new Date()
+      const todayStr = todayISO()
       const [txnRes, loanRes, loanDeductionRes, corteRes, projectRes] = await Promise.all([
         supabase.from('transactions').select('id, description, total, date, project_id, payment_condition, supplier:suppliers(name)').limit(300),
         supabase.from('contractor_loans').select('*, contractor:contractors(name)').eq('status', 'active'),
@@ -89,7 +90,7 @@ export function useCalendarEvents() {
           type: 'cxp',
           projectName: project?.name ?? 'Proyecto',
           link: `/proyectos/${txn.project_id}/control`,
-          overdue: txn.date < today.toISOString().split('T')[0],
+          overdue: txn.date < todayStr,
         })
       }
 
@@ -97,11 +98,11 @@ export function useCalendarEvents() {
         if (loan.installment_amount <= 0) continue
         const totalPaid = paidByLoan.get(loan.id) ?? 0
         const paidInstallments = Math.floor(totalPaid / loan.installment_amount)
-        const disbursed = new Date(loan.disbursed_date)
+        const disbursed = parseDateLocal(loan.disbursed_date)
         for (let installment = paidInstallments + 1; installment <= loan.installments; installment += 1) {
           const dueDate = new Date(disbursed)
           dueDate.setMonth(dueDate.getMonth() + installment)
-          const date = dueDate.toISOString().split('T')[0]
+          const date = `${dueDate.getFullYear()}-${String(dueDate.getMonth() + 1).padStart(2, '0')}-${String(dueDate.getDate()).padStart(2, '0')}`
           allEvents.push({
             id: `loan-${loan.id}-${installment}`,
             date,
@@ -110,7 +111,7 @@ export function useCalendarEvents() {
             type: 'loan',
             projectName: 'Préstamos',
             link: '/prestamos',
-            overdue: date < today.toISOString().split('T')[0],
+            overdue: date < todayStr,
           })
         }
       }
