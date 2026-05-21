@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 import type { Supplier } from '@/types/database'
 import { formatRD } from '@/utils/currency'
+import { parseDecimalInput } from '@/utils/decimalInput'
 
 interface ItemDraft { description: string; quantity: string; unit: string; unit_price: string }
 
@@ -35,27 +36,36 @@ export function QuoteForm({ suppliers, onSubmit, onCancel, saving }: Props) {
   const updateItem = (idx: number, field: keyof ItemDraft, value: string) =>
     setItems((p) => p.map((it, i) => i === idx ? { ...it, [field]: value } : it))
 
-  const subtotal = items.reduce((s, i) => s + (parseFloat(i.quantity) || 0) * (parseFloat(i.unit_price) || 0), 0)
-  const total = subtotal * (1 + (parseFloat(taxPercent) || 0) / 100)
+  const subtotal = items.reduce(
+    (s, i) => s + (parseDecimalInput(i.quantity) ?? 0) * (parseDecimalInput(i.unit_price) ?? 0),
+    0,
+  )
+  const total = subtotal * (1 + (parseDecimalInput(taxPercent) ?? 0) / 100)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     if (!supplierId) return setError('Seleccione un suplidor')
-    const valid = items.filter((i) => i.description && parseFloat(i.unit_price) > 0)
+    const valid = items.filter((i) => {
+      const price = parseDecimalInput(i.unit_price)
+      return i.description && price !== null && price > 0
+    })
     if (!valid.length) return setError('Agregue al menos un ítem con precio')
     await onSubmit({
       supplier_id: supplierId,
       quote_number: quoteNumber || undefined,
       valid_until: validUntil || undefined,
-      tax_percent: parseFloat(taxPercent) || 0,
+      tax_percent: parseDecimalInput(taxPercent) ?? 0,
       notes: notes || undefined,
-      items: valid.map((i) => ({
-        description: i.description,
-        quantity: parseFloat(i.quantity) || 1,
-        unit: i.unit,
-        unit_price: parseFloat(i.unit_price),
-      })),
+      items: valid.map((i) => {
+        const qty = parseDecimalInput(i.quantity)
+        return {
+          description: i.description,
+          quantity: qty !== null && qty > 0 ? qty : 1,
+          unit: i.unit,
+          unit_price: parseDecimalInput(i.unit_price) ?? 0,
+        }
+      }),
     })
   }
 
@@ -107,11 +117,11 @@ export function QuoteForm({ suppliers, onSubmit, onCancel, saving }: Props) {
               <input value={it.description} onChange={(e) => updateItem(idx, 'description', e.target.value)}
                 placeholder="Descripción" className={`col-span-5 ${cell}`} />
               <input value={it.quantity} onChange={(e) => updateItem(idx, 'quantity', e.target.value)}
-                type="number" min="0" step="any" className={`col-span-2 ${cell}`} />
+                type="text" inputMode="decimal" className={`col-span-2 ${cell}`} />
               <input value={it.unit} onChange={(e) => updateItem(idx, 'unit', e.target.value)}
                 className={`col-span-2 ${cell}`} />
               <input value={it.unit_price} onChange={(e) => updateItem(idx, 'unit_price', e.target.value)}
-                type="number" min="0" step="any" placeholder="0.00" className={`col-span-2 ${cell}`} />
+                type="text" inputMode="decimal" placeholder="0.00" className={`col-span-2 ${cell}`} />
               <button type="button" onClick={() => setItems((p) => p.filter((_, i) => i !== idx))}
                 className="col-span-1 text-app-subtle hover:text-red-500 flex justify-center">
                 <Trash2 className="w-3.5 h-3.5" />

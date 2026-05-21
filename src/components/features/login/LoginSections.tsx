@@ -19,6 +19,7 @@ export function LoginBrandPanel() {
 }
 
 export function LoginQuickAccess({ onQuickLogin }: { onQuickLogin: (username: string, password: string) => Promise<void> }) {
+  if (import.meta.env.MODE === 'production') return null
   return (
     <div className="rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/40 p-4 space-y-3">
       <div className="flex items-start gap-2">
@@ -33,13 +34,13 @@ export function LoginQuickAccess({ onQuickLogin }: { onQuickLogin: (username: st
           </p>
         </div>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {TEST_USERS.map((u) => (
           <button
             key={u.email}
             type="button"
             onClick={() => void onQuickLogin(u.email, u.password)}
-            className="flex flex-col items-start py-1.5 px-2.5 rounded-lg bg-white dark:bg-amber-900/30 text-amber-900 dark:text-amber-100 hover:bg-amber-100 dark:hover:bg-amber-800/40 transition-colors border border-amber-200 dark:border-amber-700"
+            className="flex flex-col items-start justify-center min-h-[44px] py-2 px-2.5 rounded-lg bg-white dark:bg-amber-900/30 text-amber-900 dark:text-amber-100 hover:bg-amber-100 dark:hover:bg-amber-800/40 transition-colors border border-amber-200 dark:border-amber-700"
           >
             <span className="text-xs font-semibold leading-tight">{u.displayName}</span>
             <span className="text-[10px] text-amber-700 dark:text-amber-400">{u.roleLabel}</span>
@@ -79,8 +80,8 @@ export function LoginFormPanel({
           <div className="flex flex-col items-center gap-2 lg:hidden"><div className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center"><Building2 className="w-6 h-6 text-white" /></div><h1 className="text-xl font-bold text-app-text">NominaAPP</h1></div>
           <div className="lg:block"><h2 className="text-2xl font-bold text-app-text">Bienvenido</h2><p className="mt-1 text-sm text-app-muted">Inicia sesión para acceder a tu cuenta</p></div>
           <form onSubmit={onSubmit} className="space-y-4">
-            <div><label htmlFor="login-user" className="block text-xs font-semibold text-app-muted mb-1.5 uppercase tracking-wide">Usuario / Email</label><input id="login-user" name="username" autoComplete="username" autoFocus value={username} onChange={(event) => onUsernameChange(event.target.value)} className="w-full px-3.5 py-2.5 rounded-xl border border-app-border bg-app-surface text-app-text text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow" required /></div>
-            <div><label htmlFor="login-pass" className="block text-xs font-semibold text-app-muted mb-1.5 uppercase tracking-wide">Contraseña</label><input id="login-pass" name="password" type="password" autoComplete="current-password" value={password} onChange={(event) => onPasswordChange(event.target.value)} className="w-full px-3.5 py-2.5 rounded-xl border border-app-border bg-app-surface text-app-text text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow" required /></div>
+            <div><label htmlFor="login-user" className="block text-xs font-semibold text-app-muted mb-1.5 uppercase tracking-wide">Usuario / Email</label><input id="login-user" name="username" autoComplete="username" autoFocus value={username} onChange={(event) => onUsernameChange(event.target.value)} className="w-full px-3.5 py-2.5 rounded-xl border border-app-border bg-app-surface text-app-text text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow" required /></div>
+            <div><label htmlFor="login-pass" className="block text-xs font-semibold text-app-muted mb-1.5 uppercase tracking-wide">Contraseña</label><input id="login-pass" name="password" type="password" autoComplete="current-password" value={password} onChange={(event) => onPasswordChange(event.target.value)} className="w-full px-3.5 py-2.5 rounded-xl border border-app-border bg-app-surface text-app-text text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow" required /></div>
             {error && <div className="flex items-center gap-2 px-3 py-2.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-lg"><p className="text-xs text-red-700 dark:text-red-300" role="alert">{error}</p></div>}
             <button type="submit" disabled={submitting || !hydrated} className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 active:scale-[0.98] disabled:opacity-50 transition-all shadow-sm shadow-blue-600/20"><LogIn className="w-4 h-4" />{submitting ? 'Entrando…' : 'Iniciar sesión'}</button>
           </form>

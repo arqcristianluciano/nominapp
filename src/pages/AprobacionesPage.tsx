@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Download, History } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { ChevronLeft, ChevronRight, Download, History, X } from 'lucide-react'
 import {
   approvalsService,
   type ApprovalAction,
@@ -39,12 +39,15 @@ const ENTITY_LABEL: Record<string, string> = {
   project: 'Proyecto',
 }
 
+const PAGE_SIZE = 100
+
 export default function AprobacionesPage() {
   const user = useAuthStore((s) => s.user)
   const [records, setRecords] = useState<ApprovalRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [filterMine, setFilterMine] = useState(false)
   const [filterAction, setFilterAction] = useState<ApprovalAction | 'all'>('all')
+  const [offset, setOffset] = useState(0)
   const { success, error } = useToast()
 
   useEffect(() => {
@@ -62,11 +65,35 @@ export default function AprobacionesPage() {
     }
   }, [])
 
-  const filtered = records.filter((r) => {
-    if (filterMine && r.actor_display_name !== user?.displayName) return false
-    if (filterAction !== 'all' && r.action !== filterAction) return false
-    return true
-  })
+  const filtered = useMemo(
+    () =>
+      records.filter((r) => {
+        if (filterMine && r.actor_display_name !== user?.displayName) return false
+        if (filterAction !== 'all' && r.action !== filterAction) return false
+        return true
+      }),
+    [records, filterMine, filterAction, user?.displayName],
+  )
+
+  const hasActiveFilters = filterMine || filterAction !== 'all'
+
+  // Reset offset cuando cambian filtros. Computado en lugar de useEffect
+  // para evitar render extra y warning de set-state-in-effect.
+  const filtersKey = `${filterMine}|${filterAction}`
+  const [prevFiltersKey, setPrevFiltersKey] = useState(filtersKey)
+  if (prevFiltersKey !== filtersKey) {
+    setPrevFiltersKey(filtersKey)
+    setOffset(0)
+  }
+  // Offset overflow guard (computado por el mismo motivo).
+  if (offset > 0 && offset >= filtered.length) {
+    setOffset(0)
+  }
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const currentPage = Math.floor(offset / PAGE_SIZE) + 1
+  const paginated = filtered.slice(offset, offset + PAGE_SIZE)
+  const showPagination = filtered.length > PAGE_SIZE
 
   async function handleExport() {
     try {
@@ -88,6 +115,11 @@ export default function AprobacionesPage() {
     } catch {
       error('No se pudo exportar')
     }
+  }
+
+  function clearFilters() {
+    setFilterMine(false)
+    setFilterAction('all')
   }
 
   return (
@@ -132,15 +164,72 @@ export default function AprobacionesPage() {
         </span>
       </div>
 
+      {hasActiveFilters && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs text-app-subtle">Filtros activos:</span>
+          {filterMine && (
+            <span className="inline-flex items-center gap-1 text-xs bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900 px-2 py-1 rounded-full">
+              Solo mis aprobaciones
+              <button
+                type="button"
+                onClick={() => setFilterMine(false)}
+                aria-label="Quitar filtro mis aprobaciones"
+                className="hover:text-blue-900 dark:hover:text-blue-100"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          )}
+          {filterAction !== 'all' && (
+            <span className="inline-flex items-center gap-1 text-xs bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900 px-2 py-1 rounded-full">
+              Acción: {ACTION_LABEL[filterAction] ?? filterAction}
+              <button
+                type="button"
+                onClick={() => setFilterAction('all')}
+                aria-label="Quitar filtro acción"
+                className="hover:text-blue-900 dark:hover:text-blue-100"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={clearFilters}
+            className="text-xs text-app-muted hover:text-app-text underline"
+          >
+            Limpiar
+          </button>
+        </div>
+      )}
+
       {loading ? (
         <div className="text-center py-12 text-app-muted text-sm">Cargando historial…</div>
       ) : filtered.length === 0 ? (
-        <div className="bg-app-surface rounded-xl border border-app-border p-12 text-center">
-          <p className="text-base font-semibold text-app-text mb-1">Sin registros</p>
-          <p className="text-sm text-app-muted">
-            Las acciones críticas (aprobaciones, validaciones, overrides) aparecerán aquí.
-          </p>
-        </div>
+        hasActiveFilters ? (
+          <div className="bg-app-surface rounded-xl border border-app-border p-12 text-center">
+            <p className="text-base font-semibold text-app-text mb-1">
+              No hay resultados con los filtros aplicados
+            </p>
+            <p className="text-sm text-app-muted mb-4">
+              Ajusta o quita los filtros para ver más registros.
+            </p>
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="text-sm px-3 py-1.5 border border-app-border rounded-lg text-app-muted hover:bg-app-hover"
+            >
+              Limpiar filtros
+            </button>
+          </div>
+        ) : (
+          <div className="bg-app-surface rounded-xl border border-app-border p-12 text-center">
+            <p className="text-base font-semibold text-app-text mb-1">Sin registros</p>
+            <p className="text-sm text-app-muted">
+              Las acciones críticas (aprobaciones, validaciones, overrides) aparecerán aquí.
+            </p>
+          </div>
+        )
       ) : (
         <div className="bg-app-surface border border-app-border rounded-xl overflow-x-auto">
           <table className="w-full text-sm">
@@ -154,7 +243,7 @@ export default function AprobacionesPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((r) => (
+              {paginated.map((r) => (
                 <tr key={r.id} className="border-t border-app-border align-top">
                   <td className="px-3 py-2 font-mono text-xs whitespace-nowrap">
                     {new Date(r.created_at).toLocaleString('es-DO')}
@@ -171,6 +260,36 @@ export default function AprobacionesPage() {
               ))}
             </tbody>
           </table>
+          {showPagination && (
+            <div className="flex items-center justify-between px-4 py-2.5 border-t border-app-border">
+              <span className="text-xs text-app-muted">
+                Mostrando {offset + 1}–{Math.min(offset + PAGE_SIZE, filtered.length)} de{' '}
+                {filtered.length} · Pág. {currentPage} de {totalPages}
+              </span>
+              <div className="flex gap-1">
+                <button
+                  type="button"
+                  onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}
+                  disabled={offset === 0}
+                  aria-label="Página anterior"
+                  className="p-1.5 rounded hover:bg-app-hover text-app-muted disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setOffset(Math.min((totalPages - 1) * PAGE_SIZE, offset + PAGE_SIZE))
+                  }
+                  disabled={currentPage >= totalPages}
+                  aria-label="Página siguiente"
+                  className="p-1.5 rounded hover:bg-app-hover text-app-muted disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

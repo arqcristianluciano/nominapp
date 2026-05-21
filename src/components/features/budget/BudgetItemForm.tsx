@@ -3,6 +3,7 @@ import { X, Search } from 'lucide-react'
 import type { BudgetItem, BudgetCategory, PriceListItem } from '@/types/database'
 import { MEASURE_UNITS } from '@/constants/measureUnits'
 import { formatRD } from '@/utils/currency'
+import { parseDecimalInput } from '@/utils/decimalInput'
 import { getErrorMessage } from '@/utils/errors'
 
 interface Props {
@@ -60,22 +61,23 @@ export default function BudgetItemForm({ category, priceList, editItem, onSave, 
     setPriceQuery('')
   }
 
-  const total = (Number(form.quantity) || 0) * (Number(form.unit_price) || 0)
+  const total = (parseDecimalInput(form.quantity) ?? 0) * (parseDecimalInput(form.unit_price) ?? 0)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.description.trim()) return setError('La descripción es requerida')
 
     // Cantidad (requerida): debe ser número válido y > 0.
-    const qty = Number(form.quantity)
-    if (!form.quantity || Number.isNaN(qty)) return setError('Cantidad inválida')
+    if (!form.quantity.trim()) return setError('Cantidad inválida')
+    const qty = parseDecimalInput(form.quantity)
+    if (qty === null) return setError('Cantidad inválida')
     if (qty <= 0) return setError('La cantidad debe ser mayor a 0')
 
     // Precio unitario (opcional): si tiene contenido, debe ser número válido. Vacío => 0.
     let unitPrice = 0
     if (form.unit_price.trim()) {
-      const parsed = Number(form.unit_price)
-      if (Number.isNaN(parsed)) return setError('Precio unitario inválido')
+      const parsed = parseDecimalInput(form.unit_price)
+      if (parsed === null) return setError('Precio unitario inválido')
       unitPrice = parsed
     }
 
@@ -202,9 +204,8 @@ export default function BudgetItemForm({ category, priceList, editItem, onSave, 
             <div>
               <label className="text-[10px] font-medium text-app-muted mb-1 block uppercase tracking-wide">Cantidad *</label>
               <input
-                type="number"
-                step="any"
-                min="0"
+                type="text"
+                inputMode="decimal"
                 placeholder="0"
                 value={form.quantity}
                 onChange={(e) => set('quantity', e.target.value)}
@@ -214,10 +215,9 @@ export default function BudgetItemForm({ category, priceList, editItem, onSave, 
             <div>
               <label className="text-[10px] font-medium text-app-muted mb-1 block uppercase tracking-wide">Precio unit.</label>
               <input
-                type="number"
-                step="any"
-                min="0"
-                placeholder="0.00"
+                type="text"
+                inputMode="decimal"
+                placeholder="0,00"
                 value={form.unit_price}
                 onChange={(e) => set('unit_price', e.target.value)}
                 className="w-full px-2.5 py-2 border border-app-border rounded-lg text-xs focus:ring-1 focus:ring-blue-500"

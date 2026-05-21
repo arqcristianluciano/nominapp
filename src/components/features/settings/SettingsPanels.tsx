@@ -1,4 +1,4 @@
-import type { BankAccount } from '@/types/database'
+import type { BankAccount, Company } from '@/types/database'
 import { PAYMENT_CONDITIONS } from '@/constants/indirectCosts'
 import { DEFAULT_BUDGET_CATEGORIES } from '@/constants/budgetCategories'
 import { DOMINICAN_BANKS } from '@/constants/banks'
@@ -38,6 +38,57 @@ export function BankAccountsPanel({
               <td className="px-3 py-2.5 text-xs text-app-muted">{account.account_type || '—'}</td>
               <td className="px-3 py-2.5 text-xs text-center">{account.is_internal ? <span className="text-green-600 font-medium">Si</span> : <span className="text-app-subtle">No</span>}</td>
               <td className="px-3 py-2.5">{onEdit && <button onClick={() => onEdit(account)} className="text-xs text-blue-600 hover:text-blue-800">Editar</button>}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+export function CompaniesPanel({
+  loading,
+  companies,
+  onEdit,
+}: {
+  loading: boolean
+  companies: Company[]
+  onEdit?: (company: Company) => void
+}) {
+  if (loading) return <div className="text-sm text-app-muted">Cargando...</div>
+  if (companies.length === 0) {
+    return (
+      <div className="bg-app-surface rounded-xl border border-app-border p-8 text-center">
+        <p className="text-app-muted">No hay empresas registradas</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-app-surface rounded-xl border border-app-border overflow-hidden">
+      <table className="w-full">
+        <thead>
+          <tr className="bg-app-bg border-b border-app-border">
+            <th className="px-3 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">Nombre</th>
+            <th className="px-3 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">RNC</th>
+            <th className="px-3 py-2 w-16"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {companies.map((company) => (
+            <tr key={company.id} className="border-b border-app-border hover:bg-app-hover">
+              <td className="px-3 py-2.5 text-xs text-app-text font-medium">{company.name}</td>
+              <td className="px-3 py-2.5 text-xs text-app-muted">{company.rnc || '—'}</td>
+              <td className="px-3 py-2.5">
+                {onEdit && (
+                  <button
+                    onClick={() => onEdit(company)}
+                    className="text-xs text-blue-600 hover:text-blue-800"
+                  >
+                    Editar
+                  </button>
+                )}
+              </td>
             </tr>
           ))}
         </tbody>

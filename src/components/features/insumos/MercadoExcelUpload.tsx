@@ -1,11 +1,12 @@
 import { useRef, useState } from 'react'
-import { Upload, FileSpreadsheet, CheckCircle, RefreshCw } from 'lucide-react'
+import { Upload, FileSpreadsheet, CheckCircle, RefreshCw, Download } from 'lucide-react'
 import { parseMercadoExcel, computeBudgetTotals } from '@/utils/parseMercadoExcel'
 import { mercadoBudgetService, mercadoBudgetLineService } from '@/services/mercadoBudgetService'
 import { CATEGORY_LABELS, CATEGORY_COLORS } from '@/types/mercadoBudget'
 import type { ParsedMercadoLine, MercadoCategory } from '@/types/mercadoBudget'
 import { formatRD } from '@/utils/currency'
 import { getErrorMessage } from '@/utils/errors'
+import { downloadMercadoTemplate } from '@/utils/excelTemplates'
 
 const CATEGORIES: MercadoCategory[] = ['AJUSTES', 'MANO_DE_OBRA', 'EQUIPOS', 'MATERIALES']
 
@@ -45,6 +46,10 @@ export function MercadoExcelUpload({ projectId, hasExisting, onImported }: Props
     if (file) handleFile(file)
   }
 
+  const handleDownloadTemplate = async () => {
+    await downloadMercadoTemplate()
+  }
+
   const handleConfirm = async () => {
     if (saving) return
     setSaving(true)
@@ -82,7 +87,17 @@ export function MercadoExcelUpload({ projectId, hasExisting, onImported }: Props
           </div>
         )}
         <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-800 rounded-lg p-3 text-xs text-blue-700 dark:text-blue-300 space-y-1">
-          <p className="font-medium">Formato esperado del Excel de Mercado:</p>
+          <div className="flex items-center justify-between gap-2">
+            <p className="font-medium">Formato esperado del Excel de Mercado:</p>
+            <button
+              type="button"
+              onClick={handleDownloadTemplate}
+              className="flex items-center gap-1 px-2 py-1 text-[11px] text-blue-700 dark:text-blue-300 bg-white dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
+              title="Descargar plantilla de ejemplo"
+            >
+              <Download className="w-3 h-3" /> Descargar plantilla
+            </button>
+          </div>
           <p>Filas de cabecera con el nombre de la categoría: <strong>AJUSTES · EQUIPOS · MANO DE OBRA · MATERIALES</strong></p>
           <p>Columnas bajo cada categoría: Código · Descripción · Unidad · Cantidad · Precio Unitario</p>
         </div>

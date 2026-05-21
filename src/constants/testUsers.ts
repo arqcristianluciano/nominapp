@@ -1,3 +1,4 @@
+// SOLO DEV. ELIMINAR antes de salir a produccion oficial.
 // Cuentas provisionales de prueba creadas en producción para testear los
 // 8 roles del estado deseado. ELIMINAR antes de salir a producción real:
 //   1. Borrar las filas de auth.users con email LIKE '%@nominapp.local'.

@@ -1,6 +1,68 @@
-import { Minus, TrendingDown, TrendingUp } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { ArrowDown, ArrowUp, ArrowUpDown, Download, Minus, TrendingDown, TrendingUp } from 'lucide-react'
 import { formatRD } from '@/utils/currency'
 import type { MaterialHistory } from './priceHistoryTypes'
+
+type SortKey = 'name' | 'latest' | 'avg' | 'minMax' | 'trend' | 'count' | 'date'
+type SortDir = 'asc' | 'desc'
+
+const FORMULA_PREFIXES = ['=', '+', '-', '@']
+
+function sanitizeCsvCell(value: unknown): string {
+  if (value === null || value === undefined) return ''
+  const str = String(value)
+  if (str.length === 0) return str
+  const needsPrefixGuard = FORMULA_PREFIXES.includes(str[0])
+  const guarded = needsPrefixGuard ? `'${str}` : str
+  if (/[",\n\r]/.test(guarded)) return `"${guarded.replace(/"/g, '""')}"`
+  return guarded
+}
+
+function getLatestEntryDate(history: MaterialHistory): string {
+  let latest = ''
+  for (const entry of history.entries) {
+    if (entry.date > latest) latest = entry.date
+  }
+  return latest
+}
+
+function compareHistories(a: MaterialHistory, b: MaterialHistory, key: SortKey, dir: SortDir): number {
+  const mult = dir === 'asc' ? 1 : -1
+  let result = 0
+  switch (key) {
+    case 'name': {
+      const an = (a.supplier ?? a.entries[0]?.description ?? a.key).toLowerCase()
+      const bn = (b.supplier ?? b.entries[0]?.description ?? b.key).toLowerCase()
+      result = an.localeCompare(bn, 'es')
+      break
+    }
+    case 'latest':
+      result = a.latestPrice - b.latestPrice
+      break
+    case 'avg':
+      result = a.avgPrice - b.avgPrice
+      break
+    case 'minMax':
+      result = a.minPrice - b.minPrice
+      break
+    case 'trend': {
+      const order: Record<MaterialHistory['trend'], number> = { down: -1, stable: 0, up: 1 }
+      result = order[a.trend] - order[b.trend]
+      if (result === 0) result = a.trendPct - b.trendPct
+      break
+    }
+    case 'count':
+      result = a.entries.length - b.entries.length
+      break
+    case 'date': {
+      const ad = getLatestEntryDate(a)
+      const bd = getLatestEntryDate(b)
+      result = ad.localeCompare(bd)
+      break
+    }
+  }
+  return result * mult
+}
 
 export function PriceHistoryTable({
   items,
@@ -11,19 +73,168 @@ export function PriceHistoryTable({
   expanded: string | null
   onToggle: (key: string) => void
 }) {
+  const [sortKey, setSortKey] = useState<SortKey>('date')
+  const [sortDir, setSortDir] = useState<SortDir>('desc')
+  const [supplierFilter, setSupplierFilter] = useState<string>('__all__')
+
+  const supplierOptions = useMemo(() => {
+    const set = new Set<string>()
+    let hasNone = false
+    for (const item of items) {
+      if (item.supplier) set.add(item.supplier)
+      else hasNone = true
+    }
+    const sorted = Array.from(set).sort((a, b) => a.localeCompare(b, 'es'))
+    return { suppliers: sorted, hasNone }
+  }, [items])
+
+  const filtered = useMemo(() => {
+    if (supplierFilter === '__all__') return items
+    if (supplierFilter === '__none__') return items.filter((i) => !i.supplier)
+    return items.filter((i) => i.supplier === supplierFilter)
+  }, [items, supplierFilter])
+
+  const sorted = useMemo(() => {
+    const copy = filtered.slice()
+    copy.sort((a, b) => compareHistories(a, b, sortKey, sortDir))
+    return copy
+  }, [filtered, sortKey, sortDir])
+
+  const handleSort = (key: SortKey) => {
+    if (key === sortKey) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortKey(key)
+      setSortDir(key === 'name' ? 'asc' : 'desc')
+    }
+  }
+
+  const handleExportCsv = () => {
+    const headers = ['Material', 'Proveedor', 'Fecha mas reciente', 'Precio actual', 'Promedio', 'Minimo', 'Maximo', 'Tendencia', 'Variacion %', 'Registros']
+    const lines: string[] = [headers.join(',')]
+    for (const h of sorted) {
+      const name = h.supplier ?? h.entries[0]?.description ?? h.key
+      const trendLabel = h.trend === 'up' ? 'Subida' : h.trend === 'down' ? 'Bajada' : 'Estable'
+      const row = [
+        sanitizeCsvCell(name),
+        sanitizeCsvCell(h.supplier ?? ''),
+        sanitizeCsvCell(getLatestEntryDate(h)),
+        sanitizeCsvCell(formatRD(h.latestPrice)),
+        sanitizeCsvCell(formatRD(h.avgPrice)),
+        sanitizeCsvCell(formatRD(h.minPrice)),
+        sanitizeCsvCell(formatRD(h.maxPrice)),
+        sanitizeCsvCell(trendLabel),
+        sanitizeCsvCell(h.trendPct.toFixed(2)),
+        sanitizeCsvCell(String(h.entries.length)),
+      ]
+      lines.push(row.join(','))
+    }
+    const csv = '﻿' + lines.join('\r\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    const stamp = new Date().toISOString().slice(0, 10)
+    a.download = `historial-precios-${stamp}.csv`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <div className="bg-app-surface border border-app-border rounded-xl overflow-hidden">
-      <table className="w-full text-sm">
-        <thead><tr className="bg-app-hover/50 text-xs text-app-muted">
-          <th className="text-left px-4 py-2.5 font-medium">Material / Proveedor</th><th className="text-right px-4 py-2.5 font-medium">Precio actual</th><th className="text-right px-4 py-2.5 font-medium hidden sm:table-cell">Promedio</th><th className="text-right px-4 py-2.5 font-medium hidden md:table-cell">Mín / Máx</th><th className="text-center px-4 py-2.5 font-medium">Tendencia</th><th className="text-center px-4 py-2.5 font-medium hidden sm:table-cell">Registros</th>
-        </tr></thead>
-        <tbody className="divide-y divide-app-border">
-          {items.map((history) => (
-            <PriceHistoryRow key={history.key} history={history} expanded={expanded === history.key} onToggle={() => onToggle(history.key)} />
-          ))}
-        </tbody>
-      </table>
+      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-app-border bg-app-hover/30">
+        <div className="flex items-center gap-2">
+          <label className="text-xs text-app-muted font-medium" htmlFor="supplier-filter">Proveedor:</label>
+          <select
+            id="supplier-filter"
+            value={supplierFilter}
+            onChange={(e) => setSupplierFilter(e.target.value)}
+            className="px-2 py-1.5 text-xs border border-app-border rounded-lg bg-app-bg text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="__all__">Todos ({items.length})</option>
+            {supplierOptions.hasNone && <option value="__none__">Sin proveedor</option>}
+            {supplierOptions.suppliers.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+          <span className="text-xs text-app-subtle">{sorted.length} resultado{sorted.length === 1 ? '' : 's'}</span>
+        </div>
+        <button
+          type="button"
+          onClick={handleExportCsv}
+          disabled={sorted.length === 0}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-app-border rounded-lg bg-app-bg text-app-text hover:bg-app-hover disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Download className="w-3.5 h-3.5" />
+          Exportar CSV
+        </button>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead><tr className="bg-app-hover/50 text-xs text-app-muted">
+            <SortableTh label="Material / Proveedor" align="left" sortKey="name" currentKey={sortKey} dir={sortDir} onSort={handleSort} />
+            <SortableTh label="Precio actual" align="right" sortKey="latest" currentKey={sortKey} dir={sortDir} onSort={handleSort} />
+            <SortableTh label="Promedio" align="right" sortKey="avg" currentKey={sortKey} dir={sortDir} onSort={handleSort} className="hidden sm:table-cell" />
+            <SortableTh label="Min / Max" align="right" sortKey="minMax" currentKey={sortKey} dir={sortDir} onSort={handleSort} className="hidden md:table-cell" />
+            <SortableTh label="Tendencia" align="center" sortKey="trend" currentKey={sortKey} dir={sortDir} onSort={handleSort} />
+            <SortableTh label="Registros" align="center" sortKey="count" currentKey={sortKey} dir={sortDir} onSort={handleSort} className="hidden sm:table-cell" />
+            <SortableTh label="Ult. fecha" align="right" sortKey="date" currentKey={sortKey} dir={sortDir} onSort={handleSort} className="hidden lg:table-cell" />
+          </tr></thead>
+          <tbody className="divide-y divide-app-border">
+            {sorted.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="px-4 py-6 text-center text-app-muted text-sm">Sin resultados para el filtro seleccionado.</td>
+              </tr>
+            ) : (
+              sorted.map((history) => (
+                <PriceHistoryRow key={history.key} history={history} expanded={expanded === history.key} onToggle={() => onToggle(history.key)} />
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
+  )
+}
+
+function SortableTh({
+  label,
+  align,
+  sortKey,
+  currentKey,
+  dir,
+  onSort,
+  className,
+}: {
+  label: string
+  align: 'left' | 'right' | 'center'
+  sortKey: SortKey
+  currentKey: SortKey
+  dir: SortDir
+  onSort: (key: SortKey) => void
+  className?: string
+}) {
+  const active = currentKey === sortKey
+  const alignCls = align === 'left' ? 'text-left' : align === 'right' ? 'text-right' : 'text-center'
+  const justifyCls = align === 'left' ? 'justify-start' : align === 'right' ? 'justify-end' : 'justify-center'
+  return (
+    <th className={`${alignCls} px-4 py-2.5 font-medium ${className ?? ''}`}>
+      <button
+        type="button"
+        onClick={() => onSort(sortKey)}
+        className={`inline-flex items-center gap-1 ${justifyCls} hover:text-app-text ${active ? 'text-app-text' : ''}`}
+        aria-label={`Ordenar por ${label}`}
+      >
+        <span>{label}</span>
+        {active ? (
+          dir === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+        ) : (
+          <ArrowUpDown className="w-3 h-3 opacity-40" />
+        )}
+      </button>
+    </th>
   )
 }
 
@@ -36,6 +247,7 @@ function PriceHistoryRow({
   expanded: boolean
   onToggle: () => void
 }) {
+  const latestDate = getLatestEntryDate(history)
   return (
     <>
       <tr onClick={onToggle} className="hover:bg-app-hover/50 cursor-pointer">
@@ -45,10 +257,11 @@ function PriceHistoryRow({
         <td className="px-4 py-3 text-right text-xs hidden md:table-cell"><span className="text-green-600">{formatRD(history.minPrice)}</span><span className="text-app-subtle mx-1">/</span><span className="text-red-600">{formatRD(history.maxPrice)}</span></td>
         <td className="px-4 py-3 text-center">{history.trend === 'up' ? <span className="inline-flex items-center gap-1 text-red-600 text-xs font-semibold"><TrendingUp className="w-3.5 h-3.5" />+{history.trendPct.toFixed(1)}%</span> : history.trend === 'down' ? <span className="inline-flex items-center gap-1 text-green-600 text-xs font-semibold"><TrendingDown className="w-3.5 h-3.5" />{history.trendPct.toFixed(1)}%</span> : <span className="inline-flex items-center gap-1 text-app-muted text-xs"><Minus className="w-3.5 h-3.5" />Estable</span>}</td>
         <td className="px-4 py-3 text-center text-app-muted text-xs hidden sm:table-cell">{history.entries.length}</td>
+        <td className="px-4 py-3 text-right text-app-muted text-xs hidden lg:table-cell">{latestDate ? new Date(latestDate + 'T12:00:00').toLocaleDateString('es-DO', { day: '2-digit', month: 'short', year: '2-digit' }) : '—'}</td>
       </tr>
       {expanded && (
         <tr className="bg-app-hover/20">
-          <td colSpan={6} className="px-4 py-3">
+          <td colSpan={7} className="px-4 py-3">
             <p className="text-xs font-semibold text-app-muted mb-2 uppercase tracking-wide">Historial de precios</p>
             <div className="overflow-x-auto">
               <table className="w-full text-xs">

@@ -2,7 +2,9 @@ import { useCallback, useEffect, useState } from 'react'
 import { Plus, CheckCircle, XCircle, Banknote } from 'lucide-react'
 import { loanService, calcInstallmentAmount } from '@/services/loanService'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
+import { useToast } from '@/components/ui/Toast'
 import { formatRD } from '@/utils/currency'
+import { parseDecimalInput } from '@/utils/decimalInput'
 import type { ContractorLoan } from '@/types/database'
 
 interface Props {
@@ -19,6 +21,7 @@ const STATUS_COLOR: Record<string, string> = {
 const emptyForm = { principal: '', interest_rate: '5', installments: '6', disbursed_date: new Date().toISOString().slice(0, 10), notes: '' }
 
 export function PrestamoSection({ contractorId }: Props) {
+  const { error: toastError } = useToast()
   const [loans, setLoans] = useState<ContractorLoan[]>([])
   const [paidMap, setPaidMap] = useState<Record<string, number>>({})
   const [showAdd, setShowAdd] = useState(false)
@@ -40,13 +43,40 @@ export function PrestamoSection({ contractorId }: Props) {
   async function handleCreate() {
     if (saving) return
     if (!form.principal || !form.disbursed_date) return
+    const principalVal = parseDecimalInput(form.principal)
+    if (principalVal === null) {
+      toastError('Monto invalido')
+      return
+    }
+    if (principalVal <= 0) {
+      toastError('El monto debe ser mayor a 0')
+      return
+    }
+    const interestRateVal = parseDecimalInput(form.interest_rate)
+    if (interestRateVal === null) {
+      toastError('Interes invalido')
+      return
+    }
+    if (interestRateVal < 0 || interestRateVal > 100) {
+      toastError('El interes debe estar entre 0 y 100%')
+      return
+    }
+    const installmentsVal = parseDecimalInput(form.installments)
+    if (installmentsVal === null) {
+      toastError('Cuotas invalidas')
+      return
+    }
+    if (!Number.isInteger(installmentsVal) || installmentsVal < 1) {
+      toastError('Las cuotas deben ser un entero mayor o igual a 1')
+      return
+    }
     setSaving(true)
     try {
       await loanService.create({
         contractor_id: contractorId,
-        principal: Number(form.principal),
-        interest_rate: Number(form.interest_rate),
-        installments: Number(form.installments),
+        principal: principalVal,
+        interest_rate: interestRateVal,
+        installments: installmentsVal,
         disbursed_date: form.disbursed_date,
         notes: form.notes || undefined,
       })
@@ -69,9 +99,9 @@ export function PrestamoSection({ contractorId }: Props) {
     await load()
   }
 
-  const principal = Number(form.principal)
-  const installments = Number(form.installments)
-  const interestRate = Number(form.interest_rate)
+  const principal = parseDecimalInput(form.principal) ?? 0
+  const installments = parseDecimalInput(form.installments) ?? 0
+  const interestRate = parseDecimalInput(form.interest_rate) ?? 0
   const preview = principal > 0 && installments > 0 ? calcInstallmentAmount(principal, interestRate, installments) : 0
 
   const inputCls = 'px-2 py-1.5 border border-app-border rounded-md text-xs bg-app-input-bg text-app-text focus:ring-1 focus:ring-blue-500 w-full'
@@ -90,15 +120,15 @@ export function PrestamoSection({ contractorId }: Props) {
           <div className="grid grid-cols-12 gap-2">
             <div className="col-span-3">
               <p className="text-[10px] text-app-muted mb-1">Monto (RD$) *</p>
-              <input type="number" min="1" value={form.principal} onChange={(e) => setForm({ ...form, principal: e.target.value })} placeholder="0" className={inputCls} />
+              <input type="text" inputMode="decimal" value={form.principal} onChange={(e) => setForm({ ...form, principal: e.target.value })} placeholder="0" className={inputCls} />
             </div>
             <div className="col-span-2">
               <p className="text-[10px] text-app-muted mb-1">Interés (%)</p>
-              <input type="number" min="0" max="100" step="0.1" value={form.interest_rate} onChange={(e) => setForm({ ...form, interest_rate: e.target.value })} className={inputCls} />
+              <input type="text" inputMode="decimal" value={form.interest_rate} onChange={(e) => setForm({ ...form, interest_rate: e.target.value })} className={inputCls} />
             </div>
             <div className="col-span-2">
               <p className="text-[10px] text-app-muted mb-1">Cuotas</p>
-              <input type="number" min="1" value={form.installments} onChange={(e) => setForm({ ...form, installments: e.target.value })} className={inputCls} />
+              <input type="text" inputMode="numeric" value={form.installments} onChange={(e) => setForm({ ...form, installments: e.target.value })} className={inputCls} />
             </div>
             <div className="col-span-3">
               <p className="text-[10px] text-app-muted mb-1">Fecha desembolso *</p>
