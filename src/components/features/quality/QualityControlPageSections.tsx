@@ -19,12 +19,12 @@ export function QualityControlPageHeader({
   return (
     <div>
       <Breadcrumb items={[{ label: 'Proyectos', to: '/proyectos' }, { label: projectName, to: `/proyectos/${projectId}` }, { label: 'Calidad' }]} />
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-app-text">Control de Calidad</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold text-app-text">Control de Calidad</h1>
           <p className="mt-0.5 text-sm text-app-muted">Ensayos de resistencia del hormigón</p>
         </div>
-        <button onClick={onCreate} className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
+        <button onClick={onCreate} className="flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 min-h-[44px] text-sm font-medium text-white hover:bg-blue-700 w-full sm:w-auto">
           <Plus className="h-4 w-4" />
           Nuevo ensayo
         </button>

@@ -9,7 +9,7 @@ import { useProjectRoles } from '@/hooks/useProjectRoles'
 import { PaymentDistributionsSection } from '@/components/features/payments/PaymentDistributionsSection'
 import { LoanDeductionSection } from '@/components/features/payroll/LoanDeductionSection'
 import { CubicacionesPayrollSection } from '@/components/features/cubicacion/CubicacionesPayrollSection'
-import { PayrollEditorHeader, PayrollEditorModals } from '@/components/features/payroll/PayrollEditorSections'
+import { PayrollEditorHeader, PayrollEditorMobileActionBar, PayrollEditorModals } from '@/components/features/payroll/PayrollEditorSections'
 import { PayrollTotalsCards } from '@/components/features/payroll/PayrollTotalsCards'
 import { LaborItemsSection } from '@/components/features/payroll/LaborItemsSection'
 import { MaterialInvoicesSection } from '@/components/features/payroll/MaterialInvoicesSection'
@@ -60,7 +60,7 @@ export default function PayrollEditor() {
   const isDraft = period.status === 'draft'
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="space-y-6 max-w-5xl pb-24 sm:pb-0">
       <PayrollEditorHeader period={period} saving={payroll.saving} canApprove={roles.canApprovePayroll} onUpdateStatus={payroll.updateStatus} />
 
       {payroll.error && <div className="text-sm text-red-600 bg-red-50 rounded-lg px-4 py-3">{payroll.error}</div>}
@@ -99,6 +99,8 @@ export default function PayrollEditor() {
         onAddLabor={async (item) => { await payroll.addLaborItem(item); setShowAddLabor(false) }}
         onContractorCreated={(contractor) => setContractors((prev) => [contractor, ...prev])}
       />
+
+      <PayrollEditorMobileActionBar period={period} saving={payroll.saving} canApprove={roles.canApprovePayroll} onUpdateStatus={payroll.updateStatus} />
     </div>
   )
 }

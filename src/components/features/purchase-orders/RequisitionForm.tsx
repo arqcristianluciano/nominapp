@@ -36,7 +36,7 @@ const RESOURCE_TYPES: { value: ResourceType; label: string }[] = [
 ]
 
 const inputClass =
-  'w-full border border-app-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+  'w-full border border-app-border rounded-lg px-3 py-2.5 sm:py-2 text-base sm:text-sm min-h-[44px] sm:min-h-0 focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
 
 interface RequisitionBasicFieldsProps {
   projects: Project[]
@@ -122,7 +122,7 @@ function RequisitionBudgetSelectors({
   projectId,
 }: RequisitionBudgetSelectorsProps) {
   return (
-    <div className="grid grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
       <div>
         <label className="block text-xs font-medium text-app-muted mb-1">Capítulo</label>
         <select
@@ -185,8 +185,8 @@ function RequisitionResourceFields({
 }: RequisitionResourceFieldsProps) {
   return (
     <>
-      <div className="grid grid-cols-3 gap-4">
-        <div>
+      <div className="grid grid-cols-12 gap-3 sm:gap-4">
+        <div className="col-span-12 sm:col-span-4">
           <label className="block text-xs font-medium text-app-muted mb-1">Tipo de recurso</label>
           <select
             value={resourceType}
@@ -200,7 +200,7 @@ function RequisitionResourceFields({
             ))}
           </select>
         </div>
-        <div>
+        <div className="col-span-6 sm:col-span-4">
           <label className="block text-xs font-medium text-app-muted mb-1">Cantidad</label>
           <input
             type="text"
@@ -210,7 +210,7 @@ function RequisitionResourceFields({
             className={inputClass}
           />
         </div>
-        <div>
+        <div className="col-span-6 sm:col-span-4">
           <label className="block text-xs font-medium text-app-muted mb-1">Unidad</label>
           <select value={unit} onChange={(e) => setUnit(e.target.value)} className={inputClass}>
             {MEASURE_UNITS.map((u) => (
@@ -433,18 +433,18 @@ export function RequisitionForm({ projects, onSubmit, onCancel, saving }: Props)
 
       {error && <p className="text-xs text-red-600">{error}</p>}
 
-      <div className="flex gap-3 justify-end pt-2">
+      <div className="flex flex-col-reverse sm:flex-row sm:gap-3 sm:justify-end gap-2 pt-2">
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-2 text-sm text-app-muted hover:text-app-text"
+          className="px-4 py-3 sm:py-2 min-h-[44px] text-sm text-app-muted hover:text-app-text w-full sm:w-auto"
         >
           Cancelar
         </button>
         <button
           type="submit"
           disabled={saving}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+          className="px-4 py-3 sm:py-2 min-h-[44px] bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 w-full sm:w-auto"
         >
           {saving ? 'Guardando…' : 'Crear solicitud'}
         </button>

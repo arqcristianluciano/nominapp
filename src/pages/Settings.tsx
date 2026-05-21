@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { BankAccountsSection } from '@/components/features/settings/BankAccountsSection'
 import { CompaniesSection } from '@/components/features/settings/CompaniesSection'
+import { ExportSection } from '@/components/features/settings/ExportSection'
 import {
   BudgetCategoriesPanel,
   PaymentConditionsPanel,
@@ -33,6 +34,7 @@ export default function Settings() {
     categorias: <BudgetCategoriesPanel />,
     empresas: <CompaniesSection />,
     notificaciones: <PushNotificationsSection />,
+    exportar: <ExportSection />,
     sistema: <SystemPanel />,
   }
 

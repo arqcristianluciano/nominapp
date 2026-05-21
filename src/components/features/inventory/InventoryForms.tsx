@@ -40,7 +40,7 @@ interface ItemFormProps {
 }
 
 const INPUT_CLS =
-  'w-full px-3 py-2 text-sm border border-app-border rounded-lg bg-app-bg text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500'
+  'w-full min-h-[44px] px-3 py-2.5 sm:py-2 text-sm border border-app-border rounded-lg bg-app-bg text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500'
 
 function CatalogPicker({
   catalog,
@@ -135,19 +135,78 @@ export function InventoryItemForm({ form, saving, onChange, onCancel, onSave }: 
   }
 
   return (
-    <div className="bg-app-surface border border-app-border rounded-xl p-4 space-y-3">
+    <div className="bg-app-surface border border-app-border rounded-xl p-3 sm:p-4 space-y-3">
       <h3 className="font-semibold text-app-text">Nuevo material</h3>
       <CatalogPicker catalog={catalog} value={form.material_catalog_id} onPick={handleCatalogPick} />
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="sm:col-span-2"><label className="text-xs text-app-muted block mb-1">Nombre *</label><input value={form.name} onChange={(e) => onChange({ ...form, name: e.target.value })} placeholder="Ej: Cemento Portland" className={INPUT_CLS} /></div>
-        <div><label className="text-xs text-app-muted block mb-1">Unidad</label><input value={form.unit} onChange={(e) => onChange({ ...form, unit: e.target.value })} placeholder="sacos, m3, unid" className={INPUT_CLS} /></div>
-        <div><label className="text-xs text-app-muted block mb-1">Costo unitario (RD$)</label><input type="text" inputMode="decimal" value={unitCostStr} onChange={(e) => handleDecimalChange('unit_cost', setUnitCostStr)(e.target.value)} placeholder="0,00" className={INPUT_CLS} /></div>
-        <div><label className="text-xs text-app-muted block mb-1">Stock inicial</label><input type="text" inputMode="decimal" value={currentStockStr} onChange={(e) => handleDecimalChange('current_stock', setCurrentStockStr)(e.target.value)} placeholder="0" className={INPUT_CLS} /></div>
-        <div><label className="text-xs text-app-muted block mb-1">Stock mínimo (alerta)</label><input type="text" inputMode="decimal" value={minStockStr} onChange={(e) => handleDecimalChange('min_stock', setMinStockStr)(e.target.value)} placeholder="0" className={INPUT_CLS} /></div>
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <div className="sm:col-span-2">
+          <label className="text-xs text-app-muted block mb-1">Nombre *</label>
+          <input
+            value={form.name}
+            onChange={(e) => onChange({ ...form, name: e.target.value })}
+            placeholder="Ej: Cemento Portland"
+            className={INPUT_CLS}
+          />
+        </div>
+        <div className="sm:col-span-2">
+          <label className="text-xs text-app-muted block mb-1">Unidad</label>
+          <input
+            value={form.unit}
+            onChange={(e) => onChange({ ...form, unit: e.target.value })}
+            placeholder="sacos, m3, unid"
+            className={INPUT_CLS}
+          />
+        </div>
+        <div className="sm:col-span-2">
+          <label className="text-xs text-app-muted block mb-1">Costo unitario (RD$)</label>
+          <input
+            type="text"
+            inputMode="decimal"
+            value={unitCostStr}
+            onChange={(e) => handleDecimalChange('unit_cost', setUnitCostStr)(e.target.value)}
+            placeholder="0,00"
+            className={INPUT_CLS}
+          />
+        </div>
+        <div className="sm:col-span-2 grid grid-cols-2 gap-3 sm:contents">
+          <div className="sm:col-span-1">
+            <label className="text-xs text-app-muted block mb-1">Stock inicial</label>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={currentStockStr}
+              onChange={(e) => handleDecimalChange('current_stock', setCurrentStockStr)(e.target.value)}
+              placeholder="0"
+              className={INPUT_CLS}
+            />
+          </div>
+          <div className="sm:col-span-1">
+            <label className="text-xs text-app-muted block mb-1">Stock mínimo (alerta)</label>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={minStockStr}
+              onChange={(e) => handleDecimalChange('min_stock', setMinStockStr)(e.target.value)}
+              placeholder="0"
+              className={INPUT_CLS}
+            />
+          </div>
+        </div>
       </div>
-      <div className="flex gap-2 justify-end">
-        <button onClick={onCancel} className="px-4 py-2 text-sm border border-app-border rounded-lg hover:bg-app-hover text-app-muted">Cancelar</button>
-        <button onClick={onSave} disabled={saving || !form.name.trim()} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium">{saving ? 'Guardando...' : 'Guardar'}</button>
+      <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end pt-1">
+        <button
+          onClick={onCancel}
+          className="w-full sm:w-auto px-4 py-3 sm:py-2 text-sm border border-app-border rounded-lg hover:bg-app-hover text-app-muted"
+        >
+          Cancelar
+        </button>
+        <button
+          onClick={onSave}
+          disabled={saving || !form.name.trim()}
+          className="w-full sm:w-auto px-4 py-3 sm:py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium"
+        >
+          {saving ? 'Guardando...' : 'Guardar'}
+        </button>
       </div>
     </div>
   )
@@ -288,10 +347,48 @@ export function InventoryMovementForm({
   }
 
   return (
-    <div className="bg-app-surface border border-app-border rounded-xl p-4 space-y-3">
+    <div className="bg-app-surface border border-app-border rounded-xl p-3 sm:p-4 space-y-3">
       <h3 className="font-semibold text-app-text">Registrar movimiento</h3>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="sm:col-span-2">
+
+      {/* Quick toggle entrada/salida — siempre visible y prominente en mobile */}
+      <div
+        role="tablist"
+        aria-label="Tipo de movimiento"
+        className="grid grid-cols-2 gap-1 bg-app-hover rounded-lg p-1"
+      >
+        {(['in', 'out'] as const).map((value) => {
+          const active = form.type === value
+          return (
+            <button
+              key={value}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() =>
+                onChange({
+                  ...form,
+                  type: value,
+                  ...(value === 'in'
+                    ? { budget_category_id: null, budget_item_id: null }
+                    : { purchase_order_id: null }),
+                })
+              }
+              className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                active
+                  ? value === 'in'
+                    ? 'bg-green-600 text-white shadow-sm'
+                    : 'bg-red-600 text-white shadow-sm'
+                  : 'text-app-muted hover:text-app-text'
+              }`}
+            >
+              {value === 'in' ? 'Entrada' : 'Salida'}
+            </button>
+          )
+        })}
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <div className="sm:col-span-4">
           <label className="text-xs text-app-muted block mb-1">Material *</label>
           <select
             value={form.item_id}
@@ -306,27 +403,7 @@ export function InventoryMovementForm({
             ))}
           </select>
         </div>
-        <div>
-          <label className="text-xs text-app-muted block mb-1">Tipo</label>
-          <select
-            value={form.type}
-            onChange={(e) =>
-              onChange({
-                ...form,
-                type: e.target.value as 'in' | 'out',
-                // Limpiar imputación si pasa a entrada; OC sólo aplica a entradas.
-                ...(e.target.value === 'in'
-                  ? { budget_category_id: null, budget_item_id: null }
-                  : { purchase_order_id: null }),
-              })
-            }
-            className={INPUT_CLS}
-          >
-            <option value="in">Entrada</option>
-            <option value="out">Salida</option>
-          </select>
-        </div>
-        <div>
+        <div className="sm:col-span-2">
           <label className="text-xs text-app-muted block mb-1">Cantidad</label>
           <input
             type="text"
@@ -337,7 +414,7 @@ export function InventoryMovementForm({
             className={INPUT_CLS}
           />
         </div>
-        <div>
+        <div className="sm:col-span-2">
           <label className="text-xs text-app-muted block mb-1">Fecha</label>
           <input
             type="date"
@@ -347,7 +424,7 @@ export function InventoryMovementForm({
           />
         </div>
         {form.type === 'in' && (
-          <div>
+          <div className="sm:col-span-4">
             <label className="text-xs text-app-muted block mb-1">Costo unitario</label>
             <input
               type="text"
@@ -381,15 +458,15 @@ export function InventoryMovementForm({
       </div>
 
       {isOut && !form.budget_category_id && !form.budget_item_id && (
-        <p className="text-xs text-amber-700 dark:text-amber-400">
+        <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md px-2 py-1.5">
           Toda salida debe imputarse al menos a un capítulo (regla de almacén 7.4).
         </p>
       )}
 
-      <div className="flex gap-2 justify-end">
+      <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end pt-1">
         <button
           onClick={onCancel}
-          className="px-4 py-2 text-sm border border-app-border rounded-lg hover:bg-app-hover text-app-muted"
+          className="w-full sm:w-auto px-4 py-3 sm:py-2 text-sm border border-app-border rounded-lg hover:bg-app-hover text-app-muted"
         >
           Cancelar
         </button>
@@ -400,7 +477,7 @@ export function InventoryMovementForm({
             !form.item_id ||
             (isOut && !form.budget_category_id && !form.budget_item_id)
           }
-          className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium"
+          className="w-full sm:w-auto px-4 py-3 sm:py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium"
         >
           {saving ? 'Guardando...' : 'Guardar'}
         </button>

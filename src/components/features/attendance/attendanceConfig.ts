@@ -9,4 +9,7 @@ export const EMPTY_ATTENDANCE_FORM: Omit<AttendanceFormData, 'project_id'> = {
   hours_worked: 8,
   activity: '',
   notes: '',
+  photo_url: null,
+  latitude: null,
+  longitude: null,
 }

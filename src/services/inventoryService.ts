@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/react'
 import { supabase } from '@/lib/supabase'
 import { approvalsService } from '@/services/approvalsService'
 
@@ -125,6 +126,25 @@ export const inventoryService = {
         `Stock insuficiente: disponible ${currentStock}, solicitado ${movement.quantity}.`,
       )
     }
+
+    Sentry.addBreadcrumb({
+      category: 'inventory',
+      message: movement.override
+        ? `inventory ${movement.type} movement with override`
+        : `inventory ${movement.type} movement`,
+      level: movement.override ? 'warning' : 'info',
+      data: {
+        itemId: movement.item_id,
+        projectId: movement.project_id,
+        type: movement.type,
+        quantity: movement.quantity,
+        currentStock,
+        newStock,
+        override: Boolean(movement.override),
+        override_motivo: movement.override?.motivo ?? null,
+        override_actor: movement.override?.actor ?? null,
+      },
+    })
 
     const now = new Date().toISOString()
     const { data: inserted, error: mvErr } = await supabase

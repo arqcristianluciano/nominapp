@@ -68,7 +68,7 @@ export function QualityControlForm({ initial, projectId, saving, onSubmit, onCan
     })
   }
 
-  const inputClass = 'w-full px-3 py-2 border border-app-border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+  const inputClass = 'w-full px-3 py-2 min-h-[44px] border border-app-border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
   const labelClass = 'text-xs font-medium text-app-muted mb-1 block'
 
   return (
@@ -78,7 +78,7 @@ export function QualityControlForm({ initial, projectId, saving, onSubmit, onCan
         <input type="text" value={element} onChange={(e) => setElement(e.target.value)} placeholder="Ej: COLUMNA C-1 EJE A" className={inputClass} required />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className={labelClass}>Fecha de colada *</label>
           <input type="date" value={pourDate} onChange={(e) => setPourDate(e.target.value)} className={inputClass} required />
@@ -89,7 +89,7 @@ export function QualityControlForm({ initial, projectId, saving, onSubmit, onCan
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div>
           <label className={labelClass}>Edad de ensayo</label>
           <select value={testAge} onChange={(e) => setTestAge(e.target.value)} className={inputClass}>
@@ -106,7 +106,7 @@ export function QualityControlForm({ initial, projectId, saving, onSubmit, onCan
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className={labelClass}>Proveedor de hormigón</label>
           <input type="text" value={supplier} onChange={(e) => setSupplier(e.target.value)} className={inputClass} />
@@ -119,14 +119,14 @@ export function QualityControlForm({ initial, projectId, saving, onSubmit, onCan
 
       <div>
         <label className={labelClass}>Notas</label>
-        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className={inputClass} />
+        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="w-full px-3 py-2 border border-app-border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
       </div>
 
       {error && <p className="text-xs text-red-600">{error}</p>}
 
-      <div className="flex justify-end gap-2 pt-2">
-        <button type="button" onClick={onCancel} className="px-4 py-2 text-sm text-app-muted border border-app-border rounded-lg hover:bg-app-hover">Cancelar</button>
-        <button type="submit" disabled={saving} className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50">
+      <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2">
+        <button type="button" onClick={onCancel} className="px-4 py-2 min-h-[44px] text-sm text-app-muted border border-app-border rounded-lg hover:bg-app-hover w-full sm:w-auto">Cancelar</button>
+        <button type="submit" disabled={saving} className="px-4 py-2 min-h-[44px] bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 w-full sm:w-auto">
           {saving ? 'Guardando...' : initial ? 'Actualizar' : 'Registrar ensayo'}
         </button>
       </div>

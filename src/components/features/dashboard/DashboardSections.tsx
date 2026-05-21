@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import {
   ArrowRight,
   BarChart3,
@@ -36,17 +37,18 @@ interface DashboardProjectsSectionProps {
 }
 
 const QUICK_ACTIONS = [
-  { icon: Landmark, label: 'Control financiero', sub: 'Libro diario', accent: 'blue', path: '/finanzas' },
-  { icon: BarChart3, label: 'Presupuesto', sub: 'vs Real', accent: 'purple', path: '/presupuesto' },
-  { icon: CreditCard, label: 'Cuentas x Pagar', sub: 'Por proyecto', accent: 'red', path: '/cxp' },
-  { icon: FileText, label: 'Reportes', sub: 'Resumen financiero', accent: 'emerald', path: '/reportes' },
+  { icon: Landmark, labelKey: 'dashboard.quick_actions.finance_label', subKey: 'dashboard.quick_actions.finance_sub', accent: 'blue', path: '/finanzas' },
+  { icon: BarChart3, labelKey: 'dashboard.quick_actions.budget_label', subKey: 'dashboard.quick_actions.budget_sub', accent: 'purple', path: '/presupuesto' },
+  { icon: CreditCard, labelKey: 'dashboard.quick_actions.cxp_label', subKey: 'dashboard.quick_actions.cxp_sub', accent: 'red', path: '/cxp' },
+  { icon: FileText, labelKey: 'dashboard.quick_actions.reports_label', subKey: 'dashboard.quick_actions.reports_sub', accent: 'emerald', path: '/reportes' },
 ] as const
 
 export function DashboardHeader() {
+  const { t } = useTranslation()
   return (
     <div>
-      <h1 className="text-2xl font-bold text-app-text">Dashboard</h1>
-      <p className="mt-0.5 text-sm text-app-muted">Vista general de tus proyectos de construcción</p>
+      <h1 className="text-2xl font-bold text-app-text">{t('dashboard.title')}</h1>
+      <p className="mt-0.5 text-sm text-app-muted">{t('dashboard.subtitle')}</p>
     </div>
   )
 }
@@ -58,12 +60,13 @@ export function DashboardStatsSection({
   payrollsThisMonth,
   kpiTrend,
 }: DashboardStatsSectionProps) {
+  const { t } = useTranslation()
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <StatCard icon={Building2} label="Proyectos activos" value={String(activeProjectsCount)} accent="blue" />
-      <StatCard icon={DollarSign} label="Total invertido" value={formatRD(totalInvested)} accent="emerald" prev={kpiTrend?.investedPrev} />
-      <StatCard icon={CreditCard} label="CxP pendientes" value={formatRD(cxpTotal)} accent="red" prev={kpiTrend?.cxpPrev} invertTrend />
-      <StatCard icon={ClipboardList} label="Reportes este mes" value={String(payrollsThisMonth)} accent="amber" prev={kpiTrend?.payrollsPrev} />
+      <StatCard icon={Building2} label={t('dashboard.stats.active_projects')} value={String(activeProjectsCount)} accent="blue" />
+      <StatCard icon={DollarSign} label={t('dashboard.stats.total_invested')} value={formatRD(totalInvested)} accent="emerald" prev={kpiTrend?.investedPrev} />
+      <StatCard icon={CreditCard} label={t('dashboard.stats.cxp_pending')} value={formatRD(cxpTotal)} accent="red" prev={kpiTrend?.cxpPrev} invertTrend />
+      <StatCard icon={ClipboardList} label={t('dashboard.stats.reports_this_month')} value={String(payrollsThisMonth)} accent="amber" prev={kpiTrend?.payrollsPrev} />
     </div>
   )
 }
@@ -73,12 +76,13 @@ export function DashboardProjectsSection({
   projects,
   progressMap,
 }: DashboardProjectsSectionProps) {
+  const { t } = useTranslation()
   return (
     <div className="space-y-3 lg:col-span-2">
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold text-app-text">Proyectos activos</h2>
+        <h2 className="text-base font-semibold text-app-text">{t('dashboard.projects.section_title')}</h2>
         <Link to="/proyectos" className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400">
-          Ver todos <ArrowRight className="h-3 w-3" />
+          {t('dashboard.projects.view_all')} <ArrowRight className="h-3 w-3" />
         </Link>
       </div>
       {loading && projects.length === 0 ? <ProjectsSkeleton /> : projects.length === 0 ? <EmptyProjects /> : (
@@ -88,7 +92,7 @@ export function DashboardProjectsSection({
           ))}
           {projects.length > 4 && (
             <Link to="/proyectos" className="block py-1 text-center text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400">
-              Ver {projects.length - 4} más
+              {t('dashboard.projects.view_more', { count: projects.length - 4 })}
             </Link>
           )}
         </div>
@@ -102,16 +106,17 @@ export function DashboardQuickActionsSection({
 }: {
   onNavigate: (path: string) => void
 }) {
+  const { t } = useTranslation()
   return (
     <div>
-      <h2 className="mb-3 text-base font-semibold text-app-text">Accesos rápidos</h2>
+      <h2 className="mb-3 text-base font-semibold text-app-text">{t('dashboard.quick_actions.section_title')}</h2>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {QUICK_ACTIONS.map((action) => (
           <QuickAction
             key={action.path}
             icon={action.icon}
-            label={action.label}
-            sub={action.sub}
+            label={t(action.labelKey)}
+            sub={t(action.subKey)}
             accent={action.accent}
             onClick={() => onNavigate(action.path)}
           />

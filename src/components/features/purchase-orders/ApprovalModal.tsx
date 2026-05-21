@@ -86,11 +86,16 @@ export function ApprovalModal({ open, onClose, quotes, onApprove, onReturn, onRe
 
   return (
     <Modal open={open} onClose={handleClose} title="Revisión de solicitud de compra" width="max-w-xl">
+      {/* On phones the modal body lives inside the overlay's vertical scroll
+          container, so the inner column doesn't need its own max-height — but
+          we keep generous touch targets and avoid horizontal overflow. */}
       <div className="space-y-4">
-        <div className="flex border-b border-app-border">
+        {/* Tabs become horizontally scrollable on tiny screens so they never
+            wrap or overflow the modal. */}
+        <div className="flex border-b border-app-border -mx-1 px-1 overflow-x-auto no-scrollbar">
           {tabs.map((t) => (
             <button key={t.key} onClick={() => { setTab(t.key); setError(null) }}
-              className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+              className={`px-3 sm:px-4 py-2.5 min-h-11 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
                 tab === t.key ? t.color : 'border-transparent text-app-muted hover:text-app-muted'
               }`}>
               {t.label}
@@ -117,7 +122,7 @@ export function ApprovalModal({ open, onClose, quotes, onApprove, onReturn, onRe
                 {quotes.map((q) => {
                   const effectiveTotal = q.negotiated_total ?? q.total
                   return (
-                    <label key={q.id} className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-colors ${
+                    <label key={q.id} className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-colors min-h-11 ${
                       selectedQuoteId === q.id
                         ? 'border-green-500 bg-green-50 dark:bg-green-950/40'
                         : 'border-app-border hover:border-gray-400 dark:hover:border-gray-500'
@@ -125,10 +130,10 @@ export function ApprovalModal({ open, onClose, quotes, onApprove, onReturn, onRe
                       <input type="radio" name="quote" value={q.id}
                         checked={selectedQuoteId === q.id}
                         onChange={() => setSelectedQuoteId(q.id)}
-                        className="text-green-600" />
+                        className="text-green-600 w-4 h-4 shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-app-text">{q.supplier?.name}</p>
-                        {q.quote_number && <p className="text-xs text-app-subtle">Cot. {q.quote_number}</p>}
+                        <p className="text-sm font-medium text-app-text truncate">{q.supplier?.name}</p>
+                        {q.quote_number && <p className="text-xs text-app-subtle truncate">Cot. {q.quote_number}</p>}
                         {q.negotiated_total && (
                           <p className="text-xs text-orange-600 font-medium">Precio negociado</p>
                         )}
@@ -136,11 +141,11 @@ export function ApprovalModal({ open, onClose, quotes, onApprove, onReturn, onRe
                       <div className="text-right shrink-0">
                         {q.negotiated_total ? (
                           <>
-                            <p className="text-xs text-app-subtle line-through">{formatRD(q.total)}</p>
-                            <p className="text-sm font-semibold text-green-700">{formatRD(q.negotiated_total)}</p>
+                            <p className="text-xs text-app-subtle line-through whitespace-nowrap">{formatRD(q.total)}</p>
+                            <p className="text-sm font-semibold text-green-700 whitespace-nowrap">{formatRD(q.negotiated_total)}</p>
                           </>
                         ) : (
-                          <p className="text-sm font-semibold text-blue-700">{formatRD(effectiveTotal)}</p>
+                          <p className="text-sm font-semibold text-blue-700 whitespace-nowrap">{formatRD(effectiveTotal)}</p>
                         )}
                       </div>
                     </label>
@@ -152,8 +157,9 @@ export function ApprovalModal({ open, onClose, quotes, onApprove, onReturn, onRe
             <div>
               <label className="block text-xs font-medium text-app-muted mb-1">Código de aprobación personal</label>
               <input value={code} onChange={(e) => setCode(e.target.value)} type="password"
+                inputMode="numeric"
                 placeholder="Su código personal"
-                className="w-full border border-app-border rounded-lg px-3 py-2 text-sm" />
+                className="w-full border border-app-border rounded-lg px-3 py-2.5 text-sm min-h-11" />
               <p className="text-[10px] text-app-subtle mt-1">En modo demo el código es: 1234</p>
             </div>
 
@@ -161,7 +167,7 @@ export function ApprovalModal({ open, onClose, quotes, onApprove, onReturn, onRe
               <label className="block text-xs font-medium text-app-muted mb-1">Aprobado por</label>
               <input value={approvedBy} onChange={(e) => setApprovedBy(e.target.value)}
                 placeholder="Su nombre completo"
-                className="w-full border border-app-border rounded-lg px-3 py-2 text-sm" />
+                className="w-full border border-app-border rounded-lg px-3 py-2.5 text-sm min-h-11" />
             </div>
 
             <div>
@@ -186,7 +192,7 @@ export function ApprovalModal({ open, onClose, quotes, onApprove, onReturn, onRe
 
             {error && <p className="text-sm text-red-600">{error}</p>}
             <button onClick={handleApprove} disabled={loading}
-              className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-lg text-sm font-medium disabled:opacity-50">
+              className="w-full min-h-12 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-lg text-sm font-medium disabled:opacity-50">
               <CheckCircle className="w-4 h-4" />
               {loading ? 'Aprobando…' : 'Confirmar aprobación'}
             </button>
@@ -196,7 +202,7 @@ export function ApprovalModal({ open, onClose, quotes, onApprove, onReturn, onRe
         {tab === 'return' && (
           <div className="space-y-4">
             <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-xs text-orange-700">
-              La solicitud volverá a la encargada de compras con sus comentarios. 
+              La solicitud volverá a la encargada de compras con sus comentarios.
               Ella podrá ajustar cotizaciones y reenviar para aprobación.
             </div>
             <div>
@@ -209,7 +215,7 @@ export function ApprovalModal({ open, onClose, quotes, onApprove, onReturn, onRe
             </div>
             {error && <p className="text-sm text-red-600">{error}</p>}
             <button onClick={handleReturn} disabled={loading}
-              className="w-full flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-lg text-sm font-medium disabled:opacity-50">
+              className="w-full min-h-12 flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-lg text-sm font-medium disabled:opacity-50">
               <RotateCcw className="w-4 h-4" />
               {loading ? 'Devolviendo…' : 'Devolver para revisión'}
             </button>
@@ -229,7 +235,7 @@ export function ApprovalModal({ open, onClose, quotes, onApprove, onReturn, onRe
             </div>
             {error && <p className="text-sm text-red-600">{error}</p>}
             <button onClick={handleReject} disabled={loading}
-              className="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-lg text-sm font-medium disabled:opacity-50">
+              className="w-full min-h-12 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-lg text-sm font-medium disabled:opacity-50">
               <XCircle className="w-4 h-4" />
               {loading ? 'Rechazando…' : 'Rechazar definitivamente'}
             </button>

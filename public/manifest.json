@@ -3,20 +3,79 @@
   "short_name": "NominaAPP",
   "description": "Gestión integral de obras de construcción: nóminas, finanzas, cubicaciones y más.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "any",
   "background_color": "#0f172a",
   "theme_color": "#1e40af",
-  "orientation": "portrait-primary",
+  "lang": "es",
+  "dir": "ltr",
+  "categories": ["business", "productivity"],
   "icons": [
     {
       "src": "/favicon.svg",
       "type": "image/svg+xml",
       "sizes": "any",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
     }
   ],
-  "categories": ["business", "productivity"],
-  "lang": "es",
-  "dir": "ltr",
-  "scope": "/"
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Ver resumen y métricas",
+      "url": "/",
+      "icons": [
+        {
+          "src": "/favicon.svg",
+          "type": "image/svg+xml",
+          "sizes": "any"
+        }
+      ]
+    },
+    {
+      "name": "Proyectos",
+      "short_name": "Proyectos",
+      "description": "Gestionar obras y proyectos",
+      "url": "/proyectos",
+      "icons": [
+        {
+          "src": "/favicon.svg",
+          "type": "image/svg+xml",
+          "sizes": "any"
+        }
+      ]
+    },
+    {
+      "name": "Nóminas",
+      "short_name": "Nóminas",
+      "description": "Administrar nóminas y pagos",
+      "url": "/nominas",
+      "icons": [
+        {
+          "src": "/favicon.svg",
+          "type": "image/svg+xml",
+          "sizes": "any"
+        }
+      ]
+    }
+  ]
 }

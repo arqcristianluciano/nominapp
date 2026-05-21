@@ -114,17 +114,17 @@ export default function QualityControlPage() {
       <QualityControlPageHeader projectId={projectId} projectName={quality.projectName} onCreate={() => quality.setShowCreate(true)} />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="bg-app-surface border border-app-border rounded-xl p-4">
+        <div className="bg-app-surface border border-app-border rounded-xl p-3 sm:p-4">
           <p className="text-xs text-app-muted">Total ensayos</p>
-          <p className="text-2xl font-bold text-app-text mt-1">{summary.total}</p>
+          <p className="text-xl sm:text-2xl font-bold text-app-text mt-1">{summary.total}</p>
         </div>
-        <div className="bg-app-surface border border-app-border rounded-xl p-4">
+        <div className="bg-app-surface border border-app-border rounded-xl p-3 sm:p-4">
           <p className="text-xs text-app-muted">% Aprobados</p>
-          <p className="text-2xl font-bold text-app-text mt-1">{summary.passedPercent.toFixed(1)}%</p>
+          <p className="text-xl sm:text-2xl font-bold text-app-text mt-1">{summary.passedPercent.toFixed(1)}%</p>
         </div>
-        <div className="bg-app-surface border border-app-border rounded-xl p-4">
+        <div className="bg-app-surface border border-app-border rounded-xl p-3 sm:p-4">
           <p className="text-xs text-app-muted">Promedio resistencia (real / esperada)</p>
-          <p className="text-2xl font-bold text-app-text mt-1">
+          <p className="text-lg sm:text-2xl font-bold text-app-text mt-1 break-words">
             {summary.hasResistances
               ? `${summary.avgActual.toFixed(0)} / ${summary.avgExpected.toFixed(0)} kg/cm²`
               : '—'}
@@ -134,16 +134,16 @@ export default function QualityControlPage() {
 
       <QualityStatsCards passed={quality.stats.passed} failed={quality.stats.failed} pending={quality.stats.pending} />
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-medium text-app-muted uppercase">Filtrar:</span>
+          <span className="text-xs font-medium text-app-muted uppercase w-full sm:w-auto">Filtrar:</span>
           {FILTER_OPTIONS.map((option) => {
             const isActive = statusFilter === option.value
             return (
               <button
                 key={option.value}
                 onClick={() => setStatusFilter(option.value)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition ${
+                className={`px-3 py-2 min-h-[44px] rounded-lg text-xs font-medium border transition ${
                   isActive
                     ? 'bg-blue-600 border-blue-600 text-white'
                     : 'bg-app-surface border-app-border text-app-muted hover:bg-app-hover'
@@ -157,7 +157,7 @@ export default function QualityControlPage() {
         <button
           onClick={handleExport}
           disabled={quality.records.length === 0}
-          className="flex items-center gap-2 rounded-lg border border-app-border bg-app-surface px-3 py-1.5 text-xs font-medium text-app-text hover:bg-app-hover disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center justify-center gap-2 rounded-lg border border-app-border bg-app-surface px-3 py-2 min-h-[44px] text-xs font-medium text-app-text hover:bg-app-hover disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
         >
           <Download className="h-3.5 w-3.5" />
           Exportar CSV
