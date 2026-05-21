@@ -18,6 +18,7 @@ import {
   ChevronRight,
   Calendar,
   TrendingUp,
+  Users,
 } from 'lucide-react'
 import { usePendingApprovals } from '@/hooks/usePendingApprovals'
 import { usePendingCortes } from '@/hooks/usePendingCortes'
@@ -89,6 +90,7 @@ const NAV_SECTIONS: NavSection[] = [
   {
     label: 'Sistema',
     items: [
+      { to: '/admin/usuarios', icon: Users, label: 'Usuarios y roles', capability: 'canManageUsers' },
       { to: '/configuracion', icon: Settings, label: 'Configuración' },
     ],
   },

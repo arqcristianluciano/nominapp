@@ -14,53 +14,66 @@ export type ProjectRole =
 
 export interface UseProjectRolesResult {
   roles: ProjectRole[]
+  caps: Set<string>
   loading: boolean
   isDirector: boolean
+  can: (capability: string) => boolean
   hasAny: (...candidates: ProjectRole[]) => boolean
 
-  // Seccion 1 - Proyecto y presupuesto
-  canEditProject: boolean        // DG, DP, PL  (+ CO para % indirectos)
-  canEditBudget: boolean         // DG, DP, PL
-  canEditPriceList: boolean      // DG, DP, PL
-  canEditInsumos: boolean        // DG, DP, PL
-  canEditIndirects: boolean      // DG, DP, PL, CO  (% indirectos del proyecto)
+  // Seccion 1
+  canEditProject: boolean
+  canEditBudget: boolean
+  canEditPriceList: boolean
+  canEditInsumos: boolean
+  canEditIndirects: boolean
 
-  // Seccion 2 - Nomina
-  canCreatePayroll: boolean      // DG, DP, IO
-  canEditPayrollDraft: boolean   // DG, DP, IO
-  canSubmitPayroll: boolean      // DG, DP, IO
-  canApprovePayroll: boolean     // DG, DP
-  canDistributePayments: boolean // DG, DP
-  canDeletePayrollDraft: boolean // DG, DP
+  // Seccion 2
+  canCreatePayroll: boolean
+  canEditPayrollDraft: boolean
+  canSubmitPayroll: boolean
+  canApprovePayroll: boolean
+  canDistributePayments: boolean
+  canDeletePayrollDraft: boolean
 
-  // Seccion 3 - Compras
-  canCreateRequisition: boolean    // DG, IO
-  canLoadQuotes: boolean           // DG, CO
-  canApproveExcess: boolean        // DG, PL, CO
-  canReleasePurchaseOrder: boolean // DG, DP
-  canReceiveOrder: boolean         // DG, DP, IO, AL
+  // Seccion 3
+  canCreateRequisition: boolean
+  canLoadQuotes: boolean
+  canApproveExcess: boolean
+  canReleasePurchaseOrder: boolean
+  canReceiveOrder: boolean
 
-  // Seccion 4 - Almacen
-  canInventoryWrite: boolean // entrada+salida          // DG, DP, AL
-  canOverrideStock: boolean  // forzar salida negativa  // DG, DP, AL
+  // Seccion 4
+  canInventoryWrite: boolean
+  canOverrideStock: boolean
 
-  // Seccion 5 - Obra
-  canWriteBitacora: boolean        // DG, DP, IO
-  canWriteAttendance: boolean      // DG, DP, IO
-  canWriteQuality: boolean         // DG, IO
-  canMeasureProgress: boolean      // DG, PL, IO
-  canWriteSchedule: boolean        // DG, PL
+  // Seccion 5
+  canWriteBitacora: boolean
+  canWriteAttendance: boolean
+  canWriteQuality: boolean
+  canMeasureProgress: boolean
+  canWriteSchedule: boolean
 
-  // Seccion 6 - Cubicaciones
-  canCreateContract: boolean       // DG, DP, CO
-  canEditContractPartidas: boolean // DG, DP, CO
-  canSignContract: boolean         // DG, DP, CO
-  canCreateCorte: boolean          // DG, DP, IO
-  canApproveCorte: boolean         // DG, DP
-  canWriteAdelantos: boolean       // DG, DP
+  // Seccion 6
+  canCreateContract: boolean
+  canEditContractPartidas: boolean
+  canSignContract: boolean
+  canCreateCorte: boolean
+  canApproveCorte: boolean
+  canWriteAdelantos: boolean
 }
 
-const DEMO_FALLBACK: ProjectRole[] = [
+const DEMO_CAPS = new Set([
+  'edit_project','edit_budget','edit_price_list','edit_insumos','write_project_indirects',
+  'create_payroll','edit_payroll','submit_payroll','approve_payroll','distribute_payments','delete_payroll_draft',
+  'create_requisition','load_quotes','approve_excess','release_purchase_order','receive_order',
+  'inventory_write','override_stock',
+  'write_bitacora','write_attendance','write_quality','measure_progress','write_schedule',
+  'create_contract','edit_contract_partidas','create_corte','approve_corte','sign_contract','write_adelantos',
+  'view_cashflow','write_ledger','mark_paid','issue_check','write_loans',
+  'write_contractors','write_suppliers','write_materials_catalog','write_bank_accounts',
+])
+
+const DEMO_ROLES: ProjectRole[] = [
   'director_proyecto',
   'planificacion',
   'ingeniero_obra',
@@ -68,11 +81,14 @@ const DEMO_FALLBACK: ProjectRole[] = [
   'almacenista',
 ]
 
-// En modo demo todos tienen todos los roles para no bloquear la UX local.
-// En produccion consulta project_members.
+// Carga las capabilities del usuario para el proyecto via RPC y deriva
+// flags por accion. La matriz de permisos vive en BD (roles +
+// role_capabilities) — cambios desde /admin/usuarios toman efecto al
+// recargar el hook.
 export function useProjectRoles(projectId: string | undefined): UseProjectRolesResult {
   const user = useAuthStore((s) => s.user)
   const [roles, setRoles] = useState<ProjectRole[]>([])
+  const [caps, setCaps] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -81,26 +97,33 @@ export function useProjectRoles(projectId: string | undefined): UseProjectRolesR
       if (!projectId || !user) {
         if (!cancelled) {
           setRoles([])
+          setCaps(new Set())
           setLoading(false)
         }
         return
       }
       if (isDemoMode) {
         if (!cancelled) {
-          setRoles(DEMO_FALLBACK)
+          setRoles(DEMO_ROLES)
+          setCaps(new Set(DEMO_CAPS))
           setLoading(false)
         }
         return
       }
       try {
-        const { data } = await supabase
-          .from('project_members')
-          .select('role')
-          .eq('project_id', projectId)
-          .eq('user_id', user.id)
+        const [{ data: memberData }, { data: capData }] = await Promise.all([
+          supabase
+            .from('project_members')
+            .select('role')
+            .eq('project_id', projectId)
+            .eq('user_id', user.id),
+          supabase.rpc('user_project_capabilities', { p_project_id: projectId }),
+        ])
         if (cancelled) return
-        const list = (data ?? []).map((r: { role: ProjectRole }) => r.role)
-        setRoles(list)
+        const memberRoles = (memberData ?? []).map((r: { role: ProjectRole }) => r.role)
+        const capSlugs = ((capData ?? []) as { capability_slug: string }[]).map((r) => r.capability_slug)
+        setRoles(memberRoles)
+        setCaps(new Set(capSlugs))
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -112,54 +135,51 @@ export function useProjectRoles(projectId: string | undefined): UseProjectRolesR
   }, [projectId, user])
 
   const isDirector = user?.isDirector === true
+  const can = (capability: string) => isDirector || caps.has(capability)
   const hasAny = (...candidates: ProjectRole[]) =>
     isDirector || candidates.some((c) => roles.includes(c))
 
   return {
     roles,
+    caps,
     loading,
     isDirector,
+    can,
     hasAny,
 
-    // Seccion 1
-    canEditProject: hasAny('director_proyecto', 'planificacion'),
-    canEditBudget: hasAny('director_proyecto', 'planificacion'),
-    canEditPriceList: hasAny('director_proyecto', 'planificacion'),
-    canEditInsumos: hasAny('director_proyecto', 'planificacion'),
-    canEditIndirects: hasAny('director_proyecto', 'planificacion', 'comprador'),
+    canEditProject: can('edit_project'),
+    canEditBudget: can('edit_budget'),
+    canEditPriceList: can('edit_price_list'),
+    canEditInsumos: can('edit_insumos'),
+    canEditIndirects: can('write_project_indirects') || can('edit_project'),
 
-    // Seccion 2
-    canCreatePayroll: hasAny('director_proyecto', 'ingeniero_obra'),
-    canEditPayrollDraft: hasAny('director_proyecto', 'ingeniero_obra'),
-    canSubmitPayroll: hasAny('director_proyecto', 'ingeniero_obra'),
-    canApprovePayroll: hasAny('director_proyecto'),
-    canDistributePayments: hasAny('director_proyecto'),
-    canDeletePayrollDraft: hasAny('director_proyecto'),
+    canCreatePayroll: can('create_payroll'),
+    canEditPayrollDraft: can('edit_payroll'),
+    canSubmitPayroll: can('submit_payroll'),
+    canApprovePayroll: can('approve_payroll'),
+    canDistributePayments: can('distribute_payments'),
+    canDeletePayrollDraft: can('delete_payroll_draft'),
 
-    // Seccion 3
-    canCreateRequisition: hasAny('ingeniero_obra'),
-    canLoadQuotes: hasAny('comprador'),
-    canApproveExcess: hasAny('planificacion', 'comprador'),
-    canReleasePurchaseOrder: hasAny('director_proyecto'),
-    canReceiveOrder: hasAny('director_proyecto', 'ingeniero_obra', 'almacenista'),
+    canCreateRequisition: can('create_requisition'),
+    canLoadQuotes: can('load_quotes'),
+    canApproveExcess: can('approve_excess'),
+    canReleasePurchaseOrder: can('release_purchase_order'),
+    canReceiveOrder: can('receive_order'),
 
-    // Seccion 4
-    canInventoryWrite: hasAny('director_proyecto', 'almacenista'),
-    canOverrideStock: hasAny('director_proyecto', 'almacenista'),
+    canInventoryWrite: can('inventory_write'),
+    canOverrideStock: can('override_stock'),
 
-    // Seccion 5
-    canWriteBitacora: hasAny('director_proyecto', 'ingeniero_obra'),
-    canWriteAttendance: hasAny('director_proyecto', 'ingeniero_obra'),
-    canWriteQuality: hasAny('ingeniero_obra'),
-    canMeasureProgress: hasAny('planificacion', 'ingeniero_obra'),
-    canWriteSchedule: hasAny('planificacion'),
+    canWriteBitacora: can('write_bitacora'),
+    canWriteAttendance: can('write_attendance'),
+    canWriteQuality: can('write_quality'),
+    canMeasureProgress: can('measure_progress'),
+    canWriteSchedule: can('write_schedule'),
 
-    // Seccion 6
-    canCreateContract: hasAny('director_proyecto', 'comprador'),
-    canEditContractPartidas: hasAny('director_proyecto', 'comprador'),
-    canSignContract: hasAny('director_proyecto', 'comprador'),
-    canCreateCorte: hasAny('director_proyecto', 'ingeniero_obra'),
-    canApproveCorte: hasAny('director_proyecto'),
-    canWriteAdelantos: hasAny('director_proyecto'),
+    canCreateContract: can('create_contract'),
+    canEditContractPartidas: can('edit_contract_partidas'),
+    canSignContract: can('sign_contract'),
+    canCreateCorte: can('create_corte'),
+    canApproveCorte: can('approve_corte'),
+    canWriteAdelantos: can('write_adelantos'),
   }
 }

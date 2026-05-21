@@ -49,6 +49,7 @@ const CubicacionMensualPage = lazy(() => import('@/pages/CubicacionMensualPage')
 const FlujoCajaPage = lazy(() => import('@/pages/FlujoCajaPage'))
 const AvancesPage = lazy(() => import('@/pages/AvancesPage'))
 const AprobacionesPage = lazy(() => import('@/pages/AprobacionesPage'))
+const AdminUsuarios = lazy(() => import('@/pages/AdminUsuarios'))
 
 function withSuspense(Component: LazyExoticComponent<ComponentType>) {
   return (
@@ -134,6 +135,12 @@ export const router = createBrowserRouter([
             element: <RequireAppCapability capability="canViewApprovalsLog" />,
             children: [
               { path: 'aprobaciones', element: withSuspense(AprobacionesPage) },
+            ],
+          },
+          {
+            element: <RequireAppCapability capability="canManageUsers" />,
+            children: [
+              { path: 'admin/usuarios', element: withSuspense(AdminUsuarios) },
             ],
           },
         ],
