@@ -171,7 +171,12 @@ export function CorteSection({ contractId, projectId, contractorId, retentionPer
                           className="p-1 text-app-subtle hover:text-blue-600"><ScrollText className="w-3.5 h-3.5" /></button>
                       )}
                       {c.status !== 'paid' && (
-                        <button onClick={() => setDeleteId(c.id)} className="p-1 text-app-subtle hover:text-red-500"><Trash2 className="w-3 h-3" /></button>
+                        <button
+                          onClick={() => setDeleteId(c.id)}
+                          aria-label="Eliminar corte"
+                          title="Eliminar corte"
+                          className="p-1 text-app-subtle hover:text-red-500"
+                        ><Trash2 className="w-3 h-3" /></button>
                       )}
                     </div>
                   </td>

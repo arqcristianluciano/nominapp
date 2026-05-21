@@ -29,8 +29,9 @@ export function PrestamoSection({ contractorId }: Props) {
   const load = useCallback(async () => {
     const data = await loanService.getByContractor(contractorId)
     setLoans(data)
+    const totals = await loanService.getTotalPaidByLoans(data.map((l) => l.id))
     const paid: Record<string, number> = {}
-    await Promise.all(data.map(async (l) => { paid[l.id] = await loanService.getTotalPaid(l.id) }))
+    for (const l of data) paid[l.id] = totals[l.id] ?? 0
     setPaidMap(paid)
   }, [contractorId])
 

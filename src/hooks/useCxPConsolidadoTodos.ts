@@ -48,9 +48,19 @@ export function useCxPConsolidadoTodos() {
       }
 
       try {
+        const projectIds = activeProjects.map((project) => project.id)
+        const allTransactions = await transactionService.getByProjects(projectIds)
+
+        const transactionsByProject = new Map<string, typeof allTransactions>()
+        for (const tx of allTransactions) {
+          const list = transactionsByProject.get(tx.project_id)
+          if (list) list.push(tx)
+          else transactionsByProject.set(tx.project_id, [tx])
+        }
+
         const results: CxPProjectGroup[] = []
         for (const project of activeProjects) {
-          const transactions = await transactionService.getByProject(project.id)
+          const transactions = transactionsByProject.get(project.id) ?? []
           const cxpItems = calcCxPDetails(transactions)
           if (cxpItems.length === 0) continue
           results.push({

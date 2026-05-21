@@ -3,6 +3,7 @@ import { Plus, Pencil, Trash2, BookOpen, AlertCircle } from 'lucide-react'
 import { partidaService } from '@/services/cubicationService'
 import { priceListService } from '@/services/priceListService'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
+import { useToast } from '@/components/ui/Toast'
 import { formatRD } from '@/utils/currency'
 import type { ContractPartida, ContractCorte, PriceListItem } from '@/types/database'
 
@@ -26,6 +27,7 @@ const EMPTY_FORM: FormState = { description: '', unit: 'm²', unit_price: '', ag
 const inputCls = 'px-2 py-1.5 border border-app-border rounded-md text-xs bg-app-input-bg text-app-text focus:ring-1 focus:ring-blue-500'
 
 export function PartidaSection({ contractId, projectId, partidas, cortes, onRefresh }: Props) {
+  const { error: toastError } = useToast()
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
   const [editing, setEditing] = useState<ContractPartida | null>(null)
   const [showAdd, setShowAdd] = useState(false)
@@ -81,14 +83,20 @@ export function PartidaSection({ contractId, projectId, partidas, cortes, onRefr
 
   async function handleSave() {
     if (!form.description || !form.unit_price || !form.agreed_quantity) return
+    const unitPrice = Number(form.unit_price)
+    const agreedQty = Number(form.agreed_quantity)
+    if (Number.isNaN(unitPrice) || Number.isNaN(agreedQty)) {
+      toastError('Precio o cantidad inválidos. Ingresa un número válido.')
+      return
+    }
     setSaving(true)
     try {
       const data = {
         contract_id: contractId,
         description: form.description.toUpperCase(),
         unit: form.unit,
-        unit_price: Number(form.unit_price),
-        agreed_quantity: Number(form.agreed_quantity),
+        unit_price: unitPrice,
+        agreed_quantity: agreedQty,
         sort_order: editing ? editing.sort_order : partidas.length + 1,
       }
       if (editing) {
@@ -266,8 +274,18 @@ export function PartidaSection({ contractId, projectId, partidas, cortes, onRefr
                   </td>
                   <td className="py-2.5">
                     <div className="flex gap-0.5">
-                      <button onClick={() => startEdit(p)} className="p-1 text-app-subtle hover:text-blue-500"><Pencil className="w-3 h-3" /></button>
-                      <button onClick={() => setDeleteId(p.id)} className="p-1 text-app-subtle hover:text-red-500"><Trash2 className="w-3 h-3" /></button>
+                      <button
+                        onClick={() => startEdit(p)}
+                        aria-label="Editar partida"
+                        title="Editar partida"
+                        className="p-1 text-app-subtle hover:text-blue-500"
+                      ><Pencil className="w-3 h-3" /></button>
+                      <button
+                        onClick={() => setDeleteId(p.id)}
+                        aria-label="Eliminar partida"
+                        title="Eliminar partida"
+                        className="p-1 text-app-subtle hover:text-red-500"
+                      ><Trash2 className="w-3 h-3" /></button>
                     </div>
                   </td>
                 </tr>

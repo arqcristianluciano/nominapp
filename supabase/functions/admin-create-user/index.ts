@@ -24,10 +24,27 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? ''
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 
+// CORS: en produccion debe setearse ALLOWED_ORIGIN al dominio del frontend
+// (p. ej. 'https://app.nominapp.do') para evitar que cualquier origen llame
+// a esta funcion. Por defecto se deja '*' para no romper desarrollo local.
+const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') ?? '*'
+
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
+}
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+function isStrongPassword(pw: string): boolean {
+  return (
+    typeof pw === 'string' &&
+    pw.length >= 8 &&
+    /[A-Z]/.test(pw) &&
+    /[a-z]/.test(pw) &&
+    /[0-9]/.test(pw)
+  )
 }
 
 interface CreateUserInput {
@@ -85,6 +102,18 @@ Deno.serve(async (req) => {
   if (!body.email || !body.password || !body.display_name) {
     return jsonResponse({ error: 'missing_fields', detail: 'email, password y display_name son obligatorios' }, 400)
   }
+  if (!EMAIL_REGEX.test(body.email)) {
+    return jsonResponse({ error: 'invalid_email' }, 400)
+  }
+  if (!isStrongPassword(body.password)) {
+    return jsonResponse(
+      {
+        error: 'weak_password',
+        detail: 'password debe tener minimo 8 caracteres, mayuscula, minuscula y numero',
+      },
+      400,
+    )
+  }
 
   // 3) Crear el usuario via admin API
   const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
@@ -122,6 +151,15 @@ Deno.serve(async (req) => {
     await adminClient.auth.admin.deleteUser(created.user.id).catch(() => undefined)
     return jsonResponse({ error: 'profile_insert_failed', detail: profileError.message }, 400)
   }
+
+  // 5) Audit log (queda en los logs de Supabase via console.log)
+  console.log(JSON.stringify({
+    action: 'admin-create-user',
+    actor: caller.id,
+    target: created.user.id,
+    target_email: created.user.email,
+    ts: new Date().toISOString(),
+  }))
 
   return jsonResponse({ id: created.user.id, email: created.user.email })
 })

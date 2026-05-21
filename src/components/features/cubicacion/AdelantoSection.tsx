@@ -99,7 +99,12 @@ export function AdelantoSection({ contractId, adelantos, onRefresh }: Props) {
                 <td className="py-2.5 text-app-muted">{a.description || '—'}</td>
                 <td className="py-2.5 text-right font-medium text-amber-700">{formatRD(a.amount)}</td>
                 <td className="py-2.5">
-                  <button onClick={() => setDeleteId(a.id)} className="p-1 text-app-subtle hover:text-red-500"><Trash2 className="w-3 h-3" /></button>
+                  <button
+                    onClick={() => setDeleteId(a.id)}
+                    aria-label="Eliminar adelanto"
+                    title="Eliminar adelanto"
+                    className="p-1 text-app-subtle hover:text-red-500"
+                  ><Trash2 className="w-3 h-3" /></button>
                 </td>
               </tr>
             ))}

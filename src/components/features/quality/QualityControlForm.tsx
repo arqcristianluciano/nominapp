@@ -23,17 +23,44 @@ export function QualityControlForm({ initial, projectId, saving, onSubmit, onCan
   const [supplier, setSupplier] = useState(initial?.concrete_supplier || '')
   const [laboratory, setLaboratory] = useState(initial?.laboratory || '')
   const [notes, setNotes] = useState(initial?.notes || '')
+  const [error, setError] = useState<string | null>(null)
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    setError(null)
+
+    // Resistencia esperada (requerida): no puede quedar vacía y debe ser número válido.
+    const expectedTrim = expectedRes.trim()
+    if (!expectedTrim) {
+      setError('La resistencia esperada es requerida')
+      return
+    }
+    const expectedNum = Number(expectedTrim)
+    if (Number.isNaN(expectedNum)) {
+      setError('Resistencia esperada inválida')
+      return
+    }
+
+    // Resistencia real (opcional): si tiene contenido, debe ser número válido.
+    const actualTrim = actualRes.trim()
+    let actualNum: number | null = null
+    if (actualTrim) {
+      const parsed = Number(actualTrim)
+      if (Number.isNaN(parsed)) {
+        setError('Resistencia real inválida')
+        return
+      }
+      actualNum = parsed
+    }
+
     onSubmit({
       project_id: projectId,
       element: element.toUpperCase(),
       pour_date: pourDate,
       test_date: testDate || null,
       test_age: testAge || null,
-      expected_resistance: expectedRes ? Number(expectedRes) : null,
-      actual_resistance: actualRes ? Number(actualRes) : null,
+      expected_resistance: expectedNum,
+      actual_resistance: actualNum,
       concrete_supplier: supplier || null,
       laboratory: laboratory || null,
       notes: notes || null,
@@ -93,6 +120,8 @@ export function QualityControlForm({ initial, projectId, saving, onSubmit, onCan
         <label className={labelClass}>Notas</label>
         <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className={inputClass} />
       </div>
+
+      {error && <p className="text-xs text-red-600">{error}</p>}
 
       <div className="flex justify-end gap-2 pt-2">
         <button type="button" onClick={onCancel} className="px-4 py-2 text-sm text-app-muted border border-app-border rounded-lg hover:bg-app-hover">Cancelar</button>

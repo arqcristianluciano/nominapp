@@ -65,7 +65,20 @@ export default function BudgetItemForm({ category, priceList, editItem, onSave, 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.description.trim()) return setError('La descripción es requerida')
-    if (!form.quantity || Number(form.quantity) <= 0) return setError('La cantidad debe ser mayor a 0')
+
+    // Cantidad (requerida): debe ser número válido y > 0.
+    const qty = Number(form.quantity)
+    if (!form.quantity || Number.isNaN(qty)) return setError('Cantidad inválida')
+    if (qty <= 0) return setError('La cantidad debe ser mayor a 0')
+
+    // Precio unitario (opcional): si tiene contenido, debe ser número válido. Vacío => 0.
+    let unitPrice = 0
+    if (form.unit_price.trim()) {
+      const parsed = Number(form.unit_price)
+      if (Number.isNaN(parsed)) return setError('Precio unitario inválido')
+      unitPrice = parsed
+    }
+
     setSaving(true)
     setError(null)
     try {
@@ -75,8 +88,8 @@ export default function BudgetItemForm({ category, priceList, editItem, onSave, 
         code: form.code.trim() || null,
         description: form.description.trim(),
         unit: form.unit,
-        quantity: Number(form.quantity),
-        unit_price: Number(form.unit_price) || 0,
+        quantity: qty,
+        unit_price: unitPrice,
         sort_order,
         notes: form.notes.trim() || null,
         start_date: null,

@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useToast } from '@/components/ui/Toast'
 import type { MaterialHistory, PriceEntry } from '@/components/features/priceHistory/priceHistoryTypes'
 
 interface ProjectLite {
@@ -19,6 +20,9 @@ interface TxnLite {
 export function usePriceHistory() {
   const [history, setHistory] = useState<MaterialHistory[]>([])
   const [loading, setLoading] = useState(true)
+  const { error: toastError } = useToast()
+  const toastErrorRef = useRef(toastError)
+  toastErrorRef.current = toastError
 
   useEffect(() => {
     async function loadData() {
@@ -28,6 +32,14 @@ export function usePriceHistory() {
           supabase.from('transactions').select('description, unit_price, quantity, date, project_id, supplier:suppliers(name)').order('date', { ascending: true }).limit(500),
           supabase.from('projects').select('id, name'),
         ])
+        if (txnRes.error) {
+          console.warn('[usePriceHistory] transactions query fallo', txnRes.error)
+          toastErrorRef.current('No se pudo cargar el historial de precios')
+        }
+        if (projectRes.error) {
+          console.warn('[usePriceHistory] projects query fallo', projectRes.error)
+          toastErrorRef.current('No se pudo cargar la lista de proyectos')
+        }
         const projectMap: Record<string, string> = Object.fromEntries(((projectRes.data ?? []) as ProjectLite[]).map((project) => [project.id, project.name]))
         const grouped: Record<string, PriceEntry[]> = {}
         for (const txn of (txnRes.data ?? []) as TxnLite[]) {
