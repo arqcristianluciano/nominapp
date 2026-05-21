@@ -55,6 +55,7 @@ export interface ApprovalRecord {
 }
 
 export const approvalsService = {
+  /** Registra una entrada en la bitácora de aprobaciones. */
   async log(input: LogApprovalInput): Promise<void> {
     const { error } = await supabase.from('approvals').insert({
       entity_type: input.entity_type,
@@ -70,6 +71,7 @@ export const approvalsService = {
     if (error) throw error
   },
 
+  /** Obtiene el historial de aprobaciones para una entidad específica. */
   async getHistory(entityType: ApprovalEntity, entityId: string): Promise<ApprovalRecord[]> {
     const { data, error } = await supabase
       .from('approvals')
@@ -81,6 +83,7 @@ export const approvalsService = {
     return (data ?? []) as ApprovalRecord[]
   },
 
+  /** Lista las aprobaciones más recientes, limitadas por `limit`. */
   async getRecent(limit = 50): Promise<ApprovalRecord[]> {
     const { data, error } = await supabase
       .from('approvals')

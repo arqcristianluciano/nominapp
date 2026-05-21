@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import * as Sentry from '@sentry/react'
 import { useProjectStore } from '@/stores/projectStore'
 import { dashboardService } from '@/services/dashboardService'
 import { corteService, getProjectsProgress } from '@/services/cubicationService'
@@ -75,7 +76,10 @@ export function useDashboardData() {
       if (cancelled) return
 
       if (projectsResult.status === 'rejected') {
-        console.error('Dashboard fetchProjects failed', projectsResult.reason)
+        console.error('[useDashboardData] fetchProjects fallo', projectsResult.reason)
+        Sentry.captureException(projectsResult.reason, {
+          tags: { area: 'useDashboardData', sub: 'fetchProjects' },
+        })
       }
 
       if (kpisResult.status === 'fulfilled') {
@@ -89,25 +93,37 @@ export function useDashboardData() {
           cxpPrev: kpis.prevCxp,
         })
       } else {
-        console.error('Dashboard getKPIs failed', kpisResult.reason)
+        console.error('[useDashboardData] getKPIs fallo', kpisResult.reason)
+        Sentry.captureException(kpisResult.reason, {
+          tags: { area: 'useDashboardData', sub: 'getKPIs' },
+        })
       }
 
       if (activityResult.status === 'fulfilled') {
         setActivities(activityResult.value)
       } else {
-        console.error('Dashboard getRecentActivity failed', activityResult.reason)
+        console.error('[useDashboardData] getRecentActivity fallo', activityResult.reason)
+        Sentry.captureException(activityResult.reason, {
+          tags: { area: 'useDashboardData', sub: 'getRecentActivity' },
+        })
       }
 
       if (progressResult.status === 'fulfilled') {
         setProgressMap(mapProjectProgress(progressResult.value))
       } else {
-        console.error('Dashboard loadProgress failed', progressResult.reason)
+        console.error('[useDashboardData] getProjectsProgress fallo', progressResult.reason)
+        Sentry.captureException(progressResult.reason, {
+          tags: { area: 'useDashboardData', sub: 'getProjectsProgress' },
+        })
       }
 
       if (cortesResult.status === 'fulfilled') {
         setPendingCortes(cortesResult.value)
       } else {
-        console.error('Dashboard getPendingApproved failed', cortesResult.reason)
+        console.error('[useDashboardData] getPendingApproved fallo', cortesResult.reason)
+        Sentry.captureException(cortesResult.reason, {
+          tags: { area: 'useDashboardData', sub: 'getPendingApproved' },
+        })
       }
     }
 

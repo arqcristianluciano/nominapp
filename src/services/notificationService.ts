@@ -71,6 +71,7 @@ function isCreditCondition(value: string | null | undefined): boolean {
 }
 
 export const notificationService = {
+  /** Calcula y retorna todas las notificaciones del sistema (OCs, calidad, CxP, presupuesto, documentos). */
   async getAll(): Promise<AppNotification[]> {
     const today = new Date()
     const approachingCutoff = new Date(today)

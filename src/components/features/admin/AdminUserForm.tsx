@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { adminService, type AdminUser } from '@/services/adminService'
 import { useToast } from '@/components/ui/Toast'
+import { parseDecimalInput } from '@/utils/decimalInput'
 import { isCedula, isEmail, isPhone } from '@/utils/validators'
 
 interface Props {
@@ -75,13 +76,18 @@ export function AdminUserForm({ mode, initial, onCancel, onSaved }: Props) {
         setSaving(false)
         return
       }
-      const salaryNum = form.salary ? Number(form.salary) : null
-      if (form.salary && Number.isNaN(salaryNum!)) {
-        const msg = 'Salario inválido'
-        setFormError(msg)
-        error(msg)
-        setSaving(false)
-        return
+      const salaryTrim = form.salary.trim()
+      let salaryNum: number | null = null
+      if (salaryTrim) {
+        const parsed = parseDecimalInput(salaryTrim)
+        if (parsed === null) {
+          const msg = 'Salario inválido'
+          setFormError(msg)
+          error(msg)
+          setSaving(false)
+          return
+        }
+        salaryNum = parsed
       }
 
       const cedulaTrimmed = form.cedula.trim()
@@ -226,7 +232,7 @@ export function AdminUserForm({ mode, initial, onCancel, onSaved }: Props) {
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className={label}>Salario</label>
-            <input className={input} type="number" step="0.01" value={form.salary} onChange={(e) => set('salary', e.target.value)} placeholder="0.00" />
+            <input className={input} type="text" inputMode="decimal" value={form.salary} onChange={(e) => set('salary', e.target.value)} placeholder="0,00" />
           </div>
           <div>
             <label className={label}>Condición de pago</label>

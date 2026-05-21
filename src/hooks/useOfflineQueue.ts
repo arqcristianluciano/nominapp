@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import * as Sentry from '@sentry/react'
 import { OfflineQueueProcessor, isOnline, offlineQueue } from '@/utils/offlineQueue'
 import { requisitionService } from '@/services/requisitionService'
 import { partidaProgressService } from '@/services/partidaProgressService'
@@ -24,8 +25,9 @@ export function useOfflineQueue() {
     try {
       const list = await offlineQueue.list()
       setPendingCount(list.length)
-    } catch {
-      // IndexedDB no soportado o bloqueado; ignorar silenciosamente.
+    } catch (err) {
+      console.warn('[useOfflineQueue] refreshCount fallo', err)
+      Sentry.captureException(err, { tags: { area: 'useOfflineQueue' } })
     }
   }, [])
 

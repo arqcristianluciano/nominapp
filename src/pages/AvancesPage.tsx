@@ -11,17 +11,13 @@ import type { BudgetCategory, BudgetItem } from '@/types/database'
 import { useAuthStore } from '@/stores/authStore'
 import { useProjectStore } from '@/stores/projectStore'
 import { useToast } from '@/components/ui/Toast'
+import {
+  AvancesFormSection,
+  type AvancesFormState,
+} from '@/components/features/avances/AvancesFormSection'
+import { AvancesHistoryTable } from '@/components/features/avances/AvancesHistoryTable'
 
-interface FormState {
-  budget_category_id: string
-  budget_item_id: string
-  cut_date: string
-  executed_quantity: string
-  executed_percent: string
-  notes: string
-}
-
-const EMPTY: FormState = {
+const EMPTY: AvancesFormState = {
   budget_category_id: '',
   budget_item_id: '',
   cut_date: new Date().toISOString().split('T')[0],
@@ -41,7 +37,7 @@ export default function AvancesPage() {
   const [progresses, setProgresses] = useState<PartidaProgress[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState<FormState>(EMPTY)
+  const [form, setForm] = useState<AvancesFormState>(EMPTY)
   const [saving, setSaving] = useState(false)
   const { success, error } = useToast()
 
@@ -112,8 +108,6 @@ export default function AvancesPage() {
 
   const catById = new Map(categories.map((c) => [c.id, c]))
   const itemById = new Map(items.map((i) => [i.id, i]))
-  const input =
-    'w-full px-3 py-2 text-sm border border-app-border rounded-lg bg-app-bg text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500'
 
   return (
     <div className="p-4 lg:p-6 max-w-5xl mx-auto space-y-5">
@@ -133,170 +127,25 @@ export default function AvancesPage() {
       </div>
 
       {showForm && (
-        <div className="bg-app-surface border border-app-border rounded-xl p-4 space-y-3">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="sm:col-span-2">
-              <label className="text-xs text-app-muted block mb-1">Capítulo *</label>
-              <select
-                value={form.budget_category_id}
-                onChange={(e) =>
-                  setForm({ ...form, budget_category_id: e.target.value, budget_item_id: '' })
-                }
-                className={input}
-              >
-                <option value="">Seleccionar…</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.code} {c.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="sm:col-span-2">
-              <label className="text-xs text-app-muted block mb-1">Partida (opcional)</label>
-              <select
-                value={form.budget_item_id}
-                onChange={(e) => setForm({ ...form, budget_item_id: e.target.value })}
-                disabled={!form.budget_category_id}
-                className={input}
-              >
-                <option value="">— Avance a nivel de capítulo —</option>
-                {items.map((it) => (
-                  <option key={it.id} value={it.id}>
-                    {it.code ? `[${it.code}] ` : ''}
-                    {it.description}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs text-app-muted block mb-1">Fecha de corte *</label>
-              <input
-                type="date"
-                value={form.cut_date}
-                onChange={(e) => setForm({ ...form, cut_date: e.target.value })}
-                className={input}
-              />
-            </div>
-            <div>
-              <label className="text-xs text-app-muted block mb-1">Cantidad ejecutada</label>
-              <input
-                type="number"
-                step="0.01"
-                value={form.executed_quantity}
-                onChange={(e) =>
-                  setForm({ ...form, executed_quantity: e.target.value, executed_percent: '' })
-                }
-                placeholder="ej: 25"
-                className={input}
-              />
-            </div>
-            <div>
-              <label className="text-xs text-app-muted block mb-1">o % ejecutado</label>
-              <input
-                type="number"
-                step="0.01"
-                min={0}
-                max={100}
-                value={form.executed_percent}
-                onChange={(e) =>
-                  setForm({ ...form, executed_percent: e.target.value, executed_quantity: '' })
-                }
-                placeholder="ej: 30"
-                className={input}
-              />
-            </div>
-            <div className="sm:col-span-4">
-              <label className="text-xs text-app-muted block mb-1">Observaciones</label>
-              <input
-                value={form.notes}
-                onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                placeholder="Vaciado columnas eje 4..."
-                className={input}
-              />
-            </div>
-          </div>
-          <div className="flex gap-2 justify-end">
-            <button
-              onClick={() => setShowForm(false)}
-              className="px-4 py-2 text-sm border border-app-border rounded-lg hover:bg-app-hover text-app-muted"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={
-                saving ||
-                (!form.budget_category_id && !form.budget_item_id) ||
-                (!form.executed_quantity && !form.executed_percent)
-              }
-              className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium"
-            >
-              {saving ? 'Guardando…' : 'Registrar'}
-            </button>
-          </div>
-        </div>
+        <AvancesFormSection
+          form={form}
+          setForm={setForm}
+          categories={categories}
+          items={items}
+          saving={saving}
+          onCancel={() => setShowForm(false)}
+          onSave={handleSave}
+        />
       )}
 
       {loading ? (
         <div className="text-center py-12 text-app-muted text-sm">Cargando…</div>
-      ) : progresses.length === 0 ? (
-        <div className="bg-app-surface rounded-xl border border-app-border p-12 text-center">
-          <p className="text-base font-semibold text-app-text mb-1">Sin avances registrados</p>
-          <p className="text-sm text-app-muted">
-            Captura avances por partida para alimentar la cubicación mensual.
-          </p>
-        </div>
       ) : (
-        <div className="bg-app-surface border border-app-border rounded-xl overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-app-chip text-app-muted text-xs">
-              <tr>
-                <th className="px-3 py-2 text-left">Fecha</th>
-                <th className="px-3 py-2 text-left">Capítulo</th>
-                <th className="px-3 py-2 text-left">Partida</th>
-                <th className="px-3 py-2 text-right">Cantidad</th>
-                <th className="px-3 py-2 text-right">%</th>
-                <th className="px-3 py-2 text-left">Responsable</th>
-                <th className="px-3 py-2 text-left">Notas</th>
-              </tr>
-            </thead>
-            <tbody>
-              {progresses.map((p) => {
-                const cat = p.budget_category_id ? catById.get(p.budget_category_id) : null
-                const it = p.budget_item_id ? itemById.get(p.budget_item_id) : null
-                return (
-                  <tr key={p.id} className="border-t border-app-border">
-                    <td className="px-3 py-2 font-mono text-xs">{p.cut_date}</td>
-                    <td className="px-3 py-2">
-                      {cat ? (
-                        <>
-                          {cat.code} {cat.name}
-                        </>
-                      ) : (
-                        <span className="text-app-subtle">—</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2">
-                      {it ? (
-                        <>
-                          {it.code ? `[${it.code}] ` : ''}
-                          {it.description}
-                        </>
-                      ) : (
-                        <span className="text-app-subtle">—</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2 text-right">{p.executed_quantity ?? '—'}</td>
-                    <td className="px-3 py-2 text-right">{p.executed_percent ?? '—'}</td>
-                    <td className="px-3 py-2 text-app-muted">{p.responsible ?? '—'}</td>
-                    <td className="px-3 py-2 text-app-muted">{p.notes ?? '—'}</td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
+        <AvancesHistoryTable
+          progresses={progresses}
+          catById={catById}
+          itemById={itemById}
+        />
       )}
     </div>
   )

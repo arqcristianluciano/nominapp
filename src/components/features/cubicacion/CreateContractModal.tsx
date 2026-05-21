@@ -35,7 +35,7 @@ export function CreateContractModal({
       <form onSubmit={onSubmit} className="space-y-4">
         <div><label className={labelCls}>Contratista *</label><select value={form.contractor_id} onChange={(e) => onChange({ ...form, contractor_id: e.target.value })} className={inputCls} required><option value="">Seleccionar contratista...</option>{contractors.map((contractor) => <option key={contractor.id} value={contractor.id}>{contractor.name} — {contractor.specialty}</option>)}</select></div>
         <div className="grid grid-cols-2 gap-3">
-          <div><label className={labelCls}>Retención (%)</label><input type="number" step="0.5" min="0" max="20" value={form.retention_percent} onChange={(e) => onChange({ ...form, retention_percent: e.target.value })} className={inputCls} /></div>
+          <div><label className={labelCls}>Retención (%)</label><input type="text" inputMode="decimal" value={form.retention_percent} onChange={(e) => onChange({ ...form, retention_percent: e.target.value })} className={inputCls} /></div>
           <div><label className={labelCls}>Fecha de firma</label><input type="date" value={form.signed_date} onChange={(e) => onChange({ ...form, signed_date: e.target.value })} className={inputCls} /></div>
         </div>
         <div><label className={labelCls}>Notas</label><input value={form.notes} onChange={(e) => onChange({ ...form, notes: e.target.value })} placeholder="Descripción del alcance..." className={inputCls} /></div>

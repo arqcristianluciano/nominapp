@@ -1,4 +1,9 @@
 import { supabase } from '@/lib/supabase'
+import {
+  approvalsService,
+  type ApprovalAction,
+  type ApprovalEntity,
+} from '@/services/approvalsService'
 import type { ProjectRole } from '@/hooks/useProjectRoles'
 
 export interface Role {
@@ -70,10 +75,24 @@ export const adminService = {
       .select('*')
       .single()
     if (error) throw error
-    return data as Role
+    const created = data as Role
+    approvalsService
+      .log({
+        entity_type: 'role' as ApprovalEntity,
+        entity_id: created.id,
+        action: 'create',
+        payload_after: created,
+      })
+      .catch((err) => console.warn('approvalsService.log createRole failed', err))
+    return created
   },
 
   async updateRole(id: string, updates: Pick<Role, 'name' | 'description'>): Promise<Role> {
+    const { data: beforeRow } = await supabase
+      .from('roles')
+      .select('name, description')
+      .eq('id', id)
+      .single()
     const { data, error } = await supabase
       .from('roles')
       .update(updates)
@@ -81,12 +100,37 @@ export const adminService = {
       .select('*')
       .single()
     if (error) throw error
-    return data as Role
+    const after = data as Role
+    approvalsService
+      .log({
+        entity_type: 'role' as ApprovalEntity,
+        entity_id: id,
+        action: 'update' as ApprovalAction,
+        payload_before: beforeRow
+          ? { name: beforeRow.name, description: beforeRow.description }
+          : null,
+        payload_after: { name: after.name, description: after.description },
+      })
+      .catch((err) => console.warn('approvalsService.log updateRole failed', err))
+    return after
   },
 
   async deleteRole(id: string): Promise<void> {
+    const { data: beforeRow } = await supabase
+      .from('roles')
+      .select('*')
+      .eq('id', id)
+      .single()
     const { error } = await supabase.from('roles').delete().eq('id', id)
     if (error) throw error
+    approvalsService
+      .log({
+        entity_type: 'role' as ApprovalEntity,
+        entity_id: id,
+        action: 'delete',
+        payload_before: beforeRow ?? null,
+      })
+      .catch((err) => console.warn('approvalsService.log deleteRole failed', err))
   },
 
   // -- Capabilities --------------------------------------------------------
@@ -111,6 +155,14 @@ export const adminService = {
       .from('role_capabilities')
       .insert({ role_id: roleId, capability_id: capabilityId })
     if (error && error.code !== '23505') throw error // ignorar duplicate
+    approvalsService
+      .log({
+        entity_type: 'role_capability' as ApprovalEntity,
+        entity_id: `${roleId}:${capabilityId}`,
+        action: 'grant' as ApprovalAction,
+        payload_after: { role_id: roleId, capability_id: capabilityId },
+      })
+      .catch((err) => console.warn('approvalsService.log grantCapability failed', err))
   },
 
   async revokeCapability(roleId: string, capabilityId: string): Promise<void> {
@@ -120,6 +172,14 @@ export const adminService = {
       .eq('role_id', roleId)
       .eq('capability_id', capabilityId)
     if (error) throw error
+    approvalsService
+      .log({
+        entity_type: 'role_capability' as ApprovalEntity,
+        entity_id: `${roleId}:${capabilityId}`,
+        action: 'revoke' as ApprovalAction,
+        payload_before: { role_id: roleId, capability_id: capabilityId },
+      })
+      .catch((err) => console.warn('approvalsService.log revokeCapability failed', err))
   },
 
   // -- Usuarios -----------------------------------------------------------
@@ -138,6 +198,11 @@ export const adminService = {
     const { project_memberships, email, ...patch } = updates as AdminUser & Record<string, unknown>
     void project_memberships
     void email
+    const { data: beforeRow } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('id', id)
+      .single()
     const { data, error } = await supabase
       .from('user_profiles')
       .update(patch)
@@ -145,7 +210,17 @@ export const adminService = {
       .select('*')
       .single()
     if (error) throw error
-    return data as AdminUser
+    const after = data as AdminUser
+    approvalsService
+      .log({
+        entity_type: 'user_profile' as ApprovalEntity,
+        entity_id: id,
+        action: 'update' as ApprovalAction,
+        payload_before: beforeRow ?? null,
+        payload_after: after,
+      })
+      .catch((err) => console.warn('approvalsService.log updateUserProfile failed', err))
+    return after
   },
 
   async assignProjectRole(userId: string, projectId: string, role: ProjectRole): Promise<void> {
@@ -153,6 +228,14 @@ export const adminService = {
       .from('project_members')
       .upsert({ user_id: userId, project_id: projectId, role })
     if (error) throw error
+    approvalsService
+      .log({
+        entity_type: 'project_member' as ApprovalEntity,
+        entity_id: `${userId}:${projectId}:${role}`,
+        action: 'assign' as ApprovalAction,
+        payload_after: { user_id: userId, project_id: projectId, role },
+      })
+      .catch((err) => console.warn('approvalsService.log assignProjectRole failed', err))
   },
 
   async removeProjectRole(userId: string, projectId: string, role: ProjectRole): Promise<void> {
@@ -163,6 +246,14 @@ export const adminService = {
       .eq('project_id', projectId)
       .eq('role', role)
     if (error) throw error
+    approvalsService
+      .log({
+        entity_type: 'project_member' as ApprovalEntity,
+        entity_id: `${userId}:${projectId}:${role}`,
+        action: 'remove' as ApprovalAction,
+        payload_before: { user_id: userId, project_id: projectId, role },
+      })
+      .catch((err) => console.warn('approvalsService.log removeProjectRole failed', err))
   },
 
   /**

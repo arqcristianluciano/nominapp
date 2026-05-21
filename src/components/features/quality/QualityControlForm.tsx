@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { QualityControl } from '@/types/database'
+import { parseDecimalInput } from '@/utils/decimalInput'
 
 type FormData = Omit<QualityControl, 'id' | 'status'>
 
@@ -35,8 +36,8 @@ export function QualityControlForm({ initial, projectId, saving, onSubmit, onCan
       setError('La resistencia esperada es requerida')
       return
     }
-    const expectedNum = Number(expectedTrim)
-    if (Number.isNaN(expectedNum)) {
+    const expectedNum = parseDecimalInput(expectedTrim)
+    if (expectedNum === null) {
       setError('Resistencia esperada inválida')
       return
     }
@@ -45,8 +46,8 @@ export function QualityControlForm({ initial, projectId, saving, onSubmit, onCan
     const actualTrim = actualRes.trim()
     let actualNum: number | null = null
     if (actualTrim) {
-      const parsed = Number(actualTrim)
-      if (Number.isNaN(parsed)) {
+      const parsed = parseDecimalInput(actualTrim)
+      if (parsed === null) {
         setError('Resistencia real inválida')
         return
       }
@@ -84,7 +85,7 @@ export function QualityControlForm({ initial, projectId, saving, onSubmit, onCan
         </div>
         <div>
           <label className={labelClass}>Resistencia esperada (kg/cm²) *</label>
-          <input type="number" step="any" value={expectedRes} onChange={(e) => setExpectedRes(e.target.value)} placeholder="210" className={inputClass} required />
+          <input type="text" inputMode="decimal" value={expectedRes} onChange={(e) => setExpectedRes(e.target.value)} placeholder="210" className={inputClass} required />
         </div>
       </div>
 
@@ -101,7 +102,7 @@ export function QualityControlForm({ initial, projectId, saving, onSubmit, onCan
         </div>
         <div>
           <label className={labelClass}>Resistencia real (kg/cm²)</label>
-          <input type="number" step="any" value={actualRes} onChange={(e) => setActualRes(e.target.value)} placeholder="—" className={inputClass} />
+          <input type="text" inputMode="decimal" value={actualRes} onChange={(e) => setActualRes(e.target.value)} placeholder="—" className={inputClass} />
         </div>
       </div>
 
