@@ -5,6 +5,7 @@ import { priceListService } from '@/services/priceListService'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { useToast } from '@/components/ui/Toast'
 import { formatRD } from '@/utils/currency'
+import { parseDecimalInput } from '@/utils/decimalInput'
 import type { ContractPartida, ContractCorte, PriceListItem } from '@/types/database'
 
 interface Props {
@@ -137,7 +138,8 @@ function PartidaFormFields({
             )}
           </p>
           <input
-            type="number"
+            type="text"
+            inputMode="decimal"
             value={form.unit_price}
             onChange={(e) => onFormChange((f) => ({ ...f, unit_price: e.target.value }))}
             placeholder="0"
@@ -148,7 +150,8 @@ function PartidaFormFields({
         <div className="col-span-1">
           <p className="text-[10px] text-app-muted mb-1">Cant. acordada</p>
           <input
-            type="number"
+            type="text"
+            inputMode="decimal"
             value={form.agreed_quantity}
             onChange={(e) => onFormChange((f) => ({ ...f, agreed_quantity: e.target.value }))}
             placeholder="0"
@@ -305,9 +308,9 @@ export function PartidaSection({ contractId, projectId, partidas, cortes, onRefr
   async function handleSave() {
     if (saving) return
     if (!form.description || !form.unit_price || !form.agreed_quantity) return
-    const unitPrice = Number(form.unit_price)
-    const agreedQty = Number(form.agreed_quantity)
-    if (Number.isNaN(unitPrice) || Number.isNaN(agreedQty)) {
+    const unitPrice = parseDecimalInput(form.unit_price)
+    const agreedQty = parseDecimalInput(form.agreed_quantity)
+    if (unitPrice === null || agreedQty === null) {
       toastError('Precio o cantidad inválidos. Ingresa un número válido.')
       return
     }
@@ -342,8 +345,9 @@ export function PartidaSection({ contractId, projectId, partidas, cortes, onRefr
     onRefresh()
   }
 
-  const priceDiff = form.budget_unit_price !== null && form.unit_price
-    ? Number(form.unit_price) - form.budget_unit_price
+  const parsedUnitPriceForDiff = form.unit_price ? parseDecimalInput(form.unit_price) : null
+  const priceDiff = form.budget_unit_price !== null && parsedUnitPriceForDiff !== null
+    ? parsedUnitPriceForDiff - form.budget_unit_price
     : null
 
   return (

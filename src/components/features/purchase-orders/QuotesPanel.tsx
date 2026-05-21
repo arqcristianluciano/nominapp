@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Trash2, Award, Pencil, Check, X } from 'lucide-react'
 import type { PurchaseQuote } from '@/types/purchaseOrder'
 import { formatRD } from '@/utils/currency'
+import { parseDecimalInput } from '@/utils/decimalInput'
 
 interface NegotiationState { price: string; notes: string; editing: boolean }
 
@@ -30,8 +31,7 @@ export function QuotesPanel({ quotes, approvedQuoteId, canDelete, canNegotiate, 
 
   const saveNeg = async (q: PurchaseQuote) => {
     const state = neg[q.id]
-    const parsed = parseFloat(state.price)
-    const total = isNaN(parsed) || !state.price ? null : parsed
+    const total = state.price.trim() ? parseDecimalInput(state.price) : null
     await onNegotiate?.(q.id, total, state.notes || null)
     setNeg((p) => ({ ...p, [q.id]: { ...p[q.id], editing: false } }))
   }
@@ -129,7 +129,7 @@ export function QuotesPanel({ quotes, approvedQuoteId, canDelete, canNegotiate, 
                 <div className="mt-3 border-t border-orange-200 pt-3 space-y-2">
                   <p className="text-xs font-medium text-orange-600">Precio negociado (total final)</p>
                   <input
-                    type="number" step="any" min="0"
+                    type="text" inputMode="decimal"
                     value={state.price}
                     onChange={(e) => setNeg((p) => ({ ...p, [q.id]: { ...p[q.id], price: e.target.value } }))}
                     placeholder="Ej: 195000"

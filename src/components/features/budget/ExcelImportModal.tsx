@@ -4,6 +4,7 @@ import type { BudgetCategory } from '@/types/database'
 import { formatRD } from '@/utils/currency'
 import { getErrorMessage } from '@/utils/errors'
 import { readExcelRowsFromFile } from '@/utils/excel'
+import { downloadBudgetTemplate } from '@/utils/excelTemplates'
 import {
   parseRows,
   type ImportPayload,
@@ -163,21 +164,7 @@ export default function ExcelImportModal({ categories, onImport, onClose }: Prop
   }
 
   const handleDownloadTemplate = async () => {
-    const XLSX = await import('xlsx')
-    const aoa: (string | number)[][] = [
-      ['Código', 'Descripción', 'Unidad', 'Cantidad', 'Precio unitario'],
-      [1, 'PRELIMINARES', '', '', ''],
-      ['1.01', 'Campamento', 'pa', 1, 1000000],
-      ['1.02', 'Limpieza inicial del terreno', 'm2', 250, 350],
-      [2, 'MOVIMIENTO DE TIERRA', '', '', ''],
-      ['2.01', 'Corte y bote', 'm3', 1500, 650],
-      ['2.02', 'Relleno compactado', 'm3', 800, 750],
-    ]
-    const ws = XLSX.utils.aoa_to_sheet(aoa)
-    ws['!cols'] = [{ wch: 10 }, { wch: 35 }, { wch: 8 }, { wch: 10 }, { wch: 16 }]
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, 'Presupuesto')
-    XLSX.writeFile(wb, 'plantilla-presupuesto.xlsx')
+    await downloadBudgetTemplate()
   }
 
   const handleConfirm = async () => {

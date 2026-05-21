@@ -6,6 +6,7 @@ import { requisitionService } from '@/services/requisitionService'
 import { MEASURE_UNITS } from '@/constants/measureUnits'
 import type { ResourceType } from '@/types/purchaseOrder'
 import { AlertTriangle } from 'lucide-react'
+import { parseDecimalInput } from '@/utils/decimalInput'
 
 interface Payload {
   project_id: string
@@ -202,9 +203,8 @@ function RequisitionResourceFields({
         <div>
           <label className="block text-xs font-medium text-app-muted mb-1">Cantidad</label>
           <input
-            type="number"
-            step="0.01"
-            min={0}
+            type="text"
+            inputMode="decimal"
             value={quantity}
             onChange={(e) => setQuantity(e.target.value)}
             className={inputClass}
@@ -340,7 +340,7 @@ export function RequisitionForm({ projects, onSubmit, onCancel, saving }: Props)
 
   const [error, setError] = useState<string | null>(null)
 
-  const qtyNum = parseFloat(quantity) || 0
+  const qtyNum = parseDecimalInput(quantity) ?? 0
   const exceedsPlan = useMemo(() => {
     if (!availability) return false
     return qtyNum > availability.available
@@ -354,8 +354,8 @@ export function RequisitionForm({ projects, onSubmit, onCancel, saving }: Props)
     let quantityRequested: number | null = null
     const qtyTrim = quantity.trim()
     if (qtyTrim) {
-      const parsed = parseFloat(qtyTrim)
-      if (Number.isNaN(parsed)) {
+      const parsed = parseDecimalInput(qtyTrim)
+      if (parsed === null) {
         setError('Cantidad inválida')
         return
       }

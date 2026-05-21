@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Project, Company, CustomIndirect } from '@/types/database'
+import { parseDecimalInput } from '@/utils/decimalInput'
 import { CustomIndirectsSection } from './CustomIndirectsSection'
 
 type ProjectFormData = {
@@ -51,7 +52,9 @@ export function ProjectForm({ initial, onSubmit, onCancel, saving }: Props) {
   const [dtPercent, setDtPercent] = useState(initial?.dt_percent ?? 10)
   const [adminPercent, setAdminPercent] = useState(initial?.admin_percent ?? 1)
   const [transportPercent, setTransportPercent] = useState(initial?.transport_percent ?? 0.5)
-  const [planningFee, setPlanningFee] = useState(initial?.planning_fee ?? 0)
+  const [planningFee, setPlanningFee] = useState<string>(
+    initial?.planning_fee != null ? String(initial.planning_fee) : '0',
+  )
   const [customIndirects, setCustomIndirects] = useState<CustomIndirect[]>(initial?.custom_indirects ?? [])
   const [status, setStatus] = useState<'active' | 'completed' | 'paused'>(initial?.status || 'active')
   const [companies, setCompanies] = useState<Company[]>([])
@@ -77,6 +80,7 @@ export function ProjectForm({ initial, onSubmit, onCancel, saving }: Props) {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     const trimmedNewCompanyName = newCompanyName.trim()
+    const planningFeeParsed = planningFee.trim() ? parseDecimalInput(planningFee) : 0
     onSubmit({
       name: name.toUpperCase(),
       code: code.toUpperCase(),
@@ -85,7 +89,7 @@ export function ProjectForm({ initial, onSubmit, onCancel, saving }: Props) {
       dt_percent: dtPercent,
       admin_percent: adminPercent,
       transport_percent: transportPercent,
-      planning_fee: planningFee,
+      planning_fee: planningFeeParsed ?? 0,
       custom_indirects: customIndirects.filter((c) => c.name.trim() && c.value > 0),
       status,
       new_company: needsNewCompany && trimmedNewCompanyName
@@ -190,7 +194,7 @@ export function ProjectForm({ initial, onSubmit, onCancel, saving }: Props) {
           </div>
           <div>
             <label className={labelClass}>Planificación (RD$)</label>
-            <input type="number" step="any" min="0" value={planningFee} onChange={(e) => setPlanningFee(Number(e.target.value))} className={inputClass} />
+            <input type="text" inputMode="decimal" placeholder="0,00" value={planningFee} onChange={(e) => setPlanningFee(e.target.value)} className={inputClass} />
           </div>
         </div>
 

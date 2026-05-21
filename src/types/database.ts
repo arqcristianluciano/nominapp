@@ -43,6 +43,7 @@ export interface Contractor {
   payment_method: 'cash' | 'check' | 'transfer'
   is_active: boolean
   notes: string | null
+  parent_contractor_id?: string | null
   created_at: string
   updated_at: string
 }

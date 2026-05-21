@@ -2,7 +2,9 @@ import { useState } from 'react'
 import { Plus, Trash2, CheckCircle, Circle, Clock, Image, ScrollText } from 'lucide-react'
 import { corteService } from '@/services/cubicationService'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
+import { useToast } from '@/components/ui/Toast'
 import { formatRD } from '@/utils/currency'
+import { parseDecimalInput } from '@/utils/decimalInput'
 import { CorteApprovalModal } from './CorteApprovalModal'
 import { LinkToPayrollModal } from './LinkToPayrollModal'
 import type { ContractCorte, ContractPartida, CorteStatus } from '@/types/database'
@@ -26,6 +28,7 @@ const STATUS_CFG: Record<CorteStatus, { label: string; icon: React.ReactNode; cl
 const emptyForm = { partida_id: '', cut_date: '', measured_quantity: '', notes: '', photo_url: '' }
 
 export function CorteSection({ contractId, projectId, contractorId, retentionPercent, partidas, cortes, onRefresh }: Props) {
+  const { error: toastError } = useToast()
   const [form, setForm] = useState(emptyForm)
   const [showAdd, setShowAdd] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -34,8 +37,9 @@ export function CorteSection({ contractId, projectId, contractorId, retentionPer
   const [deleteId, setDeleteId] = useState<string | null>(null)
 
   const selectedPartida = partidas.find((p) => p.id === form.partida_id)
-  const previewAmount = selectedPartida && form.measured_quantity
-    ? Number(form.measured_quantity) * selectedPartida.unit_price : 0
+  const previewQuantity = parseDecimalInput(form.measured_quantity)
+  const previewAmount = selectedPartida && previewQuantity !== null
+    ? previewQuantity * selectedPartida.unit_price : 0
   const previewRetention = (previewAmount * retentionPercent) / 100
 
   async function handleCreate() {
@@ -43,12 +47,17 @@ export function CorteSection({ contractId, projectId, contractorId, retentionPer
     if (!form.partida_id || !form.cut_date || !form.measured_quantity) return
     const partida = partidas.find((p) => p.id === form.partida_id)
     if (!partida) return
+    const measuredQty = parseDecimalInput(form.measured_quantity)
+    if (measuredQty === null) {
+      toastError('Cantidad medida inválida. Ingresa un número válido.')
+      return
+    }
     setSaving(true)
     try {
       const nextNum = cortes.length > 0 ? Math.max(...cortes.map((c) => c.cut_number)) + 1 : 1
       await corteService.create(
         { contract_id: contractId, partida_id: form.partida_id, cut_number: nextNum, cut_date: form.cut_date,
-          measured_quantity: Number(form.measured_quantity), status: 'draft', notes: form.notes || null, photo_url: form.photo_url || null },
+          measured_quantity: measuredQty, status: 'draft', notes: form.notes || null, photo_url: form.photo_url || null },
         partida, retentionPercent,
       )
       setForm(emptyForm); setShowAdd(false); onRefresh()
@@ -95,7 +104,7 @@ export function CorteSection({ contractId, projectId, contractorId, retentionPer
             </div>
             <div>
               <p className="text-[10px] text-app-muted mb-1">Cant. medida *</p>
-              <input type="number" value={form.measured_quantity} onChange={(e) => setForm({ ...form, measured_quantity: e.target.value })} placeholder="0" className={`${inputCls} w-full`} />
+              <input type="text" inputMode="decimal" value={form.measured_quantity} onChange={(e) => setForm({ ...form, measured_quantity: e.target.value })} placeholder="0" className={`${inputCls} w-full`} />
             </div>
           </div>
           {previewAmount > 0 && (

@@ -19,6 +19,7 @@ export function NotificationDropdown() {
   const [notifications, setNotifications] = useState<AppNotification[]>([])
   const [dismissed, setDismissed] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -37,14 +38,21 @@ export function NotificationDropdown() {
 
   async function load() {
     setLoading(true)
+    setError(null)
     try {
       const data = await notificationService.getAll()
       setNotifications(data)
     } catch (err) {
       console.error('NotificationDropdown load failed', err)
+      const message = err instanceof Error ? err.message : 'Error desconocido'
+      setError(`No se pudieron cargar las notificaciones: ${message}`)
     } finally {
       setLoading(false)
     }
+  }
+
+  function markAllAsRead() {
+    setDismissed(new Set(notifications.map((n) => n.id)))
   }
 
   function dismiss(id: string, e: React.MouseEvent) {
@@ -69,9 +77,15 @@ export function NotificationDropdown() {
         onClick={() => setOpen((v) => !v)}
         className={`relative p-2 text-app-subtle hover:text-app-muted hover:bg-app-hover-strong ${ICON_BUTTON_CLASS}`}
         title="Notificaciones"
-        aria-label={open ? 'Cerrar notificaciones' : 'Abrir notificaciones'}
+        aria-label={
+          badgeCount > 0
+            ? `Notificaciones (${badgeCount} sin leer). ${open ? 'Cerrar' : 'Abrir'} panel`
+            : `Notificaciones (sin alertas). ${open ? 'Cerrar' : 'Abrir'} panel`
+        }
+        aria-expanded={open}
+        aria-haspopup="true"
       >
-        <Bell className="w-5 h-5" />
+        <Bell className="w-5 h-5" aria-hidden="true" />
         {badgeCount > 0 && (
           <span className={`absolute top-1 right-1 min-w-[14px] h-3.5 flex items-center justify-center rounded-full text-[9px] font-bold text-white leading-none px-0.5 ${dangerCount > 0 ? 'bg-red-500' : 'bg-amber-500'}`}>
             {badgeCount}
@@ -92,11 +106,12 @@ export function NotificationDropdown() {
             </div>
             <button
               type="button"
-              onClick={() => { setDismissed(new Set(notifications.map((n) => n.id))); setOpen(false) }}
+              onClick={markAllAsRead}
               className={`text-xs ${TEXT_BUTTON_CLASS}`}
               disabled={badgeCount === 0}
+              aria-label="Marcar todas las notificaciones como leídas"
             >
-              Limpiar todo
+              Marcar todas
             </button>
           </div>
 
@@ -107,15 +122,34 @@ export function NotificationDropdown() {
               </div>
             )}
 
-            {!loading && visible.length === 0 && (
+            {!loading && error && (
+              <div
+                className="px-4 py-6 text-center"
+                role="alert"
+                aria-live="assertive"
+              >
+                <AlertCircle className="w-8 h-8 text-red-500 mx-auto mb-2" aria-hidden="true" />
+                <p className="text-sm font-medium text-red-600 dark:text-red-400">Error al cargar notificaciones</p>
+                <p className="text-xs text-app-muted mt-1 break-words">{error}</p>
+                <button
+                  type="button"
+                  onClick={load}
+                  className={`mt-3 text-xs ${TEXT_BUTTON_CLASS}`}
+                >
+                  Reintentar
+                </button>
+              </div>
+            )}
+
+            {!loading && !error && visible.length === 0 && (
               <div className="px-4 py-8 text-center">
-                <CheckCircle className="w-8 h-8 text-green-400 mx-auto mb-2" />
+                <CheckCircle className="w-8 h-8 text-green-400 mx-auto mb-2" aria-hidden="true" />
                 <p className="text-sm font-medium text-app-text">Todo en orden</p>
                 <p className="text-xs text-app-muted mt-1">No tienes alertas pendientes por ahora.</p>
               </div>
             )}
 
-            {visible.map((notif) => {
+            {!error && visible.map((notif) => {
               const style = LEVEL_STYLES[notif.level]
               const Icon = style.icon
               return (

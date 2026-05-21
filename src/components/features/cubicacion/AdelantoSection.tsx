@@ -2,7 +2,9 @@ import { useState } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 import { adelantoService } from '@/services/cubicationService'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
+import { useToast } from '@/components/ui/Toast'
 import { formatRD } from '@/utils/currency'
+import { parseDecimalInput } from '@/utils/decimalInput'
 import type { ContractAdelanto } from '@/types/database'
 
 interface Props {
@@ -14,6 +16,7 @@ interface Props {
 const emptyForm = { advance_date: '', amount: '', description: '' }
 
 export function AdelantoSection({ contractId, adelantos, onRefresh }: Props) {
+  const { error: toastError } = useToast()
   const [form, setForm] = useState(emptyForm)
   const [showAdd, setShowAdd] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -24,12 +27,21 @@ export function AdelantoSection({ contractId, adelantos, onRefresh }: Props) {
   async function handleCreate() {
     if (saving) return
     if (!form.advance_date || !form.amount) return
+    const amount = parseDecimalInput(form.amount)
+    if (amount === null) {
+      toastError('Monto invalido')
+      return
+    }
+    if (amount <= 0) {
+      toastError('El monto debe ser mayor a 0')
+      return
+    }
     setSaving(true)
     try {
       await adelantoService.create({
         contract_id: contractId,
         advance_date: form.advance_date,
-        amount: Number(form.amount),
+        amount,
         description: form.description || null,
       })
       setForm(emptyForm)
@@ -68,7 +80,7 @@ export function AdelantoSection({ contractId, adelantos, onRefresh }: Props) {
           </div>
           <div className="col-span-3">
             <p className="text-[10px] text-app-muted mb-1">Monto (RD$) *</p>
-            <input type="number" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} placeholder="0" className={`${inputCls} w-full`} />
+            <input type="text" inputMode="decimal" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} placeholder="0" className={`${inputCls} w-full`} />
           </div>
           <div className="col-span-4">
             <p className="text-[10px] text-app-muted mb-1">Descripción</p>

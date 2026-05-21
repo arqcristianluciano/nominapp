@@ -1,4 +1,5 @@
 import { SETTINGS_TABS, type SettingsTab } from '@/components/features/settings/settingsTabs'
+import { useAppRoles } from '@/hooks/useAppRoles'
 
 interface SettingsTabsBarProps {
   activeTab: SettingsTab
@@ -6,9 +7,12 @@ interface SettingsTabsBarProps {
 }
 
 export function SettingsTabsBar({ activeTab, onChange }: SettingsTabsBarProps) {
+  const { isDirector } = useAppRoles()
+  const visibleTabs = SETTINGS_TABS.filter((tab) => !tab.directorOnly || isDirector)
+
   return (
     <div className="flex gap-0 border-b border-app-border">
-      {SETTINGS_TABS.map((tab) => (
+      {visibleTabs.map((tab) => (
         <button
           key={tab.key}
           onClick={() => onChange(tab.key)}

@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Contractor } from '@/types/database'
+import { contractorService } from '@/services/contractorService'
 import { isCedula, isPhone } from '@/utils/validators'
 
 interface Props {
@@ -13,6 +14,7 @@ interface Props {
     bank_name?: string
     payment_method?: 'cash' | 'check' | 'transfer'
     notes?: string
+    parent_contractor_id?: string | null
   }) => Promise<void>
   onCancel: () => void
   saving: boolean
@@ -27,7 +29,22 @@ export function ContractorForm({ initial, onSubmit, onCancel, saving }: Props) {
   const [bankName, setBankName] = useState(initial?.bank_name || '')
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'check' | 'transfer'>(initial?.payment_method || 'cash')
   const [notes, setNotes] = useState(initial?.notes || '')
+  const [parentContractorId, setParentContractorId] = useState<string>(initial?.parent_contractor_id ?? '')
+  const [parentOptions, setParentOptions] = useState<Contractor[]>([])
   const [formError, setFormError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    contractorService.getAll().then((all) => {
+      if (cancelled) return
+      setParentOptions(all.filter((c) => c.id !== initial?.id))
+    }).catch(() => {
+      if (!cancelled) setParentOptions([])
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [initial?.id])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -54,6 +71,7 @@ export function ContractorForm({ initial, onSubmit, onCancel, saving }: Props) {
       bank_name: bankName || undefined,
       payment_method: paymentMethod,
       notes: notes || undefined,
+      parent_contractor_id: parentContractorId ? parentContractorId : null,
     })
   }
 
@@ -91,6 +109,15 @@ export function ContractorForm({ initial, onSubmit, onCancel, saving }: Props) {
         <div>
           <label className="block text-xs font-medium text-app-muted mb-1">No. de cuenta</label>
           <input type="text" value={bankAccount} onChange={(e) => setBankAccount(e.target.value)} className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+        <div className="col-span-2">
+          <label className="block text-xs font-medium text-app-muted mb-1">Contratista padre (opcional)</label>
+          <select value={parentContractorId} onChange={(e) => setParentContractorId(e.target.value)} className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="">Sin padre (contratista principal)</option>
+            {parentOptions.map((option) => (
+              <option key={option.id} value={option.id}>{option.name}</option>
+            ))}
+          </select>
         </div>
         <div className="col-span-2">
           <label className="block text-xs font-medium text-app-muted mb-1">Notas</label>

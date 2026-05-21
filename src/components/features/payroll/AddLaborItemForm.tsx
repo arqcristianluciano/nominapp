@@ -3,6 +3,7 @@ import { UserPlus, X, AlertTriangle } from 'lucide-react'
 import type { BudgetCategory, Contractor, PriceListItem } from '@/types/database'
 import { MEASURE_UNITS } from '@/constants/measureUnits'
 import { contractorService } from '@/services/contractorService'
+import { parseDecimalInput } from '@/utils/decimalInput'
 import { mul, round2 } from '@/utils/money'
 
 const NEW_CONTRACTOR_VALUE = '__NEW__'
@@ -89,18 +90,23 @@ export function AddLaborItemForm({ contractors, laborTasks, budgetCategories = [
     setNewSpecialty('')
   }
 
-  const subtotal = round2(mul(parseFloat(quantity) || 0, parseFloat(unitPrice) || 0))
+  const subtotal = round2(
+    mul(parseDecimalInput(quantity) ?? 0, parseDecimalInput(unitPrice) ?? 0),
+  )
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (saving) return
     if (showNewForm || !contractorId || !selectedTask || !quantity || !unitPrice) return
+    const qtyNum = parseDecimalInput(quantity)
+    const priceNum = parseDecimalInput(unitPrice)
+    if (qtyNum === null || priceNum === null) return
     await onSubmit({
       contractor_id: contractorId,
       description: selectedTask.description.toUpperCase(),
-      quantity: isDeduction ? -(Math.abs(parseFloat(quantity))) : parseFloat(quantity),
+      quantity: isDeduction ? -Math.abs(qtyNum) : qtyNum,
       unit,
-      unit_price: parseFloat(unitPrice),
+      unit_price: priceNum,
       is_advance: isAdvance,
       is_advance_deduction: isDeduction,
       budget_category_id: budgetCategoryId || null,
@@ -192,8 +198,8 @@ export function AddLaborItemForm({ contractors, laborTasks, budgetCategories = [
         <div>
           <label className="block text-xs font-medium text-app-muted mb-1">Cantidad *</label>
           <input
-            type="number"
-            step="0.01"
+            type="text"
+            inputMode="decimal"
             value={quantity}
             onChange={(e) => setQuantity(e.target.value)}
             required
@@ -215,8 +221,8 @@ export function AddLaborItemForm({ contractors, laborTasks, budgetCategories = [
         <div>
           <label className="block text-xs font-medium text-app-muted mb-1">Precio unitario *</label>
           <input
-            type="number"
-            step="0.01"
+            type="text"
+            inputMode="decimal"
             value={unitPrice}
             onChange={(e) => setUnitPrice(e.target.value)}
             required

@@ -1,7 +1,29 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/authStore'
+import { isDemoMode } from '@/lib/supabase'
 import { LoginBrandPanel, LoginFormPanel } from '@/components/features/login/LoginSections'
+
+// El bloque de quick-access (cuentas provisionales) solo tiene sentido en demo o
+// en build de desarrollo. En producción real lo neutralizamos: ocultamos visualmente
+// la sección entera vía CSS (sin tocar LoginSections) y dejamos el callback como no-op.
+const showQuickAccess = isDemoMode || import.meta.env.MODE === 'development'
+
+// Heuristica para distinguir "credenciales malas" (login devolvió false) vs
+// "no pudimos contactar al backend" (excepción de red / fetch). authService
+// captura su propio error y devuelve null en credenciales malas; cualquier
+// throw que llegue aquí es inesperado y muy probablemente conectividad.
+function describeLoginError(err: unknown): string {
+  if (err instanceof TypeError) {
+    // fetch falla con TypeError ("Failed to fetch", "Load failed", "NetworkError…")
+    return 'No pudimos conectar con el servidor. Revisa tu conexión a internet e intenta de nuevo.'
+  }
+  const message = err instanceof Error ? err.message.toLowerCase() : ''
+  if (message.includes('network') || message.includes('fetch') || message.includes('offline')) {
+    return 'No pudimos conectar con el servidor. Revisa tu conexión a internet e intenta de nuevo.'
+  }
+  return 'No se pudo iniciar sesión. Intenta de nuevo.'
+}
 
 export default function Login() {
   const navigate = useNavigate()
@@ -29,13 +51,13 @@ export default function Login() {
     try {
       const ok = await login(u, p)
       if (!ok) {
-        setError('Usuario o contraseña incorrectos.')
+        setError('Credenciales incorrectas. Verifica tu usuario y contraseña.')
         setSubmitting(false)
         return
       }
       navigate(from, { replace: true })
-    } catch {
-      setError('No se pudo iniciar sesión. Intenta de nuevo.')
+    } catch (err) {
+      setError(describeLoginError(err))
       setSubmitting(false)
     }
   }
@@ -46,25 +68,47 @@ export default function Login() {
   }
 
   async function quickLogin(u: string, p: string) {
+    if (!showQuickAccess) return
     setUsername(u)
     setPassword(p)
     await performLogin(u, p)
   }
 
   return (
-    <div className="min-h-screen flex bg-app-bg">
-      <LoginBrandPanel />
-      <LoginFormPanel
-        hydrated={hydrated}
-        username={username}
-        password={password}
-        error={error}
-        submitting={submitting}
-        onUsernameChange={setUsername}
-        onPasswordChange={setPassword}
-        onSubmit={handleSubmit}
-        onQuickLogin={quickLogin}
-      />
+    <div
+      className={`min-h-screen flex flex-col bg-app-bg${
+        showQuickAccess ? '' : ' login--hide-quick-access'
+      }`}
+    >
+      {/* En prod ocultamos el bloque de quick-access (renderizado dentro de LoginFormPanel)
+          mediante una clase a nivel raíz, sin tocar LoginSections. Reemplaza el badge
+          de "cuentas provisionales" del LoginQuickAccess por un hint visible solo en demo/dev. */}
+      {!showQuickAccess && (
+        <style>{`.login--hide-quick-access .grid.grid-cols-1.sm\\:grid-cols-2.gap-2,
+.login--hide-quick-access .rounded-xl.border.border-amber-300{display:none !important}`}</style>
+      )}
+      {showQuickAccess && (
+        <div
+          role="status"
+          className="w-full px-4 py-2 text-center text-xs font-semibold text-amber-900 dark:text-amber-100 bg-amber-100 dark:bg-amber-900/40 border-b border-amber-300 dark:border-amber-700"
+        >
+          Modo demo: usa cualquiera de los quick-access
+        </div>
+      )}
+      <div className="flex-1 flex">
+        <LoginBrandPanel />
+        <LoginFormPanel
+          hydrated={hydrated}
+          username={username}
+          password={password}
+          error={error}
+          submitting={submitting}
+          onUsernameChange={setUsername}
+          onPasswordChange={setPassword}
+          onSubmit={handleSubmit}
+          onQuickLogin={quickLogin}
+        />
+      </div>
     </div>
   )
 }

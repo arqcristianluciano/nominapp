@@ -7,7 +7,20 @@ import {
   materialsCatalogService,
   type MaterialCatalogItem,
 } from '@/services/materialsCatalogService'
+import { parseDecimalInput } from '@/utils/decimalInput'
 import type { InventoryMovementFormState } from './inventoryConfig'
+
+/**
+ * Sincroniza un input decimal en formato local (RD) con el estado numérico del
+ * formulario padre. Mantiene un string editable para que el usuario pueda
+ * teclear separadores decimales/miles sin perder caracteres, y propaga el
+ * número parseado al padre cuando es válido.
+ */
+function formatNumberForInput(value: number | null | undefined): string {
+  if (value === null || value === undefined) return ''
+  if (!Number.isFinite(value)) return ''
+  return String(value)
+}
 
 export interface ItemFormState {
   name: string
@@ -63,6 +76,11 @@ function CatalogPicker({
 
 export function InventoryItemForm({ form, saving, onChange, onCancel, onSave }: ItemFormProps) {
   const [catalog, setCatalog] = useState<MaterialCatalogItem[]>([])
+  // Buffers locales para inputs decimales: permiten teclear separadores RD
+  // ("1.234,56") sin que el coerción a number trunque caracteres mid-edit.
+  const [unitCostStr, setUnitCostStr] = useState(() => formatNumberForInput(form.unit_cost))
+  const [currentStockStr, setCurrentStockStr] = useState(() => formatNumberForInput(form.current_stock))
+  const [minStockStr, setMinStockStr] = useState(() => formatNumberForInput(form.min_stock))
 
   useEffect(() => {
     let cancelled = false
@@ -86,13 +104,34 @@ export function InventoryItemForm({ form, saving, onChange, onCancel, onSave }: 
     }
     const item = catalog.find((c) => c.id === catalogId)
     if (!item) return
+    const nextMinStock = form.min_stock || item.default_min_stock
     onChange({
       ...form,
       material_catalog_id: item.id,
       name: form.name || item.description,
       unit: item.unit,
-      min_stock: form.min_stock || item.default_min_stock,
+      min_stock: nextMinStock,
     })
+    setMinStockStr(formatNumberForInput(nextMinStock))
+  }
+
+  const handleDecimalChange = (
+    field: 'unit_cost' | 'current_stock' | 'min_stock',
+    setter: (s: string) => void,
+  ) => (value: string) => {
+    setter(value)
+    // Solo propagar cuando el string parsea limpiamente (incluido vacío → 0).
+    // Strings intermedios ("1." o "1,") quedan en el buffer local hasta que
+    // el usuario complete el número; al disparar handleSave reparseamos.
+    const trimmed = value.trim()
+    if (!trimmed) {
+      onChange({ ...form, [field]: 0 })
+      return
+    }
+    const parsed = parseDecimalInput(value)
+    if (parsed !== null) {
+      onChange({ ...form, [field]: parsed })
+    }
   }
 
   return (
@@ -102,9 +141,9 @@ export function InventoryItemForm({ form, saving, onChange, onCancel, onSave }: 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="sm:col-span-2"><label className="text-xs text-app-muted block mb-1">Nombre *</label><input value={form.name} onChange={(e) => onChange({ ...form, name: e.target.value })} placeholder="Ej: Cemento Portland" className={INPUT_CLS} /></div>
         <div><label className="text-xs text-app-muted block mb-1">Unidad</label><input value={form.unit} onChange={(e) => onChange({ ...form, unit: e.target.value })} placeholder="sacos, m3, unid" className={INPUT_CLS} /></div>
-        <div><label className="text-xs text-app-muted block mb-1">Costo unitario (RD$)</label><input type="number" value={form.unit_cost} onChange={(e) => onChange({ ...form, unit_cost: +e.target.value })} className={INPUT_CLS} /></div>
-        <div><label className="text-xs text-app-muted block mb-1">Stock inicial</label><input type="number" value={form.current_stock} onChange={(e) => onChange({ ...form, current_stock: +e.target.value })} className={INPUT_CLS} /></div>
-        <div><label className="text-xs text-app-muted block mb-1">Stock mínimo (alerta)</label><input type="number" value={form.min_stock} onChange={(e) => onChange({ ...form, min_stock: +e.target.value })} className={INPUT_CLS} /></div>
+        <div><label className="text-xs text-app-muted block mb-1">Costo unitario (RD$)</label><input type="text" inputMode="decimal" value={unitCostStr} onChange={(e) => handleDecimalChange('unit_cost', setUnitCostStr)(e.target.value)} placeholder="0,00" className={INPUT_CLS} /></div>
+        <div><label className="text-xs text-app-muted block mb-1">Stock inicial</label><input type="text" inputMode="decimal" value={currentStockStr} onChange={(e) => handleDecimalChange('current_stock', setCurrentStockStr)(e.target.value)} placeholder="0" className={INPUT_CLS} /></div>
+        <div><label className="text-xs text-app-muted block mb-1">Stock mínimo (alerta)</label><input type="text" inputMode="decimal" value={minStockStr} onChange={(e) => handleDecimalChange('min_stock', setMinStockStr)(e.target.value)} placeholder="0" className={INPUT_CLS} /></div>
       </div>
       <div className="flex gap-2 justify-end">
         <button onClick={onCancel} className="px-4 py-2 text-sm border border-app-border rounded-lg hover:bg-app-hover text-app-muted">Cancelar</button>
@@ -193,6 +232,9 @@ export function InventoryMovementForm({
 }: MovementFormProps) {
   const [categories, setCategories] = useState<BudgetCategory[]>([])
   const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([])
+  // Buffers locales para inputs decimales en formato RD.
+  const [quantityStr, setQuantityStr] = useState(() => formatNumberForInput(form.quantity))
+  const [unitCostStr, setUnitCostStr] = useState(() => formatNumberForInput(form.unit_cost))
 
   useEffect(() => {
     let cancelled = false
@@ -217,6 +259,33 @@ export function InventoryMovementForm({
   }, [form.budget_category_id])
 
   const isOut = form.type === 'out'
+
+  const handleQuantityChange = (value: string) => {
+    setQuantityStr(value)
+    const trimmed = value.trim()
+    if (!trimmed) {
+      onChange({ ...form, quantity: 0 })
+      return
+    }
+    const parsed = parseDecimalInput(value)
+    // Strings mid-edit ("1." o "1,") mantienen el último número propagado;
+    // handleSave reparsea antes del submit final.
+    if (parsed !== null) {
+      onChange({ ...form, quantity: parsed })
+    }
+  }
+
+  const handleUnitCostChange = (value: string) => {
+    setUnitCostStr(value)
+    if (!value.trim()) {
+      onChange({ ...form, unit_cost: null })
+      return
+    }
+    const parsed = parseDecimalInput(value)
+    if (parsed !== null) {
+      onChange({ ...form, unit_cost: parsed })
+    }
+  }
 
   return (
     <div className="bg-app-surface border border-app-border rounded-xl p-4 space-y-3">
@@ -260,10 +329,11 @@ export function InventoryMovementForm({
         <div>
           <label className="text-xs text-app-muted block mb-1">Cantidad</label>
           <input
-            type="number"
-            min={1}
-            value={form.quantity}
-            onChange={(e) => onChange({ ...form, quantity: +e.target.value })}
+            type="text"
+            inputMode="decimal"
+            placeholder="0"
+            value={quantityStr}
+            onChange={(e) => handleQuantityChange(e.target.value)}
             className={INPUT_CLS}
           />
         </div>
@@ -280,10 +350,10 @@ export function InventoryMovementForm({
           <div>
             <label className="text-xs text-app-muted block mb-1">Costo unitario</label>
             <input
-              type="number"
-              step="0.01"
-              value={form.unit_cost ?? ''}
-              onChange={(e) => onChange({ ...form, unit_cost: e.target.value ? +e.target.value : null })}
+              type="text"
+              inputMode="decimal"
+              value={unitCostStr}
+              onChange={(e) => handleUnitCostChange(e.target.value)}
               placeholder="Precio efectivo"
               className={INPUT_CLS}
             />
