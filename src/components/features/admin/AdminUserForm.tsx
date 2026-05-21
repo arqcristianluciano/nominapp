@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { adminService, type AdminUser } from '@/services/adminService'
 import { useToast } from '@/components/ui/Toast'
 import { parseDecimalInput } from '@/utils/decimalInput'
@@ -62,22 +63,23 @@ interface CredentialsSectionProps extends SectionProps {
 }
 
 function CredentialsSection({ form, set, createMode }: CredentialsSectionProps) {
+  const { t } = useTranslation()
   const isInvite = createMode === 'invite'
   return (
     <div className="grid grid-cols-2 gap-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900">
       <div className="col-span-2 text-xs text-blue-700 dark:text-blue-300">
         {isInvite
-          ? 'Se enviará un email al destinatario con un enlace para que defina su propia contraseña.'
-          : 'Credenciales de acceso (la persona inicia sesión con estos datos).'}
+          ? t('admin.form.credentials_invite_hint')
+          : t('admin.form.credentials_password_hint')}
       </div>
       <div className={isInvite ? 'col-span-2' : ''}>
-        <label className={label}>Email *</label>
-        <input className={input} type="email" required value={form.email} onChange={(e) => set('email', e.target.value)} placeholder="empleado@empresa.com" />
+        <label className={label}>{t('admin.form.email')} *</label>
+        <input className={input} type="email" required value={form.email} onChange={(e) => set('email', e.target.value)} placeholder={t('admin.form.email_placeholder')} />
       </div>
       {!isInvite && (
         <div>
-          <label className={label}>Contraseña inicial *</label>
-          <input className={input} type="text" required value={form.password} onChange={(e) => set('password', e.target.value)} placeholder="Mínimo 6 caracteres" />
+          <label className={label}>{t('admin.form.initial_password')} *</label>
+          <input className={input} type="text" required value={form.password} onChange={(e) => set('password', e.target.value)} placeholder={t('admin.form.password_placeholder')} />
         </div>
       )}
     </div>
@@ -90,13 +92,14 @@ interface CreateModeTabsProps {
 }
 
 function CreateModeTabs({ mode, onChange }: CreateModeTabsProps) {
+  const { t } = useTranslation()
   const baseBtn =
     'flex-1 px-3 py-2 text-sm font-medium border transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500'
   const active = 'bg-blue-600 text-white border-blue-600'
   const inactive =
     'bg-app-bg text-app-muted border-app-border hover:bg-app-hover'
   return (
-    <div className="flex rounded-lg overflow-hidden" role="tablist" aria-label="Modo de creación de usuario">
+    <div className="flex rounded-lg overflow-hidden" role="tablist" aria-label={t('admin.form.tabs_label')}>
       <button
         type="button"
         role="tab"
@@ -104,7 +107,7 @@ function CreateModeTabs({ mode, onChange }: CreateModeTabsProps) {
         onClick={() => onChange('password')}
         className={`${baseBtn} rounded-l-lg ${mode === 'password' ? active : inactive}`}
       >
-        Crear con contraseña
+        {t('admin.form.create_with_password')}
       </button>
       <button
         type="button"
@@ -113,40 +116,41 @@ function CreateModeTabs({ mode, onChange }: CreateModeTabsProps) {
         onClick={() => onChange('invite')}
         className={`${baseBtn} rounded-r-lg ${mode === 'invite' ? active : inactive}`}
       >
-        Invitar por email
+        {t('admin.form.invite_by_email')}
       </button>
     </div>
   )
 }
 
 function BasicDataSection({ form, set }: SectionProps) {
+  const { t } = useTranslation()
   return (
     <div>
-      <div className="text-xs font-bold uppercase tracking-wide text-app-subtle mb-2">Datos básicos</div>
+      <div className="text-xs font-bold uppercase tracking-wide text-app-subtle mb-2">{t('admin.form.basic_data')}</div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className={label}>Nombre *</label>
-          <input className={input} required value={form.first_name} onChange={(e) => set('first_name', e.target.value)} placeholder="Juan" />
+          <label className={label}>{t('admin.form.first_name')} *</label>
+          <input className={input} required value={form.first_name} onChange={(e) => set('first_name', e.target.value)} placeholder={t('admin.form.first_name_placeholder')} />
         </div>
         <div>
-          <label className={label}>Apellido *</label>
-          <input className={input} required value={form.last_name} onChange={(e) => set('last_name', e.target.value)} placeholder="Pérez" />
+          <label className={label}>{t('admin.form.last_name')} *</label>
+          <input className={input} required value={form.last_name} onChange={(e) => set('last_name', e.target.value)} placeholder={t('admin.form.last_name_placeholder')} />
         </div>
         <div>
-          <label className={label}>Cédula</label>
-          <input className={input} value={form.cedula} onChange={(e) => set('cedula', e.target.value)} placeholder="001-1234567-8" />
+          <label className={label}>{t('admin.form.cedula')}</label>
+          <input className={input} value={form.cedula} onChange={(e) => set('cedula', e.target.value)} placeholder={t('admin.form.cedula_placeholder')} />
         </div>
         <div>
-          <label className={label}>Pasaporte</label>
-          <input className={input} value={form.passport} onChange={(e) => set('passport', e.target.value)} placeholder="A12345678" />
+          <label className={label}>{t('admin.form.passport')}</label>
+          <input className={input} value={form.passport} onChange={(e) => set('passport', e.target.value)} placeholder={t('admin.form.passport_placeholder')} />
         </div>
         <div>
-          <label className={label}>Teléfono</label>
-          <input className={input} value={form.phone} onChange={(e) => set('phone', e.target.value)} placeholder="809-555-0000" />
+          <label className={label}>{t('admin.form.phone')}</label>
+          <input className={input} value={form.phone} onChange={(e) => set('phone', e.target.value)} placeholder={t('admin.form.phone_placeholder')} />
         </div>
         <div>
-          <label className={label}>Nombre para mostrar</label>
-          <input className={input} value={form.display_name} onChange={(e) => set('display_name', e.target.value)} placeholder="Se autocompleta con nombre+apellido" />
+          <label className={label}>{t('admin.form.display_name')}</label>
+          <input className={input} value={form.display_name} onChange={(e) => set('display_name', e.target.value)} placeholder={t('admin.form.display_name_placeholder')} />
         </div>
       </div>
     </div>
@@ -158,22 +162,23 @@ interface WorkDataSectionProps extends SectionProps {
 }
 
 function WorkDataSection({ form, set, isCreate }: WorkDataSectionProps) {
+  const { t } = useTranslation()
   return (
     <div>
-      <div className="text-xs font-bold uppercase tracking-wide text-app-subtle mb-2">Datos laborales</div>
+      <div className="text-xs font-bold uppercase tracking-wide text-app-subtle mb-2">{t('admin.form.work_data')}</div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className={label}>Puesto / Título</label>
-          <input className={input} value={form.job_title} onChange={(e) => set('job_title', e.target.value)} placeholder="Maestro de obra" />
+          <label className={label}>{t('admin.form.job_title')}</label>
+          <input className={input} value={form.job_title} onChange={(e) => set('job_title', e.target.value)} placeholder={t('admin.form.job_title_placeholder')} />
         </div>
         <div>
-          <label className={label}>Fecha de ingreso</label>
+          <label className={label}>{t('admin.form.hire_date')}</label>
           <input className={input} type="date" value={form.hire_date} onChange={(e) => set('hire_date', e.target.value)} />
         </div>
         {!isCreate && (
           <div className="col-span-2 flex items-center gap-2">
             <input id="is_active" type="checkbox" checked={form.is_active} onChange={(e) => set('is_active', e.target.checked)} className="w-4 h-4 accent-blue-600" />
-            <label htmlFor="is_active" className="text-sm text-app-text">Empleado activo</label>
+            <label htmlFor="is_active" className="text-sm text-app-text">{t('admin.form.active_employee')}</label>
           </div>
         )}
       </div>
@@ -182,17 +187,18 @@ function WorkDataSection({ form, set, isCreate }: WorkDataSectionProps) {
 }
 
 function FinancialDataSection({ form, set }: SectionProps) {
+  const { t } = useTranslation()
   return (
     <div>
-      <div className="text-xs font-bold uppercase tracking-wide text-app-subtle mb-2">Datos financieros</div>
+      <div className="text-xs font-bold uppercase tracking-wide text-app-subtle mb-2">{t('admin.form.financial_data')}</div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className={label}>Salario</label>
-          <input className={input} type="text" inputMode="decimal" value={form.salary} onChange={(e) => set('salary', e.target.value)} placeholder="0,00" />
+          <label className={label}>{t('admin.form.salary')}</label>
+          <input className={input} type="text" inputMode="decimal" value={form.salary} onChange={(e) => set('salary', e.target.value)} placeholder={t('admin.form.salary_placeholder')} />
         </div>
         <div>
-          <label className={label}>Condición de pago</label>
-          <input className={input} value={form.payment_terms} onChange={(e) => set('payment_terms', e.target.value)} placeholder="Quincenal · Transferencia" />
+          <label className={label}>{t('admin.form.payment_terms')}</label>
+          <input className={input} value={form.payment_terms} onChange={(e) => set('payment_terms', e.target.value)} placeholder={t('admin.form.payment_terms_placeholder')} />
         </div>
       </div>
     </div>
@@ -200,6 +206,7 @@ function FinancialDataSection({ form, set }: SectionProps) {
 }
 
 export function AdminUserForm({ mode, initial, onCancel, onSaved }: Props) {
+  const { t } = useTranslation()
   const [form, setForm] = useState<FormState>(emptyForm(initial))
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
@@ -223,7 +230,7 @@ export function AdminUserForm({ mode, initial, onCancel, onSaved }: Props) {
         form.display_name.trim() ||
         `${form.first_name.trim()} ${form.last_name.trim()}`.trim()
       if (!displayName && !isInvite) {
-        const msg = 'El nombre para mostrar no puede quedar vacío'
+        const msg = t('admin.form.errors.display_name_empty')
         setFormError(msg)
         error(msg)
         setSaving(false)
@@ -234,7 +241,7 @@ export function AdminUserForm({ mode, initial, onCancel, onSaved }: Props) {
       if (salaryTrim) {
         const parsed = parseDecimalInput(salaryTrim)
         if (parsed === null) {
-          const msg = 'Salario inválido'
+          const msg = t('admin.form.errors.invalid_salary')
           setFormError(msg)
           error(msg)
           setSaving(false)
@@ -245,7 +252,7 @@ export function AdminUserForm({ mode, initial, onCancel, onSaved }: Props) {
 
       const cedulaTrimmed = form.cedula.trim()
       if (cedulaTrimmed && !isCedula(cedulaTrimmed)) {
-        const msg = 'Cédula inválida (formato 000-0000000-0)'
+        const msg = t('admin.form.errors.invalid_cedula')
         setFormError(msg)
         error(msg)
         setSaving(false)
@@ -254,7 +261,7 @@ export function AdminUserForm({ mode, initial, onCancel, onSaved }: Props) {
 
       const phoneTrimmed = form.phone.trim()
       if (phoneTrimmed && !isPhone(phoneTrimmed)) {
-        const msg = 'Teléfono inválido (10 dígitos)'
+        const msg = t('admin.form.errors.invalid_phone')
         setFormError(msg)
         error(msg)
         setSaving(false)
@@ -264,14 +271,14 @@ export function AdminUserForm({ mode, initial, onCancel, onSaved }: Props) {
       if (isCreate) {
         const emailTrim = form.email.trim()
         if (!emailTrim) {
-          const msg = 'El email es obligatorio'
+          const msg = t('admin.form.errors.email_required')
           setFormError(msg)
           error(msg)
           setSaving(false)
           return
         }
         if (!isEmail(emailTrim)) {
-          const msg = 'Email inválido'
+          const msg = t('admin.form.errors.invalid_email')
           setFormError(msg)
           error(msg)
           setSaving(false)
@@ -281,7 +288,7 @@ export function AdminUserForm({ mode, initial, onCancel, onSaved }: Props) {
           await adminService.inviteUser(emailTrim)
         } else {
           if (!form.password) {
-            const msg = 'La contraseña inicial es obligatoria'
+            const msg = t('admin.form.errors.password_required')
             setFormError(msg)
             error(msg)
             setSaving(false)
@@ -319,7 +326,7 @@ export function AdminUserForm({ mode, initial, onCancel, onSaved }: Props) {
       }
       await onSaved()
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'No se pudo guardar'
+      const msg = err instanceof Error ? err.message : t('admin.form.errors.save_failed')
       error(msg)
     } finally {
       setSaving(false)
@@ -327,12 +334,12 @@ export function AdminUserForm({ mode, initial, onCancel, onSaved }: Props) {
   }
 
   const submitLabel = saving
-    ? 'Guardando...'
+    ? t('admin.form.saving')
     : !isCreate
-      ? 'Guardar cambios'
+      ? t('admin.form.save_changes')
       : isInvite
-        ? 'Enviar invitación'
-        : 'Crear usuario'
+        ? t('admin.form.send_invitation')
+        : t('admin.form.create_user')
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -352,7 +359,7 @@ export function AdminUserForm({ mode, initial, onCancel, onSaved }: Props) {
 
       <div className="flex justify-end gap-2 pt-2 border-t border-app-border">
         <button type="button" onClick={onCancel} className="px-4 py-2 text-sm border border-app-border rounded-lg text-app-muted hover:bg-app-hover">
-          Cancelar
+          {t('admin.form.cancel')}
         </button>
         <button type="submit" disabled={saving} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium">
           {submitLabel}
