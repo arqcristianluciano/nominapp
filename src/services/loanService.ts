@@ -11,6 +11,7 @@ export function calcInstallmentAmount(principal: number, interestRate: number, i
 }
 
 export const loanService = {
+  /** Lista todos los préstamos a contratistas con su contratista relacionado. */
   async getAll(): Promise<ContractorLoan[]> {
     const { data, error } = await supabase
       .from('contractor_loans')
@@ -20,6 +21,7 @@ export const loanService = {
     return data as ContractorLoan[]
   },
 
+  /** Lista los préstamos de un contratista específico. */
   async getByContractor(contractorId: string): Promise<ContractorLoan[]> {
     const { data, error } = await supabase
       .from('contractor_loans')
@@ -30,6 +32,7 @@ export const loanService = {
     return data as ContractorLoan[]
   },
 
+  /** Crea un préstamo nuevo calculando la cuota e iniciándolo en estado activo. */
   async create(loan: {
     contractor_id: string
     principal: number
@@ -48,6 +51,7 @@ export const loanService = {
     return data as ContractorLoan
   },
 
+  /** Actualiza el estado de un préstamo. */
   async updateStatus(id: string, status: LoanStatus): Promise<void> {
     const { error } = await supabase
       .from('contractor_loans')
@@ -56,6 +60,7 @@ export const loanService = {
     if (error) throw error
   },
 
+  /** Elimina un préstamo por id. */
   async delete(id: string): Promise<void> {
     const { error } = await supabase
       .from('contractor_loans')
@@ -66,6 +71,7 @@ export const loanService = {
 
   // === DEDUCCIONES ===
 
+  /** Lista las deducciones de préstamo aplicadas en un período de nómina. */
   async getDeductionsByPeriod(periodId: string): Promise<LoanDeduction[]> {
     const { data, error } = await supabase
       .from('loan_deductions')
@@ -75,6 +81,7 @@ export const loanService = {
     return data as LoanDeduction[]
   },
 
+  /** Lista las deducciones asociadas a un préstamo. */
   async getDeductionsByLoan(loanId: string): Promise<LoanDeduction[]> {
     const { data, error } = await supabase
       .from('loan_deductions')
@@ -84,6 +91,7 @@ export const loanService = {
     return data as LoanDeduction[]
   },
 
+  /** Crea una deducción de préstamo en un período de nómina. */
   async addDeduction(deduction: {
     loan_id: string
     payroll_period_id: string
@@ -99,6 +107,7 @@ export const loanService = {
     return data as LoanDeduction
   },
 
+  /** Elimina una deducción de préstamo por id. */
   async deleteDeduction(id: string): Promise<void> {
     const { error } = await supabase
       .from('loan_deductions')

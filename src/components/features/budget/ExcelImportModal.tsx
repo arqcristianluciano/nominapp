@@ -19,8 +19,128 @@ interface Props {
   onClose: () => void
 }
 
-export default function ExcelImportModal({ categories, onImport, onClose }: Props) {
+interface ExcelDropZoneProps {
+  onFile: (file: File) => void
+}
+
+function ExcelDropZone({ onFile }: ExcelDropZoneProps) {
   const inputRef = useRef<HTMLInputElement>(null)
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    const file = e.dataTransfer.files[0]
+    if (file) onFile(file)
+  }
+
+  return (
+    <div
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={handleDrop}
+      onClick={() => inputRef.current?.click()}
+      className="border-2 border-dashed border-app-border rounded-xl p-10 text-center cursor-pointer hover:border-blue-300 hover:bg-blue-50/30 transition-colors"
+    >
+      <Upload className="w-8 h-8 text-app-subtle mx-auto mb-3" />
+      <p className="text-sm text-app-muted">Arrastra tu archivo Excel aquí</p>
+      <p className="text-xs text-app-subtle mt-1">o haz click para seleccionar (.xlsx, .xls)</p>
+      <input
+        ref={inputRef}
+        type="file"
+        accept=".xlsx,.xls"
+        className="hidden"
+        onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f) }}
+      />
+    </div>
+  )
+}
+
+interface ImportPreviewTableProps {
+  items: ParsedItem[]
+}
+
+function ImportPreviewTable({ items }: ImportPreviewTableProps) {
+  return (
+    <div className="border border-app-border rounded-lg overflow-hidden">
+      <table className="w-full text-xs">
+        <thead>
+          <tr className="bg-app-bg border-b border-app-border">
+            <th className="px-3 py-2 text-left font-medium text-app-muted">Partida</th>
+            <th className="px-3 py-2 text-left font-medium text-app-muted">Cod.</th>
+            <th className="px-3 py-2 text-left font-medium text-app-muted">Descripción</th>
+            <th className="px-3 py-2 text-center font-medium text-app-muted">Und</th>
+            <th className="px-3 py-2 text-right font-medium text-app-muted">Cant.</th>
+            <th className="px-3 py-2 text-right font-medium text-app-muted">P. Unit.</th>
+            <th className="px-3 py-2 text-right font-medium text-app-muted">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {(() => {
+            const seenKeys = new Map<string, number>()
+            return items.map((row) => {
+              const baseKey = `${row.categoryId ?? row.newCategoryKey ?? 'nocat'}-${row.code || 'nocode'}-${row.description}`
+              const dup = seenKeys.get(baseKey) ?? 0
+              seenKeys.set(baseKey, dup + 1)
+              const rowKey = dup === 0 ? baseKey : `${baseKey}#${dup}`
+              return (
+                <tr
+                  key={rowKey}
+                  className={`border-b border-app-border ${row.valid ? 'hover:bg-app-hover' : 'bg-amber-50'}`}
+                >
+                  <td className="px-3 py-1.5 text-app-muted max-w-[160px] truncate">
+                    <span>{row.categoryName}</span>
+                    {row.isNewCategory && (
+                      <span className="ml-1 text-[9px] uppercase tracking-wide text-blue-600 font-semibold">
+                        nueva
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-3 py-1.5 text-app-subtle font-mono">{row.code}</td>
+                  <td className="px-3 py-1.5 text-app-text max-w-[200px] truncate">{row.description}</td>
+                  <td className="px-3 py-1.5 text-center text-app-muted">{row.unit}</td>
+                  <td className="px-3 py-1.5 text-right text-app-muted">{row.quantity}</td>
+                  <td className="px-3 py-1.5 text-right text-app-muted">{formatRD(row.unit_price)}</td>
+                  <td className="px-3 py-1.5 text-right font-medium text-app-text">
+                    {row.valid ? formatRD(row.quantity * row.unit_price) : (
+                      <span className="text-amber-600 text-[10px]">{row.error}</span>
+                    )}
+                  </td>
+                </tr>
+              )
+            })
+          })()}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+interface ImportSummaryFooterProps {
+  done: boolean
+  validCount: number
+  importing: boolean
+  onClose: () => void
+  onConfirm: () => void
+}
+
+function ImportSummaryFooter({ done, validCount, importing, onClose, onConfirm }: ImportSummaryFooterProps) {
+  return (
+    <div className="flex justify-end gap-2 px-5 py-4 border-t border-app-border">
+      <button onClick={onClose} className="px-4 py-2 text-xs text-app-muted border border-app-border rounded-lg hover:bg-app-hover">
+        {done ? 'Cerrar' : 'Cancelar'}
+      </button>
+      {!done && validCount > 0 && (
+        <button
+          onClick={onConfirm}
+          disabled={importing}
+          className="px-4 py-2 text-xs text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50"
+        >
+          {importing ? 'Importando...' : `Importar ${validCount} subpartidas`}
+        </button>
+      )}
+    </div>
+  )
+}
+
+export default function ExcelImportModal({ categories, onImport, onClose }: Props) {
   const [items, setItems] = useState<ParsedItem[]>([])
   const [newCategories, setNewCategories] = useState<NewCategoryDraft[]>([])
   const [fileName, setFileName] = useState('')
@@ -40,12 +160,6 @@ export default function ExcelImportModal({ categories, onImport, onClose }: Prop
     } catch (e) {
       setError(getErrorMessage(e))
     }
-  }
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    const file = e.dataTransfer.files[0]
-    if (file) handleFile(file)
   }
 
   const handleDownloadTemplate = async () => {
@@ -176,25 +290,7 @@ export default function ExcelImportModal({ categories, onImport, onClose }: Prop
             </ul>
           </div>
 
-          {!items.length && (
-            <div
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={handleDrop}
-              onClick={() => inputRef.current?.click()}
-              className="border-2 border-dashed border-app-border rounded-xl p-10 text-center cursor-pointer hover:border-blue-300 hover:bg-blue-50/30 transition-colors"
-            >
-              <Upload className="w-8 h-8 text-app-subtle mx-auto mb-3" />
-              <p className="text-sm text-app-muted">Arrastra tu archivo Excel aquí</p>
-              <p className="text-xs text-app-subtle mt-1">o haz click para seleccionar (.xlsx, .xls)</p>
-              <input
-                ref={inputRef}
-                type="file"
-                accept=".xlsx,.xls"
-                className="hidden"
-                onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f) }}
-              />
-            </div>
-          )}
+          {!items.length && <ExcelDropZone onFile={handleFile} />}
 
           {items.length > 0 && (
             <>
@@ -234,57 +330,7 @@ export default function ExcelImportModal({ categories, onImport, onClose }: Prop
                 </div>
               )}
 
-              <div className="border border-app-border rounded-lg overflow-hidden">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="bg-app-bg border-b border-app-border">
-                      <th className="px-3 py-2 text-left font-medium text-app-muted">Partida</th>
-                      <th className="px-3 py-2 text-left font-medium text-app-muted">Cod.</th>
-                      <th className="px-3 py-2 text-left font-medium text-app-muted">Descripción</th>
-                      <th className="px-3 py-2 text-center font-medium text-app-muted">Und</th>
-                      <th className="px-3 py-2 text-right font-medium text-app-muted">Cant.</th>
-                      <th className="px-3 py-2 text-right font-medium text-app-muted">P. Unit.</th>
-                      <th className="px-3 py-2 text-right font-medium text-app-muted">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(() => {
-                      const seenKeys = new Map<string, number>()
-                      return items.map((row) => {
-                        const baseKey = `${row.categoryId ?? row.newCategoryKey ?? 'nocat'}-${row.code || 'nocode'}-${row.description}`
-                        const dup = seenKeys.get(baseKey) ?? 0
-                        seenKeys.set(baseKey, dup + 1)
-                        const rowKey = dup === 0 ? baseKey : `${baseKey}#${dup}`
-                        return (
-                      <tr
-                        key={rowKey}
-                        className={`border-b border-app-border ${row.valid ? 'hover:bg-app-hover' : 'bg-amber-50'}`}
-                      >
-                        <td className="px-3 py-1.5 text-app-muted max-w-[160px] truncate">
-                          <span>{row.categoryName}</span>
-                          {row.isNewCategory && (
-                            <span className="ml-1 text-[9px] uppercase tracking-wide text-blue-600 font-semibold">
-                              nueva
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-3 py-1.5 text-app-subtle font-mono">{row.code}</td>
-                        <td className="px-3 py-1.5 text-app-text max-w-[200px] truncate">{row.description}</td>
-                        <td className="px-3 py-1.5 text-center text-app-muted">{row.unit}</td>
-                        <td className="px-3 py-1.5 text-right text-app-muted">{row.quantity}</td>
-                        <td className="px-3 py-1.5 text-right text-app-muted">{formatRD(row.unit_price)}</td>
-                        <td className="px-3 py-1.5 text-right font-medium text-app-text">
-                          {row.valid ? formatRD(row.quantity * row.unit_price) : (
-                            <span className="text-amber-600 text-[10px]">{row.error}</span>
-                          )}
-                        </td>
-                      </tr>
-                        )
-                      })
-                    })()}
-                  </tbody>
-                </table>
-              </div>
+              <ImportPreviewTable items={items} />
             </>
           )}
 
@@ -297,20 +343,13 @@ export default function ExcelImportModal({ categories, onImport, onClose }: Prop
           {error && <p className="text-xs text-red-600">{error}</p>}
         </div>
 
-        <div className="flex justify-end gap-2 px-5 py-4 border-t border-app-border">
-          <button onClick={onClose} className="px-4 py-2 text-xs text-app-muted border border-app-border rounded-lg hover:bg-app-hover">
-            {done ? 'Cerrar' : 'Cancelar'}
-          </button>
-          {!done && validCount > 0 && (
-            <button
-              onClick={handleConfirm}
-              disabled={importing}
-              className="px-4 py-2 text-xs text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50"
-            >
-              {importing ? 'Importando...' : `Importar ${validCount} subpartidas`}
-            </button>
-          )}
-        </div>
+        <ImportSummaryFooter
+          done={done}
+          validCount={validCount}
+          importing={importing}
+          onClose={onClose}
+          onConfirm={handleConfirm}
+        />
       </div>
     </div>
   )

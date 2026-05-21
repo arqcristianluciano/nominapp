@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/components/ui/Toast'
 import type { MaterialHistory, PriceEntry } from '@/components/features/priceHistory/priceHistoryTypes'
@@ -21,10 +21,9 @@ export function usePriceHistory() {
   const [history, setHistory] = useState<MaterialHistory[]>([])
   const [loading, setLoading] = useState(true)
   const { error: toastError } = useToast()
-  const toastErrorRef = useRef(toastError)
-  toastErrorRef.current = toastError
 
   useEffect(() => {
+    let cancelled = false
     async function loadData() {
       setLoading(true)
       try {
@@ -32,13 +31,18 @@ export function usePriceHistory() {
           supabase.from('transactions').select('description, unit_price, quantity, date, project_id, supplier:suppliers(name)').order('date', { ascending: true }).limit(500),
           supabase.from('projects').select('id, name'),
         ])
+        if (cancelled) return
         if (txnRes.error) {
           console.warn('[usePriceHistory] transactions query fallo', txnRes.error)
-          toastErrorRef.current('No se pudo cargar el historial de precios')
+          toastError('No se pudo cargar el historial de precios')
         }
         if (projectRes.error) {
           console.warn('[usePriceHistory] projects query fallo', projectRes.error)
-          toastErrorRef.current('No se pudo cargar la lista de proyectos')
+          toastError('No se pudo cargar la lista de proyectos')
+        }
+        if (txnRes.error || projectRes.error) {
+          setHistory([])
+          return
         }
         const projectMap: Record<string, string> = Object.fromEntries(((projectRes.data ?? []) as ProjectLite[]).map((project) => [project.id, project.name]))
         const grouped: Record<string, PriceEntry[]> = {}
@@ -74,13 +78,16 @@ export function usePriceHistory() {
             trendPct,
           }
         }).sort((a, b) => b.entries.length - a.entries.length)
-        setHistory(result)
+        if (!cancelled) setHistory(result)
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     }
     void loadData()
-  }, [])
+    return () => {
+      cancelled = true
+    }
+  }, [toastError])
 
   return { history, loading }
 }

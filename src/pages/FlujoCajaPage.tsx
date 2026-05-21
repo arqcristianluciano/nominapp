@@ -90,12 +90,12 @@ export default function FlujoCajaPage() {
           name: 'Flujo de caja mensual',
           rows: rows.map((r) => ({
             Mes: r.month,
-            'Egreso planificado': formatRD(r.planned_outflow),
-            'Egreso real': formatRD(r.actual_outflow),
-            'Ingreso planificado': formatRD(r.planned_inflow),
-            'Ingreso real': formatRD(r.actual_inflow),
-            'Neto planificado': formatRD(r.net_planned),
-            'Neto real': formatRD(r.net_actual),
+            'Egreso planificado': r.planned_outflow.toFixed(2),
+            'Egreso real': r.actual_outflow.toFixed(2),
+            'Ingreso planificado': r.planned_inflow.toFixed(2),
+            'Ingreso real': r.actual_inflow.toFixed(2),
+            'Neto planificado': r.net_planned.toFixed(2),
+            'Neto real': r.net_actual.toFixed(2),
           })),
         },
         {
@@ -103,7 +103,7 @@ export default function FlujoCajaPage() {
           rows: inflows.map((i) => ({
             Fecha: i.expected_date,
             Concepto: i.concept,
-            'Monto (DOP)': formatRD(i.amount),
+            'Monto (DOP)': i.amount.toFixed(2),
             Origen: i.source,
             'Ref. externa': i.external_ref ?? '',
           })),

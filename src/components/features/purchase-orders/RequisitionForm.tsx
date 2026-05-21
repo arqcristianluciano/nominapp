@@ -34,6 +34,222 @@ const RESOURCE_TYPES: { value: ResourceType; label: string }[] = [
   { value: 'other', label: 'Otro' },
 ]
 
+const inputClass =
+  'w-full border border-app-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+
+interface RequisitionBasicFieldsProps {
+  projects: Project[]
+  projectId: string
+  setProjectId: (v: string) => void
+  description: string
+  setDescription: (v: string) => void
+  requiredDate: string
+  setRequiredDate: (v: string) => void
+}
+
+function RequisitionBasicFields({
+  projects,
+  projectId,
+  setProjectId,
+  description,
+  setDescription,
+  requiredDate,
+  setRequiredDate,
+}: RequisitionBasicFieldsProps) {
+  return (
+    <>
+      <div>
+        <label className="block text-xs font-medium text-app-muted mb-1">Proyecto *</label>
+        <select
+          value={projectId}
+          onChange={(e) => setProjectId(e.target.value)}
+          required
+          className={inputClass}
+        >
+          <option value="">Seleccionar proyecto…</option>
+          {projects.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-app-muted mb-1">
+          ¿Qué se necesita comprar? *
+        </label>
+        <input
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          required
+          placeholder="Ej: 50 sacos de cemento Portland"
+          className={inputClass}
+        />
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-app-muted mb-1">Fecha requerida</label>
+        <input
+          type="date"
+          value={requiredDate}
+          onChange={(e) => setRequiredDate(e.target.value)}
+          className={inputClass}
+        />
+      </div>
+    </>
+  )
+}
+
+interface RequisitionBudgetSelectorsProps {
+  categories: BudgetCategory[]
+  items: BudgetItem[]
+  categoryId: string
+  setCategoryId: (v: string) => void
+  itemId: string
+  setItemId: (v: string) => void
+  projectId: string
+}
+
+function RequisitionBudgetSelectors({
+  categories,
+  items,
+  categoryId,
+  setCategoryId,
+  itemId,
+  setItemId,
+  projectId,
+}: RequisitionBudgetSelectorsProps) {
+  return (
+    <div className="grid grid-cols-2 gap-4">
+      <div>
+        <label className="block text-xs font-medium text-app-muted mb-1">Capítulo</label>
+        <select
+          value={categoryId}
+          onChange={(e) => setCategoryId(e.target.value)}
+          disabled={!projectId}
+          className={inputClass}
+        >
+          <option value="">— Sin capítulo —</option>
+          {categories.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.code} {c.name}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label className="block text-xs font-medium text-app-muted mb-1">Partida</label>
+        <select
+          value={itemId}
+          onChange={(e) => setItemId(e.target.value)}
+          disabled={!categoryId}
+          className={inputClass}
+        >
+          <option value="">— Sin partida —</option>
+          {items.map((it) => (
+            <option key={it.id} value={it.id}>
+              {it.code ? `[${it.code}] ` : ''}
+              {it.description}
+            </option>
+          ))}
+        </select>
+      </div>
+    </div>
+  )
+}
+
+interface RequisitionResourceFieldsProps {
+  resourceType: ResourceType
+  setResourceType: (v: ResourceType) => void
+  quantity: string
+  setQuantity: (v: string) => void
+  unit: string
+  setUnit: (v: string) => void
+  availability: { planned: number; available: number } | null
+  qtyNum: number
+  exceedsPlan: boolean
+}
+
+function RequisitionResourceFields({
+  resourceType,
+  setResourceType,
+  quantity,
+  setQuantity,
+  unit,
+  setUnit,
+  availability,
+  qtyNum,
+  exceedsPlan,
+}: RequisitionResourceFieldsProps) {
+  return (
+    <>
+      <div className="grid grid-cols-3 gap-4">
+        <div>
+          <label className="block text-xs font-medium text-app-muted mb-1">Tipo de recurso</label>
+          <select
+            value={resourceType}
+            onChange={(e) => setResourceType(e.target.value as ResourceType)}
+            className={inputClass}
+          >
+            {RESOURCE_TYPES.map((r) => (
+              <option key={r.value} value={r.value}>
+                {r.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-app-muted mb-1">Cantidad</label>
+          <input
+            type="number"
+            step="0.01"
+            min={0}
+            value={quantity}
+            onChange={(e) => setQuantity(e.target.value)}
+            className={inputClass}
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-app-muted mb-1">Unidad</label>
+          <select value={unit} onChange={(e) => setUnit(e.target.value)} className={inputClass}>
+            {MEASURE_UNITS.map((u) => (
+              <option key={u.value} value={u.value}>
+                {u.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {availability && qtyNum > 0 && (
+        <div
+          className={`flex items-start gap-2 p-3 rounded-lg text-xs border ${
+            exceedsPlan
+              ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-200'
+              : 'bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-200'
+          }`}
+        >
+          {exceedsPlan && <AlertTriangle size={14} className="mt-0.5 shrink-0" />}
+          <div>
+            <p>
+              Planificado en partida: <strong>{availability.planned}</strong> · Disponible (plan −
+              ya comprometido): <strong>{availability.available}</strong>
+            </p>
+            {exceedsPlan && (
+              <p className="mt-1 font-medium">
+                Excede el plan en {(qtyNum - availability.available).toFixed(2)}. La solicitud
+                quedará en "Pendiente validación" hasta que Planificación o el Director la liberen
+                con motivo.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
 export function RequisitionForm({ projects, onSubmit, onCancel, saving }: Props) {
   const [projectId, setProjectId] = useState('')
   const [description, setDescription] = useState('')
@@ -160,160 +376,49 @@ export function RequisitionForm({ projects, onSubmit, onCancel, saving }: Props)
     })
   }
 
-  const input =
-    'w-full border border-app-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
-
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label className="block text-xs font-medium text-app-muted mb-1">Proyecto *</label>
-        <select
-          value={projectId}
-          onChange={(e) => setProjectId(e.target.value)}
-          required
-          className={input}
-        >
-          <option value="">Seleccionar proyecto…</option>
-          {projects.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
-      </div>
+      <RequisitionBasicFields
+        projects={projects}
+        projectId={projectId}
+        setProjectId={setProjectId}
+        description={description}
+        setDescription={setDescription}
+        requiredDate={requiredDate}
+        setRequiredDate={setRequiredDate}
+      />
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-xs font-medium text-app-muted mb-1">Capítulo</label>
-          <select
-            value={categoryId}
-            onChange={(e) => setCategoryId(e.target.value)}
-            disabled={!projectId}
-            className={input}
-          >
-            <option value="">— Sin capítulo —</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.code} {c.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-app-muted mb-1">Partida</label>
-          <select
-            value={itemId}
-            onChange={(e) => setItemId(e.target.value)}
-            disabled={!categoryId}
-            className={input}
-          >
-            <option value="">— Sin partida —</option>
-            {items.map((it) => (
-              <option key={it.id} value={it.id}>
-                {it.code ? `[${it.code}] ` : ''}
-                {it.description}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
+      <RequisitionBudgetSelectors
+        categories={categories}
+        items={items}
+        categoryId={categoryId}
+        setCategoryId={setCategoryId}
+        itemId={itemId}
+        setItemId={setItemId}
+        projectId={projectId}
+      />
+
+      <RequisitionResourceFields
+        resourceType={resourceType}
+        setResourceType={setResourceType}
+        quantity={quantity}
+        setQuantity={setQuantity}
+        unit={unit}
+        setUnit={setUnit}
+        availability={availability}
+        qtyNum={qtyNum}
+        exceedsPlan={exceedsPlan}
+      />
 
       <div>
-        <label className="block text-xs font-medium text-app-muted mb-1">
-          ¿Qué se necesita comprar? *
-        </label>
+        <label className="block text-xs font-medium text-app-muted mb-1">Solicitado por *</label>
         <input
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          value={requestedBy}
+          onChange={(e) => setRequestedBy(e.target.value)}
           required
-          placeholder="Ej: 50 sacos de cemento Portland"
-          className={input}
+          placeholder="Nombre"
+          className={inputClass}
         />
-      </div>
-
-      <div className="grid grid-cols-3 gap-4">
-        <div>
-          <label className="block text-xs font-medium text-app-muted mb-1">Tipo de recurso</label>
-          <select
-            value={resourceType}
-            onChange={(e) => setResourceType(e.target.value as ResourceType)}
-            className={input}
-          >
-            {RESOURCE_TYPES.map((r) => (
-              <option key={r.value} value={r.value}>
-                {r.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-app-muted mb-1">Cantidad</label>
-          <input
-            type="number"
-            step="0.01"
-            min={0}
-            value={quantity}
-            onChange={(e) => setQuantity(e.target.value)}
-            className={input}
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-app-muted mb-1">Unidad</label>
-          <select value={unit} onChange={(e) => setUnit(e.target.value)} className={input}>
-            {MEASURE_UNITS.map((u) => (
-              <option key={u.value} value={u.value}>
-                {u.label}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {availability && qtyNum > 0 && (
-        <div
-          className={`flex items-start gap-2 p-3 rounded-lg text-xs border ${
-            exceedsPlan
-              ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-200'
-              : 'bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-200'
-          }`}
-        >
-          {exceedsPlan && <AlertTriangle size={14} className="mt-0.5 shrink-0" />}
-          <div>
-            <p>
-              Planificado en partida: <strong>{availability.planned}</strong> · Disponible (plan − ya
-              comprometido): <strong>{availability.available}</strong>
-            </p>
-            {exceedsPlan && (
-              <p className="mt-1 font-medium">
-                Excede el plan en {(qtyNum - availability.available).toFixed(2)}. La solicitud
-                quedará en "Pendiente validación" hasta que Planificación o el Director la liberen
-                con motivo.
-              </p>
-            )}
-          </div>
-        </div>
-      )}
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-xs font-medium text-app-muted mb-1">Solicitado por *</label>
-          <input
-            value={requestedBy}
-            onChange={(e) => setRequestedBy(e.target.value)}
-            required
-            placeholder="Nombre"
-            className={input}
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-app-muted mb-1">Fecha requerida</label>
-          <input
-            type="date"
-            value={requiredDate}
-            onChange={(e) => setRequiredDate(e.target.value)}
-            className={input}
-          />
-        </div>
       </div>
 
       <div>
@@ -322,7 +427,7 @@ export function RequisitionForm({ projects, onSubmit, onCancel, saving }: Props)
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           rows={2}
-          className={`${input} resize-none`}
+          className={`${inputClass} resize-none`}
         />
       </div>
 
