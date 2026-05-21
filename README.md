@@ -4,11 +4,11 @@ Sistema de administración de construcción para THE HOUSE & CO.
 
 ## Stack
 
-- React 18 + TypeScript + Vite 5
+- React 19 + TypeScript + Vite 8
 - Tailwind CSS v4
 - Supabase (PostgreSQL + Auth + RLS + Storage)
 - Zustand (estado global)
-- React Router v6
+- React Router v7
 - PWA responsive
 
 ## Setup
@@ -43,6 +43,16 @@ src/
   constants/      → Valores fijos
   lib/            → Config (Supabase, Router)
 ```
+
+## Tests
+
+```bash
+npm test
+```
+
+## Deploy
+
+Vercel automatico al push a main.
 
 ## Compatibilidad con estatePRO
 
