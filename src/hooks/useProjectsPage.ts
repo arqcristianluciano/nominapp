@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import * as Sentry from '@sentry/react'
 import { useProjectStore } from '@/stores/projectStore'
 import { projectService } from '@/services/projectService'
 import { supabase } from '@/lib/supabase'
@@ -80,7 +81,9 @@ function useProjectActions({ fetchProjects, editing, setEditing, setShowCreate }
       setEditing(undefined)
       await fetchProjects()
       success('Proyecto actualizado')
-    } catch {
+    } catch (err) {
+      console.error('[useProjectsPage] handleUpdate fallo', err)
+      Sentry.captureException(err, { tags: { area: 'useProjectsPage' } })
       error('No se pudo actualizar el proyecto')
     } finally {
       setSaving(false)

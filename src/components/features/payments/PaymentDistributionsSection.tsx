@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
+import * as Sentry from '@sentry/react'
 import { Plus, Trash2, CheckCircle } from 'lucide-react'
 import { paymentDistributionService, type DistributionWithAccount } from '@/services/paymentDistributionService'
 import { bankAccountService } from '@/services/bankAccountService'
+import { useToast } from '@/components/ui/Toast'
 import { formatRD } from '@/utils/currency'
 import type { BankAccount } from '@/types/database'
 
@@ -23,6 +25,7 @@ export function PaymentDistributionsSection({ periodId, grandTotal }: Props) {
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { error: toastError } = useToast()
 
   const [bankAccountId, setBankAccountId] = useState('')
   const [beneficiary, setBeneficiary] = useState('')
@@ -31,14 +34,26 @@ export function PaymentDistributionsSection({ periodId, grandTotal }: Props) {
   const [checkNumber, setCheckNumber] = useState('')
 
   const load = useCallback(async () => {
-    const data = await paymentDistributionService.getByPeriod(periodId).catch(() => [])
+    const data = await paymentDistributionService.getByPeriod(periodId).catch((err) => {
+      console.error('[PaymentDistributionsSection] cargar distribuciones fallo', err)
+      Sentry.captureException(err, { tags: { area: 'PaymentDistributionsSection' } })
+      toastError('No se pudieron cargar las distribuciones de pago')
+      return [] as DistributionWithAccount[]
+    })
     setDistributions(data)
-  }, [periodId])
+  }, [periodId, toastError])
 
   useEffect(() => {
     load()
-    bankAccountService.getAll().then(setAccounts).catch(() => {})
-  }, [load, periodId])
+    bankAccountService
+      .getAll()
+      .then(setAccounts)
+      .catch((err) => {
+        console.error('[PaymentDistributionsSection] cargar cuentas bancarias fallo', err)
+        Sentry.captureException(err, { tags: { area: 'PaymentDistributionsSection' } })
+        toastError('No se pudieron cargar las cuentas bancarias')
+      })
+  }, [load, periodId, toastError])
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault()

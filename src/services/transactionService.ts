@@ -29,6 +29,17 @@ export const transactionService = {
     return data as TransactionWithRelations[]
   },
 
+  async getByProjects(projectIds: string[]) {
+    if (projectIds.length === 0) return []
+    const { data, error } = await supabase
+      .from('transactions')
+      .select('*, supplier:suppliers(id, name), budget_category:budget_categories(id, code, name)')
+      .in('project_id', projectIds)
+      .order('date', { ascending: false })
+    if (error) throw error
+    return data as TransactionWithRelations[]
+  },
+
   async create(transaction: Omit<Transaction, 'id' | 'created_at'>) {
     const { data, error } = await supabase
       .from('transactions')

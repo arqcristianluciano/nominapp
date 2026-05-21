@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import type { PaymentDistribution, BankAccount } from '@/types/database'
+import { approvalsService } from '@/services/approvalsService'
 
 export type DistributionWithAccount = PaymentDistribution & { bank_account?: BankAccount }
 
@@ -35,10 +36,29 @@ export const paymentDistributionService = {
       .select('*, bank_account:bank_accounts(*)')
       .single()
     if (error) throw error
-    return data as DistributionWithAccount
+
+    const created = data as DistributionWithAccount
+    await approvalsService
+      .log({
+        entity_type: 'payment_distribution',
+        entity_id: created.id,
+        action: 'create',
+        payload_after: created,
+      })
+      .catch((err) =>
+        console.warn('[paymentDistributionService.create] log de auditoria fallo', err),
+      )
+
+    return created
   },
 
   async updateStatus(id: string, status: 'pending' | 'completed' | 'cancelled'): Promise<void> {
+    const { data: before } = await supabase
+      .from('payment_distributions')
+      .select('id, status')
+      .eq('id', id)
+      .single()
+
     const updates: Record<string, unknown> = { status }
     if (status === 'completed') updates.completed_at = new Date().toISOString()
     const { error } = await supabase
@@ -46,13 +66,42 @@ export const paymentDistributionService = {
       .update(updates)
       .eq('id', id)
     if (error) throw error
+
+    await approvalsService
+      .log({
+        entity_type: 'payment_distribution',
+        entity_id: id,
+        action: 'status_change',
+        payload_before: before ? { status: before.status } : null,
+        payload_after: { status },
+      })
+      .catch((err) =>
+        console.warn('[paymentDistributionService.updateStatus] log de auditoria fallo', err),
+      )
   },
 
   async delete(id: string): Promise<void> {
+    const { data: existing } = await supabase
+      .from('payment_distributions')
+      .select('*')
+      .eq('id', id)
+      .single()
+
     const { error } = await supabase
       .from('payment_distributions')
       .delete()
       .eq('id', id)
     if (error) throw error
+
+    await approvalsService
+      .log({
+        entity_type: 'payment_distribution',
+        entity_id: id,
+        action: 'delete',
+        payload_before: existing,
+      })
+      .catch((err) =>
+        console.warn('[paymentDistributionService.delete] log de auditoria fallo', err),
+      )
   },
 }

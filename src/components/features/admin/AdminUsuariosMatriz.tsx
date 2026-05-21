@@ -61,6 +61,7 @@ export function AdminUsuariosMatriz() {
 
   async function toggle(role: Role, cap: Capability) {
     if (role.slug === 'director_general') return // DG bypasea, no se edita
+    if (savingKey) return // evitar doble-click mientras hay un toggle en curso
     const key = `${role.id}:${cap.id}`
     const has = mappings.has(key)
     setSavingKey(key)
@@ -74,6 +75,7 @@ export function AdminUsuariosMatriz() {
       }
       success(`${role.name}: ${has ? 'Sin' : 'Con'} ${cap.name}`)
     } catch (err) {
+      console.warn('[AdminUsuariosMatriz] toggle failed', err)
       error(err instanceof Error ? err.message : 'No se pudo guardar')
     } finally {
       setSavingKey(null)

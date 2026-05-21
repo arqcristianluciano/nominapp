@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import * as Sentry from '@sentry/react'
 import { authenticate, signOut, type AuthUser } from '@/services/authService'
 
 interface AuthState {
@@ -17,9 +18,11 @@ export const useAuthStore = create<AuthState>()(
         const next = await authenticate(username, password)
         if (!next) return false
         set({ user: next })
+        Sentry.setUser({ id: next.id, username: next.username })
         return true
       },
       logout: async () => {
+        Sentry.setUser(null)
         await signOut()
         set({ user: null })
       },

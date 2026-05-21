@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import * as Sentry from '@sentry/react'
 import { loanService } from '@/services/loanService'
 import { contractorService } from '@/services/contractorService'
 import type { ContractorLoan, Contractor } from '@/types/database'
@@ -85,7 +86,9 @@ async function markLoanAsPaid(loanId: string, context: LoanActionContext) {
     await loanService.updateStatus(loanId, 'paid')
     await context.refresh()
     context.success('Préstamo marcado como pagado')
-  } catch {
+  } catch (err) {
+    console.error('[useLoansPage] markLoanAsPaid fallo', err)
+    Sentry.captureException(err, { tags: { area: 'useLoansPage' } })
     context.error('No se pudo marcar como pagado')
   }
 }
@@ -96,7 +99,9 @@ async function cancelLoan(loanId: string, context: LoanActionContext) {
     await context.refresh()
     context.success('Préstamo cancelado')
     return true
-  } catch {
+  } catch (err) {
+    console.error('[useLoansPage] cancelLoan fallo', err)
+    Sentry.captureException(err, { tags: { area: 'useLoansPage' } })
     context.error('No se pudo cancelar el préstamo')
     return false
   }
@@ -123,7 +128,9 @@ function useLoanHandlers(
       setShowForm(false)
       await context.refresh()
       context.success('Préstamo creado correctamente')
-    } catch {
+    } catch (err) {
+      console.error('[useLoansPage] handleCreate fallo', err)
+      Sentry.captureException(err, { tags: { area: 'useLoansPage' } })
       context.error('Error al crear el préstamo')
     } finally {
       setSaving(false)

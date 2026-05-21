@@ -13,6 +13,17 @@ export const budgetCategoryService = {
     return data as BudgetCategory[]
   },
 
+  async getByProjects(projectIds: string[]) {
+    if (projectIds.length === 0) return []
+    const { data, error } = await supabase
+      .from('budget_categories')
+      .select('*')
+      .in('project_id', projectIds)
+      .order('sort_order')
+    if (error) throw error
+    return data as BudgetCategory[]
+  },
+
   async updateBudgetAmount(id: string, budgeted_amount: number) {
     const { data, error } = await supabase
       .from('budget_categories')

@@ -6,10 +6,7 @@ import { exportToExcel } from '@/utils/excelExport'
 import { useToast } from '@/components/ui/Toast'
 import { useAuthStore } from '@/stores/authStore'
 import { useProjectStore } from '@/stores/projectStore'
-
-function fmt(n: number): string {
-  return n.toLocaleString('es-DO', { style: 'currency', currency: 'DOP', maximumFractionDigits: 0 })
-}
+import { formatRD } from '@/utils/currency'
 
 interface InflowForm {
   expected_date: string
@@ -93,12 +90,12 @@ export default function FlujoCajaPage() {
           name: 'Flujo de caja mensual',
           rows: rows.map((r) => ({
             Mes: r.month,
-            'Egreso planificado': r.planned_outflow,
-            'Egreso real': r.actual_outflow,
-            'Ingreso planificado': r.planned_inflow,
-            'Ingreso real': r.actual_inflow,
-            'Neto planificado': r.net_planned,
-            'Neto real': r.net_actual,
+            'Egreso planificado': formatRD(r.planned_outflow),
+            'Egreso real': formatRD(r.actual_outflow),
+            'Ingreso planificado': formatRD(r.planned_inflow),
+            'Ingreso real': formatRD(r.actual_inflow),
+            'Neto planificado': formatRD(r.net_planned),
+            'Neto real': formatRD(r.net_actual),
           })),
         },
         {
@@ -106,7 +103,7 @@ export default function FlujoCajaPage() {
           rows: inflows.map((i) => ({
             Fecha: i.expected_date,
             Concepto: i.concept,
-            'Monto (DOP)': i.amount,
+            'Monto (DOP)': formatRD(i.amount),
             Origen: i.source,
             'Ref. externa': i.external_ref ?? '',
           })),
@@ -226,15 +223,15 @@ export default function FlujoCajaPage() {
                   {rows.map((r) => (
                     <tr key={r.month} className="border-t border-app-border">
                       <td className="px-3 py-2 font-mono text-xs">{r.month}</td>
-                      <td className="px-3 py-2 text-right">{fmt(r.planned_outflow)}</td>
-                      <td className="px-3 py-2 text-right">{fmt(r.actual_outflow)}</td>
-                      <td className="px-3 py-2 text-right">{fmt(r.planned_inflow)}</td>
-                      <td className="px-3 py-2 text-right">{fmt(r.actual_inflow)}</td>
+                      <td className="px-3 py-2 text-right">{formatRD(r.planned_outflow)}</td>
+                      <td className="px-3 py-2 text-right">{formatRD(r.actual_outflow)}</td>
+                      <td className="px-3 py-2 text-right">{formatRD(r.planned_inflow)}</td>
+                      <td className="px-3 py-2 text-right">{formatRD(r.actual_inflow)}</td>
                       <td className={`px-3 py-2 text-right ${r.net_planned >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                        {fmt(r.net_planned)}
+                        {formatRD(r.net_planned)}
                       </td>
                       <td className={`px-3 py-2 text-right ${r.net_actual >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                        {fmt(r.net_actual)}
+                        {formatRD(r.net_actual)}
                       </td>
                     </tr>
                   ))}
@@ -271,7 +268,7 @@ export default function FlujoCajaPage() {
                       <td className="px-3 py-2">
                         <span className="text-xs bg-app-chip text-app-muted px-2 py-0.5 rounded">{i.source}</span>
                       </td>
-                      <td className="px-3 py-2 text-right">{fmt(i.amount)}</td>
+                      <td className="px-3 py-2 text-right">{formatRD(i.amount)}</td>
                       <td className="px-3 py-2 text-right">
                         <button
                           onClick={() => handleDeleteInflow(i.id)}

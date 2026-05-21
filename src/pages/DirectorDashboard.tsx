@@ -4,10 +4,7 @@ import { BarChart3, Building2, Download, TrendingDown, TrendingUp } from 'lucide
 import { directorService, type CompanyKPI, type ProjectKPI } from '@/services/directorService'
 import { exportToExcel } from '@/utils/excelExport'
 import { useToast } from '@/components/ui/Toast'
-
-function fmt(n: number): string {
-  return n.toLocaleString('es-DO', { style: 'currency', currency: 'DOP', maximumFractionDigits: 0 })
-}
+import { formatRD } from '@/utils/currency'
 
 function pctClass(pct: number): string {
   if (pct >= 100) return 'text-red-600'
@@ -51,10 +48,10 @@ export default function DirectorDashboard() {
             Empresa: c.company_name,
             'Proyectos activos': c.active_projects,
             'Proyectos totales': c.projects_count,
-            'Presupuesto total (DOP)': c.total_budget,
-            'Ejecutado (DOP)': c.total_actual,
-            'Desviación (DOP)': c.variance,
-            'Desviación %': c.variance_pct.toFixed(2),
+            'Presupuesto total (DOP)': formatRD(c.total_budget),
+            'Ejecutado (DOP)': formatRD(c.total_actual),
+            'Desviación (DOP)': formatRD(c.variance),
+            'Desviación %': `${c.variance_pct.toFixed(1)}%`,
           })),
         },
         {
@@ -64,11 +61,11 @@ export default function DirectorDashboard() {
             Código: p.project_code,
             Empresa: p.company_name,
             Estado: p.status,
-            'Presupuesto (DOP)': p.total_budget,
-            'Ejecutado (DOP)': p.total_actual,
-            'Desviación (DOP)': p.variance,
-            'Desviación %': p.variance_pct.toFixed(2),
-            'CxP pendiente': p.cxp_pending,
+            'Presupuesto (DOP)': formatRD(p.total_budget),
+            'Ejecutado (DOP)': formatRD(p.total_actual),
+            'Desviación (DOP)': formatRD(p.variance),
+            'Desviación %': `${p.variance_pct.toFixed(1)}%`,
+            'CxP pendiente': formatRD(p.cxp_pending),
             'Solicitudes pend.': p.pending_requisitions,
             'Items bajo mínimo': p.low_stock_items,
           })),
@@ -103,14 +100,14 @@ export default function DirectorDashboard() {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <KpiCard label="Empresas" value={String(companies.length)} icon={<Building2 className="w-4 h-4" />} />
             <KpiCard label="Proyectos activos" value={String(projects.filter((p) => p.status === 'active').length)} />
-            <KpiCard label="Presupuesto total" value={fmt(totalBudget)} />
+            <KpiCard label="Presupuesto total" value={formatRD(totalBudget)} />
             <KpiCard
               label="Ejecutado"
-              value={fmt(totalActual)}
+              value={formatRD(totalActual)}
               extra={
                 <span className={`text-xs ${pctClass(overallPct)}`}>
                   {overallPct.toFixed(1)}% · {totalVariance >= 0 ? '+' : ''}
-                  {fmt(totalVariance)}
+                  {formatRD(totalVariance)}
                 </span>
               }
               icon={
@@ -145,11 +142,11 @@ export default function DirectorDashboard() {
                       <td className="px-3 py-2 text-right">
                         {c.active_projects} / {c.projects_count}
                       </td>
-                      <td className="px-3 py-2 text-right">{fmt(c.total_budget)}</td>
-                      <td className="px-3 py-2 text-right">{fmt(c.total_actual)}</td>
+                      <td className="px-3 py-2 text-right">{formatRD(c.total_budget)}</td>
+                      <td className="px-3 py-2 text-right">{formatRD(c.total_actual)}</td>
                       <td className={`px-3 py-2 text-right ${pctClass(c.variance_pct)}`}>
                         {c.variance >= 0 ? '+' : ''}
-                        {fmt(c.variance)}
+                        {formatRD(c.variance)}
                       </td>
                       <td className={`px-3 py-2 text-right font-semibold ${pctClass(c.variance_pct)}`}>
                         {c.variance_pct.toFixed(1)}%
@@ -188,12 +185,12 @@ export default function DirectorDashboard() {
                         <span className="text-xs text-app-subtle ml-1">[{p.project_code}]</span>
                       </td>
                       <td className="px-3 py-2 text-app-muted text-xs">{p.company_name}</td>
-                      <td className="px-3 py-2 text-right">{fmt(p.total_budget)}</td>
-                      <td className="px-3 py-2 text-right">{fmt(p.total_actual)}</td>
+                      <td className="px-3 py-2 text-right">{formatRD(p.total_budget)}</td>
+                      <td className="px-3 py-2 text-right">{formatRD(p.total_actual)}</td>
                       <td className={`px-3 py-2 text-right font-semibold ${pctClass(p.variance_pct)}`}>
                         {p.variance_pct.toFixed(1)}%
                       </td>
-                      <td className="px-3 py-2 text-right">{fmt(p.cxp_pending)}</td>
+                      <td className="px-3 py-2 text-right">{formatRD(p.cxp_pending)}</td>
                       <td className="px-3 py-2 text-right">{p.pending_requisitions}</td>
                       <td
                         className={`px-3 py-2 text-right ${

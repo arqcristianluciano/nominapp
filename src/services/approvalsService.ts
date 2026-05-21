@@ -7,7 +7,10 @@ export type ApprovalEntity =
   | 'inventory_movement'
   | 'budget_category'
   | 'budget_item'
+  | 'budget_category_items'
   | 'contract_corte'
+  | 'payment_distribution'
+  | 'project'
 
 export type ApprovalAction =
   | 'submit_for_approval'
@@ -20,6 +23,10 @@ export type ApprovalAction =
   | 'budget_edit_post_approval'  // versionado de presupuesto (regla 7.7)
   | 'status_change'
   | 'receive'                    // OC recibida en almacén
+  | 'create'
+  | 'delete'
+  | 'delete_cascade'
+  | 'update_indirects'
 
 export interface LogApprovalInput {
   entity_type: ApprovalEntity

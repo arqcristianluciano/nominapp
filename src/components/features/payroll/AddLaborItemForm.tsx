@@ -63,6 +63,7 @@ export function AddLaborItemForm({ contractors, laborTasks, budgetCategories = [
   }
 
   async function handleCreateContractor() {
+    if (savingNew) return
     if (!newName.trim()) return
     setSavingNew(true)
     try {
@@ -75,6 +76,8 @@ export function AddLaborItemForm({ contractors, laborTasks, budgetCategories = [
       setShowNewForm(false)
       setNewName('')
       setNewSpecialty('')
+    } catch (err) {
+      console.warn('[AddLaborItemForm] handleCreateContractor failed', err)
     } finally {
       setSavingNew(false)
     }
@@ -90,6 +93,7 @@ export function AddLaborItemForm({ contractors, laborTasks, budgetCategories = [
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (saving) return
     if (showNewForm || !contractorId || !selectedTask || !quantity || !unitPrice) return
     await onSubmit({
       contractor_id: contractorId,
@@ -148,6 +152,7 @@ export function AddLaborItemForm({ contractors, laborTasks, budgetCategories = [
               type="button"
               onClick={handleCreateContractor}
               disabled={savingNew || !newName.trim()}
+              aria-busy={savingNew}
               className="w-full py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {savingNew ? 'Creando...' : 'Crear y seleccionar'}
@@ -265,6 +270,7 @@ export function AddLaborItemForm({ contractors, laborTasks, budgetCategories = [
         <button
           type="submit"
           disabled={saving || showNewForm || !contractorId || !selectedTaskId || !quantity || !unitPrice}
+          aria-busy={saving}
           className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {saving ? 'Guardando...' : 'Agregar partida'}

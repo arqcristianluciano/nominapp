@@ -42,13 +42,12 @@ export function LoanDeductionSection({ periodId, isDraft }: Props) {
       l.status === 'active' &&
       (contractorIds === null || contractorIds.has(l.contractor_id))
     )
-    const withBalance: ActiveLoanOption[] = await Promise.all(
-      active.map(async (loan) => {
-        const totalPaid = await loanService.getTotalPaid(loan.id)
-        const totalOwed = loan.installment_amount * loan.installments
-        return { loan, totalPaid, balance: Math.max(0, totalOwed - totalPaid) }
-      })
-    )
+    const totals = await loanService.getTotalPaidByLoans(active.map((l) => l.id))
+    const withBalance: ActiveLoanOption[] = active.map((loan) => {
+      const totalPaid = totals[loan.id] ?? 0
+      const totalOwed = loan.installment_amount * loan.installments
+      return { loan, totalPaid, balance: Math.max(0, totalOwed - totalPaid) }
+    })
     setActiveLoans(withBalance.filter(o => o.balance > 0))
     setLoading(false)
   }, [periodId])

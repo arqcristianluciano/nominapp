@@ -46,6 +46,7 @@ export function MercadoExcelUpload({ projectId, hasExisting, onImported }: Props
   }
 
   const handleConfirm = async () => {
+    if (saving) return
     setSaving(true)
     setError(null)
     try {
@@ -60,7 +61,7 @@ export function MercadoExcelUpload({ projectId, hasExisting, onImported }: Props
       await mercadoBudgetLineService.bulkInsert(budget.id, lines)
       onImported()
     } catch (e) {
-
+      console.warn('[MercadoExcelUpload] handleConfirm failed', e)
       setError(getErrorMessage(e) || 'Error al guardar el presupuesto')
     } finally {
       setSaving(false)
@@ -146,8 +147,15 @@ export function MercadoExcelUpload({ projectId, hasExisting, onImported }: Props
               </tr>
             </thead>
             <tbody className="divide-y divide-app-border">
-              {filtered.map((l, i) => (
-                <tr key={i} className="hover:bg-app-hover">
+              {(() => {
+                const seenKeys = new Map<string, number>()
+                return filtered.map((l) => {
+                  const baseKey = `${l.category}-${l.code || 'nocode'}-${l.sort_order}`
+                  const dup = seenKeys.get(baseKey) ?? 0
+                  seenKeys.set(baseKey, dup + 1)
+                  const rowKey = dup === 0 ? baseKey : `${baseKey}#${dup}`
+                  return (
+                <tr key={rowKey} className="hover:bg-app-hover">
                   <td className="px-3 py-1.5">
                     <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${CATEGORY_COLORS[l.category]}`}>
                       {CATEGORY_LABELS[l.category]}
@@ -160,7 +168,9 @@ export function MercadoExcelUpload({ projectId, hasExisting, onImported }: Props
                   <td className="px-3 py-1.5 text-right text-app-muted">{formatRD(l.budgeted_unit_price)}</td>
                   <td className="px-3 py-1.5 text-right font-medium text-app-text">{formatRD(l.budgeted_total)}</td>
                 </tr>
-              ))}
+                  )
+                })
+              })()}
             </tbody>
           </table>
         </div>
@@ -173,8 +183,8 @@ export function MercadoExcelUpload({ projectId, hasExisting, onImported }: Props
           <CheckCircle className="inline w-3.5 h-3.5 text-green-600 mr-1" />
           {lines.length} líneas listas para importar de <span className="font-medium">{fileName}</span>
         </p>
-        <button onClick={handleConfirm} disabled={saving}
-          className="px-5 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 disabled:opacity-50">
+        <button onClick={handleConfirm} disabled={saving} aria-busy={saving}
+          className="px-5 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed">
           {saving ? 'Guardando...' : 'Confirmar importación'}
         </button>
       </div>

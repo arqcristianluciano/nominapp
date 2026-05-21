@@ -175,7 +175,9 @@ export const requisitionService = {
           `${row.req_number}: ${row.description.slice(0, 80)}`,
           `/ordenes-compra/${row.id}`,
         )
-        .catch(() => {})
+        .catch((err) => {
+          console.warn('[requisitionService] push notification fallo (no-bloqueante)', err)
+        })
     }
 
     return row

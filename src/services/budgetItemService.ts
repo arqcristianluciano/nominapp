@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import type { BudgetItem } from '@/types/database'
+import { approvalsService } from '@/services/approvalsService'
 
 export const budgetItemService = {
   async getByCategoryId(categoryId: string): Promise<BudgetItem[]> {
@@ -45,11 +46,26 @@ export const budgetItemService = {
   },
 
   async delete(id: string): Promise<void> {
+    const { data: item } = await supabase
+      .from('budget_items')
+      .select('*')
+      .eq('id', id)
+      .single()
+
     const { error } = await supabase
       .from('budget_items')
       .delete()
       .eq('id', id)
     if (error) throw error
+
+    await approvalsService
+      .log({
+        entity_type: 'budget_item',
+        entity_id: id,
+        action: 'delete',
+        payload_before: item,
+      })
+      .catch((err) => console.warn('[budgetItemService.delete] log de auditoria fallo', err))
   },
 
   async bulkCreate(items: Omit<BudgetItem, 'id'>[]): Promise<BudgetItem[]> {
@@ -63,10 +79,27 @@ export const budgetItemService = {
   },
 
   async deleteByCategory(categoryId: string): Promise<void> {
+    const { data: items } = await supabase
+      .from('budget_items')
+      .select('*')
+      .eq('budget_category_id', categoryId)
+
     const { error } = await supabase
       .from('budget_items')
       .delete()
       .eq('budget_category_id', categoryId)
     if (error) throw error
+
+    await approvalsService
+      .log({
+        entity_type: 'budget_category_items',
+        entity_id: categoryId,
+        action: 'delete_cascade',
+        payload_before: items,
+        metadata: { count: items?.length ?? 0, budget_category_id: categoryId },
+      })
+      .catch((err) =>
+        console.warn('[budgetItemService.deleteByCategory] log de auditoria fallo', err),
+      )
   },
 }

@@ -65,6 +65,10 @@ export const contractorService = {
       supabase.from('contract_cubications').select('*').eq('contractor_id', contractorId),
     ])
 
+    if (itemsRes.error) throw itemsRes.error
+    if (projectsRes.error) throw projectsRes.error
+    if (cubicationsRes.error) throw cubicationsRes.error
+
     const items = (itemsRes.data || []) as LaborItemWithPeriod[]
     const projects = (projectsRes.data || []) as Project[]
     const cubications = (cubicationsRes.data || []) as CubicationRow[]

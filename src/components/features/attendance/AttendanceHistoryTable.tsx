@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight, Trash2 } from 'lucide-react'
 import type { AttendanceRecord } from '@/services/attendanceService'
+import { parseDateLocal } from '@/utils/dateLocal'
 
 interface Props {
   records: AttendanceRecord[]
@@ -41,7 +42,7 @@ export function AttendanceHistoryTable({
               <tbody className="divide-y divide-app-border">
                 {records.map((record) => (
                   <tr key={record.id} className="hover:bg-app-hover/50">
-                    <td className="px-4 py-3 text-app-text whitespace-nowrap">{new Date(record.date + 'T12:00:00').toLocaleDateString('es-DO', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                    <td className="px-4 py-3 text-app-text whitespace-nowrap">{parseDateLocal(record.date).toLocaleDateString('es-DO', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
                     <td className="px-4 py-3 text-app-text">{record.contractor?.name ?? '—'}</td>
                     <td className="px-4 py-3 text-app-text">{record.activity}</td>
                     <td className="px-4 py-3 text-center font-semibold text-app-text">{record.workers_count}</td>

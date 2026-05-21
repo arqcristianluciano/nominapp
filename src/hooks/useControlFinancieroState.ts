@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import type { useTransactions } from '@/hooks/useTransactions'
 import type { ControlTab } from '@/components/features/control/ControlFinancieroSections'
+import { parseDateLocal } from '@/utils/dateLocal'
 
 type TransactionsState = ReturnType<typeof useTransactions>
 
@@ -36,7 +37,7 @@ export function useControlFinancieroState({
 
   const isCurrentMonth = useCallback((dateStr: string) => {
     const currentDate = new Date()
-    const transactionDate = new Date(dateStr)
+    const transactionDate = parseDateLocal(dateStr.slice(0, 10))
     return (
       transactionDate.getMonth() === currentDate.getMonth() &&
       transactionDate.getFullYear() === currentDate.getFullYear()

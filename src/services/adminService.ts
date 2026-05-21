@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import type { ProjectRole } from '@/hooks/useProjectRoles'
 
 export interface Role {
   id: string
@@ -41,7 +42,7 @@ export interface AdminUser {
   payment_terms: string | null
   bank_account_id: string | null
   email?: string | null
-  project_memberships?: { project_id: string; role: string }[]
+  project_memberships?: { project_id: string; role: ProjectRole }[]
 }
 
 export const adminService = {
@@ -147,14 +148,14 @@ export const adminService = {
     return data as AdminUser
   },
 
-  async assignProjectRole(userId: string, projectId: string, role: string): Promise<void> {
+  async assignProjectRole(userId: string, projectId: string, role: ProjectRole): Promise<void> {
     const { error } = await supabase
       .from('project_members')
       .upsert({ user_id: userId, project_id: projectId, role })
     if (error) throw error
   },
 
-  async removeProjectRole(userId: string, projectId: string, role: string): Promise<void> {
+  async removeProjectRole(userId: string, projectId: string, role: ProjectRole): Promise<void> {
     const { error } = await supabase
       .from('project_members')
       .delete()

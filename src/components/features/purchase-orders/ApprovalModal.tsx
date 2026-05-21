@@ -5,6 +5,7 @@ import { SignatureCanvas } from './SignatureCanvas'
 import { approvalCode } from '@/utils/approvalCode'
 import type { PurchaseQuote } from '@/types/purchaseOrder'
 import { getErrorMessage } from '@/utils/errors'
+import { formatRD } from '@/utils/currency'
 
 type Tab = 'approve' | 'return' | 'reject'
 
@@ -77,8 +78,6 @@ export function ApprovalModal({ open, onClose, quotes, onApprove, onReturn, onRe
     await onReject(rejectReason.trim())
   })
 
-  const fmt = (n: number) => n.toLocaleString('es-DO', { style: 'currency', currency: 'DOP' })
-
   const tabs: { key: Tab; label: string; color: string }[] = [
     { key: 'approve', label: 'Aprobar',  color: 'border-green-600 text-green-600' },
     { key: 'return',  label: 'Devolver', color: 'border-orange-500 text-orange-500' },
@@ -137,11 +136,11 @@ export function ApprovalModal({ open, onClose, quotes, onApprove, onReturn, onRe
                       <div className="text-right shrink-0">
                         {q.negotiated_total ? (
                           <>
-                            <p className="text-xs text-app-subtle line-through">{fmt(q.total)}</p>
-                            <p className="text-sm font-semibold text-green-700">{fmt(q.negotiated_total)}</p>
+                            <p className="text-xs text-app-subtle line-through">{formatRD(q.total)}</p>
+                            <p className="text-sm font-semibold text-green-700">{formatRD(q.negotiated_total)}</p>
                           </>
                         ) : (
-                          <p className="text-sm font-semibold text-blue-700">{fmt(effectiveTotal)}</p>
+                          <p className="text-sm font-semibold text-blue-700">{formatRD(effectiveTotal)}</p>
                         )}
                       </div>
                     </label>

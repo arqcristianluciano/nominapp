@@ -2,6 +2,10 @@ import { supabase } from '@/lib/supabase'
 import { calcTotalCxP, type FinancialTransaction } from '@/utils/financialCalculations'
 import { COMMITTED_PAYROLL_STATUSES } from '@/services/payrollService'
 
+function localISO(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
+
 interface PayrollKpiRow {
   grand_total: number | null
   created_at: string
@@ -15,7 +19,9 @@ interface TransactionKpiRow {
 }
 
 function isBetween(dateValue: string | null | undefined, from: string, to: string) {
-  return Boolean(dateValue && dateValue >= from && dateValue <= to)
+  if (!dateValue) return false
+  const dateOnly = dateValue.slice(0, 10)
+  return dateOnly >= from && dateOnly <= to
 }
 
 export const dashboardService = {
@@ -36,20 +42,20 @@ export const dashboardService = {
     const transactions = (transactionsRes.data || []) as TransactionKpiRow[]
 
     const now = new Date()
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
-    const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split('T')[0]
-    const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().split('T')[0]
+    const monthStart = localISO(new Date(now.getFullYear(), now.getMonth(), 1))
+    const prevMonthStart = localISO(new Date(now.getFullYear(), now.getMonth() - 1, 1))
+    const prevMonthEnd = localISO(new Date(now.getFullYear(), now.getMonth(), 0))
 
     const totalInvested = payrolls.reduce((sum, p) => sum + (p.grand_total || 0), 0)
     const prevInvested = payrolls
-      .filter((p) => p.created_at && p.created_at >= prevMonthStart && p.created_at <= prevMonthEnd + 'T23:59:59Z')
+      .filter((p) => isBetween(p.created_at, prevMonthStart, prevMonthEnd))
       .reduce((sum, p) => sum + (p.grand_total || 0), 0)
 
     const payrollsThisMonth = payrolls.filter(
-      (p) => p.created_at && p.created_at >= monthStart
+      (p) => p.created_at && p.created_at.slice(0, 10) >= monthStart
     ).length
     const prevPayrolls = payrolls.filter(
-      (p) => p.created_at && p.created_at >= prevMonthStart && p.created_at <= prevMonthEnd + 'T23:59:59Z'
+      (p) => isBetween(p.created_at, prevMonthStart, prevMonthEnd)
     ).length
 
     const cxpTotal = calcTotalCxP(transactions as FinancialTransaction[])

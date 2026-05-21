@@ -20,6 +20,10 @@ const ACTION_LABEL: Record<ApprovalAction, string> = {
   budget_edit_post_approval: 'Edición de presupuesto',
   status_change: 'Cambio de estado',
   receive: 'Recibida',
+  create: 'Creación',
+  delete: 'Eliminación',
+  delete_cascade: 'Eliminación en cascada',
+  update_indirects: 'Actualización de indirectos',
 }
 
 const ENTITY_LABEL: Record<string, string> = {
@@ -29,7 +33,10 @@ const ENTITY_LABEL: Record<string, string> = {
   inventory_movement: 'Movimiento de almacén',
   budget_category: 'Presupuesto · capítulo',
   budget_item: 'Presupuesto · partida',
+  budget_category_items: 'Presupuesto · partidas (cascada)',
   contract_corte: 'Corte de contrato',
+  payment_distribution: 'Distribución de pago',
+  project: 'Proyecto',
 }
 
 export default function AprobacionesPage() {

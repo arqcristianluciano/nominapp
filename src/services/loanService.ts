@@ -112,4 +112,20 @@ export const loanService = {
     const deductions = await this.getDeductionsByLoan(loanId)
     return deductions.reduce((sum, d) => sum + d.amount, 0)
   },
+
+  /** Total pagado para múltiples préstamos en UNA sola query.
+   *  Devuelve `{ [loanId]: totalPaid }`. IDs sin deducciones no aparecen en el map. */
+  async getTotalPaidByLoans(loanIds: string[]): Promise<Record<string, number>> {
+    if (loanIds.length === 0) return {}
+    const { data, error } = await supabase
+      .from('loan_deductions')
+      .select('loan_id, amount')
+      .in('loan_id', loanIds)
+    if (error) throw error
+    const totals: Record<string, number> = {}
+    for (const row of (data ?? []) as Array<{ loan_id: string; amount: number }>) {
+      totals[row.loan_id] = (totals[row.loan_id] ?? 0) + row.amount
+    }
+    return totals
+  },
 }

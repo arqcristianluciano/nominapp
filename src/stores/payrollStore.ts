@@ -12,6 +12,7 @@ interface PayrollStore {
   fetchPeriods: (projectId: string) => Promise<void>
   fetchPeriodDetail: (periodId: string) => Promise<void>
   setCurrentPeriod: (period: PayrollPeriod | null) => void
+  reset: () => void
 }
 
 export const usePayrollStore = create<PayrollStore>((set) => ({
@@ -46,8 +47,10 @@ export const usePayrollStore = create<PayrollStore>((set) => ({
       supabase.from('material_invoices').select('*, supplier:suppliers(*)').eq('payroll_period_id', periodId),
     ])
 
-    if (periodRes.error) {
-      set({ error: periodRes.error.message, loading: false })
+    const queryError = periodRes.error || laborRes.error || materialsRes.error
+    if (queryError) {
+      set({ error: queryError.message, loading: false })
+      throw queryError
     } else {
       set({
         currentPeriod: periodRes.data,
@@ -59,4 +62,13 @@ export const usePayrollStore = create<PayrollStore>((set) => ({
   },
 
   setCurrentPeriod: (period) => set({ currentPeriod: period }),
+
+  reset: () =>
+    set({
+      currentPeriod: null,
+      laborItems: [],
+      materialInvoices: [],
+      loading: false,
+      error: null,
+    }),
 }))

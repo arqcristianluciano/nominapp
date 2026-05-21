@@ -17,8 +17,8 @@ export function ScheduleGantt({ tasks, ganttInfo, today, todayLeft }: { tasks: S
         <div className="min-w-[600px]">
           <div className="flex border-b border-app-border" style={{ marginLeft: '200px' }}>
             <div className="relative flex-1 h-7">
-              {ganttInfo.months.map((month, index) => (
-                <div key={index} className="absolute top-0 h-full flex items-center justify-center text-[10px] text-app-muted border-r border-app-border/50 font-medium" style={{ left: `${month.left}%`, width: `${month.width}%` }}>{month.label}</div>
+              {ganttInfo.months.map((month) => (
+                <div key={month.label} className="absolute top-0 h-full flex items-center justify-center text-[10px] text-app-muted border-r border-app-border/50 font-medium" style={{ left: `${month.left}%`, width: `${month.width}%` }}>{month.label}</div>
               ))}
             </div>
           </div>

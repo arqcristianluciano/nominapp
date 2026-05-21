@@ -19,7 +19,7 @@ export function Breadcrumb({ items, showHome = true }: BreadcrumbProps) {
       {all.map((item, i) => {
         const isLast = i === all.length - 1
         return (
-          <span key={i} className="flex items-center gap-1">
+          <span key={`${item.to ?? 'no-to'}-${item.label}`} className="flex items-center gap-1">
             {i === 0 && showHome && (
               <Home className="w-3 h-3 shrink-0" />
             )}

@@ -163,7 +163,8 @@ html.dark {
   }
 
   /* Keep borders and backgrounds for tables */
-  table { border-collapse: collapse; width: 100%; }
+  table { border-collapse: collapse; width: 100%; page-break-inside: auto; }
+  tr { page-break-inside: avoid; page-break-after: auto; }
   th, td { border: 1px solid #ddd; padding: 4px 8px; }
-  thead { background: #f3f4f6 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  thead { display: table-header-group; background: #f3f4f6 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }

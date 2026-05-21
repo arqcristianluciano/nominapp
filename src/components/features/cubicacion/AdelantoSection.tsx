@@ -22,6 +22,7 @@ export function AdelantoSection({ contractId, adelantos, onRefresh }: Props) {
   const total = adelantos.reduce((s, a) => s + a.amount, 0)
 
   async function handleCreate() {
+    if (saving) return
     if (!form.advance_date || !form.amount) return
     setSaving(true)
     try {
@@ -34,6 +35,8 @@ export function AdelantoSection({ contractId, adelantos, onRefresh }: Props) {
       setForm(emptyForm)
       setShowAdd(false)
       onRefresh()
+    } catch (err) {
+      console.warn('[AdelantoSection] handleCreate failed', err)
     } finally { setSaving(false) }
   }
 
@@ -73,7 +76,12 @@ export function AdelantoSection({ contractId, adelantos, onRefresh }: Props) {
           </div>
           <div className="col-span-2 flex gap-1 justify-end">
             <button onClick={() => { setShowAdd(false); setForm(emptyForm) }} className="px-2 py-1.5 text-xs border border-app-border rounded-md hover:bg-app-hover text-app-muted">Cancelar</button>
-            <button onClick={handleCreate} disabled={saving} className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">
+            <button
+              onClick={handleCreate}
+              disabled={saving || !form.advance_date || !form.amount}
+              aria-busy={saving}
+              className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               {saving ? '...' : 'Agregar'}
             </button>
           </div>
@@ -99,7 +107,12 @@ export function AdelantoSection({ contractId, adelantos, onRefresh }: Props) {
                 <td className="py-2.5 text-app-muted">{a.description || '—'}</td>
                 <td className="py-2.5 text-right font-medium text-amber-700">{formatRD(a.amount)}</td>
                 <td className="py-2.5">
-                  <button onClick={() => setDeleteId(a.id)} className="p-1 text-app-subtle hover:text-red-500"><Trash2 className="w-3 h-3" /></button>
+                  <button
+                    onClick={() => setDeleteId(a.id)}
+                    aria-label="Eliminar adelanto"
+                    title="Eliminar adelanto"
+                    className="p-1 text-app-subtle hover:text-red-500"
+                  ><Trash2 className="w-3 h-3" /></button>
                 </td>
               </tr>
             ))}

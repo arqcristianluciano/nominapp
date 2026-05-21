@@ -54,18 +54,25 @@ function PriceHistoryRow({
               <table className="w-full text-xs">
                 <thead><tr className="text-app-subtle"><th className="text-left py-1 pr-4">Fecha</th><th className="text-right py-1 pr-4">Precio unitario</th><th className="text-right py-1 pr-4">Cantidad</th><th className="text-left py-1">Proyecto</th></tr></thead>
                 <tbody>
-                  {history.entries.map((entry, index) => {
-                    const prev = index > 0 ? history.entries[index - 1].unit_price : null
-                    const change = prev ? ((entry.unit_price - prev) / prev) * 100 : null
-                    return (
-                      <tr key={`${history.key}-${index}`} className="border-t border-app-border/30">
+                  {(() => {
+                    const seenKeys = new Map<string, number>()
+                    return history.entries.map((entry, index) => {
+                      const prev = index > 0 ? history.entries[index - 1].unit_price : null
+                      const change = prev ? ((entry.unit_price - prev) / prev) * 100 : null
+                      const baseKey = `${history.key}-${entry.date}-${entry.project}`
+                      const dup = seenKeys.get(baseKey) ?? 0
+                      seenKeys.set(baseKey, dup + 1)
+                      const rowKey = dup === 0 ? baseKey : `${baseKey}#${dup}`
+                      return (
+                      <tr key={rowKey} className="border-t border-app-border/30">
                         <td className="py-1 pr-4 text-app-muted">{new Date(entry.date + 'T12:00:00').toLocaleDateString('es-DO', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
                         <td className="py-1 pr-4 text-right font-semibold text-app-text">{formatRD(entry.unit_price)}{change !== null && <span className={`ml-1.5 ${change > 0 ? 'text-red-500' : change < 0 ? 'text-green-500' : 'text-app-subtle'}`}>{change > 0 ? '+' : ''}{change.toFixed(1)}%</span>}</td>
                         <td className="py-1 pr-4 text-right text-app-muted">{entry.quantity > 0 ? entry.quantity : '—'}</td>
                         <td className="py-1 text-app-muted truncate max-w-[200px]">{entry.project}</td>
                       </tr>
-                    )
-                  })}
+                      )
+                    })
+                  })()}
                 </tbody>
               </table>
             </div>

@@ -63,6 +63,7 @@ export default function PriceListInlineForm({
   }
 
   const handleSave = async () => {
+    if (saving) return
     if (!form.description.trim()) return
     setSaving(true)
     try {
@@ -74,6 +75,8 @@ export default function PriceListInlineForm({
         unit:        form.unit,
         unit_price:  Number(form.unit_price) || 0,
       })
+    } catch (err) {
+      console.warn('[PriceListInlineForm] handleSave failed', err)
     } finally {
       setSaving(false)
     }
@@ -128,7 +131,8 @@ export default function PriceListInlineForm({
           <button
             onClick={handleSave}
             disabled={saving || !form.description.trim()}
-            className="p-1 text-green-600 hover:bg-green-50 rounded disabled:opacity-40"
+            aria-busy={saving}
+            className="p-1 text-green-600 hover:bg-green-50 rounded disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Check className="w-3.5 h-3.5" />
           </button>

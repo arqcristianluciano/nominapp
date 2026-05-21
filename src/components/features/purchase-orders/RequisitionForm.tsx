@@ -122,6 +122,8 @@ export function RequisitionForm({ projects, onSubmit, onCancel, saving }: Props)
     }
   }, [itemId, items])
 
+  const [error, setError] = useState<string | null>(null)
+
   const qtyNum = parseFloat(quantity) || 0
   const exceedsPlan = useMemo(() => {
     if (!availability) return false
@@ -130,6 +132,20 @@ export function RequisitionForm({ projects, onSubmit, onCancel, saving }: Props)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError(null)
+
+    // Cantidad (opcional): si está vacía => null; si tiene contenido y NaN => bloquear.
+    let quantityRequested: number | null = null
+    const qtyTrim = quantity.trim()
+    if (qtyTrim) {
+      const parsed = parseFloat(qtyTrim)
+      if (Number.isNaN(parsed)) {
+        setError('Cantidad inválida')
+        return
+      }
+      quantityRequested = parsed > 0 ? parsed : null
+    }
+
     await onSubmit({
       project_id: projectId,
       description,
@@ -138,7 +154,7 @@ export function RequisitionForm({ projects, onSubmit, onCancel, saving }: Props)
       notes: notes || undefined,
       budget_category_id: categoryId || null,
       budget_item_id: itemId || null,
-      quantity_requested: qtyNum > 0 ? qtyNum : null,
+      quantity_requested: quantityRequested,
       unit: unit || null,
       resource_type: resourceType,
     })
@@ -309,6 +325,8 @@ export function RequisitionForm({ projects, onSubmit, onCancel, saving }: Props)
           className={`${input} resize-none`}
         />
       </div>
+
+      {error && <p className="text-xs text-red-600">{error}</p>}
 
       <div className="flex gap-3 justify-end pt-2">
         <button

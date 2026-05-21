@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { approvalsService } from '@/services/approvalsService'
 import { div, mul, pct, round2, sub, sumBy } from '@/utils/money'
 import type {
   AdjustmentContract,
@@ -19,20 +20,28 @@ export type ContractSummary = AdjustmentContract & {
   acordado: number
   acumulado: number
   retenido: number
+  total_adelantos: number
   pendiente: number
   completion_percent: number
 }
 
-function computeSummary(partidas: ContractPartida[], cortes: ContractCorte[]): Omit<ContractSummary, keyof AdjustmentContract> {
+function computeSummary(
+  partidas: ContractPartida[],
+  cortes: ContractCorte[],
+  adelantos: ContractAdelanto[] = [],
+): Omit<ContractSummary, keyof AdjustmentContract> {
   const acordado = round2(sumBy(partidas, (p) => mul(p.agreed_quantity, p.unit_price)))
   const acumulado = round2(sumBy(cortes, (c) => c.amount))
   const retenido = round2(sumBy(cortes, (c) => c.retention_amount))
+  const total_adelantos = round2(sumBy(adelantos, (a) => a.amount))
+  const pendienteRaw = round2(sub(sub(acordado, acumulado), total_adelantos))
   return {
     partidas_count: partidas.length,
     acordado,
     acumulado,
     retenido,
-    pendiente: round2(sub(acordado, acumulado)),
+    total_adelantos,
+    pendiente: pendienteRaw < 0 ? 0 : pendienteRaw,
     completion_percent: acordado > 0 ? Math.min(round2(mul(div(acumulado, acordado), 100)), 100) : 0,
   }
 }
@@ -50,11 +59,12 @@ export const contractService = {
 
     return Promise.all(
       (contracts as AdjustmentContract[]).map(async (c) => {
-        const [partidas, cortes] = await Promise.all([
+        const [partidas, cortes, adelantos] = await Promise.all([
           partidaService.getByContract(c.id),
           corteService.getByContract(c.id),
+          adelantoService.getByContract(c.id),
         ])
-        return { ...c, ...computeSummary(partidas, cortes) }
+        return { ...c, ...computeSummary(partidas, cortes, adelantos) }
       })
     )
   },
@@ -169,6 +179,13 @@ export const corteService = {
       .update({ status: 'approved', approved_by: approvedBy, signature_data: signatureData })
       .eq('id', id)
     if (error) throw error
+    await approvalsService.log({
+      entity_type: 'contract_corte',
+      entity_id: id,
+      action: 'approve',
+      actor_display_name: approvedBy,
+      payload_after: { approved_by: approvedBy, signature_data: signatureData },
+    })
   },
 
   async linkToPayroll(id: string, payrollPeriodId: string): Promise<void> {

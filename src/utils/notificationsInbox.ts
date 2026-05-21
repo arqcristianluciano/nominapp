@@ -17,12 +17,13 @@ const MAX_ENTRIES = 200
 
 function read(): InboxEntry[] {
   if (typeof window === 'undefined') return []
+  const raw = window.localStorage.getItem(STORAGE_KEY)
+  if (!raw) return []
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY)
-    if (!raw) return []
     const parsed = JSON.parse(raw) as InboxEntry[]
     return Array.isArray(parsed) ? parsed : []
-  } catch {
+  } catch (e) {
+    console.warn('[notificationsInbox] entrada corrupta en localStorage, ignorando', e)
     return []
   }
 }

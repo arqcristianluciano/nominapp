@@ -118,6 +118,16 @@ export const notificationService = {
       supabase.from('contractor_documents').select('*, contractor:contractors(name)'),
     ])
 
+    if (poRes.error) throw poRes.error
+    if (qcOverdueRes.error) throw qcOverdueRes.error
+    if (qcFailedRes.error) throw qcFailedRes.error
+    if (txnDangerRes.error) throw txnDangerRes.error
+    if (txnWarningRes.error) throw txnWarningRes.error
+    if (budgetCatRes.error) throw budgetCatRes.error
+    if (transactionsRes.error) throw transactionsRes.error
+    if (projectsRes.error) throw projectsRes.error
+    if (docsRes.error) throw docsRes.error
+
     const notifications: AppNotification[] = []
 
     for (const po of (poRes.data || []) as { id: string; req_number: string; project?: { name?: string } | null }[]) {

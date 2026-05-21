@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { AlertTriangle, Pencil, Trash2 } from 'lucide-react'
 import type { ScheduleTask } from '@/services/scheduleService'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 
 interface Props {
   tasks: ScheduleTask[]
@@ -9,6 +11,7 @@ interface Props {
 }
 
 export function ScheduleTaskTable({ tasks, today, onEdit, onDelete }: Props) {
+  const [deleteId, setDeleteId] = useState<string | null>(null)
   return (
     <div className="bg-app-surface border border-app-border rounded-xl overflow-hidden">
       <table className="w-full text-sm">
@@ -37,8 +40,8 @@ export function ScheduleTaskTable({ tasks, today, onEdit, onDelete }: Props) {
                 <td className="px-4 py-3"><div className="flex items-center gap-2 justify-center"><div className="w-20 h-1.5 bg-app-chip rounded-full overflow-hidden"><div className="h-full rounded-full" style={{ width: `${task.progress}%`, backgroundColor: task.color }} /></div><span className="text-xs text-app-muted w-8">{task.progress}%</span></div></td>
                 <td className="px-4 py-3">
                   <div className="flex gap-1">
-                    <button onClick={() => onEdit(task)} className="p-1.5 text-app-subtle hover:text-blue-500 rounded hover:bg-blue-50 dark:hover:bg-blue-950/30"><Pencil className="w-3.5 h-3.5" /></button>
-                    <button onClick={() => onDelete(task.id)} className="p-1.5 text-app-subtle hover:text-red-500 rounded hover:bg-red-50 dark:hover:bg-red-950/30"><Trash2 className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => onEdit(task)} aria-label={`Editar tarea ${task.name}`} className="p-1.5 text-app-subtle hover:text-blue-500 rounded hover:bg-blue-50 dark:hover:bg-blue-950/30"><Pencil className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => setDeleteId(task.id)} aria-label={`Eliminar tarea ${task.name}`} className="p-1.5 text-app-subtle hover:text-red-500 rounded hover:bg-red-50 dark:hover:bg-red-950/30"><Trash2 className="w-3.5 h-3.5" /></button>
                   </div>
                 </td>
               </tr>
@@ -46,6 +49,14 @@ export function ScheduleTaskTable({ tasks, today, onEdit, onDelete }: Props) {
           })}
         </tbody>
       </table>
+      <ConfirmModal
+        open={!!deleteId}
+        title="Eliminar tarea"
+        message="¿Estás seguro? Esta acción no se puede deshacer."
+        confirmLabel="Eliminar"
+        onConfirm={() => { if (deleteId) onDelete(deleteId) }}
+        onCancel={() => setDeleteId(null)}
+      />
     </div>
   )
 }

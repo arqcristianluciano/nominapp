@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { ArrowLeft, Printer } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { formatRD } from '@/utils/currency'
@@ -6,7 +7,14 @@ import type { ContractWithContractor } from '@/services/cubicationService'
 
 const STATUS_LABEL: Record<string, string> = { draft: 'Borrador', approved: 'Aprobado', paid: 'Pagado' }
 
-export function ContractPrintTopBar({ projectId, contratoId }: { projectId: string; contratoId: string }) {
+export function ContractPrintTopBar({ projectId, contratoId, ready = true }: { projectId: string; contratoId: string; ready?: boolean }) {
+  useEffect(() => {
+    if (!ready) return
+    // small delay para asegurar render
+    const t = setTimeout(() => window.print(), 300)
+    return () => clearTimeout(t)
+  }, [ready])
+
   return (
     <div className="print:hidden flex items-center justify-between p-4 border-b border-app-border bg-app-surface sticky top-0 z-10">
       <Link to={`/proyectos/${projectId}/cubicaciones/${contratoId}`} className="flex items-center gap-1 text-sm text-app-muted hover:text-app-text"><ArrowLeft className="w-4 h-4" /> Volver al contrato</Link>

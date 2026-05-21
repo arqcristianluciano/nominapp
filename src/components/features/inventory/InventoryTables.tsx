@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import { AlertTriangle, ArrowDownCircle, ArrowUpCircle, Trash2 } from 'lucide-react'
 import { formatRD } from '@/utils/currency'
 import { mul, round2 } from '@/utils/money'
 import type { InventoryItem, InventoryMovement } from '@/services/inventoryService'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 
 export function InventoryStockTable({
   items,
@@ -10,6 +12,7 @@ export function InventoryStockTable({
   items: InventoryItem[]
   onDelete: (itemId: string) => void
 }) {
+  const [deleteId, setDeleteId] = useState<string | null>(null)
   return (
     <div className="bg-app-surface border border-app-border rounded-xl overflow-hidden">
       <table className="w-full text-sm">
@@ -27,7 +30,7 @@ export function InventoryStockTable({
                 <td className="px-4 py-3 text-right text-app-muted">{item.min_stock}</td>
                 <td className="px-4 py-3 text-right text-app-muted">{formatRD(item.unit_cost)}</td>
                 <td className="px-4 py-3 text-right font-semibold text-app-text">{formatRD(round2(mul(item.current_stock, item.unit_cost)))}</td>
-                <td className="px-4 py-3"><button onClick={() => onDelete(item.id)} className="p-1.5 text-app-subtle hover:text-red-500 rounded hover:bg-red-50 dark:hover:bg-red-950/30"><Trash2 className="w-3.5 h-3.5" /></button></td>
+                <td className="px-4 py-3"><button onClick={() => setDeleteId(item.id)} aria-label={`Eliminar material ${item.name}`} className="p-1.5 text-app-subtle hover:text-red-500 rounded hover:bg-red-50 dark:hover:bg-red-950/30"><Trash2 className="w-3.5 h-3.5" /></button></td>
               </tr>
             )
           })}
@@ -35,6 +38,14 @@ export function InventoryStockTable({
         </tbody>
       </table>
       {items.length === 0 && <div className="text-center py-8 text-app-muted text-sm">Sin materiales registrados.</div>}
+      <ConfirmModal
+        open={!!deleteId}
+        title="Eliminar material"
+        message="¿Estás seguro? Esta acción no se puede deshacer."
+        confirmLabel="Eliminar"
+        onConfirm={() => { if (deleteId) onDelete(deleteId) }}
+        onCancel={() => setDeleteId(null)}
+      />
     </div>
   )
 }

@@ -30,7 +30,16 @@ export async function parseMercadoExcel(file: File): Promise<ParsedMercadoLine[]
   let rows: unknown[][]
   try {
     rows = await readExcelRowsFromFile(file)
-  } catch {
+  } catch (err) {
+    // Propagar mensajes especificos (tamano, filas, hojas) y solo enmascarar errores genericos.
+    const msg = err instanceof Error ? err.message : ''
+    if (
+      msg.startsWith('Archivo demasiado grande') ||
+      msg.startsWith('Demasiadas filas') ||
+      msg.startsWith('El archivo no contiene hojas')
+    ) {
+      throw err
+    }
     throw new Error('No se pudo leer el archivo. Verifique que sea un Excel válido.')
   }
 

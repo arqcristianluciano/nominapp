@@ -171,11 +171,26 @@ export const payrollService = {
   },
 
   async deletePeriod(id: string) {
+    const { data: period } = await supabase
+      .from('payroll_periods')
+      .select('*')
+      .eq('id', id)
+      .single()
+
     const { error } = await supabase
       .from('payroll_periods')
       .delete()
       .eq('id', id)
     if (error) throw error
+
+    await approvalsService
+      .log({
+        entity_type: 'payroll_period',
+        entity_id: id,
+        action: 'delete',
+        payload_before: period,
+      })
+      .catch((err) => console.warn('[payrollService.deletePeriod] log de auditoria fallo', err))
   },
 
   async duplicatePeriod(sourcePeriodId: string, projectId: string): Promise<PayrollPeriod> {
