@@ -1,0 +1,135 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "projects": "Projects",
+    "payroll": "Payroll",
+    "payrollReports": "Reports",
+    "reports": "Reports",
+    "finance": "Financial Control",
+    "budget": "Budget",
+    "accountsPayable": "Accounts Payable",
+    "cubicaciones": "Progress Billing",
+    "purchaseOrders": "Purchase Orders",
+    "contractors": "Contractors",
+    "suppliers": "Suppliers",
+    "loans": "Loans",
+    "calendar": "Payments Calendar",
+    "financialSummary": "Financial Summary",
+    "priceHistory": "Price History",
+    "users": "Users and Roles",
+    "settings": "Settings",
+    "brand": "NominaAPP",
+    "closeMenu": "Close menu",
+    "closeMenuAria": "Close side menu",
+    "sections": {
+      "general": "General",
+      "finanzas": "Finance",
+      "compras": "Purchasing",
+      "recursos": "Resources",
+      "planificacion": "Planning",
+      "reportes": "Reports",
+      "sistema": "System"
+    }
+  },
+  "header": {
+    "searchPlaceholder": "Search projects, contractors...",
+    "searchPlaceholderMobile": "Search...",
+    "searchTitle": "Search",
+    "noResults": "No results for \"{{query}}\"",
+    "logout": "Sign out",
+    "types": {
+      "proyecto": "Project",
+      "contratista": "Contractor",
+      "suplidor": "Supplier"
+    }
+  },
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "search": "Search"
+  },
+  "language": {
+    "label": "Language",
+    "spanish": "Spanish",
+    "english": "English"
+  },
+  "login": {
+    "demo_banner": "Demo mode: use any of the quick-access accounts",
+    "brand_title": "Financial management for construction projects",
+    "brand_subtitle": "Payroll, budget, progress billing and accounts payable control in one place.",
+    "feature_budget": "Real-time budget vs. actual",
+    "feature_approvals": "Approvals with digital signature",
+    "feature_multiproject": "Multi-project with financial control",
+    "footer": "© 2026 NominaAPP · v0.4.0",
+    "welcome_title": "Welcome",
+    "welcome_subtitle": "Sign in to access your account",
+    "email_label": "Username / Email",
+    "password_label": "Password",
+    "submit": "Sign in",
+    "submitting": "Signing in…",
+    "quick_access_title": "Provisional test accounts",
+    "quick_access_subtitle": "Click any role to sign in automatically. Remove these accounts before going to real production.",
+    "errors": {
+      "invalid_credentials": "Invalid credentials. Check your username and password.",
+      "network": "We couldn't connect to the server. Check your internet connection and try again.",
+      "generic": "Could not sign in. Please try again."
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Overview of your construction projects",
+    "error_title": "We couldn't load the dashboard",
+    "retry": "Retry",
+    "retrying": "Retrying…",
+    "stats": {
+      "active_projects": "Active projects",
+      "total_invested": "Total invested",
+      "cxp_pending": "Pending payables",
+      "reports_this_month": "Reports this month",
+      "trend_vs_prev": "{{percent}}% vs prev. month",
+      "no_data": "{{label}}: no data"
+    },
+    "projects": {
+      "section_title": "Active projects",
+      "view_all": "View all",
+      "view_more": "View {{count}} more",
+      "loading": "Loading active projects...",
+      "loading_aria": "Loading active projects",
+      "empty_title": "No active projects",
+      "empty_subtitle": "There are no projects in progress yet. Create one to get started.",
+      "empty_cta": "Go to Projects",
+      "active_badge": "Active",
+      "progress_label": "Work progress",
+      "contract_one": "contract",
+      "contract_other": "contracts"
+    },
+    "quick_actions": {
+      "section_title": "Quick actions",
+      "finance_label": "Financial control",
+      "finance_sub": "Journal",
+      "budget_label": "Budget",
+      "budget_sub": "vs Actual",
+      "cxp_label": "Accounts Payable",
+      "cxp_sub": "By project",
+      "reports_label": "Reports",
+      "reports_sub": "Financial summary"
+    },
+    "pending_cortes": {
+      "title": "Pending cuts",
+      "item_label": "Cut #{{number}} — {{contractor}}"
+    },
+    "recent_activity": {
+      "title": "Recent activity",
+      "empty": "No recent activity",
+      "type_payroll": "Report",
+      "type_transaction": "Transaction",
+      "time_minutes": "{{count}}m ago",
+      "time_hours": "{{count}}h ago",
+      "time_days": "{{count}}d ago",
+      "time_yesterday": "yesterday"
+    }
+  }
+}

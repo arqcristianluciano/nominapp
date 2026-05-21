@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/react'
 import { supabase } from '@/lib/supabase'
 import type {
   PayrollPeriod,
@@ -112,6 +113,12 @@ export const payrollService = {
       updates.approved_at = new Date().toISOString()
       if (actor?.displayName) updates.approved_by = actor.displayName
     }
+    Sentry.addBreadcrumb({
+      category: 'payroll',
+      message: `update period status to ${status}`,
+      level: 'info',
+      data: { periodId: id, status },
+    })
     const { data, error } = await supabase
       .from('payroll_periods')
       .update(updates)

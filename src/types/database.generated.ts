@@ -7,9 +7,9 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export type GeneratedDatabase = {
+export type Database = {
   // Allows to automatically instantiate createClient with right options
-  // instead of createClient<GeneratedDatabase, { PostgrestVersion: 'XX' }>(URL, KEY)
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.4"
   }
@@ -110,7 +110,10 @@ export type GeneratedDatabase = {
           date: string
           hours_worked: number
           id: string
+          latitude: number | null
+          longitude: number | null
           notes: string | null
+          photo_url: string | null
           project_id: string
           workers_count: number
         }
@@ -121,7 +124,10 @@ export type GeneratedDatabase = {
           date: string
           hours_worked?: number
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           notes?: string | null
+          photo_url?: string | null
           project_id: string
           workers_count?: number
         }
@@ -132,7 +138,10 @@ export type GeneratedDatabase = {
           date?: string
           hours_worked?: number
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           notes?: string | null
+          photo_url?: string | null
           project_id?: string
           workers_count?: number
         }
@@ -733,10 +742,12 @@ export type GeneratedDatabase = {
           bank_name: string | null
           cedula: string | null
           created_at: string | null
+          hierarchy_level: number
           id: string
           is_active: boolean
           name: string
           notes: string | null
+          parent_contractor_id: string | null
           payment_method: string
           phone: string | null
           specialty: string | null
@@ -747,10 +758,12 @@ export type GeneratedDatabase = {
           bank_name?: string | null
           cedula?: string | null
           created_at?: string | null
+          hierarchy_level?: number
           id?: string
           is_active?: boolean
           name: string
           notes?: string | null
+          parent_contractor_id?: string | null
           payment_method?: string
           phone?: string | null
           specialty?: string | null
@@ -761,16 +774,26 @@ export type GeneratedDatabase = {
           bank_name?: string | null
           cedula?: string | null
           created_at?: string | null
+          hierarchy_level?: number
           id?: string
           is_active?: boolean
           name?: string
           notes?: string | null
+          parent_contractor_id?: string | null
           payment_method?: string
           phone?: string | null
           specialty?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "contractors_parent_contractor_id_fkey"
+            columns: ["parent_contractor_id"]
+            isOneToOne: false
+            referencedRelation: "contractors"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       expected_cash_inflows: {
         Row: {
@@ -917,6 +940,50 @@ export type GeneratedDatabase = {
           },
         ]
       }
+      inventory_lots: {
+        Row: {
+          created_at: string
+          expiry_date: string | null
+          id: string
+          item_id: string
+          lot_number: string | null
+          notes: string | null
+          quantity: number
+          received_date: string
+          unit_cost: number | null
+        }
+        Insert: {
+          created_at?: string
+          expiry_date?: string | null
+          id?: string
+          item_id: string
+          lot_number?: string | null
+          notes?: string | null
+          quantity?: number
+          received_date?: string
+          unit_cost?: number | null
+        }
+        Update: {
+          created_at?: string
+          expiry_date?: string | null
+          id?: string
+          item_id?: string
+          lot_number?: string | null
+          notes?: string | null
+          quantity?: number
+          received_date?: string
+          unit_cost?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_lots_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inventory_movements: {
         Row: {
           budget_category_id: string | null
@@ -926,6 +993,7 @@ export type GeneratedDatabase = {
           date: string
           id: string
           item_id: string
+          lot_id: string | null
           notes: string | null
           override_motivo: string | null
           project_id: string
@@ -943,6 +1011,7 @@ export type GeneratedDatabase = {
           date: string
           id?: string
           item_id: string
+          lot_id?: string | null
           notes?: string | null
           override_motivo?: string | null
           project_id: string
@@ -960,6 +1029,7 @@ export type GeneratedDatabase = {
           date?: string
           id?: string
           item_id?: string
+          lot_id?: string | null
           notes?: string | null
           override_motivo?: string | null
           project_id?: string
@@ -989,6 +1059,13 @@ export type GeneratedDatabase = {
             columns: ["item_id"]
             isOneToOne: false
             referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_movements_lot_id_fkey"
+            columns: ["lot_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_lots"
             referencedColumns: ["id"]
           },
           {
@@ -2515,9 +2592,9 @@ export type GeneratedDatabase = {
   }
 }
 
-type DatabaseWithoutInternals = Omit<GeneratedDatabase, "__InternalSupabase">
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof GeneratedDatabase, "public">]
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends

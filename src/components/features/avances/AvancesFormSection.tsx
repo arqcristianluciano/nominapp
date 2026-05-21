@@ -10,7 +10,7 @@ export interface AvancesFormState {
 }
 
 const INPUT_CLASS =
-  'w-full px-3 py-2 text-sm border border-app-border rounded-lg bg-app-bg text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500'
+  'w-full px-3 py-2 min-h-[44px] text-sm border border-app-border rounded-lg bg-app-bg text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500'
 
 interface AvancesFormSectionProps {
   form: AvancesFormState
@@ -32,8 +32,8 @@ export function AvancesFormSection({
   onSave,
 }: AvancesFormSectionProps) {
   return (
-    <div className="bg-app-surface border border-app-border rounded-xl p-4 space-y-3">
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+    <div className="bg-app-surface border border-app-border rounded-xl p-3 sm:p-4 space-y-3">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
         <div className="sm:col-span-2">
           <label className="text-xs text-app-muted block mb-1">Capítulo *</label>
           <select
@@ -68,7 +68,7 @@ export function AvancesFormSection({
             ))}
           </select>
         </div>
-        <div>
+        <div className="sm:col-span-2">
           <label className="text-xs text-app-muted block mb-1">Fecha de corte *</label>
           <input
             type="date"
@@ -81,6 +81,7 @@ export function AvancesFormSection({
           <label className="text-xs text-app-muted block mb-1">Cantidad ejecutada</label>
           <input
             type="number"
+            inputMode="decimal"
             step="0.01"
             value={form.executed_quantity}
             onChange={(e) =>
@@ -94,6 +95,7 @@ export function AvancesFormSection({
           <label className="text-xs text-app-muted block mb-1">o % ejecutado</label>
           <input
             type="number"
+            inputMode="decimal"
             step="0.01"
             min={0}
             max={100}
@@ -115,10 +117,10 @@ export function AvancesFormSection({
           />
         </div>
       </div>
-      <div className="flex gap-2 justify-end">
+      <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end pt-1">
         <button
           onClick={onCancel}
-          className="px-4 py-2 text-sm border border-app-border rounded-lg hover:bg-app-hover text-app-muted"
+          className="px-4 py-2 min-h-[44px] text-sm border border-app-border rounded-lg hover:bg-app-hover text-app-muted w-full sm:w-auto"
         >
           Cancelar
         </button>
@@ -129,7 +131,7 @@ export function AvancesFormSection({
             (!form.budget_category_id && !form.budget_item_id) ||
             (!form.executed_quantity && !form.executed_percent)
           }
-          className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium"
+          className="px-4 py-2 min-h-[44px] text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium w-full sm:w-auto"
         >
           {saving ? 'Guardando…' : 'Registrar'}
         </button>

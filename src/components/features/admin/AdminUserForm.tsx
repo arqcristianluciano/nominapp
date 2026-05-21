@@ -4,6 +4,8 @@ import { useToast } from '@/components/ui/Toast'
 import { parseDecimalInput } from '@/utils/decimalInput'
 import { isCedula, isEmail, isPhone } from '@/utils/validators'
 
+type CreateMode = 'password' | 'invite'
+
 interface Props {
   mode: 'create' | 'edit'
   initial?: AdminUser
@@ -55,18 +57,64 @@ interface SectionProps {
   set: SetField
 }
 
-function CredentialsSection({ form, set }: SectionProps) {
+interface CredentialsSectionProps extends SectionProps {
+  createMode: CreateMode
+}
+
+function CredentialsSection({ form, set, createMode }: CredentialsSectionProps) {
+  const isInvite = createMode === 'invite'
   return (
     <div className="grid grid-cols-2 gap-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900">
-      <div className="col-span-2 text-xs text-blue-700 dark:text-blue-300">Credenciales de acceso (la persona inicia sesión con estos datos).</div>
-      <div>
+      <div className="col-span-2 text-xs text-blue-700 dark:text-blue-300">
+        {isInvite
+          ? 'Se enviará un email al destinatario con un enlace para que defina su propia contraseña.'
+          : 'Credenciales de acceso (la persona inicia sesión con estos datos).'}
+      </div>
+      <div className={isInvite ? 'col-span-2' : ''}>
         <label className={label}>Email *</label>
         <input className={input} type="email" required value={form.email} onChange={(e) => set('email', e.target.value)} placeholder="empleado@empresa.com" />
       </div>
-      <div>
-        <label className={label}>Contraseña inicial *</label>
-        <input className={input} type="text" required value={form.password} onChange={(e) => set('password', e.target.value)} placeholder="Mínimo 6 caracteres" />
-      </div>
+      {!isInvite && (
+        <div>
+          <label className={label}>Contraseña inicial *</label>
+          <input className={input} type="text" required value={form.password} onChange={(e) => set('password', e.target.value)} placeholder="Mínimo 6 caracteres" />
+        </div>
+      )}
+    </div>
+  )
+}
+
+interface CreateModeTabsProps {
+  mode: CreateMode
+  onChange: (next: CreateMode) => void
+}
+
+function CreateModeTabs({ mode, onChange }: CreateModeTabsProps) {
+  const baseBtn =
+    'flex-1 px-3 py-2 text-sm font-medium border transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500'
+  const active = 'bg-blue-600 text-white border-blue-600'
+  const inactive =
+    'bg-app-bg text-app-muted border-app-border hover:bg-app-hover'
+  return (
+    <div className="flex rounded-lg overflow-hidden" role="tablist" aria-label="Modo de creación de usuario">
+      <button
+        type="button"
+        role="tab"
+        aria-selected={mode === 'password'}
+        onClick={() => onChange('password')}
+        className={`${baseBtn} rounded-l-lg ${mode === 'password' ? active : inactive}`}
+      >
+        Crear con contraseña
+      </button>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={mode === 'invite'}
+        onClick={() => onChange('invite')}
+        className={`${baseBtn} rounded-r-lg ${mode === 'invite' ? active : inactive}`}
+      >
+        Invitar por email
+      </button>
     </div>
   )
 }
@@ -155,9 +203,11 @@ export function AdminUserForm({ mode, initial, onCancel, onSaved }: Props) {
   const [form, setForm] = useState<FormState>(emptyForm(initial))
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
+  const [createMode, setCreateMode] = useState<CreateMode>('password')
   const { error } = useToast()
 
   const isCreate = mode === 'create'
+  const isInvite = isCreate && createMode === 'invite'
 
   const set: SetField = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -172,7 +222,7 @@ export function AdminUserForm({ mode, initial, onCancel, onSaved }: Props) {
       const displayName =
         form.display_name.trim() ||
         `${form.first_name.trim()} ${form.last_name.trim()}`.trim()
-      if (!displayName) {
+      if (!displayName && !isInvite) {
         const msg = 'El nombre para mostrar no puede quedar vacío'
         setFormError(msg)
         error(msg)
@@ -212,34 +262,46 @@ export function AdminUserForm({ mode, initial, onCancel, onSaved }: Props) {
       }
 
       if (isCreate) {
-        if (!form.email.trim() || !form.password) {
-          const msg = 'Email y contraseña inicial son obligatorios'
+        const emailTrim = form.email.trim()
+        if (!emailTrim) {
+          const msg = 'El email es obligatorio'
           setFormError(msg)
           error(msg)
           setSaving(false)
           return
         }
-        if (!isEmail(form.email.trim())) {
+        if (!isEmail(emailTrim)) {
           const msg = 'Email inválido'
           setFormError(msg)
           error(msg)
           setSaving(false)
           return
         }
-        await adminService.createUser({
-          email: form.email.trim(),
-          password: form.password,
-          display_name: displayName,
-          first_name: form.first_name.trim() || undefined,
-          last_name: form.last_name.trim() || undefined,
-          cedula: form.cedula.trim() || undefined,
-          passport: form.passport.trim() || undefined,
-          phone: form.phone.trim() || undefined,
-          job_title: form.job_title.trim() || undefined,
-          hire_date: form.hire_date || undefined,
-          salary: salaryNum ?? undefined,
-          payment_terms: form.payment_terms.trim() || undefined,
-        })
+        if (isInvite) {
+          await adminService.inviteUser(emailTrim)
+        } else {
+          if (!form.password) {
+            const msg = 'La contraseña inicial es obligatoria'
+            setFormError(msg)
+            error(msg)
+            setSaving(false)
+            return
+          }
+          await adminService.createUser({
+            email: emailTrim,
+            password: form.password,
+            display_name: displayName,
+            first_name: form.first_name.trim() || undefined,
+            last_name: form.last_name.trim() || undefined,
+            cedula: form.cedula.trim() || undefined,
+            passport: form.passport.trim() || undefined,
+            phone: form.phone.trim() || undefined,
+            job_title: form.job_title.trim() || undefined,
+            hire_date: form.hire_date || undefined,
+            salary: salaryNum ?? undefined,
+            payment_terms: form.payment_terms.trim() || undefined,
+          })
+        }
       } else if (initial) {
         await adminService.updateUserProfile(initial.id, {
           display_name: displayName,
@@ -264,15 +326,25 @@ export function AdminUserForm({ mode, initial, onCancel, onSaved }: Props) {
     }
   }
 
+  const submitLabel = saving
+    ? 'Guardando...'
+    : !isCreate
+      ? 'Guardar cambios'
+      : isInvite
+        ? 'Enviar invitación'
+        : 'Crear usuario'
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {isCreate && <CredentialsSection form={form} set={set} />}
+      {isCreate && <CreateModeTabs mode={createMode} onChange={setCreateMode} />}
 
-      <BasicDataSection form={form} set={set} />
+      {isCreate && <CredentialsSection form={form} set={set} createMode={createMode} />}
 
-      <WorkDataSection form={form} set={set} isCreate={isCreate} />
+      {!isInvite && <BasicDataSection form={form} set={set} />}
 
-      <FinancialDataSection form={form} set={set} />
+      {!isInvite && <WorkDataSection form={form} set={set} isCreate={isCreate} />}
+
+      {!isInvite && <FinancialDataSection form={form} set={set} />}
 
       {formError && (
         <div className="text-xs text-red-600 dark:text-red-400" role="alert">{formError}</div>
@@ -283,7 +355,7 @@ export function AdminUserForm({ mode, initial, onCancel, onSaved }: Props) {
           Cancelar
         </button>
         <button type="submit" disabled={saving} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium">
-          {saving ? 'Guardando...' : (isCreate ? 'Crear usuario' : 'Guardar cambios')}
+          {submitLabel}
         </button>
       </div>
     </form>

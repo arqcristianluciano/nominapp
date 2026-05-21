@@ -1,6 +1,18 @@
-import { useMemo, useState } from 'react'
-import { AlertTriangle, CalendarRange, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Pencil, Trash2, Users, X } from 'lucide-react'
-import type { BitacoraEntry } from '@/services/bitacoraService'
+import { useEffect, useMemo, useState } from 'react'
+import {
+  AlertTriangle,
+  CalendarRange,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  ImageIcon,
+  Pencil,
+  Trash2,
+  Users,
+  X,
+} from 'lucide-react'
+import { bitacoraService, type BitacoraEntry } from '@/services/bitacoraService'
 import { parseDateLocal, todayISO } from '@/utils/dateLocal'
 import { WEATHER_OPTIONS } from './bitacoraConfig'
 
@@ -30,6 +42,66 @@ interface Props {
   onToggleExpand: (entryId: string) => void
   onEdit: (entry: BitacoraEntry) => void
   onDelete: (entryId: string) => void
+}
+
+function PhotoThumb({ path, alt }: { path: string; alt: string }) {
+  const [url, setUrl] = useState<string | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    void bitacoraService
+      .getPhotoUrl(path)
+      .then((signed) => {
+        if (!cancelled) setUrl(signed)
+      })
+      .catch(() => {
+        if (!cancelled) setUrl(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [path])
+  if (!url) {
+    return (
+      <div className="flex items-center justify-center w-12 h-12 rounded-md border border-app-border bg-app-bg text-app-subtle">
+        <ImageIcon className="w-4 h-4" />
+      </div>
+    )
+  }
+  return (
+    <img
+      src={url}
+      alt={alt}
+      className="w-12 h-12 rounded-md object-cover border border-app-border"
+    />
+  )
+}
+
+function PhotoFull({ path, alt }: { path: string; alt: string }) {
+  const [url, setUrl] = useState<string | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    void bitacoraService
+      .getPhotoUrl(path)
+      .then((signed) => {
+        if (!cancelled) setUrl(signed)
+      })
+      .catch(() => {
+        if (!cancelled) setUrl(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [path])
+  if (!url) return null
+  return (
+    <a href={url} target="_blank" rel="noopener noreferrer" className="inline-block">
+      <img
+        src={url}
+        alt={alt}
+        className="max-h-64 rounded-lg border border-app-border object-cover"
+      />
+    </a>
+  )
 }
 
 export function BitacoraEntriesList({ entries, expandedId, onToggleExpand, onEdit, onDelete }: Props) {
@@ -144,30 +216,121 @@ export function BitacoraEntriesList({ entries, expandedId, onToggleExpand, onEdi
           No hay registros que coincidan con los filtros seleccionados.
         </div>
       ) : (
-        visibleEntries.map((entry) => (
-        <div key={entry.id} className="bg-app-surface border border-app-border rounded-xl overflow-hidden">
-          <button onClick={() => onToggleExpand(entry.id)} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-app-hover transition-colors text-left">
-            <div className="flex items-center gap-2 text-app-muted"><WeatherIcon weather={entry.weather} />{entry.temp_c != null && <span className="text-xs">{entry.temp_c}°C</span>}</div>
-            <div className="flex-1 min-w-0"><p className="text-sm font-semibold text-app-text">{parseDateLocal(entry.date).toLocaleDateString('es-DO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p><p className="text-xs text-app-muted truncate">{entry.work_summary}</p></div>
-            <div className="flex items-center gap-3 shrink-0"><span className="flex items-center gap-1 text-xs text-app-muted"><Users className="w-3.5 h-3.5" />{entry.workforce_count}</span>{entry.incidents && <AlertTriangle className="w-4 h-4 text-yellow-500" />}{expandedId === entry.id ? <ChevronUp className="w-4 h-4 text-app-subtle" /> : <ChevronDown className="w-4 h-4 text-app-subtle" />}</div>
-          </button>
-          {expandedId === entry.id && (
-            <div className="px-4 pb-4 border-t border-app-border/50 pt-3 space-y-2">
-              <p className="text-sm text-app-text">{entry.work_summary}</p>
-              <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs">
-                {entry.equipment && <><span className="text-app-muted font-medium">Equipos:</span><span className="text-app-text">{entry.equipment}</span></>}
-                {entry.visitors && <><span className="text-app-muted font-medium">Visitas:</span><span className="text-app-text">{entry.visitors}</span></>}
-                {entry.incidents && <><span className="text-yellow-600 font-medium">Incidentes:</span><span className="text-app-text">{entry.incidents}</span></>}
-                {entry.notes && <><span className="text-app-muted font-medium">Notas:</span><span className="text-app-text">{entry.notes}</span></>}
-              </div>
-              <div className="flex justify-end gap-2 pt-1">
-                <button onClick={() => onEdit(entry)} className="flex items-center gap-1 px-3 py-1.5 text-xs border border-app-border rounded-lg hover:bg-app-hover text-app-muted"><Pencil className="w-3.5 h-3.5" />Editar</button>
-                <button onClick={() => onDelete(entry.id)} className="flex items-center gap-1 px-3 py-1.5 text-xs border border-red-200 dark:border-red-800 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 text-red-600"><Trash2 className="w-3.5 h-3.5" />Eliminar</button>
-              </div>
+        visibleEntries.map((entry) => {
+          const dateLabel = parseDateLocal(entry.date).toLocaleDateString('es-DO', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          })
+          const isExpanded = expandedId === entry.id
+          return (
+            <div
+              key={entry.id}
+              className="bg-app-surface border border-app-border rounded-xl overflow-hidden"
+            >
+              <button
+                onClick={() => onToggleExpand(entry.id)}
+                className="w-full text-left hover:bg-app-hover transition-colors"
+              >
+                {/* Layout vertical en mobile (cards), horizontal en sm+ */}
+                <div className="px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                  {/* Fila 1 mobile / izquierda en desktop: fecha + clima + thumbnail foto */}
+                  <div className="flex items-center gap-3 min-w-0 sm:flex-1">
+                    {entry.photo_url ? (
+                      <PhotoThumb path={entry.photo_url} alt={`Foto ${entry.date}`} />
+                    ) : (
+                      <div className="hidden sm:flex items-center gap-2 text-app-muted shrink-0">
+                        <WeatherIcon weather={entry.weather} />
+                        {entry.temp_c != null && <span className="text-xs">{entry.temp_c}°C</span>}
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 sm:hidden text-app-muted mb-0.5">
+                        <WeatherIcon weather={entry.weather} />
+                        {entry.temp_c != null && <span className="text-xs">{entry.temp_c}°C</span>}
+                        {entry.incidents && (
+                          <AlertTriangle className="w-3.5 h-3.5 text-yellow-500" />
+                        )}
+                      </div>
+                      <p className="text-sm font-semibold text-app-text capitalize truncate">
+                        {dateLabel}
+                      </p>
+                      <p className="text-xs text-app-muted line-clamp-2 sm:truncate">
+                        {entry.work_summary}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Fila 2 mobile / derecha en desktop: contadores + chevron */}
+                  <div className="flex items-center justify-between sm:justify-end gap-3 sm:shrink-0 pl-0 sm:pl-2">
+                    <span className="flex items-center gap-1 text-xs text-app-muted">
+                      <Users className="w-3.5 h-3.5" />
+                      {entry.workforce_count}
+                    </span>
+                    {entry.incidents && (
+                      <AlertTriangle className="hidden sm:block w-4 h-4 text-yellow-500" />
+                    )}
+                    {isExpanded ? (
+                      <ChevronUp className="w-4 h-4 text-app-subtle" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 text-app-subtle" />
+                    )}
+                  </div>
+                </div>
+              </button>
+
+              {isExpanded && (
+                <div className="px-4 pb-4 border-t border-app-border/50 pt-3 space-y-3">
+                  <p className="text-sm text-app-text whitespace-pre-wrap">{entry.work_summary}</p>
+                  {entry.photo_url && <PhotoFull path={entry.photo_url} alt={`Foto ${entry.date}`} />}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-xs">
+                    {entry.equipment && (
+                      <div className="flex gap-2">
+                        <span className="text-app-muted font-medium shrink-0">Equipos:</span>
+                        <span className="text-app-text">{entry.equipment}</span>
+                      </div>
+                    )}
+                    {entry.visitors && (
+                      <div className="flex gap-2">
+                        <span className="text-app-muted font-medium shrink-0">Visitas:</span>
+                        <span className="text-app-text">{entry.visitors}</span>
+                      </div>
+                    )}
+                    {entry.incidents && (
+                      <div className="flex gap-2">
+                        <span className="text-yellow-600 font-medium shrink-0">Incidentes:</span>
+                        <span className="text-app-text">{entry.incidents}</span>
+                      </div>
+                    )}
+                    {entry.notes && (
+                      <div className="flex gap-2">
+                        <span className="text-app-muted font-medium shrink-0">Notas:</span>
+                        <span className="text-app-text">{entry.notes}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-1">
+                    <button
+                      onClick={() => onEdit(entry)}
+                      className="flex items-center justify-center gap-1 px-3 py-1.5 text-xs border border-app-border rounded-lg hover:bg-app-hover text-app-muted"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => onDelete(entry.id)}
+                      className="flex items-center justify-center gap-1 px-3 py-1.5 text-xs border border-red-200 dark:border-red-800 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 text-red-600"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      Eliminar
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-        ))
+          )
+        })
       )}
 
       {needsPagination && (

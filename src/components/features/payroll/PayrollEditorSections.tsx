@@ -31,9 +31,63 @@ export function PayrollEditorHeader({
   const requiresDirector = next?.status === 'approved' || next?.status === 'paid'
   const showNextButton = next && (canApprove || !requiresDirector)
   return (
-    <div>
-      <Link to={project ? `/proyectos/${project.id}` : '/proyectos'} className="flex items-center gap-1 text-sm text-app-muted hover:text-app-muted mb-2"><ArrowLeft className="w-4 h-4" /> {project?.name || 'Proyecto'}</Link>
-      <div className="flex items-center justify-between flex-wrap gap-2"><div><h1 className="text-2xl font-semibold text-app-text">Reporte No. {period.period_number}</h1><p className="text-sm text-app-muted mt-0.5">{new Date(period.report_date).toLocaleDateString('es-DO', { year: 'numeric', month: 'long', day: 'numeric' })}{period.reported_by && ` · ${period.reported_by}`}</p></div><div className="flex items-center gap-2"><span className={`px-3 py-1 text-sm font-medium rounded-full ${STATUS_COLORS[period.status]}`}>{STATUS_LABELS[period.status]}</span><Link to={`/nominas/${period.id}/imprimir`} target="_blank" className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-app-muted border border-app-border rounded-lg hover:bg-app-hover"><Printer className="w-4 h-4" /> Imprimir</Link>{showNextButton && <button onClick={() => onUpdateStatus(next.status)} disabled={saving} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50"><next.icon className="w-4 h-4" />{next.label}</button>}{next && !showNextButton && <span className="text-xs text-app-muted italic">{requiresDirector ? 'Pendiente del Director' : ''}</span>}</div></div>
+    <div className="sticky top-0 z-20 -mx-4 lg:mx-0 px-4 lg:px-0 pt-1 pb-3 bg-app-bg/95 backdrop-blur supports-[backdrop-filter]:bg-app-bg/80 border-b border-app-border lg:border-0 lg:static lg:bg-transparent lg:backdrop-blur-0 lg:p-0">
+      <Link to={project ? `/proyectos/${project.id}` : '/proyectos'} className="inline-flex items-center gap-1 text-sm text-app-muted hover:text-app-muted mb-2 min-h-[44px] sm:min-h-[32px] -ml-1 px-1"><ArrowLeft className="w-4 h-4" /> <span className="truncate max-w-[70vw] sm:max-w-none">{project?.name || 'Proyecto'}</span></Link>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-2">
+        <div className="min-w-0 flex items-start sm:items-center justify-between sm:justify-start gap-2">
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-2xl font-semibold text-app-text truncate">Reporte No. {period.period_number}</h1>
+            <p className="text-xs sm:text-sm text-app-muted mt-0.5 truncate">{new Date(period.report_date).toLocaleDateString('es-DO', { year: 'numeric', month: 'long', day: 'numeric' })}{period.reported_by && ` · ${period.reported_by}`}</p>
+          </div>
+          <span className={`sm:hidden shrink-0 px-2.5 py-1 text-xs font-medium rounded-full ${STATUS_COLORS[period.status]}`}>{STATUS_LABELS[period.status]}</span>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className={`hidden sm:inline-flex px-3 py-1 text-xs sm:text-sm font-medium rounded-full ${STATUS_COLORS[period.status]}`}>{STATUS_LABELS[period.status]}</span>
+          <Link to={`/nominas/${period.id}/imprimir`} target="_blank" aria-label="Imprimir" className="flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 text-sm text-app-muted border border-app-border rounded-lg hover:bg-app-hover min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0"><Printer className="w-4 h-4" /> <span className="hidden sm:inline">Imprimir</span></Link>
+          {/* Next-status button is duplicated in the mobile sticky action bar to keep the header compact on small screens. */}
+          {showNextButton && (
+            <button
+              onClick={() => onUpdateStatus(next.status)}
+              disabled={saving}
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 min-h-[44px] sm:min-h-0"
+            >
+              <next.icon className="w-4 h-4" />{next.label}
+            </button>
+          )}
+          {next && !showNextButton && <span className="text-xs text-app-muted italic">{requiresDirector ? 'Pendiente del Director' : ''}</span>}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export function PayrollEditorMobileActionBar({
+  period,
+  saving,
+  canApprove = true,
+  onUpdateStatus,
+}: {
+  period: PayrollPeriod
+  saving: boolean
+  canApprove?: boolean
+  onUpdateStatus: (status: 'submitted' | 'approved' | 'paid') => Promise<void>
+}) {
+  const next = NEXT_STATUS[period.status]
+  const requiresDirector = next?.status === 'approved' || next?.status === 'paid'
+  const showNextButton = next && (canApprove || !requiresDirector)
+  if (!showNextButton) return null
+  return (
+    <div
+      className="sm:hidden sticky bottom-0 -mx-4 px-4 py-3 bg-app-surface/95 backdrop-blur supports-[backdrop-filter]:bg-app-surface/80 border-t border-app-border z-20"
+      style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}
+    >
+      <button
+        onClick={() => onUpdateStatus(next.status)}
+        disabled={saving}
+        className="w-full flex items-center justify-center gap-1.5 px-4 py-3 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 min-h-[44px]"
+      >
+        <next.icon className="w-4 h-4" />{next.label}
+      </button>
     </div>
   )
 }

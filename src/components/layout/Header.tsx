@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { LogOut, Menu, Search, X } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { useProjectStore } from '@/stores/projectStore'
@@ -7,6 +8,7 @@ import { supplierService } from '@/services/supplierService'
 import { contractorService } from '@/services/contractorService'
 import { NotificationDropdown } from './NotificationDropdown'
 import { ThemeToggle } from './ThemeToggle'
+import { LanguageSwitcher } from './LanguageSwitcher'
 
 interface HeaderProps {
   onMenuClick: () => void
@@ -18,12 +20,6 @@ interface SearchResult {
   name: string
   detail?: string
   url: string
-}
-
-const TYPE_LABEL: Record<string, string> = {
-  proyecto: 'Proyecto',
-  contratista: 'Contratista',
-  suplidor: 'Suplidor',
 }
 
 const TYPE_COLOR: Record<string, string> = {
@@ -39,6 +35,7 @@ function userInitials(displayName: string): string {
 }
 
 export function Header({ onMenuClick }: HeaderProps) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
@@ -159,7 +156,7 @@ export function Header({ onMenuClick }: HeaderProps) {
 
   const dropdownContent = (
     results.length === 0
-      ? <div className="px-4 py-3 text-sm text-app-muted">Sin resultados para "{query}"</div>
+      ? <div className="px-4 py-3 text-sm text-app-muted">{t('header.noResults', { query })}</div>
       : results.map((item) => (
           <button
             key={`${item.type}-${item.id}`}
@@ -171,7 +168,7 @@ export function Header({ onMenuClick }: HeaderProps) {
               {item.detail && <p className="text-xs text-app-muted truncate">{item.detail}</p>}
             </div>
             <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full shrink-0 ${TYPE_COLOR[item.type]}`}>
-              {TYPE_LABEL[item.type]}
+              {t(`header.types.${item.type}`)}
             </span>
           </button>
         ))
@@ -196,7 +193,7 @@ export function Header({ onMenuClick }: HeaderProps) {
             value={query}
             onChange={(e) => { setQuery(e.target.value); setShowResults(true) }}
             onFocus={() => setShowResults(true)}
-            placeholder="Buscar proyectos, contratistas..."
+            placeholder={t('header.searchPlaceholder')}
             className="w-full pl-10 pr-20 py-2 bg-app-bg border border-app-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-app-surface transition-all"
           />
           {query ? (
@@ -223,11 +220,12 @@ export function Header({ onMenuClick }: HeaderProps) {
           <button
             onClick={() => setMobileSearchOpen(true)}
             className="lg:hidden p-2 rounded-lg text-app-muted hover:text-app-text hover:bg-app-hover transition-colors"
-            title="Buscar"
+            title={t('header.searchTitle')}
           >
             <Search className="w-4.5 h-4.5" />
           </button>
 
+          <LanguageSwitcher />
           <ThemeToggle />
           <NotificationDropdown />
 
@@ -246,7 +244,7 @@ export function Header({ onMenuClick }: HeaderProps) {
                 type="button"
                 onClick={async () => { await logout(); navigate('/login', { replace: true }) }}
                 className="p-2 rounded-lg text-app-muted hover:bg-app-hover hover:text-app-text transition-colors"
-                title="Cerrar sesión"
+                title={t('header.logout')}
               >
                 <LogOut className="w-4 h-4" />
               </button>
@@ -266,7 +264,7 @@ export function Header({ onMenuClick }: HeaderProps) {
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Buscar..."
+                placeholder={t('header.searchPlaceholderMobile')}
                 className="flex-1 pl-10 pr-4 py-2.5 bg-app-bg border border-app-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <button

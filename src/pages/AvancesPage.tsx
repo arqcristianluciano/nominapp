@@ -111,16 +111,16 @@ export default function AvancesPage() {
 
   return (
     <div className="p-4 lg:p-6 max-w-5xl mx-auto space-y-5">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <TrendingUp className="w-5 h-5 text-blue-600" />
-          <h1 className="text-xl font-bold text-app-text">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <TrendingUp className="w-5 h-5 text-blue-600 flex-shrink-0" />
+          <h1 className="text-lg sm:text-xl font-bold text-app-text break-words">
             Avances por partida {project?.name && `— ${project.name}`}
           </h1>
         </div>
         <button
           onClick={() => setShowForm((s) => !s)}
-          className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
+          className="flex items-center justify-center gap-2 px-3 py-2 min-h-[44px] bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 w-full sm:w-auto"
         >
           <Plus className="w-4 h-4" /> Registrar avance
         </button>

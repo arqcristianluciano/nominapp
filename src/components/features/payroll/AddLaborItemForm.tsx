@@ -121,7 +121,7 @@ export function AddLaborItemForm({ contractors, laborTasks, budgetCategories = [
           value={showNewForm ? NEW_CONTRACTOR_VALUE : contractorId}
           onChange={(e) => handleSelectChange(e.target.value)}
           required={!showNewForm}
-          className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] sm:min-h-0"
         >
           <option value="">Seleccionar contratista...</option>
           {contractors.filter(c => c.is_active).map(c => (
@@ -145,21 +145,21 @@ export function AddLaborItemForm({ contractors, laborTasks, budgetCategories = [
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder="Nombre *"
-              className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] sm:min-h-0"
             />
             <input
               type="text"
               value={newSpecialty}
               onChange={(e) => setNewSpecialty(e.target.value)}
               placeholder="Especialidad (ej: Plomería)"
-              className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] sm:min-h-0"
             />
             <button
               type="button"
               onClick={handleCreateContractor}
               disabled={savingNew || !newName.trim()}
               aria-busy={savingNew}
-              className="w-full py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-2 sm:py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] sm:min-h-0"
             >
               {savingNew ? 'Creando...' : 'Crear y seleccionar'}
             </button>
@@ -182,7 +182,7 @@ export function AddLaborItemForm({ contractors, laborTasks, budgetCategories = [
             value={selectedTaskId}
             onChange={(e) => handleTaskSelect(e.target.value)}
             required
-            className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] sm:min-h-0"
           >
             <option value="">Seleccionar tarea...</option>
             {laborTasks.map(t => (
@@ -194,7 +194,7 @@ export function AddLaborItemForm({ contractors, laborTasks, budgetCategories = [
         )}
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         <div>
           <label className="block text-xs font-medium text-app-muted mb-1">Cantidad *</label>
           <input
@@ -203,7 +203,7 @@ export function AddLaborItemForm({ contractors, laborTasks, budgetCategories = [
             value={quantity}
             onChange={(e) => setQuantity(e.target.value)}
             required
-            className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] sm:min-h-0"
           />
         </div>
         <div>
@@ -211,14 +211,14 @@ export function AddLaborItemForm({ contractors, laborTasks, budgetCategories = [
           <select
             value={unit}
             onChange={(e) => setUnit(e.target.value)}
-            className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] sm:min-h-0"
           >
             {MEASURE_UNITS.map(u => (
               <option key={u.value} value={u.value}>{u.label}</option>
             ))}
           </select>
         </div>
-        <div>
+        <div className="col-span-2 sm:col-span-1">
           <label className="block text-xs font-medium text-app-muted mb-1">Precio unitario *</label>
           <input
             type="text"
@@ -226,7 +226,7 @@ export function AddLaborItemForm({ contractors, laborTasks, budgetCategories = [
             value={unitPrice}
             onChange={(e) => setUnitPrice(e.target.value)}
             required
-            className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] sm:min-h-0"
           />
         </div>
       </div>
@@ -237,7 +237,7 @@ export function AddLaborItemForm({ contractors, laborTasks, budgetCategories = [
           <select
             value={budgetCategoryId}
             onChange={(e) => setBudgetCategoryId(e.target.value)}
-            className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] sm:min-h-0"
           >
             <option value="">— Sin imputación específica —</option>
             {budgetCategories.map((c) => (
@@ -249,13 +249,13 @@ export function AddLaborItemForm({ contractors, laborTasks, budgetCategories = [
         </div>
       )}
 
-      <div className="flex items-center gap-4">
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={isAdvance} onChange={() => { setIsAdvance(!isAdvance); setIsDeduction(false) }} className="rounded" />
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+        <label className="flex items-center gap-2 text-sm min-h-[44px] sm:min-h-0 cursor-pointer">
+          <input type="checkbox" checked={isAdvance} onChange={() => { setIsAdvance(!isAdvance); setIsDeduction(false) }} className="w-4 h-4 rounded" />
           Avance a cuenta
         </label>
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={isDeduction} onChange={() => { setIsDeduction(!isDeduction); setIsAdvance(false) }} className="rounded" />
+        <label className="flex items-center gap-2 text-sm min-h-[44px] sm:min-h-0 cursor-pointer">
+          <input type="checkbox" checked={isDeduction} onChange={() => { setIsDeduction(!isDeduction); setIsAdvance(false) }} className="w-4 h-4 rounded" />
           Deducción de avance anterior
         </label>
       </div>
@@ -269,15 +269,15 @@ export function AddLaborItemForm({ contractors, laborTasks, budgetCategories = [
         </div>
       )}
 
-      <div className="flex justify-end gap-2 pt-2">
-        <button type="button" onClick={onCancel} className="px-4 py-2 text-sm text-app-muted hover:text-app-text">
+      <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
+        <button type="button" onClick={onCancel} className="px-4 py-2 text-sm text-app-muted hover:text-app-text min-h-[44px] sm:min-h-0">
           Cancelar
         </button>
         <button
           type="submit"
           disabled={saving || showNewForm || !contractorId || !selectedTaskId || !quantity || !unitPrice}
           aria-busy={saving}
-          className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] sm:min-h-0"
         >
           {saving ? 'Guardando...' : 'Agregar partida'}
         </button>
