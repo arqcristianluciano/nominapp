@@ -147,8 +147,15 @@ export function MercadoExcelUpload({ projectId, hasExisting, onImported }: Props
               </tr>
             </thead>
             <tbody className="divide-y divide-app-border">
-              {filtered.map((l, i) => (
-                <tr key={`${l.category}-${l.code || 'nocode'}-${l.sort_order}-${i}`} className="hover:bg-app-hover">
+              {(() => {
+                const seenKeys = new Map<string, number>()
+                return filtered.map((l) => {
+                  const baseKey = `${l.category}-${l.code || 'nocode'}-${l.sort_order}`
+                  const dup = seenKeys.get(baseKey) ?? 0
+                  seenKeys.set(baseKey, dup + 1)
+                  const rowKey = dup === 0 ? baseKey : `${baseKey}#${dup}`
+                  return (
+                <tr key={rowKey} className="hover:bg-app-hover">
                   <td className="px-3 py-1.5">
                     <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${CATEGORY_COLORS[l.category]}`}>
                       {CATEGORY_LABELS[l.category]}
@@ -161,7 +168,9 @@ export function MercadoExcelUpload({ projectId, hasExisting, onImported }: Props
                   <td className="px-3 py-1.5 text-right text-app-muted">{formatRD(l.budgeted_unit_price)}</td>
                   <td className="px-3 py-1.5 text-right font-medium text-app-text">{formatRD(l.budgeted_total)}</td>
                 </tr>
-              ))}
+                  )
+                })
+              })()}
             </tbody>
           </table>
         </div>

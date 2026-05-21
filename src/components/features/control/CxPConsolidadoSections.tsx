@@ -34,15 +34,24 @@ export function CxPConsolidadoEmpty({ filteredProjectName }: { filteredProjectNa
 export function CxPConsolidadoGroups({ groups }: { groups: CxPProjectGroup[] }) {
   return (
     <div className="space-y-4">
-      {groups.map((group) => (
-        <div key={group.projectId} className="bg-app-surface rounded-xl border border-app-border overflow-hidden">
-          <div className="bg-app-bg px-4 py-3 border-b border-app-border flex items-center justify-between"><div><h3 className="text-sm font-semibold text-app-text">{group.projectName}</h3><p className="text-xs text-app-muted">{group.items.length} factura(s) pendiente(s)</p></div><span className="text-sm font-bold text-red-700">{formatRD(group.total)}</span></div>
-          <table className="w-full">
-            <thead><tr className="border-b border-app-border"><th className="px-4 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">Fecha</th><th className="px-4 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">Factura</th><th className="px-4 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">Proveedor</th><th className="px-4 py-2 text-right text-[10px] font-semibold text-app-muted uppercase">Pendiente</th><th className="px-4 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">Condición</th></tr></thead>
-            <tbody>{group.items.map((item, index) => <tr key={`${item.supplierId ?? 'nosupplier'}-${item.invoiceNumber ?? 'noinvoice'}-${item.date}-${index}`} className="border-b border-app-border hover:bg-app-hover"><td className="px-4 py-2 text-xs text-app-muted">{new Date(item.date).toLocaleDateString('es-DO')}</td><td className="px-4 py-2 text-xs text-app-muted">{item.invoiceNumber || '—'}</td><td className="px-4 py-2 text-xs text-app-text font-medium">{item.supplierName}</td><td className="px-4 py-2 text-xs text-red-700 font-semibold text-right">{formatRD(item.pending)}</td><td className="px-4 py-2 text-xs text-app-muted">{item.paymentCondition}</td></tr>)}</tbody>
-          </table>
-        </div>
-      ))}
+      {groups.map((group) => {
+        const seenKeys = new Map<string, number>()
+        return (
+          <div key={group.projectId} className="bg-app-surface rounded-xl border border-app-border overflow-hidden">
+            <div className="bg-app-bg px-4 py-3 border-b border-app-border flex items-center justify-between"><div><h3 className="text-sm font-semibold text-app-text">{group.projectName}</h3><p className="text-xs text-app-muted">{group.items.length} factura(s) pendiente(s)</p></div><span className="text-sm font-bold text-red-700">{formatRD(group.total)}</span></div>
+            <table className="w-full">
+              <thead><tr className="border-b border-app-border"><th className="px-4 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">Fecha</th><th className="px-4 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">Factura</th><th className="px-4 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">Proveedor</th><th className="px-4 py-2 text-right text-[10px] font-semibold text-app-muted uppercase">Pendiente</th><th className="px-4 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">Condición</th></tr></thead>
+              <tbody>{group.items.map((item) => {
+                const baseKey = `${item.supplierId ?? 'nosupplier'}-${item.invoiceNumber ?? 'noinvoice'}-${item.date}`
+                const dup = seenKeys.get(baseKey) ?? 0
+                seenKeys.set(baseKey, dup + 1)
+                const rowKey = dup === 0 ? baseKey : `${baseKey}#${dup}`
+                return <tr key={rowKey} className="border-b border-app-border hover:bg-app-hover"><td className="px-4 py-2 text-xs text-app-muted">{new Date(item.date).toLocaleDateString('es-DO')}</td><td className="px-4 py-2 text-xs text-app-muted">{item.invoiceNumber || '—'}</td><td className="px-4 py-2 text-xs text-app-text font-medium">{item.supplierName}</td><td className="px-4 py-2 text-xs text-red-700 font-semibold text-right">{formatRD(item.pending)}</td><td className="px-4 py-2 text-xs text-app-muted">{item.paymentCondition}</td></tr>
+              })}</tbody>
+            </table>
+          </div>
+        )
+      })}
     </div>
   )
 }

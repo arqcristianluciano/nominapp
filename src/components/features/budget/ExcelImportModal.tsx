@@ -248,9 +248,16 @@ export default function ExcelImportModal({ categories, onImport, onClose }: Prop
                     </tr>
                   </thead>
                   <tbody>
-                    {items.map((row, i) => (
+                    {(() => {
+                      const seenKeys = new Map<string, number>()
+                      return items.map((row) => {
+                        const baseKey = `${row.categoryId ?? row.newCategoryKey ?? 'nocat'}-${row.code || 'nocode'}-${row.description}`
+                        const dup = seenKeys.get(baseKey) ?? 0
+                        seenKeys.set(baseKey, dup + 1)
+                        const rowKey = dup === 0 ? baseKey : `${baseKey}#${dup}`
+                        return (
                       <tr
-                        key={`${row.categoryId ?? row.newCategoryKey ?? 'nocat'}-${row.code || 'nocode'}-${row.description}-${i}`}
+                        key={rowKey}
                         className={`border-b border-app-border ${row.valid ? 'hover:bg-app-hover' : 'bg-amber-50'}`}
                       >
                         <td className="px-3 py-1.5 text-app-muted max-w-[160px] truncate">
@@ -272,7 +279,9 @@ export default function ExcelImportModal({ categories, onImport, onClose }: Prop
                           )}
                         </td>
                       </tr>
-                    ))}
+                        )
+                      })
+                    })()}
                   </tbody>
                 </table>
               </div>
