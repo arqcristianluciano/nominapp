@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/react'
 import { supabase } from '@/lib/supabase'
 import type { PurchaseRequisition, PurchaseQuote, RequisitionStatus } from '@/types/purchaseOrder'
 import { approvalsService } from '@/services/approvalsService'
@@ -191,6 +192,12 @@ export const requisitionService = {
     }
     if (!motivo.trim()) throw new Error('Motivo obligatorio para validar excedente')
 
+    Sentry.addBreadcrumb({
+      category: 'requisition',
+      message: 'validate excess requisition',
+      level: 'info',
+      data: { requisitionId: id, validatedBy, req_number: before.req_number },
+    })
     const { error } = await supabase
       .from('purchase_requisitions')
       .update({
@@ -253,6 +260,18 @@ export const requisitionService = {
       }
     }
 
+    Sentry.addBreadcrumb({
+      category: 'requisition',
+      message: 'approve requisition',
+      level: 'info',
+      data: {
+        requisitionId: id,
+        quoteId,
+        approvedBy,
+        quotes_count: quotes.length,
+        req_number: before.req_number,
+      },
+    })
     const { error } = await supabase
       .from('purchase_requisitions')
       .update({

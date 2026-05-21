@@ -1,0 +1,135 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "projects": "Proyectos",
+    "payroll": "Nóminas",
+    "payrollReports": "Reportes",
+    "reports": "Reportes",
+    "finance": "Control Financiero",
+    "budget": "Presupuesto",
+    "accountsPayable": "Cuentas por Pagar",
+    "cubicaciones": "Cubicaciones",
+    "purchaseOrders": "Órdenes de Compra",
+    "contractors": "Contratistas",
+    "suppliers": "Suplidores",
+    "loans": "Préstamos",
+    "calendar": "Calendario de pagos",
+    "financialSummary": "Resumen financiero",
+    "priceHistory": "Historial de precios",
+    "users": "Usuarios y roles",
+    "settings": "Configuración",
+    "brand": "NominaAPP",
+    "closeMenu": "Cerrar menú",
+    "closeMenuAria": "Cerrar menú lateral",
+    "sections": {
+      "general": "General",
+      "finanzas": "Finanzas",
+      "compras": "Compras",
+      "recursos": "Recursos",
+      "planificacion": "Planificación",
+      "reportes": "Reportes",
+      "sistema": "Sistema"
+    }
+  },
+  "header": {
+    "searchPlaceholder": "Buscar proyectos, contratistas...",
+    "searchPlaceholderMobile": "Buscar...",
+    "searchTitle": "Buscar",
+    "noResults": "Sin resultados para \"{{query}}\"",
+    "logout": "Cerrar sesión",
+    "types": {
+      "proyecto": "Proyecto",
+      "contratista": "Contratista",
+      "suplidor": "Suplidor"
+    }
+  },
+  "common": {
+    "loading": "Cargando...",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "search": "Buscar"
+  },
+  "language": {
+    "label": "Idioma",
+    "spanish": "Español",
+    "english": "Inglés"
+  },
+  "login": {
+    "demo_banner": "Modo demo: usa cualquiera de los quick-access",
+    "brand_title": "Gestión financiera para proyectos de construcción",
+    "brand_subtitle": "Control de nóminas, presupuesto, cubicaciones y cuentas por pagar en un solo lugar.",
+    "feature_budget": "Presupuesto vs. real en tiempo real",
+    "feature_approvals": "Aprobaciones con firma digital",
+    "feature_multiproject": "Multi-proyecto con control financiero",
+    "footer": "© 2026 NominaAPP · v0.4.0",
+    "welcome_title": "Bienvenido",
+    "welcome_subtitle": "Inicia sesión para acceder a tu cuenta",
+    "email_label": "Usuario / Email",
+    "password_label": "Contraseña",
+    "submit": "Iniciar sesión",
+    "submitting": "Entrando…",
+    "quick_access_title": "Cuentas provisionales de prueba",
+    "quick_access_subtitle": "Click en cualquier rol para entrar automáticamente. Eliminar estas cuentas antes de salir a producción real.",
+    "errors": {
+      "invalid_credentials": "Credenciales incorrectas. Verifica tu usuario y contraseña.",
+      "network": "No pudimos conectar con el servidor. Revisa tu conexión a internet e intenta de nuevo.",
+      "generic": "No se pudo iniciar sesión. Intenta de nuevo."
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Vista general de tus proyectos de construcción",
+    "error_title": "No pudimos cargar el dashboard",
+    "retry": "Reintentar",
+    "retrying": "Reintentando…",
+    "stats": {
+      "active_projects": "Proyectos activos",
+      "total_invested": "Total invertido",
+      "cxp_pending": "CxP pendientes",
+      "reports_this_month": "Reportes este mes",
+      "trend_vs_prev": "{{percent}}% vs mes ant.",
+      "no_data": "{{label}}: sin datos"
+    },
+    "projects": {
+      "section_title": "Proyectos activos",
+      "view_all": "Ver todos",
+      "view_more": "Ver {{count}} más",
+      "loading": "Cargando proyectos activos...",
+      "loading_aria": "Cargando proyectos activos",
+      "empty_title": "Sin proyectos activos",
+      "empty_subtitle": "Aun no hay proyectos en curso. Crea uno para empezar.",
+      "empty_cta": "Ir a Proyectos",
+      "active_badge": "Activo",
+      "progress_label": "Avance de obra",
+      "contract_one": "contrato",
+      "contract_other": "contratos"
+    },
+    "quick_actions": {
+      "section_title": "Accesos rápidos",
+      "finance_label": "Control financiero",
+      "finance_sub": "Libro diario",
+      "budget_label": "Presupuesto",
+      "budget_sub": "vs Real",
+      "cxp_label": "Cuentas x Pagar",
+      "cxp_sub": "Por proyecto",
+      "reports_label": "Reportes",
+      "reports_sub": "Resumen financiero"
+    },
+    "pending_cortes": {
+      "title": "Cortes por pagar",
+      "item_label": "Corte #{{number}} — {{contractor}}"
+    },
+    "recent_activity": {
+      "title": "Actividad reciente",
+      "empty": "Sin actividad reciente",
+      "type_payroll": "Reporte",
+      "type_transaction": "Transacción",
+      "time_minutes": "hace {{count}}m",
+      "time_hours": "hace {{count}}h",
+      "time_days": "hace {{count}}d",
+      "time_yesterday": "ayer"
+    }
+  }
+}

@@ -1,4 +1,5 @@
 import { Minus, TrendingDown, TrendingUp } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 const ACCENT_STYLES: Record<string, { icon: string; border: string }> = {
   blue: { icon: 'bg-blue-100 text-blue-600 dark:bg-blue-950/70 dark:text-blue-300', border: 'border-l-blue-500' },
@@ -29,6 +30,7 @@ function isMissing(value: Props['value']): boolean {
 }
 
 export function StatCard({ icon: Icon, label, value, accent, prev, invertTrend }: Props) {
+  const { t } = useTranslation()
   const styles = ACCENT_STYLES[accent]
   const missing = isMissing(value)
   const displayValue = missing ? EMPTY_VALUE : String(value)
@@ -44,7 +46,7 @@ export function StatCard({ icon: Icon, label, value, accent, prev, invertTrend }
     trendEl = (
       <div className={`mt-1 flex items-center gap-0.5 text-[11px] font-semibold ${color}`}>
         <TrendIcon className="h-3 w-3" />
-        <span>{Math.abs(change).toFixed(0)}% vs mes ant.</span>
+        <span>{t('dashboard.stats.trend_vs_prev', { percent: Math.abs(change).toFixed(0) })}</span>
       </div>
     )
   }
@@ -56,7 +58,7 @@ export function StatCard({ icon: Icon, label, value, accent, prev, invertTrend }
           <p className="mb-1.5 text-xs font-medium text-app-muted">{label}</p>
           <p
             className={`truncate text-xl font-bold ${missing ? 'text-app-muted' : 'text-app-text'}`}
-            aria-label={missing ? `${label}: sin datos` : undefined}
+            aria-label={missing ? t('dashboard.stats.no_data', { label }) : undefined}
           >
             {displayValue}
           </p>

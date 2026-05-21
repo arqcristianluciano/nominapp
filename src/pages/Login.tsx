@@ -1,5 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { useAuthStore } from '@/stores/authStore'
 import { isDemoMode } from '@/lib/supabase'
 import { LoginBrandPanel, LoginFormPanel } from '@/components/features/login/LoginSections'
@@ -13,19 +15,20 @@ const showQuickAccess = isDemoMode || import.meta.env.MODE === 'development'
 // "no pudimos contactar al backend" (excepción de red / fetch). authService
 // captura su propio error y devuelve null en credenciales malas; cualquier
 // throw que llegue aquí es inesperado y muy probablemente conectividad.
-function describeLoginError(err: unknown): string {
+function describeLoginError(err: unknown, t: TFunction): string {
   if (err instanceof TypeError) {
     // fetch falla con TypeError ("Failed to fetch", "Load failed", "NetworkError…")
-    return 'No pudimos conectar con el servidor. Revisa tu conexión a internet e intenta de nuevo.'
+    return t('login.errors.network')
   }
   const message = err instanceof Error ? err.message.toLowerCase() : ''
   if (message.includes('network') || message.includes('fetch') || message.includes('offline')) {
-    return 'No pudimos conectar con el servidor. Revisa tu conexión a internet e intenta de nuevo.'
+    return t('login.errors.network')
   }
-  return 'No se pudo iniciar sesión. Intenta de nuevo.'
+  return t('login.errors.generic')
 }
 
 export default function Login() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
   const from = (location.state as { from?: string } | null)?.from ?? '/'
@@ -51,13 +54,13 @@ export default function Login() {
     try {
       const ok = await login(u, p)
       if (!ok) {
-        setError('Credenciales incorrectas. Verifica tu usuario y contraseña.')
+        setError(t('login.errors.invalid_credentials'))
         setSubmitting(false)
         return
       }
       navigate(from, { replace: true })
     } catch (err) {
-      setError(describeLoginError(err))
+      setError(describeLoginError(err, t))
       setSubmitting(false)
     }
   }
@@ -92,7 +95,7 @@ export default function Login() {
           role="status"
           className="w-full px-4 py-2 text-center text-xs font-semibold text-amber-900 dark:text-amber-100 bg-amber-100 dark:bg-amber-900/40 border-b border-amber-300 dark:border-amber-700"
         >
-          Modo demo: usa cualquiera de los quick-access
+          {t('login.demo_banner')}
         </div>
       )}
       <div className="flex-1 flex">

@@ -57,14 +57,14 @@ function ModuleCard({
   tone: string
 }) {
   return (
-    <Link to={`/proyectos/${projectId}/${to}`} className="bg-app-surface rounded-xl border border-app-border p-4 hover:border-blue-300 hover:shadow-sm transition-all">
-      <div className="flex items-center gap-3">
-        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${tone}`}>
+    <Link to={`/proyectos/${projectId}/${to}`} className="bg-app-surface rounded-xl border border-app-border p-3 sm:p-4 hover:border-blue-300 hover:shadow-sm transition-all">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+        <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center shrink-0 ${tone}`}>
           <Icon className="w-5 h-5" />
         </div>
-        <div>
-          <p className="text-sm font-medium text-app-text">{label}</p>
-          <p className="text-xs text-app-muted">{desc}</p>
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-app-text truncate">{label}</p>
+          <p className="text-xs text-app-muted line-clamp-2 sm:line-clamp-1">{desc}</p>
         </div>
       </div>
     </Link>
@@ -76,12 +76,12 @@ export function ProjectModulesGrid({ projectId }: Props) {
   const visible = (m: ModuleDef) => !m.visibleTo || hasAny(...m.visibleTo)
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {topModules.filter(visible).map((item) => (
           <ModuleCard key={item.to} projectId={projectId} {...item} />
         ))}
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {extraModules.filter(visible).map((item) => (
           <ModuleCard key={item.to} projectId={projectId} {...item} />
         ))}

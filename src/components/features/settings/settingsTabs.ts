@@ -4,6 +4,7 @@ export type SettingsTab =
   | 'categorias'
   | 'empresas'
   | 'notificaciones'
+  | 'exportar'
   | 'sistema'
 
 export interface SettingsTabDef {
@@ -19,5 +20,6 @@ export const SETTINGS_TABS: SettingsTabDef[] = [
   { key: 'categorias', label: 'Categorías presupuestarias' },
   { key: 'empresas', label: 'Empresas', directorOnly: true },
   { key: 'notificaciones', label: 'Notificaciones' },
+  { key: 'exportar', label: 'Exportar', directorOnly: true },
   { key: 'sistema', label: 'Sistema' },
 ]

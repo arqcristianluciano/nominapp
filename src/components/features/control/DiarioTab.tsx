@@ -49,24 +49,24 @@ export function DiarioTab({
 }: Props) {
   return (
     <>
-      <div className="flex items-center gap-2">
-        <button onClick={onToggleFilter} className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-app-muted border border-app-border rounded-lg hover:bg-app-hover"><Filter className="w-3.5 h-3.5" /> Filtrar</button>
-        <button onClick={onToggleAdd} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700"><Plus className="w-3.5 h-3.5" /> Nueva transacción</button>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+        <button onClick={onToggleFilter} className="flex items-center justify-center gap-1.5 w-full sm:w-auto min-h-[44px] sm:min-h-0 px-3 py-2.5 sm:py-1.5 text-sm sm:text-xs text-app-muted border border-app-border rounded-lg hover:bg-app-hover"><Filter className="w-4 h-4 sm:w-3.5 sm:h-3.5" /> Filtrar</button>
+        <button onClick={onToggleAdd} className="flex items-center justify-center gap-1.5 w-full sm:w-auto min-h-[44px] sm:min-h-0 px-3 py-2.5 sm:py-1.5 bg-blue-600 text-white text-sm sm:text-xs font-semibold sm:font-medium rounded-lg hover:bg-blue-700"><Plus className="w-4 h-4 sm:w-3.5 sm:h-3.5" /> Nueva transacción</button>
       </div>
 
       {showFilter && (
-        <div className="flex items-end gap-3 bg-app-surface border border-app-border rounded-lg p-3 shadow-xs">
-          <div>
-            <label className="text-[10px] font-medium text-app-muted mb-0.5 block">Desde</label>
-            <input type="date" value={filterFrom} onChange={(e) => onFilterFrom(e.target.value)} className="px-2 py-1.5 border border-app-border rounded text-xs bg-app-input-bg text-app-text [color-scheme:light] dark:[color-scheme:dark] focus:ring-1 focus:ring-blue-500 focus:border-blue-500" />
+        <div className="flex flex-wrap items-end gap-2 sm:gap-3 bg-app-surface border border-app-border rounded-lg p-3 shadow-xs">
+          <div className="flex-1 min-w-[140px]">
+            <label className="text-[11px] sm:text-[10px] font-medium text-app-muted mb-1 sm:mb-0.5 block">Desde</label>
+            <input type="date" value={filterFrom} onChange={(e) => onFilterFrom(e.target.value)} className="w-full px-2 py-2 sm:py-1.5 border border-app-border rounded text-sm sm:text-xs bg-app-input-bg text-app-text [color-scheme:light] dark:[color-scheme:dark] focus:ring-1 focus:ring-blue-500 focus:border-blue-500" />
           </div>
-          <div>
-            <label className="text-[10px] font-medium text-app-muted mb-0.5 block">Hasta</label>
-            <input type="date" value={filterTo} onChange={(e) => onFilterTo(e.target.value)} className="px-2 py-1.5 border border-app-border rounded text-xs bg-app-input-bg text-app-text [color-scheme:light] dark:[color-scheme:dark] focus:ring-1 focus:ring-blue-500 focus:border-blue-500" />
+          <div className="flex-1 min-w-[140px]">
+            <label className="text-[11px] sm:text-[10px] font-medium text-app-muted mb-1 sm:mb-0.5 block">Hasta</label>
+            <input type="date" value={filterTo} onChange={(e) => onFilterTo(e.target.value)} className="w-full px-2 py-2 sm:py-1.5 border border-app-border rounded text-sm sm:text-xs bg-app-input-bg text-app-text [color-scheme:light] dark:[color-scheme:dark] focus:ring-1 focus:ring-blue-500 focus:border-blue-500" />
           </div>
-          <button onClick={onApplyFilter} className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700">Aplicar</button>
+          <button onClick={onApplyFilter} className="flex-1 sm:flex-none min-h-[40px] sm:min-h-0 px-3 py-2 sm:py-1.5 bg-blue-600 text-white text-sm sm:text-xs font-semibold sm:font-normal rounded-lg hover:bg-blue-700">Aplicar</button>
           {(txns.dateFrom || txns.dateTo) && (
-            <button onClick={onClearFilter} className="flex items-center gap-1 px-3 py-1.5 text-xs text-app-muted border border-app-border rounded-lg hover:bg-app-hover-strong"><X className="w-3 h-3" /> Limpiar</button>
+            <button onClick={onClearFilter} className="flex items-center justify-center gap-1 flex-1 sm:flex-none min-h-[40px] sm:min-h-0 px-3 py-2 sm:py-1.5 text-sm sm:text-xs text-app-muted border border-app-border rounded-lg hover:bg-app-hover-strong"><X className="w-3.5 h-3.5 sm:w-3 sm:h-3" /> Limpiar</button>
           )}
         </div>
       )}

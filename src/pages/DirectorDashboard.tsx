@@ -79,14 +79,15 @@ export default function DirectorDashboard() {
 
   return (
     <div className="p-4 lg:p-6 max-w-7xl mx-auto space-y-5">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <BarChart3 className="w-5 h-5 text-blue-600" />
-          <h1 className="text-xl font-bold text-app-text">Dashboard Director General</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <BarChart3 className="w-5 h-5 text-blue-600 flex-shrink-0" />
+          <h1 className="text-lg sm:text-xl font-bold text-app-text truncate">Dashboard Director General</h1>
         </div>
         <button
           onClick={handleExport}
-          className="flex items-center gap-2 px-3 py-2 border border-app-border text-app-muted rounded-lg text-sm hover:bg-app-hover"
+          className="flex items-center justify-center gap-2 px-3 py-2 border border-app-border text-app-muted rounded-lg text-sm hover:bg-app-hover w-full sm:w-auto min-h-[44px] sm:min-h-0"
+          aria-label="Exportar datos a Excel"
         >
           <Download className="w-4 h-4" /> Exportar Excel
         </button>
@@ -97,7 +98,7 @@ export default function DirectorDashboard() {
       ) : (
         <>
           {/* KPIs globales */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             <KpiCard label="Empresas" value={String(companies.length)} icon={<Building2 className="w-4 h-4" />} />
             <KpiCard label="Proyectos activos" value={String(projects.filter((p) => p.status === 'active').length)} />
             <KpiCard label="Presupuesto total" value={formatRD(totalBudget)} />
@@ -123,7 +124,8 @@ export default function DirectorDashboard() {
           {/* Tabla por empresa */}
           <div>
             <h2 className="text-base font-semibold text-app-text mb-2">Por empresa</h2>
-            <div className="bg-app-surface border border-app-border rounded-xl overflow-x-auto">
+            {/* Desktop: tabla */}
+            <div className="hidden md:block bg-app-surface border border-app-border rounded-xl overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-app-chip text-app-muted text-xs">
                   <tr>
@@ -156,12 +158,52 @@ export default function DirectorDashboard() {
                 </tbody>
               </table>
             </div>
+            {/* Mobile: cards */}
+            <div className="md:hidden space-y-2">
+              {companies.map((c) => (
+                <div
+                  key={c.company_id}
+                  className="bg-app-surface border border-app-border rounded-xl p-3 space-y-2"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="font-medium text-app-text">{c.company_name}</div>
+                    <span className={`text-sm font-semibold whitespace-nowrap ${pctClass(c.variance_pct)}`}>
+                      {c.variance_pct.toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <div className="text-app-muted">Proyectos</div>
+                      <div className="font-medium">
+                        {c.active_projects} / {c.projects_count}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-app-muted">Presupuesto</div>
+                      <div className="font-medium">{formatRD(c.total_budget)}</div>
+                    </div>
+                    <div>
+                      <div className="text-app-muted">Ejecutado</div>
+                      <div className="font-medium">{formatRD(c.total_actual)}</div>
+                    </div>
+                    <div>
+                      <div className="text-app-muted">Desviación</div>
+                      <div className={`font-medium ${pctClass(c.variance_pct)}`}>
+                        {c.variance >= 0 ? '+' : ''}
+                        {formatRD(c.variance)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Tabla por proyecto */}
           <div>
             <h2 className="text-base font-semibold text-app-text mb-2">Por proyecto</h2>
-            <div className="bg-app-surface border border-app-border rounded-xl overflow-x-auto">
+            {/* Desktop: tabla */}
+            <div className="hidden md:block bg-app-surface border border-app-border rounded-xl overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-app-chip text-app-muted text-xs">
                   <tr>
@@ -203,6 +245,60 @@ export default function DirectorDashboard() {
                   ))}
                 </tbody>
               </table>
+            </div>
+            {/* Mobile: cards */}
+            <div className="md:hidden space-y-2">
+              {projects.map((p) => (
+                <div
+                  key={p.project_id}
+                  className="bg-app-surface border border-app-border rounded-xl p-3 space-y-2"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <Link
+                        to={`/proyectos/${p.project_id}`}
+                        className="text-blue-600 hover:underline font-medium break-words"
+                      >
+                        {p.project_name}
+                      </Link>
+                      <div className="text-xs text-app-subtle">
+                        [{p.project_code}] · {p.company_name}
+                      </div>
+                    </div>
+                    <span className={`text-sm font-semibold whitespace-nowrap ${pctClass(p.variance_pct)}`}>
+                      {p.variance_pct.toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <div className="text-app-muted">Presupuesto</div>
+                      <div className="font-medium">{formatRD(p.total_budget)}</div>
+                    </div>
+                    <div>
+                      <div className="text-app-muted">Ejecutado</div>
+                      <div className="font-medium">{formatRD(p.total_actual)}</div>
+                    </div>
+                    <div>
+                      <div className="text-app-muted">CxP pendiente</div>
+                      <div className="font-medium">{formatRD(p.cxp_pending)}</div>
+                    </div>
+                    <div>
+                      <div className="text-app-muted">Solicitudes pend.</div>
+                      <div className="font-medium">{p.pending_requisitions}</div>
+                    </div>
+                    <div className="col-span-2">
+                      <div className="text-app-muted">Items bajo mínimo</div>
+                      <div
+                        className={`font-medium ${
+                          p.low_stock_items > 0 ? 'text-amber-600 font-semibold' : ''
+                        }`}
+                      >
+                        {p.low_stock_items}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </>

@@ -3,6 +3,9 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
+  --safe-area-bottom: env(safe-area-inset-bottom, 0);
+  --safe-area-top: env(safe-area-inset-top, 0);
+
   --app-bg: #f1f5f9;
   --app-surface: #ffffff;
   --app-border: #e2e8f0;
@@ -69,6 +72,7 @@ html.dark {
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    padding-bottom: var(--safe-area-bottom);
   }
 
   :root {

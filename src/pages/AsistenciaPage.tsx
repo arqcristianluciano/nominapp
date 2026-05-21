@@ -181,6 +181,7 @@ export default function AsistenciaPage() {
           form={form}
           contractors={contractors}
           saving={saving}
+          projectId={projectId}
           onChange={setForm}
           onCancel={closeForm}
           onSave={handleAdd}

@@ -279,4 +279,27 @@ export const adminService = {
     if (error) throw error
     return data as { id: string; email: string }
   },
+
+  /**
+   * Invita a un nuevo usuario via Edge Function admin-invite-user. Supabase
+   * envia un email automatico al destinatario con un link para que defina su
+   * propia contrasena. Opcionalmente lo asigna a un proyecto con un rol.
+   *
+   * Solo DG puede invocar (validado en el servidor).
+   */
+  async inviteUser(
+    email: string,
+    role?: ProjectRole,
+    projectId?: string,
+  ): Promise<{ id: string; email: string }> {
+    const { data, error } = await supabase.functions.invoke('admin-invite-user', {
+      body: {
+        email,
+        role: role ?? null,
+        project_id: projectId ?? null,
+      },
+    })
+    if (error) throw error
+    return data as { id: string; email: string }
+  },
 }

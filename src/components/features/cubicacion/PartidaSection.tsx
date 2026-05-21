@@ -40,7 +40,7 @@ interface PartidaDropdownProps {
 
 function PartidaDropdown({ search, filteredList, priceList, showDropdown, onSearchChange, onFocus, onSelect, dropdownRef }: PartidaDropdownProps) {
   return (
-    <div className="col-span-4 relative" ref={dropdownRef}>
+    <div className="sm:col-span-4 relative" ref={dropdownRef}>
       <p className="text-[10px] text-app-muted mb-1">
         Descripción * <span className="text-blue-500">(del presupuesto)</span>
       </p>
@@ -50,20 +50,32 @@ function PartidaDropdown({ search, filteredList, priceList, showDropdown, onSear
           onChange={(e) => onSearchChange(e.target.value)}
           onFocus={onFocus}
           placeholder="Buscar en lista de precios..."
-          className={`${inputCls} w-full pr-7`}
+          role="combobox"
+          aria-expanded={showDropdown}
+          aria-autocomplete="list"
+          aria-controls="partida-dropdown-list"
+          className={`${inputCls} w-full pr-8 min-h-[44px] sm:min-h-0 text-sm sm:text-xs`}
         />
-        <BookOpen className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-app-subtle" />
+        <BookOpen className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-3.5 sm:h-3.5 text-app-subtle pointer-events-none" />
       </div>
       {showDropdown && filteredList.length > 0 && (
-        <div className="absolute z-50 top-full left-0 right-0 mt-0.5 bg-app-surface border border-app-border rounded-lg shadow-lg overflow-hidden">
+        <div
+          id="partida-dropdown-list"
+          role="listbox"
+          className="absolute z-50 top-full left-0 right-0 mt-0.5 bg-app-surface border border-app-border rounded-lg shadow-lg overflow-hidden max-h-[60vh] overflow-y-auto"
+        >
           {filteredList.map((item) => (
             <button
               key={item.id}
-              onMouseDown={() => onSelect(item)}
-              className="w-full flex items-center justify-between px-2.5 py-1.5 text-xs hover:bg-app-hover text-left"
+              type="button"
+              role="option"
+              aria-selected={false}
+              onMouseDown={(e) => { e.preventDefault(); onSelect(item) }}
+              onTouchEnd={(e) => { e.preventDefault(); onSelect(item) }}
+              className="w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 sm:gap-2 px-3 py-2.5 sm:py-1.5 text-sm sm:text-xs hover:bg-app-hover active:bg-app-hover text-left min-h-[44px] sm:min-h-0 touch-manipulation"
             >
               <span className="text-app-text font-medium truncate">{item.description}</span>
-              <span className="ml-2 shrink-0 text-app-muted">{item.unit} · {formatRD(item.unit_price)}</span>
+              <span className="shrink-0 text-app-muted text-xs">{item.unit} · {formatRD(item.unit_price)}</span>
             </button>
           ))}
           {priceList.length === 0 && (
@@ -99,7 +111,7 @@ function PartidaFormFields({
 }: PartidaFormFieldsProps) {
   return (
     <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 space-y-2">
-      <div className="grid grid-cols-12 gap-2 items-end">
+      <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 sm:items-end">
         <PartidaDropdown
           search={search}
           filteredList={filteredList}
@@ -111,61 +123,72 @@ function PartidaFormFields({
           dropdownRef={dropdownRef}
         />
 
-        <div className="col-span-1">
-          <p className="text-[10px] text-app-muted mb-1">Unidad</p>
-          <input value={form.unit} onChange={(e) => onFormChange((f) => ({ ...f, unit: e.target.value }))} className={`${inputCls} w-full`} />
+        <div className="grid grid-cols-2 sm:contents gap-2">
+          <div className="sm:col-span-1">
+            <p className="text-[10px] text-app-muted mb-1">Unidad</p>
+            <input
+              value={form.unit}
+              onChange={(e) => onFormChange((f) => ({ ...f, unit: e.target.value }))}
+              className={`${inputCls} w-full min-h-[44px] sm:min-h-0 text-sm sm:text-xs`}
+            />
+          </div>
+
+          {/* Precio presupuesto — fijo, solo lectura */}
+          <div className="sm:col-span-2">
+            <p className="text-[10px] text-app-muted mb-1">P. Presupuesto (RD$)</p>
+            <input
+              readOnly
+              value={form.budget_unit_price !== null ? form.budget_unit_price : '—'}
+              className={`${inputCls} w-full bg-app-chip text-app-muted cursor-not-allowed min-h-[44px] sm:min-h-0 text-sm sm:text-xs`}
+              tabIndex={-1}
+            />
+          </div>
+
+          {/* Precio acordado — editable */}
+          <div className="sm:col-span-2">
+            <p className="text-[10px] text-app-muted mb-1">
+              P. Acordado (RD$)
+              {priceDiff !== null && priceDiff !== 0 && (
+                <span className={`ml-1 font-semibold ${priceDiff > 0 ? 'text-red-500' : 'text-green-600'}`}>
+                  {priceDiff > 0 ? '▲' : '▼'} {formatRD(Math.abs(priceDiff))}
+                </span>
+              )}
+            </p>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={form.unit_price}
+              onChange={(e) => onFormChange((f) => ({ ...f, unit_price: e.target.value }))}
+              placeholder="0"
+              className={`${inputCls} w-full ring-1 ring-blue-400 min-h-[44px] sm:min-h-0 text-sm sm:text-xs`}
+            />
+          </div>
+
+          <div className="sm:col-span-1">
+            <p className="text-[10px] text-app-muted mb-1">Cant. acordada</p>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={form.agreed_quantity}
+              onChange={(e) => onFormChange((f) => ({ ...f, agreed_quantity: e.target.value }))}
+              placeholder="0"
+              className={`${inputCls} w-full min-h-[44px] sm:min-h-0 text-sm sm:text-xs`}
+            />
+          </div>
         </div>
 
-        {/* Precio presupuesto — fijo, solo lectura */}
-        <div className="col-span-2">
-          <p className="text-[10px] text-app-muted mb-1">P. Presupuesto (RD$)</p>
-          <input
-            readOnly
-            value={form.budget_unit_price !== null ? form.budget_unit_price : '—'}
-            className={`${inputCls} w-full bg-app-chip text-app-muted cursor-not-allowed`}
-            tabIndex={-1}
-          />
-        </div>
-
-        {/* Precio acordado — editable */}
-        <div className="col-span-2">
-          <p className="text-[10px] text-app-muted mb-1">
-            P. Acordado (RD$)
-            {priceDiff !== null && priceDiff !== 0 && (
-              <span className={`ml-1 font-semibold ${priceDiff > 0 ? 'text-red-500' : 'text-green-600'}`}>
-                {priceDiff > 0 ? '▲' : '▼'} {formatRD(Math.abs(priceDiff))}
-              </span>
-            )}
-          </p>
-          <input
-            type="text"
-            inputMode="decimal"
-            value={form.unit_price}
-            onChange={(e) => onFormChange((f) => ({ ...f, unit_price: e.target.value }))}
-            placeholder="0"
-            className={`${inputCls} w-full ring-1 ring-blue-400`}
-          />
-        </div>
-
-        <div className="col-span-1">
-          <p className="text-[10px] text-app-muted mb-1">Cant. acordada</p>
-          <input
-            type="text"
-            inputMode="decimal"
-            value={form.agreed_quantity}
-            onChange={(e) => onFormChange((f) => ({ ...f, agreed_quantity: e.target.value }))}
-            placeholder="0"
-            className={`${inputCls} w-full`}
-          />
-        </div>
-
-        <div className="col-span-2 flex gap-1 justify-end">
-          <button onClick={onCancel} className="px-2 py-1.5 text-xs border border-app-border rounded-md hover:bg-app-hover text-app-muted">Cancelar</button>
+        <div className="sm:col-span-2 flex gap-2 justify-end pt-1 sm:pt-0">
+          <button
+            onClick={onCancel}
+            className="flex-1 sm:flex-none min-h-[44px] sm:min-h-0 px-3 py-2 sm:py-1.5 text-sm sm:text-xs border border-app-border rounded-md hover:bg-app-hover text-app-muted touch-manipulation"
+          >
+            Cancelar
+          </button>
           <button
             onClick={onSave}
             disabled={saving || !form.description || !form.unit_price || !form.agreed_quantity}
             aria-busy={saving}
-            className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 sm:flex-none min-h-[44px] sm:min-h-0 px-3 py-2 sm:py-1.5 text-sm sm:text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
           >
             {saving ? '...' : editing ? 'Guardar' : 'Agregar'}
           </button>
@@ -191,62 +214,121 @@ interface PartidasTableProps {
 
 function PartidasTable({ partidas, acumuladoForPartida, onEdit, onDelete }: PartidasTableProps) {
   return (
-    <table className="w-full text-xs">
-      <thead>
-        <tr className="border-b border-app-border">
-          <th className="pb-2 text-left text-[10px] font-semibold text-app-muted uppercase">Partida</th>
-          <th className="pb-2 text-center text-[10px] font-semibold text-app-muted uppercase">Unidad</th>
-          <th className="pb-2 text-right text-[10px] font-semibold text-app-muted uppercase">P. Acordado</th>
-          <th className="pb-2 text-right text-[10px] font-semibold text-app-muted uppercase">Acordado (A)</th>
-          <th className="pb-2 text-right text-[10px] font-semibold text-app-muted uppercase">Acumulado (B)</th>
-          <th className="pb-2 text-right text-[10px] font-semibold text-app-muted uppercase">Pendiente</th>
-          <th className="pb-2 text-center text-[10px] font-semibold text-app-muted uppercase">%</th>
-          <th className="w-12" />
-        </tr>
-      </thead>
-      <tbody className="divide-y divide-app-border">
+    <>
+      {/* Mobile: tarjetas verticales */}
+      <div className="sm:hidden space-y-2">
         {partidas.map((p) => {
           const acordado = p.agreed_quantity * p.unit_price
           const acumulado = acumuladoForPartida(p.id)
           const pendiente = acordado - acumulado
           const pct = acordado > 0 ? Math.min((acumulado / acordado) * 100, 100) : 0
           return (
-            <tr key={p.id} className="hover:bg-app-hover">
-              <td className="py-2.5 text-app-text font-medium">{p.description}</td>
-              <td className="py-2.5 text-center text-app-muted">{p.unit}</td>
-              <td className="py-2.5 text-right text-app-muted">{formatRD(p.unit_price)}</td>
-              <td className="py-2.5 text-right text-app-text font-medium">{formatRD(acordado)}</td>
-              <td className="py-2.5 text-right text-blue-700">{formatRD(acumulado)}</td>
-              <td className={`py-2.5 text-right font-semibold ${pendiente >= 0 ? 'text-green-700' : 'text-red-600'}`}>{formatRD(pendiente)}</td>
-              <td className="py-2.5 text-center">
-                <div className="flex items-center gap-1.5 justify-center">
-                  <div className="w-10 h-1.5 bg-app-chip rounded-full overflow-hidden">
-                    <div className={`h-full rounded-full ${pct > 90 ? 'bg-red-500' : pct > 60 ? 'bg-amber-500' : 'bg-green-500'}`} style={{ width: `${pct}%` }} />
-                  </div>
-                  <span className="text-[10px] text-app-muted w-8">{pct.toFixed(0)}%</span>
+            <div key={p.id} className="border border-app-border rounded-lg p-3 bg-app-surface">
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-app-text break-words">{p.description}</p>
+                  <p className="text-xs text-app-muted mt-0.5">{p.unit} · {formatRD(p.unit_price)}</p>
                 </div>
-              </td>
-              <td className="py-2.5">
-                <div className="flex gap-0.5">
+                <div className="flex gap-1 shrink-0">
                   <button
                     onClick={() => onEdit(p)}
                     aria-label="Editar partida"
                     title="Editar partida"
-                    className="p-1 text-app-subtle hover:text-blue-500"
-                  ><Pencil className="w-3 h-3" /></button>
+                    className="min-w-[44px] min-h-[44px] flex items-center justify-center text-app-subtle hover:text-blue-500 active:bg-app-hover rounded-md touch-manipulation"
+                  ><Pencil className="w-4 h-4" /></button>
                   <button
                     onClick={() => onDelete(p.id)}
                     aria-label="Eliminar partida"
                     title="Eliminar partida"
-                    className="p-1 text-app-subtle hover:text-red-500"
-                  ><Trash2 className="w-3 h-3" /></button>
+                    className="min-w-[44px] min-h-[44px] flex items-center justify-center text-app-subtle hover:text-red-500 active:bg-app-hover rounded-md touch-manipulation"
+                  ><Trash2 className="w-4 h-4" /></button>
                 </div>
-              </td>
-            </tr>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div>
+                  <p className="text-[10px] uppercase text-app-muted">Acordado (A)</p>
+                  <p className="font-medium text-app-text">{formatRD(acordado)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase text-app-muted">Acumulado (B)</p>
+                  <p className="font-medium text-blue-700">{formatRD(acumulado)}</p>
+                </div>
+                <div className="col-span-2">
+                  <p className="text-[10px] uppercase text-app-muted">Pendiente</p>
+                  <p className={`font-semibold ${pendiente >= 0 ? 'text-green-700' : 'text-red-600'}`}>{formatRD(pendiente)}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 mt-2">
+                <div className="flex-1 h-1.5 bg-app-chip rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full ${pct > 90 ? 'bg-red-500' : pct > 60 ? 'bg-amber-500' : 'bg-green-500'}`} style={{ width: `${pct}%` }} />
+                </div>
+                <span className="text-[11px] text-app-muted w-10 text-right">{pct.toFixed(0)}%</span>
+              </div>
+            </div>
           )
         })}
-      </tbody>
-    </table>
+      </div>
+
+      {/* Desktop/tablet: tabla con scroll horizontal */}
+      <div className="hidden sm:block overflow-x-auto -mx-3 sm:mx-0">
+        <table className="w-full text-xs min-w-[640px]">
+          <thead>
+            <tr className="border-b border-app-border">
+              <th className="pb-2 text-left text-[10px] font-semibold text-app-muted uppercase">Partida</th>
+              <th className="pb-2 text-center text-[10px] font-semibold text-app-muted uppercase">Unidad</th>
+              <th className="pb-2 text-right text-[10px] font-semibold text-app-muted uppercase">P. Acordado</th>
+              <th className="pb-2 text-right text-[10px] font-semibold text-app-muted uppercase">Acordado (A)</th>
+              <th className="pb-2 text-right text-[10px] font-semibold text-app-muted uppercase">Acumulado (B)</th>
+              <th className="pb-2 text-right text-[10px] font-semibold text-app-muted uppercase">Pendiente</th>
+              <th className="pb-2 text-center text-[10px] font-semibold text-app-muted uppercase">%</th>
+              <th className="w-12" />
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-app-border">
+            {partidas.map((p) => {
+              const acordado = p.agreed_quantity * p.unit_price
+              const acumulado = acumuladoForPartida(p.id)
+              const pendiente = acordado - acumulado
+              const pct = acordado > 0 ? Math.min((acumulado / acordado) * 100, 100) : 0
+              return (
+                <tr key={p.id} className="hover:bg-app-hover">
+                  <td className="py-2.5 text-app-text font-medium">{p.description}</td>
+                  <td className="py-2.5 text-center text-app-muted">{p.unit}</td>
+                  <td className="py-2.5 text-right text-app-muted">{formatRD(p.unit_price)}</td>
+                  <td className="py-2.5 text-right text-app-text font-medium">{formatRD(acordado)}</td>
+                  <td className="py-2.5 text-right text-blue-700">{formatRD(acumulado)}</td>
+                  <td className={`py-2.5 text-right font-semibold ${pendiente >= 0 ? 'text-green-700' : 'text-red-600'}`}>{formatRD(pendiente)}</td>
+                  <td className="py-2.5 text-center">
+                    <div className="flex items-center gap-1.5 justify-center">
+                      <div className="w-10 h-1.5 bg-app-chip rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full ${pct > 90 ? 'bg-red-500' : pct > 60 ? 'bg-amber-500' : 'bg-green-500'}`} style={{ width: `${pct}%` }} />
+                      </div>
+                      <span className="text-[10px] text-app-muted w-8">{pct.toFixed(0)}%</span>
+                    </div>
+                  </td>
+                  <td className="py-2.5">
+                    <div className="flex gap-0.5">
+                      <button
+                        onClick={() => onEdit(p)}
+                        aria-label="Editar partida"
+                        title="Editar partida"
+                        className="p-1 text-app-subtle hover:text-blue-500"
+                      ><Pencil className="w-3 h-3" /></button>
+                      <button
+                        onClick={() => onDelete(p.id)}
+                        aria-label="Eliminar partida"
+                        title="Eliminar partida"
+                        className="p-1 text-app-subtle hover:text-red-500"
+                      ><Trash2 className="w-3 h-3" /></button>
+                    </div>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    </>
   )
 }
 
@@ -267,13 +349,17 @@ export function PartidaSection({ contractId, projectId, partidas, cortes, onRefr
   }, [projectId])
 
   useEffect(() => {
-    function handleClick(e: MouseEvent) {
+    function handleClick(e: MouseEvent | TouchEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setShowDropdown(false)
       }
     }
     document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
+    document.addEventListener('touchstart', handleClick)
+    return () => {
+      document.removeEventListener('mousedown', handleClick)
+      document.removeEventListener('touchstart', handleClick)
+    }
   }, [])
 
   const filteredList = priceList.filter((item) =>
@@ -352,13 +438,13 @@ export function PartidaSection({ contractId, projectId, partidas, cortes, onRefr
 
   return (
     <div className="space-y-3">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
         <p className="text-xs text-app-muted">Las partidas y precios se toman del listado de precios del presupuesto.</p>
         <button
           onClick={() => { setShowAdd(true); setEditing(null) }}
-          className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700"
+          className="flex items-center justify-center gap-1 px-3 py-2 sm:py-1.5 bg-blue-600 text-white text-sm sm:text-xs font-medium rounded-lg hover:bg-blue-700 min-h-[44px] sm:min-h-0 w-full sm:w-auto touch-manipulation"
         >
-          <Plus className="w-3.5 h-3.5" /> Partida
+          <Plus className="w-4 h-4 sm:w-3.5 sm:h-3.5" /> Partida
         </button>
       </div>
 

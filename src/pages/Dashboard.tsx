@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { AlertCircle, RefreshCw } from 'lucide-react'
 import { useDashboardData } from '@/hooks/useDashboardData'
 import { useProjectStore } from '@/stores/projectStore'
@@ -15,6 +16,7 @@ import {
 } from '@/components/features/dashboard/DashboardSideSections'
 
 export default function Dashboard() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [nowMs, setNowMs] = useState(() => Date.now())
   const data = useDashboardData()
@@ -51,7 +53,7 @@ export default function Dashboard() {
           </div>
           <div>
             <h2 className="text-base font-semibold text-app-text">
-              No pudimos cargar el dashboard
+              {t('dashboard.error_title')}
             </h2>
             <p className="mt-1 text-sm text-app-muted">{projectError}</p>
           </div>
@@ -62,7 +64,7 @@ export default function Dashboard() {
             className="mt-1 inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-xs transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <RefreshCw className={`h-4 w-4 ${retrying ? 'animate-spin' : ''}`} />
-            {retrying ? 'Reintentando…' : 'Reintentar'}
+            {retrying ? t('dashboard.retrying') : t('dashboard.retry')}
           </button>
         </div>
       </div>
