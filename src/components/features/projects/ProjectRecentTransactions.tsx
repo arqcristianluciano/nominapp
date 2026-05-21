@@ -12,9 +12,9 @@ export function ProjectRecentTransactions({ projectId, transactions }: Props) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-lg font-medium text-app-text">Últimas transacciones</h2>
-        <Link to={`/proyectos/${projectId}/control`} className="text-xs text-blue-600 hover:text-blue-800">Ver todas</Link>
+      <div className="flex items-center justify-between mb-3 gap-2">
+        <h2 className="text-lg font-medium text-app-text truncate">Últimas transacciones</h2>
+        <Link to={`/proyectos/${projectId}/control`} className="text-xs text-blue-600 hover:text-blue-800 shrink-0 inline-flex items-center min-h-[44px] sm:min-h-0">Ver todas</Link>
       </div>
 
       {/* Desktop / tablet: tabla */}
@@ -37,13 +37,13 @@ export function ProjectRecentTransactions({ projectId, transactions }: Props) {
       <div className="sm:hidden space-y-2">
         {transactions.map((item) => (
           <div key={item.id} className="bg-app-surface rounded-xl border border-app-border p-3">
+            <div className="flex items-center justify-between gap-2 text-xs text-app-muted mb-1">
+              <span className="whitespace-nowrap">{new Date(item.date).toLocaleDateString('es-DO')}</span>
+              <span className="truncate text-right">{item.supplier?.name || ''}</span>
+            </div>
             <div className="flex items-start justify-between gap-3">
               <p className="text-sm text-app-text font-medium flex-1 min-w-0 break-words">{item.description}</p>
-              <p className="text-sm text-app-text font-semibold whitespace-nowrap">{formatRD(item.total)}</p>
-            </div>
-            <div className="mt-1 flex items-center justify-between gap-2 text-xs text-app-muted">
-              <span className="truncate">{item.supplier?.name || ''}</span>
-              <span className="whitespace-nowrap">{new Date(item.date).toLocaleDateString('es-DO')}</span>
+              <p className="text-sm font-semibold whitespace-nowrap break-all text-red-600">{formatRD(item.total)}</p>
             </div>
           </div>
         ))}

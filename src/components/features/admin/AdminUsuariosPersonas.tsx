@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Plus, Pencil, Search } from 'lucide-react'
 import { adminService, type AdminUser } from '@/services/adminService'
 import { SkeletonTable } from '@/components/ui/Skeleton'
@@ -7,6 +8,7 @@ import { useToast } from '@/components/ui/Toast'
 import { AdminUserForm } from '@/components/features/admin/AdminUserForm'
 
 export function AdminUsuariosPersonas() {
+  const { t } = useTranslation()
   const [users, setUsers] = useState<AdminUser[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
@@ -19,11 +21,11 @@ export function AdminUsuariosPersonas() {
     try {
       setUsers(await adminService.listUsers())
     } catch (err) {
-      error(err instanceof Error ? err.message : 'No se pudieron cargar los usuarios')
+      error(err instanceof Error ? err.message : t('admin.personas.toast.load_failed'))
     } finally {
       setLoading(false)
     }
-  }, [error])
+  }, [error, t])
 
   useEffect(() => {
     void load()

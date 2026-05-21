@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { memo, useState } from 'react'
 import { Pencil, Trash2, Check, X } from 'lucide-react'
 import type { TransactionWithRelations } from '@/services/transactionService'
 import type { BudgetCategory, Supplier } from '@/types/database'
@@ -7,7 +7,7 @@ import { DOMINICAN_BANKS } from '@/constants/banks'
 import { formatRD } from '@/utils/currency'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 
-export function TransactionRow({
+function TransactionRowComponent({
   transaction,
   budgetCategories,
   suppliers,
@@ -162,3 +162,7 @@ export function TransactionRow({
     </>
   )
 }
+
+TransactionRowComponent.displayName = 'TransactionRow'
+
+export const TransactionRow = memo(TransactionRowComponent)

@@ -71,7 +71,7 @@ describeOrSkip('pdfReportService', () => {
   })
 
   describe('generateMonthlyReport', () => {
-    it('no crashea con input mínimo / vacío y devuelve un doc', () => {
+    it('no crashea con input mínimo / vacío y devuelve un doc', async () => {
       const emptyish = {
         project: { id: '', name: '' },
         month: { year: 2026, month: 5 },
@@ -103,14 +103,18 @@ describeOrSkip('pdfReportService', () => {
       expect(doc).toBeDefined()
       expect(doc).not.toBeNull()
       expect(typeof doc).toBe('object')
-      // El doc retornado proviene del mock de createPdf y trae `download`.
+      // El doc retornado es un proxy lazy; sus métodos son async porque
+      // pdfmake se carga dinámicamente. download() resuelve al fakeDoc real.
       expect(typeof (doc as { download: unknown }).download).toBe('function')
 
-      // createPdf fue llamado exactamente una vez.
+      // El createPdf real se llama después de que se resuelva el dynamic
+      // import de pdfmake. Forzamos la resolución awaitando un método.
+      await doc.getBase64()
+
       expect(createPdfMock).toHaveBeenCalledTimes(1)
     })
 
-    it('la TDocumentDefinitions pasada a createPdf tiene el shape esperado', () => {
+    it('la TDocumentDefinitions pasada a createPdf tiene el shape esperado', async () => {
       const input = {
         project: { id: 'p1', name: 'Proyecto Demo', companyName: 'ACME' },
         month: { year: 2026, month: 3 },
@@ -137,7 +141,8 @@ describeOrSkip('pdfReportService', () => {
         payroll: { totalPaid: 0, entriesCount: 0 },
       }
 
-      generateMonthlyReport(input)
+      const doc = generateMonthlyReport(input)
+      await doc.getBase64()
 
       expect(createPdfMock).toHaveBeenCalledTimes(1)
       const [docDefinition] = createPdfMock.mock.calls[0] as [Record<string, unknown>]
@@ -165,12 +170,15 @@ describeOrSkip('pdfReportService', () => {
   })
 
   describe('downloadPdf', () => {
-    it('invoca doc.download (que está mockeado sobre pdfmake.download)', () => {
+    it('invoca doc.download (que está mockeado sobre pdfmake.download)', async () => {
       // buildDocument llama internamente a pdfMake.createPdf (mockeado) y
-      // devuelve el fakeDoc con `download` mockeado.
+      // devuelve un proxy lazy cuyo `download` defer al fakeDoc real una
+      // vez resuelto el dynamic import de pdfmake.
       const doc = buildDocument({ content: [] })
 
       downloadPdf(doc, 'reporte mensual.pdf')
+      // Esperamos a que el dynamic import se resuelva y se invoque el download real.
+      await doc.getBase64()
 
       expect(downloadMock).toHaveBeenCalledTimes(1)
       // El service normaliza espacios a `_` y deja la extensión .pdf.
@@ -179,9 +187,10 @@ describeOrSkip('pdfReportService', () => {
       expect(calledWith.toLowerCase().endsWith('.pdf')).toBe(true)
     })
 
-    it('agrega .pdf si el filename no lo trae', () => {
+    it('agrega .pdf si el filename no lo trae', async () => {
       const doc = buildDocument({ content: [] })
       downloadPdf(doc, 'reporte-mayo')
+      await doc.getBase64()
 
       expect(downloadMock).toHaveBeenCalledTimes(1)
       const [calledWith] = downloadMock.mock.calls[0] as [string]

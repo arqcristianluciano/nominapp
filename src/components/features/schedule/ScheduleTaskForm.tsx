@@ -17,36 +17,36 @@ export function ScheduleTaskForm({ form, editMode, saving, onChange, onCancel, o
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
         <div className="sm:col-span-4">
           <label className="text-xs text-app-muted block mb-1">Nombre de la tarea *</label>
-          <input value={form.name} onChange={(e) => onChange({ ...form, name: e.target.value })} placeholder="Ej: Estructura nivel 2" className="w-full px-3 py-2 text-sm border border-app-border rounded-lg bg-app-bg text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <input value={form.name} onChange={(e) => onChange({ ...form, name: e.target.value })} placeholder="Ej: Estructura nivel 2" className="w-full min-h-[44px] px-3 py-2 text-sm border border-app-border rounded-lg bg-app-bg text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500" />
         </div>
         <div className="sm:col-span-2">
           <label className="text-xs text-app-muted block mb-1">Inicio</label>
-          <input type="date" value={form.start_date} onChange={(e) => onChange({ ...form, start_date: e.target.value })} className="w-full px-3 py-2 text-sm border border-app-border rounded-lg bg-app-bg text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <input type="date" value={form.start_date} onChange={(e) => onChange({ ...form, start_date: e.target.value })} className="w-full min-h-[44px] px-3 py-2 text-sm border border-app-border rounded-lg bg-app-bg text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500" />
         </div>
         <div className="sm:col-span-2">
           <label className="text-xs text-app-muted block mb-1">Fin *</label>
-          <input type="date" value={form.end_date} onChange={(e) => onChange({ ...form, end_date: e.target.value })} className="w-full px-3 py-2 text-sm border border-app-border rounded-lg bg-app-bg text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <input type="date" value={form.end_date} onChange={(e) => onChange({ ...form, end_date: e.target.value })} className="w-full min-h-[44px] px-3 py-2 text-sm border border-app-border rounded-lg bg-app-bg text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500" />
         </div>
         <div className="sm:col-span-2">
           <label className="text-xs text-app-muted block mb-1">Avance (%)</label>
-          <input type="number" min={0} max={100} value={form.progress} onChange={(e) => onChange({ ...form, progress: Math.min(100, Math.max(0, +e.target.value)) })} className="w-full px-3 py-2 text-sm border border-app-border rounded-lg bg-app-bg text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <input type="number" min={0} max={100} value={form.progress} onChange={(e) => onChange({ ...form, progress: Math.min(100, Math.max(0, +e.target.value)) })} className="w-full min-h-[44px] px-3 py-2 text-sm border border-app-border rounded-lg bg-app-bg text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500" />
         </div>
         <div className="sm:col-span-2">
           <label className="text-xs text-app-muted block mb-1">Color</label>
-          <div className="flex gap-1.5 flex-wrap">
+          <div className="flex gap-2 flex-wrap">
             {SCHEDULE_COLORS.map((color) => (
-              <button key={color} onClick={() => onChange({ ...form, color })} aria-label={`Color ${color}`} className={`w-7 h-7 sm:w-6 sm:h-6 rounded-full border-2 transition-all ${form.color === color ? 'border-app-text scale-110' : 'border-transparent'}`} style={{ backgroundColor: color }} />
+              <button key={color} onClick={() => onChange({ ...form, color })} aria-label={`Color ${color}`} className={`w-11 h-11 sm:w-6 sm:h-6 rounded-full border-2 transition-all ${form.color === color ? 'border-app-text scale-110' : 'border-transparent'}`} style={{ backgroundColor: color }} />
             ))}
           </div>
         </div>
         <div className="sm:col-span-4">
           <label className="text-xs text-app-muted block mb-1">Notas</label>
-          <input value={form.notes ?? ''} onChange={(e) => onChange({ ...form, notes: e.target.value })} className="w-full px-3 py-2 text-sm border border-app-border rounded-lg bg-app-bg text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <input value={form.notes ?? ''} onChange={(e) => onChange({ ...form, notes: e.target.value })} className="w-full min-h-[44px] px-3 py-2 text-sm border border-app-border rounded-lg bg-app-bg text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500" />
         </div>
       </div>
       <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
-        <button onClick={onCancel} className="w-full sm:w-auto px-4 py-2 text-sm border border-app-border rounded-lg hover:bg-app-hover text-app-muted">Cancelar</button>
-        <button onClick={onSave} disabled={saving || !form.name.trim() || !form.end_date} className="w-full sm:w-auto px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium">
+        <button onClick={onCancel} className="w-full sm:w-auto min-h-[44px] px-4 py-2 text-sm border border-app-border rounded-lg hover:bg-app-hover text-app-muted">Cancelar</button>
+        <button onClick={onSave} disabled={saving || !form.name.trim() || !form.end_date} className="w-full sm:w-auto min-h-[44px] px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium">
           {saving ? 'Guardando...' : 'Guardar'}
         </button>
       </div>

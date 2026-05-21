@@ -16,6 +16,30 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ### Fixed
 - Pendiente.
 
+## [0.5.0] - 2026-05-21
+
+### Added
+- Reporte mensual PDF con 4 secciones (resumen ejecutivo, nomina, compras, avances) (#24).
+- PWA instalable en Android e iOS con manifest y service worker pulidos (#24).
+- Internacionalizacion ES/EN con selector de idioma en sidebar (#24).
+- Foto y geolocalizacion en captura de Asistencia desde el frente de obra (#24).
+- Foto en entradas de Bitacora diaria (#24).
+- CTAs sticky en flujos mobile para acciones primarias (#24).
+- Invitacion de usuarios por email desde `/admin/usuarios` con tab dedicada (#24).
+- Export profundo en CSV y ZIP para datos transversales del proyecto (#24).
+- Specs e2e adicionales para los flujos nuevos (#24).
+
+### Changed
+- Auditoria mobile profunda aplicada en Cubicaciones, Nomina, Ordenes de Compra, Inventario y CxP (#24).
+
+### Fixed
+- Error de build TypeScript en `executiveSummary` (#24).
+- Panel de exportar en pantalla de Settings (#24).
+
+### Migrations
+- `040_bitacora_photos`: soporte de fotos en bitacora diaria (#24).
+- `041_attendance_photo_geo`: foto y coordenadas GPS en asistencia (#24).
+
 ## [0.4.0] - 2026-05-21
 
 ### Added
@@ -92,6 +116,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - Alineacion de `PROJECT.md` con el estado actual del proyecto.
 - Registro de canvases oficiales de auditoria.
 
-[Unreleased]: https://github.com/arqcristianluciano/nominapp/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/arqcristianluciano/nominapp/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/arqcristianluciano/nominapp/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/arqcristianluciano/nominapp/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/arqcristianluciano/nominapp/releases/tag/v0.3.0

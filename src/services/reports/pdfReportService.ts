@@ -12,8 +12,6 @@
  *
  * Real section rendering is delegated to other agents/modules.
  */
-import pdfMake from 'pdfmake/build/pdfmake'
-import pdfFonts from 'pdfmake/build/vfs_fonts'
 import type {
   Content,
   TCreatedPdf,
@@ -24,6 +22,71 @@ import type {
 import type { BudgetBreakdownInput } from './sections/budgetBreakdown'
 import type { CashflowInput } from './sections/cashflow'
 import type { ExecutiveSummaryInput } from './sections/executiveSummary'
+
+/* -------------------------------------------------------------------------- */
+/* Dynamic pdfmake loader                                                     */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Shape of the dynamically imported `pdfmake` module surface we rely on.
+ *
+ * Keeping it minimal avoids re-stating the full upstream types while still
+ * giving consumers type-safety for the calls we make below.
+ */
+type PdfMakeModule = {
+  createPdf: (doc: TDocumentDefinitions) => TCreatedPdf
+  addVirtualFileSystem: (vfs: Record<string, string>) => void
+  setFonts: (fonts: TFontDictionary) => void
+}
+
+let pdfMakePromise: Promise<PdfMakeModule> | null = null
+
+/**
+ * Lazily loads `pdfmake` (and its VFS fonts bundle) on first use, then caches
+ * the resolved module so subsequent calls reuse the same instance.
+ *
+ * This keeps the (~1.5MB) `pdfmake` payload out of the Reportes route chunk
+ * and only fetches it when the user actually generates a PDF.
+ */
+async function loadPdfMake(): Promise<PdfMakeModule> {
+  if (!pdfMakePromise) {
+    pdfMakePromise = (async () => {
+      const [pdfMakeModule, pdfFontsModule] = await Promise.all([
+        import('pdfmake/build/pdfmake'),
+        import('pdfmake/build/vfs_fonts'),
+      ])
+
+      const pdfMake = (pdfMakeModule as unknown as { default?: PdfMakeModule } & PdfMakeModule)
+        .default ?? (pdfMakeModule as unknown as PdfMakeModule)
+
+      ensureFontsRegistered(pdfMake, pdfFontsModule)
+      return pdfMake
+    })()
+  }
+  return pdfMakePromise
+}
+
+/**
+ * Wraps the eventually-resolved `TCreatedPdf` returned by `pdfMake.createPdf`
+ * so that the public API of {@link generateMonthlyReport} / {@link buildDocument}
+ * can stay synchronous while the underlying `pdfmake` module loads on demand.
+ *
+ * Every method on `TCreatedPdf` already returns a `Promise`, so the proxy just
+ * defers each call until the real document is available.
+ */
+function createLazyPdfDoc(docPromise: Promise<TCreatedPdf>): TCreatedPdf {
+  return {
+    getStream: () => docPromise.then((doc) => doc.getStream()),
+    getBuffer: () => docPromise.then((doc) => doc.getBuffer()),
+    getBase64: () => docPromise.then((doc) => doc.getBase64()),
+    getDataUrl: () => docPromise.then((doc) => doc.getDataUrl()),
+    write: (fileName: string) => docPromise.then((doc) => doc.write(fileName)),
+    getBlob: () => docPromise.then((doc) => doc.getBlob()),
+    download: (fileName?: string) => docPromise.then((doc) => doc.download(fileName)),
+    open: (win?: Window | null) => docPromise.then((doc) => doc.open(win)),
+    print: (win?: Window | null) => docPromise.then((doc) => doc.print(win)),
+  }
+}
 
 /* -------------------------------------------------------------------------- */
 /* Font setup                                                                 */
@@ -53,10 +116,10 @@ let fontsInitialised = false
  * The `vfs_fonts` bundle has no TypeScript declarations, so we treat it as an
  * unknown record and reach for the canonical `vfs` property when present.
  */
-function ensureFontsRegistered(): void {
+function ensureFontsRegistered(pdfMake: PdfMakeModule, pdfFonts: unknown): void {
   if (fontsInitialised) return
 
-  const vfsModule = pdfFonts as unknown as {
+  const vfsModule = pdfFonts as {
     vfs?: Record<string, string>
     pdfMake?: { vfs?: Record<string, string> }
     default?: { vfs?: Record<string, string> }
@@ -181,12 +244,14 @@ export function buildFooter(opts: ReportChromeOptions) {
 /**
  * Wraps `pdfMake.createPdf` while making sure fonts/VFS are registered first.
  *
- * Returns the raw `TCreatedPdf` so callers may choose how to materialise the
- * document (open, download, get as blob, etc.).
+ * Returns a synchronous `TCreatedPdf` whose async methods (download, getBlob,
+ * etc.) transparently await the dynamically-loaded `pdfmake` module on first
+ * invocation. Subsequent calls reuse the cached module, so they incur no extra
+ * download cost.
  */
 export function buildDocument(content: TDocumentDefinitions): TCreatedPdf {
-  ensureFontsRegistered()
-  return pdfMake.createPdf(content)
+  const docPromise = loadPdfMake().then((pdfMake) => pdfMake.createPdf(content))
+  return createLazyPdfDoc(docPromise)
 }
 
 /**

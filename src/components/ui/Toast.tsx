@@ -63,21 +63,31 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={ctx}>
       {children}
-      <div className="fixed bottom-5 right-5 z-[100] flex flex-col gap-2 pointer-events-none">
+      <div
+        className="fixed bottom-5 right-5 z-[100] flex flex-col gap-2 pointer-events-none"
+        aria-live="polite"
+        aria-atomic="false"
+      >
         {toasts.map((t) => {
           const Icon = ICONS[t.type]
+          const isAssertive = t.type === 'error' || t.type === 'warning'
           return (
             <div
               key={t.id}
+              role={isAssertive ? 'alert' : 'status'}
+              aria-live={isAssertive ? 'assertive' : 'polite'}
+              aria-atomic="true"
               className={`flex items-center gap-3 pl-3.5 pr-2 py-3 rounded-xl shadow-lg min-w-[260px] max-w-xs pointer-events-auto animate-in slide-in-from-bottom-2 fade-in duration-200 ${STYLES[t.type]}`}
             >
-              <Icon className="w-4 h-4 shrink-0" />
+              <Icon className="w-4 h-4 shrink-0" aria-hidden="true" />
               <p className="flex-1 text-sm font-medium leading-snug">{t.message}</p>
               <button
+                type="button"
                 onClick={() => dismiss(t.id)}
-                className="p-1 rounded-lg hover:bg-white/20 transition-colors shrink-0"
+                aria-label="Cerrar notificación"
+                className="p-1 rounded-lg hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white transition-colors shrink-0"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-3.5 h-3.5" aria-hidden="true" />
               </button>
             </div>
           )

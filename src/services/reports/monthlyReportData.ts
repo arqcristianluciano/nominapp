@@ -135,6 +135,79 @@ async function loadAllCommittedPayrollsInRange(
 }
 
 /* -------------------------------------------------------------------------- */
+/* KPI counters — queries directas a la base de datos                         */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Número de días distintos con asistencia registrada en el proyecto durante
+ * el rango del reporte. Equivale a:
+ *   SELECT COUNT(DISTINCT date) FROM attendance_records
+ *   WHERE project_id = $1 AND date BETWEEN $start AND $end
+ */
+async function countDaysWorked(projectId: string, range: MonthRange): Promise<number> {
+  const { data, error } = await supabase
+    .from('attendance_records')
+    .select('date')
+    .eq('project_id', projectId)
+    .gte('date', range.start)
+    .lte('date', range.end)
+  if (error) {
+    console.warn('[monthlyReportData] countDaysWorked failed:', error.message)
+    return 0
+  }
+  const days = new Set((data ?? []).map((row) => (row.date ?? '').slice(0, 10)))
+  days.delete('')
+  return days.size
+}
+
+/**
+ * Partidas (budget_items) con avance reportado parcial (0 < % < 100) para el
+ * proyecto. Equivale a:
+ *   SELECT COUNT(DISTINCT budget_item_id) FROM partida_progress
+ *   WHERE project_id = $1 AND executed_percent > 0 AND executed_percent < 100
+ *
+ * Nota: la columna real en BD es `executed_percent` (no `progress_pct`).
+ */
+async function countPartidasInProgress(projectId: string): Promise<number> {
+  const { data, error } = await supabase
+    .from('partida_progress')
+    .select('budget_item_id, executed_percent')
+    .eq('project_id', projectId)
+    .gt('executed_percent', 0)
+    .lt('executed_percent', 100)
+  if (error) {
+    console.warn('[monthlyReportData] countPartidasInProgress failed:', error.message)
+    return 0
+  }
+  const itemIds = new Set(
+    (data ?? [])
+      .map((row) => row.budget_item_id)
+      .filter((id): id is string => Boolean(id)),
+  )
+  return itemIds.size
+}
+
+/**
+ * Facturas de materiales recibidas durante el rango del reporte.
+ *
+ * `material_invoices` no contiene `project_id` ni una fecha propia; se vinculan
+ * al proyecto a través de `payroll_periods` (campo `report_date`). Esta función
+ * acepta directamente los IDs de los periodos que caen dentro del rango.
+ */
+async function countMaterialsReceived(periodIdsInRange: string[]): Promise<number> {
+  if (periodIdsInRange.length === 0) return 0
+  const { count, error } = await supabase
+    .from('material_invoices')
+    .select('id', { count: 'exact', head: true })
+    .in('payroll_period_id', periodIdsInRange)
+  if (error) {
+    console.warn('[monthlyReportData] countMaterialsReceived failed:', error.message)
+    return 0
+  }
+  return count ?? 0
+}
+
+/* -------------------------------------------------------------------------- */
 /* Section builders                                                           */
 /* -------------------------------------------------------------------------- */
 
@@ -421,13 +494,13 @@ export async function loadMonthlyReportData(
     totalBudget > 0 ? Math.min(100, (totalInvested / totalBudget) * 100) : 0
 
   const activeContractors = new Set(laborItems.map((ll) => ll.contractor_id)).size
-  const partidasInProgress = new Set(
-    laborItems
-      .map((ll) => ll.budget_item_id)
-      .filter((id): id is string => Boolean(id)),
-  ).size
-  const materialsReceived = materialInvoices.length
-  const daysWorked = new Set(periodsInRange.map((p) => p.report_date)).size
+
+  // KPIs derivados de datos reales (queries directas a la BD).
+  const [daysWorked, partidasInProgress, materialsReceived] = await Promise.all([
+    countDaysWorked(projectId, range),
+    countPartidasInProgress(projectId),
+    countMaterialsReceived(periodIds),
+  ])
 
   const budgetBreakdown = buildBudgetBreakdown(
     scaffold,
