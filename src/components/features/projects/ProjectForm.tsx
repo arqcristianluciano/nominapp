@@ -63,6 +63,25 @@ export function ProjectForm({ initial, onSubmit, onCancel, saving }: Props) {
   const [newCompanyName, setNewCompanyName] = useState('')
   const [newCompanyRnc, setNewCompanyRnc] = useState('')
 
+  // Reset all form fields when the edited entity changes (or switches to create
+  // mode), so a reused mounted form does not keep the previous project's values.
+  useEffect(() => {
+    setName(initial?.name || '')
+    setCode(initial?.code || '')
+    setCodeTouched(!!initial?.code)
+    setLocation(initial?.location || '')
+    setDtPercent(initial?.dt_percent ?? 10)
+    setAdminPercent(initial?.admin_percent ?? 1)
+    setTransportPercent(initial?.transport_percent ?? 0.5)
+    setPlanningFee(initial?.planning_fee != null ? String(initial.planning_fee) : '0')
+    setCustomIndirects(initial?.custom_indirects ?? [])
+    setStatus(initial?.status || 'active')
+    setCompanyId(initial?.company_id || '')
+    setNewCompanyName('')
+    setNewCompanyRnc('')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initial?.id])
+
   const isEditing = !!initial
   const needsNewCompany = !isEditing && companiesLoaded && companies.length === 0
 

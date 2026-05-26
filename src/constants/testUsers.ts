@@ -4,6 +4,14 @@
 //   1. Borrar las filas de auth.users con email LIKE '%@nominapp.local'.
 //   2. Quitar este archivo / el componente LoginQuickAccess del bundle.
 
+// ⚠️ TEMPORAL — acceso rápido de pruebas en la pantalla de login.
+// Mientras esté en `true`, los botones de "entrar como <rol>" se muestran y
+// funcionan TAMBIÉN en producción: cualquiera con la URL puede entrar como
+// cualquier rol (incluido Director General). Es solo para la fase de pruebas.
+// Para desactivarlo: pon `false` (sin redeploy de código si lo mueves a env),
+// o borra este archivo + el componente LoginQuickAccess antes de salir a real.
+export const ENABLE_TEST_QUICK_LOGIN = true
+
 export interface TestUser {
   email: string
   password: string

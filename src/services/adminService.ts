@@ -5,6 +5,7 @@ import {
   type ApprovalEntity,
 } from '@/services/approvalsService'
 import type { ProjectRole } from '@/hooks/useProjectRoles'
+import { addBreadcrumb } from '@/lib/sentry'
 
 export interface Role {
   id: string
@@ -151,6 +152,7 @@ export const adminService = {
   },
 
   async grantCapability(roleId: string, capabilityId: string): Promise<void> {
+    addBreadcrumb('admin', 'grantCapability', { roleId, capabilityId })
     const { error } = await supabase
       .from('role_capabilities')
       .insert({ role_id: roleId, capability_id: capabilityId })
@@ -166,6 +168,7 @@ export const adminService = {
   },
 
   async revokeCapability(roleId: string, capabilityId: string): Promise<void> {
+    addBreadcrumb('admin', 'revokeCapability', { roleId, capabilityId })
     const { error } = await supabase
       .from('role_capabilities')
       .delete()
@@ -275,6 +278,7 @@ export const adminService = {
     salary?: number
     payment_terms?: string
   }): Promise<{ id: string; email: string }> {
+    addBreadcrumb('admin', 'createUser', { email: input.email })
     const { data, error } = await supabase.functions.invoke('admin-create-user', { body: input })
     if (error) throw error
     return data as { id: string; email: string }

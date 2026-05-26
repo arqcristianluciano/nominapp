@@ -1,8 +1,12 @@
 // Plantillas Excel descargables para importar datos en NominApp.
 // Cada funcion genera un workbook, lo escribe a un Blob y dispara la descarga
 // creando un <a> temporal en el DOM. Usa la libreria `xlsx` ya instalada.
+//
+// La libreria `xlsx` se carga dinamicamente (lazy-load) para no incluirla en
+// el bundle inicial; solo se descarga cuando el usuario ejecuta una accion
+// de exportacion/importacion.
 
-import * as XLSX from 'xlsx'
+import type * as XLSXType from 'xlsx'
 
 const BOLD_HEADER_STYLE = { font: { bold: true } }
 
@@ -12,12 +16,15 @@ const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.s
  * Construye una hoja a partir de una matriz de filas (la primera es el header)
  * y aplica negrita a las celdas del header via la propiedad `s`.
  */
-function buildSheetWithBoldHeader(rows: (string | number)[][]): XLSX.WorkSheet {
+function buildSheetWithBoldHeader(
+  XLSX: typeof XLSXType,
+  rows: (string | number)[][],
+): XLSXType.WorkSheet {
   const ws = XLSX.utils.aoa_to_sheet(rows)
   const headerLength = rows[0]?.length ?? 0
   for (let c = 0; c < headerLength; c++) {
     const addr = XLSX.utils.encode_cell({ r: 0, c })
-    const cell = ws[addr] as XLSX.CellObject | undefined
+    const cell = ws[addr] as XLSXType.CellObject | undefined
     if (cell) {
       cell.s = BOLD_HEADER_STYLE
     }
@@ -28,7 +35,11 @@ function buildSheetWithBoldHeader(rows: (string | number)[][]): XLSX.WorkSheet {
 /**
  * Dispara la descarga del workbook como archivo .xlsx usando Blob + <a download>.
  */
-function downloadWorkbook(wb: XLSX.WorkBook, filename: string): void {
+function downloadWorkbook(
+  XLSX: typeof XLSXType,
+  wb: XLSXType.WorkBook,
+  filename: string,
+): void {
   const out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' }) as ArrayBuffer
   const blob = new Blob([out], { type: XLSX_MIME })
   const url = URL.createObjectURL(blob)
@@ -45,7 +56,8 @@ function downloadWorkbook(wb: XLSX.WorkBook, filename: string): void {
  * Genera y descarga la plantilla para importar Presupuesto de obra.
  * Columnas: Capitulo, Codigo Partida, Descripcion, Unidad, Cantidad, Precio Unitario.
  */
-export function downloadBudgetTemplate(): void {
+export async function downloadBudgetTemplate(): Promise<void> {
+  const XLSX = await import('xlsx')
   const rows: (string | number)[][] = [
     ['Capitulo', 'Codigo Partida', 'Descripcion', 'Unidad', 'Cantidad', 'Precio Unitario'],
     ['1. Preliminares', '1.1', 'Replanteo y nivelacion del terreno', 'm2', 120, 8.5],
@@ -53,27 +65,28 @@ export function downloadBudgetTemplate(): void {
     ['2. Movimiento de tierra', '2.1', 'Excavacion manual hasta 1.50 m', 'm3', 35, 22.75],
     ['3. Concreto', '3.1', 'Concreto premezclado f c=210 kg/cm2', 'm3', 18, 185],
   ]
-  const ws = buildSheetWithBoldHeader(rows)
+  const ws = buildSheetWithBoldHeader(XLSX, rows)
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, 'Presupuesto')
-  downloadWorkbook(wb, 'plantilla_presupuesto.xlsx')
+  downloadWorkbook(XLSX, wb, 'plantilla_presupuesto.xlsx')
 }
 
 /**
  * Genera y descarga la plantilla para importar Nomina (payroll).
  * Columnas: Contratista, Cedula, Categoria, Cantidad, Precio, Total.
  */
-export function downloadPayrollTemplate(): void {
+export async function downloadPayrollTemplate(): Promise<void> {
+  const XLSX = await import('xlsx')
   const rows: (string | number)[][] = [
     ['Contratista', 'Cedula', 'Categoria', 'Cantidad', 'Precio', 'Total'],
     ['Juan Perez', 'V-12345678', 'Albanil', 8, 15, 120],
     ['Maria Gonzalez', 'V-23456789', 'Ayudante', 8, 10, 80],
     ['Carlos Ramirez', 'V-34567890', 'Maestro de obra', 8, 25, 200],
   ]
-  const ws = buildSheetWithBoldHeader(rows)
+  const ws = buildSheetWithBoldHeader(XLSX, rows)
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, 'Nomina')
-  downloadWorkbook(wb, 'plantilla_nomina.xlsx')
+  downloadWorkbook(XLSX, wb, 'plantilla_nomina.xlsx')
 }
 
 /**
@@ -81,7 +94,8 @@ export function downloadPayrollTemplate(): void {
  * El formato usa filas-header por categoria (Ajustes, Equipos, Mano de Obra, Materiales)
  * seguidas de partidas con: Codigo, Descripcion, Unidad, Cantidad, Precio Unitario.
  */
-export function downloadMercadoTemplate(): void {
+export async function downloadMercadoTemplate(): Promise<void> {
+  const XLSX = await import('xlsx')
   const rows: (string | number)[][] = [
     ['Codigo', 'Descripcion', 'Unidad', 'Cantidad', 'Precio Unitario'],
     ['MANO DE OBRA', '', '', '', ''],
@@ -95,8 +109,8 @@ export function downloadMercadoTemplate(): void {
     ['AJUSTES', '', '', '', ''],
     ['AJ-001', 'Ajuste por desperdicio', 'global', 1, 150],
   ]
-  const ws = buildSheetWithBoldHeader(rows)
+  const ws = buildSheetWithBoldHeader(XLSX, rows)
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, 'Mercado')
-  downloadWorkbook(wb, 'plantilla_mercado.xlsx')
+  downloadWorkbook(XLSX, wb, 'plantilla_mercado.xlsx')
 }

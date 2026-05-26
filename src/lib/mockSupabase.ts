@@ -228,6 +228,23 @@ class MockQueryBuilder {
   }
 }
 
+interface MockChannel {
+  on: (event: string, filter: unknown, handler: (...args: unknown[]) => void) => MockChannel
+  subscribe: (...args: unknown[]) => MockChannel
+  unsubscribe: (...args: unknown[]) => MockChannel
+}
+
+function createMockChannel(name: string): MockChannel {
+  const channel: MockChannel = {
+    name,
+    on: () => channel,
+    subscribe: () => channel,
+    unsubscribe: () => channel,
+  } as MockChannel & { name: string }
+  return channel
+}
+
 export const mockSupabase = {
   from(table: string) { return new MockQueryBuilder(table) },
+  channel(name: string): MockChannel { return createMockChannel(name) },
 }

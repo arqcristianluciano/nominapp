@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import * as XLSX from 'xlsx'
+import type * as XLSXType from 'xlsx'
 import { Download, FileSpreadsheet, Upload, X } from 'lucide-react'
 import { useProjectStore } from '@/stores/projectStore'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
@@ -12,7 +12,8 @@ import { useAttendancePage } from '@/hooks/useAttendancePage'
 
 const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
-function downloadAttendanceTemplate(): void {
+async function downloadAttendanceTemplate(): Promise<void> {
+  const XLSX = await import('xlsx')
   const rows: (string | number)[][] = [
     ['Fecha', 'Contratista', 'Hora entrada', 'Hora salida', 'Horas trabajadas'],
     ['2026-05-21', 'Juan Perez', '07:00', '16:00', 8],
@@ -23,7 +24,7 @@ function downloadAttendanceTemplate(): void {
   const headerLength = rows[0]?.length ?? 0
   for (let c = 0; c < headerLength; c++) {
     const addr = XLSX.utils.encode_cell({ r: 0, c })
-    const cell = ws[addr] as XLSX.CellObject | undefined
+    const cell = ws[addr] as XLSXType.CellObject | undefined
     if (cell) cell.s = { font: { bold: true } }
   }
   const wb = XLSX.utils.book_new()

@@ -4,13 +4,19 @@ interface SkeletonProps {
 
 export function Skeleton({ className = '' }: SkeletonProps) {
   return (
-    <div className={`animate-pulse bg-app-chip rounded ${className}`} />
+    <div className={`animate-pulse bg-app-chip rounded ${className}`} aria-hidden="true" />
   )
 }
 
 export function SkeletonTable({ rows = 5, cols = 4 }: { rows?: number; cols?: number }) {
   return (
-    <div className="bg-app-surface rounded-xl border border-app-border overflow-hidden">
+    <div
+      role="status"
+      aria-busy="true"
+      aria-live="polite"
+      aria-label="Cargando"
+      className="bg-app-surface rounded-xl border border-app-border overflow-hidden"
+    >
       <div className="bg-app-bg border-b border-app-border px-4 py-3 flex gap-4">
         {Array.from({ length: cols }).map((_, i) => (
           <Skeleton key={i} className="h-3 flex-1" />
@@ -25,13 +31,20 @@ export function SkeletonTable({ rows = 5, cols = 4 }: { rows?: number; cols?: nu
           </div>
         ))}
       </div>
+      <span className="sr-only">Cargando contenido...</span>
     </div>
   )
 }
 
 export function SkeletonCards({ count = 3 }: { count?: number }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div
+      role="status"
+      aria-busy="true"
+      aria-live="polite"
+      aria-label="Cargando"
+      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+    >
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className="bg-app-surface rounded-xl border border-app-border p-4 animate-pulse space-y-3">
           <div className="flex items-center gap-3">
@@ -44,6 +57,7 @@ export function SkeletonCards({ count = 3 }: { count?: number }) {
           <Skeleton className="h-2 w-full rounded-full" />
         </div>
       ))}
+      <span className="sr-only">Cargando contenido...</span>
     </div>
   )
 }

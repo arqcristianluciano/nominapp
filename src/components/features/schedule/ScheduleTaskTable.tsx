@@ -23,7 +23,8 @@ export function ScheduleTaskTable({ tasks, today, onEdit, onDelete }: Props) {
   return (
     <div className="bg-app-surface border border-app-border rounded-xl overflow-hidden">
       {/* Desktop / tablet table view */}
-      <table className="hidden sm:table w-full text-sm">
+      <div className="hidden sm:block overflow-x-auto">
+      <table className="w-full text-sm min-w-[600px]">
         <thead><tr className="bg-app-hover/50 text-xs text-app-muted">
           <th className="text-left px-4 py-2.5 font-medium">Tarea</th>
           <th className="text-left px-4 py-2.5 font-medium">Inicio</th>
@@ -49,8 +50,8 @@ export function ScheduleTaskTable({ tasks, today, onEdit, onDelete }: Props) {
                 <td className="px-4 py-3"><div className="flex items-center gap-2 justify-center"><div className="w-20 h-1.5 bg-app-chip rounded-full overflow-hidden"><div className="h-full rounded-full" style={{ width: `${task.progress}%`, backgroundColor: task.color }} /></div><span className="text-xs text-app-muted w-8">{task.progress}%</span></div></td>
                 <td className="px-4 py-3">
                   <div className="flex gap-1">
-                    <button onClick={() => onEdit(task)} aria-label={`Editar tarea ${task.name}`} className="p-1.5 text-app-subtle hover:text-blue-500 rounded hover:bg-blue-50 dark:hover:bg-blue-950/30"><Pencil className="w-3.5 h-3.5" /></button>
-                    <button onClick={() => setDeleteId(task.id)} aria-label={`Eliminar tarea ${task.name}`} className="p-1.5 text-app-subtle hover:text-red-500 rounded hover:bg-red-50 dark:hover:bg-red-950/30"><Trash2 className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => onEdit(task)} aria-label={`Editar tarea ${task.name}`} className="p-2 text-app-subtle hover:text-blue-500 rounded hover:bg-blue-50 dark:hover:bg-blue-950/30"><Pencil className="w-4 h-4" /></button>
+                    <button onClick={() => setDeleteId(task.id)} aria-label={`Eliminar tarea ${task.name}`} className="p-2 text-app-subtle hover:text-red-500 rounded hover:bg-red-50 dark:hover:bg-red-950/30"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 </td>
               </tr>
@@ -58,26 +59,43 @@ export function ScheduleTaskTable({ tasks, today, onEdit, onDelete }: Props) {
           })}
         </tbody>
       </table>
+      </div>
       {/* Mobile card view */}
       <ul className="sm:hidden divide-y divide-app-border">
         {tasks.map((task) => {
           const isDelayed = task.end_date < today && task.progress < 100
+          const isDone = task.progress >= 100
           return (
             <li key={task.id} className="px-3 py-3 space-y-2">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-start gap-2 min-w-0 flex-1">
                   <div className="w-2.5 h-2.5 rounded-full shrink-0 mt-1.5" style={{ backgroundColor: task.color }} />
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-medium text-sm text-app-text truncate">{task.name}</span>
-                      {isDelayed && <AlertTriangle className="w-3.5 h-3.5 text-red-500 shrink-0" />}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-medium text-sm text-app-text break-words">{task.name}</span>
+                      {isDelayed && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400 text-[10px] font-semibold">
+                          <AlertTriangle className="w-3 h-3" />
+                          Retraso
+                        </span>
+                      )}
+                      {!isDelayed && isDone && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-400 text-[10px] font-semibold">
+                          Completada
+                        </span>
+                      )}
+                      {!isDelayed && !isDone && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400 text-[10px] font-semibold">
+                          En curso
+                        </span>
+                      )}
                     </div>
                     {task.notes && <p className="text-xs text-app-muted mt-0.5 break-words">{task.notes}</p>}
                   </div>
                 </div>
                 <div className="flex gap-1 shrink-0">
-                  <button onClick={() => onEdit(task)} aria-label={`Editar tarea ${task.name}`} className="p-1.5 text-app-subtle hover:text-blue-500 rounded hover:bg-blue-50 dark:hover:bg-blue-950/30"><Pencil className="w-3.5 h-3.5" /></button>
-                  <button onClick={() => setDeleteId(task.id)} aria-label={`Eliminar tarea ${task.name}`} className="p-1.5 text-app-subtle hover:text-red-500 rounded hover:bg-red-50 dark:hover:bg-red-950/30"><Trash2 className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => onEdit(task)} aria-label={`Editar tarea ${task.name}`} className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center text-app-subtle hover:text-blue-500 rounded hover:bg-blue-50 dark:hover:bg-blue-950/30"><Pencil className="w-4 h-4" /></button>
+                  <button onClick={() => setDeleteId(task.id)} aria-label={`Eliminar tarea ${task.name}`} className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center text-app-subtle hover:text-red-500 rounded hover:bg-red-50 dark:hover:bg-red-950/30"><Trash2 className="w-4 h-4" /></button>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2 text-[11px]">

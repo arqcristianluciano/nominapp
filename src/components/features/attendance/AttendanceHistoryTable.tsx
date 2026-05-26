@@ -1,6 +1,7 @@
-import { useState } from 'react'
-import { ChevronLeft, ChevronRight, ImageIcon, MapPin, Trash2 } from 'lucide-react'
+import { memo, useState } from 'react'
+import { ChevronLeft, ChevronRight, ImageIcon, ImageOff, MapPin, Trash2 } from 'lucide-react'
 import { attendanceService, type AttendanceRecord } from '@/services/attendanceService'
+import { useToast } from '@/components/ui/Toast'
 import { parseDateLocal } from '@/utils/dateLocal'
 
 interface Props {
@@ -29,6 +30,8 @@ function buildMapsUrl(lat: number, lon: number): string {
 
 function PhotoLink({ path, label }: { path: string; label?: string }) {
   const [loading, setLoading] = useState(false)
+  const [failed, setFailed] = useState(false)
+  const { error: toastError } = useToast()
   async function handleClick(event: React.MouseEvent) {
     event.preventDefault()
     event.stopPropagation()
@@ -37,11 +40,24 @@ function PhotoLink({ path, label }: { path: string; label?: string }) {
     try {
       const url = await attendanceService.getPhotoUrl(path)
       window.open(url, '_blank', 'noopener,noreferrer')
-    } catch {
-      // Silently ignore - the URL may have failed to resolve.
+    } catch (err) {
+      console.warn('[AttendanceHistoryTable] photo url failed', err)
+      setFailed(true)
+      toastError('No se pudo abrir la foto.')
     } finally {
       setLoading(false)
     }
+  }
+  if (failed) {
+    return (
+      <span
+        className="flex items-center gap-1 text-xs text-app-subtle"
+        title="No se pudo cargar la foto"
+      >
+        <ImageOff className="w-3.5 h-3.5" />
+        <span>{label ? 'Foto no disponible' : 'No disponible'}</span>
+      </span>
+    )
   }
   return (
     <button
@@ -56,6 +72,117 @@ function PhotoLink({ path, label }: { path: string; label?: string }) {
     </button>
   )
 }
+
+interface AttendanceRowProps {
+  record: AttendanceRecord
+  onDelete: (recordId: string) => void
+}
+
+function AttendanceTableRowComponent({ record, onDelete }: AttendanceRowProps) {
+  return (
+    <tr className="hover:bg-app-hover/50">
+      <td className="px-4 py-3 text-app-text whitespace-nowrap">{formatDate(record.date)}</td>
+      <td className="px-4 py-3 text-app-text">{record.contractor?.name ?? '—'}</td>
+      <td className="px-4 py-3 text-app-text">{record.activity}</td>
+      <td className="px-4 py-3 text-center font-semibold text-app-text">{record.workers_count}</td>
+      <td className="px-4 py-3 text-center text-app-text">{record.hours_worked}h</td>
+      <td className="px-4 py-3 text-center font-semibold text-blue-600">
+        {record.workers_count * record.hours_worked}
+      </td>
+      <td className="px-4 py-3 text-center">
+        {record.photo_url ? (
+          <div className="flex items-center justify-center">
+            <PhotoLink path={record.photo_url} />
+          </div>
+        ) : (
+          <span className="text-app-subtle text-xs">—</span>
+        )}
+      </td>
+      <td className="px-4 py-3 text-center">
+        {record.latitude != null && record.longitude != null ? (
+          <a
+            href={buildMapsUrl(record.latitude, record.longitude)}
+            target="_blank"
+            rel="noreferrer"
+            title={`${record.latitude}, ${record.longitude}`}
+          >
+            <MapPin className="w-3.5 h-3.5 text-blue-500 hover:text-blue-700 inline" />
+          </a>
+        ) : (
+          <span className="text-app-subtle text-xs">—</span>
+        )}
+      </td>
+      <td className="px-4 py-3">
+        <button
+          onClick={() => onDelete(record.id)}
+          className="p-1.5 text-app-subtle hover:text-red-500 rounded hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
+      </td>
+    </tr>
+  )
+}
+AttendanceTableRowComponent.displayName = 'AttendanceTableRow'
+const AttendanceTableRow = memo(AttendanceTableRowComponent)
+
+function AttendanceMobileCardComponent({ record, onDelete }: AttendanceRowProps) {
+  return (
+    <div className="p-4 space-y-2">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <p className="text-xs text-app-muted">{formatDate(record.date)}</p>
+          <p className="font-semibold text-app-text text-sm truncate">
+            {record.contractor?.name ?? '—'}
+          </p>
+          <p className="text-xs text-app-muted line-clamp-2">{record.activity}</p>
+        </div>
+        <button
+          onClick={() => onDelete(record.id)}
+          className="p-1.5 text-app-subtle hover:text-red-500 rounded hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors shrink-0"
+          aria-label="Eliminar"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2 text-xs">
+        <div className="bg-app-hover/40 rounded-lg px-2 py-1.5">
+          <p className="text-[10px] text-app-subtle uppercase">Trab.</p>
+          <p className="font-semibold text-app-text">{record.workers_count}</p>
+        </div>
+        <div className="bg-app-hover/40 rounded-lg px-2 py-1.5">
+          <p className="text-[10px] text-app-subtle uppercase">Horas</p>
+          <p className="font-semibold text-app-text">{record.hours_worked}h</p>
+        </div>
+        <div className="bg-app-hover/40 rounded-lg px-2 py-1.5">
+          <p className="text-[10px] text-app-subtle uppercase">H-H</p>
+          <p className="font-semibold text-blue-600">
+            {record.workers_count * record.hours_worked}
+          </p>
+        </div>
+      </div>
+
+      {(record.photo_url || (record.latitude != null && record.longitude != null)) && (
+        <div className="flex items-center gap-3 pt-1">
+          {record.photo_url && <PhotoLink path={record.photo_url} label="Foto" />}
+          {record.latitude != null && record.longitude != null && (
+            <a
+              href={buildMapsUrl(record.latitude, record.longitude)}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1 text-xs text-blue-600 hover:underline"
+            >
+              <MapPin className="w-3.5 h-3.5" /> Ubicación
+            </a>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+AttendanceMobileCardComponent.displayName = 'AttendanceMobileCard'
+const AttendanceMobileCard = memo(AttendanceMobileCardComponent)
 
 export function AttendanceHistoryTable({
   records,
@@ -111,47 +238,7 @@ export function AttendanceHistoryTable({
               </thead>
               <tbody className="divide-y divide-app-border">
                 {records.map((record) => (
-                  <tr key={record.id} className="hover:bg-app-hover/50">
-                    <td className="px-4 py-3 text-app-text whitespace-nowrap">{formatDate(record.date)}</td>
-                    <td className="px-4 py-3 text-app-text">{record.contractor?.name ?? '—'}</td>
-                    <td className="px-4 py-3 text-app-text">{record.activity}</td>
-                    <td className="px-4 py-3 text-center font-semibold text-app-text">{record.workers_count}</td>
-                    <td className="px-4 py-3 text-center text-app-text">{record.hours_worked}h</td>
-                    <td className="px-4 py-3 text-center font-semibold text-blue-600">
-                      {record.workers_count * record.hours_worked}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      {record.photo_url ? (
-                        <div className="flex items-center justify-center">
-                          <PhotoLink path={record.photo_url} />
-                        </div>
-                      ) : (
-                        <span className="text-app-subtle text-xs">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      {record.latitude != null && record.longitude != null ? (
-                        <a
-                          href={buildMapsUrl(record.latitude, record.longitude)}
-                          target="_blank"
-                          rel="noreferrer"
-                          title={`${record.latitude}, ${record.longitude}`}
-                        >
-                          <MapPin className="w-3.5 h-3.5 text-blue-500 hover:text-blue-700 inline" />
-                        </a>
-                      ) : (
-                        <span className="text-app-subtle text-xs">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={() => onDelete(record.id)}
-                        className="p-1.5 text-app-subtle hover:text-red-500 rounded hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </td>
-                  </tr>
+                  <AttendanceTableRow key={record.id} record={record} onDelete={onDelete} />
                 ))}
               </tbody>
             </table>
@@ -160,57 +247,7 @@ export function AttendanceHistoryTable({
           {/* Mobile cards */}
           <div className="md:hidden divide-y divide-app-border">
             {records.map((record) => (
-              <div key={record.id} className="p-4 space-y-2">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-app-muted">{formatDate(record.date)}</p>
-                    <p className="font-semibold text-app-text text-sm truncate">
-                      {record.contractor?.name ?? '—'}
-                    </p>
-                    <p className="text-xs text-app-muted line-clamp-2">{record.activity}</p>
-                  </div>
-                  <button
-                    onClick={() => onDelete(record.id)}
-                    className="p-1.5 text-app-subtle hover:text-red-500 rounded hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors shrink-0"
-                    aria-label="Eliminar"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-3 gap-2 text-xs">
-                  <div className="bg-app-hover/40 rounded-lg px-2 py-1.5">
-                    <p className="text-[10px] text-app-subtle uppercase">Trab.</p>
-                    <p className="font-semibold text-app-text">{record.workers_count}</p>
-                  </div>
-                  <div className="bg-app-hover/40 rounded-lg px-2 py-1.5">
-                    <p className="text-[10px] text-app-subtle uppercase">Horas</p>
-                    <p className="font-semibold text-app-text">{record.hours_worked}h</p>
-                  </div>
-                  <div className="bg-app-hover/40 rounded-lg px-2 py-1.5">
-                    <p className="text-[10px] text-app-subtle uppercase">H-H</p>
-                    <p className="font-semibold text-blue-600">
-                      {record.workers_count * record.hours_worked}
-                    </p>
-                  </div>
-                </div>
-
-                {(record.photo_url || (record.latitude != null && record.longitude != null)) && (
-                  <div className="flex items-center gap-3 pt-1">
-                    {record.photo_url && <PhotoLink path={record.photo_url} label="Foto" />}
-                    {record.latitude != null && record.longitude != null && (
-                      <a
-                        href={buildMapsUrl(record.latitude, record.longitude)}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex items-center gap-1 text-xs text-blue-600 hover:underline"
-                      >
-                        <MapPin className="w-3.5 h-3.5" /> Ubicación
-                      </a>
-                    )}
-                  </div>
-                )}
-              </div>
+              <AttendanceMobileCard key={record.id} record={record} onDelete={onDelete} />
             ))}
           </div>
 

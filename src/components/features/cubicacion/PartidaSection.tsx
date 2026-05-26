@@ -31,6 +31,7 @@ interface PartidaDropdownProps {
   search: string
   filteredList: PriceListItem[]
   priceList: PriceListItem[]
+  priceListError: boolean
   showDropdown: boolean
   onSearchChange: (value: string) => void
   onFocus: () => void
@@ -38,7 +39,7 @@ interface PartidaDropdownProps {
   dropdownRef: React.RefObject<HTMLDivElement | null>
 }
 
-function PartidaDropdown({ search, filteredList, priceList, showDropdown, onSearchChange, onFocus, onSelect, dropdownRef }: PartidaDropdownProps) {
+function PartidaDropdown({ search, filteredList, priceList, priceListError, showDropdown, onSearchChange, onFocus, onSelect, dropdownRef }: PartidaDropdownProps) {
   return (
     <div className="sm:col-span-4 relative" ref={dropdownRef}>
       <p className="text-[10px] text-app-muted mb-1">
@@ -58,6 +59,12 @@ function PartidaDropdown({ search, filteredList, priceList, showDropdown, onSear
         />
         <BookOpen className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-3.5 sm:h-3.5 text-app-subtle pointer-events-none" />
       </div>
+      {priceListError && (
+        <p className="flex items-center gap-1 text-[10px] text-red-600 mt-1">
+          <AlertCircle className="w-3 h-3 shrink-0" />
+          No se pudo cargar la lista de precios.
+        </p>
+      )}
       {showDropdown && filteredList.length > 0 && (
         <div
           id="partida-dropdown-list"
@@ -95,6 +102,7 @@ interface PartidaFormFieldsProps {
   search: string
   filteredList: PriceListItem[]
   priceList: PriceListItem[]
+  priceListError: boolean
   showDropdown: boolean
   dropdownRef: React.RefObject<HTMLDivElement | null>
   onSearchChange: (value: string) => void
@@ -106,7 +114,7 @@ interface PartidaFormFieldsProps {
 }
 
 function PartidaFormFields({
-  form, saving, editing, priceDiff, search, filteredList, priceList, showDropdown, dropdownRef,
+  form, saving, editing, priceDiff, search, filteredList, priceList, priceListError, showDropdown, dropdownRef,
   onSearchChange, onFocus, onSelectPriceItem, onFormChange, onCancel, onSave,
 }: PartidaFormFieldsProps) {
   return (
@@ -116,6 +124,7 @@ function PartidaFormFields({
           search={search}
           filteredList={filteredList}
           priceList={priceList}
+          priceListError={priceListError}
           showDropdown={showDropdown}
           onSearchChange={onSearchChange}
           onFocus={onFocus}
@@ -340,12 +349,18 @@ export function PartidaSection({ contractId, projectId, partidas, cortes, onRefr
   const [saving, setSaving] = useState(false)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [priceList, setPriceList] = useState<PriceListItem[]>([])
+  const [priceListError, setPriceListError] = useState(false)
   const [search, setSearch] = useState('')
   const [showDropdown, setShowDropdown] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    priceListService.getByProject(projectId).then(setPriceList).catch(() => {})
+    priceListService.getByProject(projectId)
+      .then((items) => { setPriceList(items); setPriceListError(false) })
+      .catch((err) => {
+        console.warn('[PartidaSection] price list load failed', err)
+        setPriceListError(true)
+      })
   }, [projectId])
 
   useEffect(() => {
@@ -457,6 +472,7 @@ export function PartidaSection({ contractId, projectId, partidas, cortes, onRefr
           search={search}
           filteredList={filteredList}
           priceList={priceList}
+          priceListError={priceListError}
           showDropdown={showDropdown}
           dropdownRef={dropdownRef}
           onSearchChange={(value) => { setSearch(value); setForm((f) => ({ ...f, description: value, budget_unit_price: null })); setShowDropdown(true) }}

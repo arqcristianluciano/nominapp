@@ -153,11 +153,18 @@ export function NotificationDropdown() {
               const style = LEVEL_STYLES[notif.level]
               const Icon = style.icon
               return (
-                <button
-                  type="button"
+                <div
+                  role="button"
+                  tabIndex={0}
                   key={notif.id}
                   onClick={() => handleClick(notif)}
-                  className={`w-full text-left flex items-start gap-3 px-4 py-3 hover:bg-app-hover transition-colors ${style.border}`}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      handleClick(notif)
+                    }
+                  }}
+                  className={`w-full cursor-pointer text-left flex items-start gap-3 px-4 py-3 hover:bg-app-hover transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 ${style.border}`}
                 >
                   <div className={`mt-0.5 w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${style.bg}`}>
                     <Icon className={`w-3.5 h-3.5 ${style.text}`} />
@@ -175,7 +182,7 @@ export function NotificationDropdown() {
                   >
                     <X className="w-3 h-3" />
                   </button>
-                </button>
+                </div>
               )
             })}
           </div>

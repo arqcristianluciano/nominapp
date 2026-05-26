@@ -3,6 +3,7 @@ import { Package, Plus, Search, X } from 'lucide-react'
 import { materialsCatalogService, type MaterialCatalogItem } from '@/services/materialsCatalogService'
 import { useToast } from '@/components/ui/Toast'
 import { useAppRoles } from '@/hooks/useAppRoles'
+import { getErrorMessage } from '@/utils/errors'
 
 interface FormState {
   code: string
@@ -71,8 +72,8 @@ export default function MaterialsCatalogPage() {
       setShowForm(false)
       success('Material agregado al catálogo')
       await load()
-    } catch {
-      error('No se pudo crear el material')
+    } catch (err) {
+      error(getErrorMessage(err) || 'No se pudo crear el material')
     } finally {
       setSaving(false)
     }

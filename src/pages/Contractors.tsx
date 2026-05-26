@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { contractorService } from '@/services/contractorService'
 import { Modal } from '@/components/ui/Modal'
 import { ContractorForm } from '@/components/features/contractors/ContractorForm'
@@ -15,6 +16,7 @@ import {
 type CreateContractorInput = Parameters<typeof contractorService.create>[0]
 
 export default function Contractors() {
+  const { t } = useTranslation()
   const [contractors, setContractors] = useState<Contractor[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -42,13 +44,13 @@ export default function Contractors() {
       await contractorService.create(data)
       setShowForm(false)
       await load()
-      success('Contratista creado correctamente')
+      success(t('contractors.toast.created'))
     } catch {
-      error('No se pudo crear el contratista')
+      error(t('contractors.toast.create_failed'))
     } finally {
       setSaving(false)
     }
-  }, [error, load, success])
+  }, [error, load, success, t])
 
   const handleUpdate = useCallback(async (data: CreateContractorInput) => {
     if (!editing) return
@@ -57,13 +59,13 @@ export default function Contractors() {
       await contractorService.update(editing.id, data)
       setEditing(undefined)
       await load()
-      success('Contratista actualizado')
+      success(t('contractors.toast.updated'))
     } catch {
-      error('No se pudo actualizar el contratista')
+      error(t('contractors.toast.update_failed'))
     } finally {
       setSaving(false)
     }
-  }, [editing, error, load, success])
+  }, [editing, error, load, success, t])
 
   const normalizedSearch = useMemo(() => search.toLowerCase(), [search])
 
@@ -98,10 +100,10 @@ export default function Contractors() {
         <ContractorsGrid contractors={filtered} onEdit={setEditing} />
       )}
 
-      <Modal open={showForm} onClose={closeCreateModal} title="Nuevo contratista">
+      <Modal open={showForm} onClose={closeCreateModal} title={t('contractors.new_contractor')}>
         <ContractorForm onSubmit={handleCreate} onCancel={closeCreateModal} saving={saving} />
       </Modal>
-      <Modal open={!!editing} onClose={closeEditModal} title="Editar contratista">
+      <Modal open={!!editing} onClose={closeEditModal} title={t('contractors.edit_contractor')}>
         {editing && <ContractorForm initial={editing} onSubmit={handleUpdate} onCancel={closeEditModal} saving={saving} />}
       </Modal>
     </div>

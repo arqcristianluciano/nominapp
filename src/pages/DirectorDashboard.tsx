@@ -5,6 +5,7 @@ import { directorService, type CompanyKPI, type ProjectKPI } from '@/services/di
 import { exportToExcel } from '@/utils/excelExport'
 import { useToast } from '@/components/ui/Toast'
 import { formatRD } from '@/utils/currency'
+import { getErrorMessage } from '@/utils/errors'
 
 function pctClass(pct: number): string {
   if (pct >= 100) return 'text-red-600'
@@ -72,8 +73,8 @@ export default function DirectorDashboard() {
         },
       ])
       success('Exportado a Excel')
-    } catch {
-      error('No se pudo exportar')
+    } catch (err) {
+      error(getErrorMessage(err) || 'No se pudo exportar')
     }
   }
 

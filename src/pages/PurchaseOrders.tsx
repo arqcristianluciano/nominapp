@@ -6,6 +6,7 @@ import type { Project } from '@/types/database'
 import { Modal } from '@/components/ui/Modal'
 import { RequisitionForm } from '@/components/features/purchase-orders/RequisitionForm'
 import { useToast } from '@/components/ui/Toast'
+import { getErrorMessage } from '@/utils/errors'
 import { SkeletonTable } from '@/components/ui/Skeleton'
 import { PURCHASE_ORDER_STATUS_OPTIONS } from '@/components/features/purchase-orders/purchaseOrdersConfig'
 import {
@@ -50,8 +51,8 @@ export default function PurchaseOrders() {
       setShowForm(false)
       setRequisitions((prev) => [req, ...prev])
       success('Solicitud de compra creada')
-    } catch {
-      error('No se pudo crear la solicitud')
+    } catch (err) {
+      error(getErrorMessage(err) || 'No se pudo crear la solicitud')
     } finally {
       setSaving(false)
     }

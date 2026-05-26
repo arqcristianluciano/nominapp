@@ -97,6 +97,17 @@ function makeFile(name = 'cedula.pdf', content = 'pdf-bytes'): File {
   return { name, size: content.length, type: 'application/pdf' } as unknown as File
 }
 
+/**
+ * Stub mínimo de File con `size`, `type` y `name` controlables, casteado a File.
+ * Útil para probar la validación (tamaño/MIME) sin construir Blobs reales gigantes.
+ */
+function stubFile(
+  opts: { name?: string; size?: number; type?: string } = {},
+): File {
+  const { name = 'archivo.bin', size = 10, type = 'application/octet-stream' } = opts
+  return { name, size, type } as unknown as File
+}
+
 beforeEach(() => {
   fromMock.mockReset()
   storageFromMock.mockReset()
@@ -204,6 +215,92 @@ describe('userDocumentsService.upload', () => {
     // storageFromMock se llamó 2 veces: 1 para upload, 1 para remove.
     expect(storageFromMock).toHaveBeenNthCalledWith(1, BUCKET)
     expect(storageFromMock).toHaveBeenNthCalledWith(2, BUCKET)
+  })
+
+  // ---- Validación de upload (hardening) ----------------------------------
+
+  it('rechaza un archivo mayor a 10 MB con el error de tamaño y NO sube ni toca la DB', async () => {
+    const tooBig = stubFile({
+      name: 'enorme.pdf',
+      size: 10 * 1024 * 1024 + 1, // 10 MB + 1 byte
+      type: 'application/pdf',
+    })
+
+    await expect(
+      userDocumentsService.upload('user-1', tooBig, 'cedula'),
+    ).rejects.toThrow('El archivo supera el límite de 10 MB')
+
+    // Falla antes de tocar Storage o DB.
+    expect(storageFromMock).not.toHaveBeenCalled()
+    expect(fromMock).not.toHaveBeenCalled()
+  })
+
+  it('rechaza un MIME no permitido con el error de tipo y NO sube ni toca la DB', async () => {
+    const evil = stubFile({
+      name: 'virus.exe',
+      size: 1024,
+      type: 'application/x-msdownload',
+    })
+
+    await expect(
+      userDocumentsService.upload('user-1', evil, 'other'),
+    ).rejects.toThrow('Tipo de archivo no permitido')
+
+    expect(storageFromMock).not.toHaveBeenCalled()
+    expect(fromMock).not.toHaveBeenCalled()
+  })
+
+  it('acepta image/png y sube con un path SANITIZADO (sin espacios ni caracteres especiales)', async () => {
+    const userId = 'user-png'
+    const file = stubFile({ name: 'mi foto (1).png', size: 2048, type: 'image/png' })
+
+    const { uploadMock } = mockStorageUpload()
+    mockInsertChain({
+      id: 'doc-png',
+      user_id: userId,
+      doc_type: 'other',
+      file_path: `${userId}/x.png`,
+      display_name: 'mi foto (1).png',
+      uploaded_at: '2026-05-21T00:00:00Z',
+    })
+
+    await userDocumentsService.upload(userId, file, 'other')
+
+    expect(uploadMock).toHaveBeenCalledTimes(1)
+    const uploadedPath = uploadMock.mock.calls[0][0] as string
+
+    // Prefijado por userId.
+    expect(uploadedPath.startsWith(`${userId}/`)).toBe(true)
+    // El nombre original "mi foto (1).png" se sanitiza a "mi_foto__1_.png".
+    expect(uploadedPath).toContain('mi_foto__1_.png')
+    // El segmento del nombre de archivo no contiene espacios ni caracteres ilegales.
+    const fileSegment = uploadedPath.slice(uploadedPath.indexOf('/') + 1)
+    expect(fileSegment).not.toMatch(/[^a-zA-Z0-9._-]/)
+    expect(fileSegment).not.toContain(' ')
+  })
+
+  it('acepta application/pdf y sube el archivo', async () => {
+    const userId = 'user-pdf'
+    const file = stubFile({ name: 'contrato.pdf', size: 4096, type: 'application/pdf' })
+
+    const { uploadMock } = mockStorageUpload()
+    mockInsertChain({
+      id: 'doc-pdf',
+      user_id: userId,
+      doc_type: 'contract',
+      file_path: `${userId}/x.pdf`,
+      display_name: 'contrato.pdf',
+      uploaded_at: '2026-05-21T00:00:00Z',
+    })
+
+    await userDocumentsService.upload(userId, file, 'contract')
+
+    expect(storageFromMock).toHaveBeenCalledWith(BUCKET)
+    expect(uploadMock).toHaveBeenCalledTimes(1)
+    const [uploadedPath, uploadedFile] = uploadMock.mock.calls[0]
+    expect((uploadedPath as string).startsWith(`${userId}/`)).toBe(true)
+    expect(uploadedPath).toContain('contrato.pdf')
+    expect(uploadedFile).toBe(file)
   })
 })
 

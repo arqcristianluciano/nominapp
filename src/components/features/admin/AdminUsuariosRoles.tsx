@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Plus, Pencil, Trash2, ShieldCheck, Search } from 'lucide-react'
 import { adminService, type Role } from '@/services/adminService'
 import { useToast } from '@/components/ui/Toast'
@@ -18,6 +19,7 @@ function slugify(name: string) {
 }
 
 export function AdminUsuariosRoles() {
+  const { t } = useTranslation()
   const [roles, setRoles] = useState<Role[]>([])
   const [roleCounts, setRoleCounts] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(true)
@@ -47,11 +49,11 @@ export function AdminUsuariosRoles() {
         setRoleCounts(counts)
       }
     } catch (err) {
-      error(err instanceof Error ? err.message : 'No se pudieron cargar los roles')
+      error(err instanceof Error ? err.message : t('admin.roles.load_failed'))
     } finally {
       setLoading(false)
     }
-  }, [error])
+  }, [error, t])
 
   useEffect(() => {
     void load()
@@ -70,11 +72,11 @@ export function AdminUsuariosRoles() {
   async function handleDelete(role: Role) {
     try {
       await adminService.deleteRole(role.id)
-      success(`Rol ${role.name} eliminado`)
+      success(t('admin.roles.deleted', { name: role.name }))
       setConfirmDelete(undefined)
       await load()
     } catch (err) {
-      error(err instanceof Error ? err.message : 'No se pudo eliminar')
+      error(err instanceof Error ? err.message : t('admin.roles.delete_failed'))
     }
   }
 
@@ -82,13 +84,13 @@ export function AdminUsuariosRoles() {
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <p className="text-sm text-app-muted">
-          Los 8 roles del sistema (badge gris) no se pueden borrar ni renombrar el slug, pero sí editar nombre y descripción.
+          {t('admin.roles.intro')}
         </p>
         <button
           onClick={() => { setEditing(undefined); setShowForm(true) }}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 shadow-sm"
         >
-          <Plus className="w-4 h-4" /> Nuevo rol
+          <Plus className="w-4 h-4" /> {t('admin.roles.new_role')}
         </button>
       </div>
 
@@ -98,16 +100,16 @@ export function AdminUsuariosRoles() {
           type="search"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar rol por nombre, slug o descripción..."
+          placeholder={t('admin.roles.search_placeholder')}
           className="w-full pl-9 pr-3 py-2 text-sm border border-app-border rounded-lg bg-app-bg text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
 
       {loading ? (
-        <div className="text-sm text-app-muted">Cargando roles...</div>
+        <div className="text-sm text-app-muted">{t('admin.roles.loading')}</div>
       ) : filteredRoles.length === 0 ? (
         <div className="text-sm text-app-muted py-6 text-center">
-          {search.trim() ? `No hay roles que coincidan con "${search.trim()}".` : 'No hay roles.'}
+          {search.trim() ? t('admin.roles.no_match', { query: search.trim() }) : t('admin.roles.no_roles')}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -127,11 +129,11 @@ export function AdminUsuariosRoles() {
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-semibold text-app-text truncate">{r.name}</span>
-                  <span className="text-[11px] text-app-subtle font-medium whitespace-nowrap" title={`${count} usuario${count === 1 ? '' : 's'} con este rol`}>
-                    ({count} {count === 1 ? 'usuario' : 'usuarios'})
+                  <span className="text-[11px] text-app-subtle font-medium whitespace-nowrap" title={t('admin.roles.users_with_role', { count })}>
+                    ({count} {count === 1 ? t('admin.roles.user_one') : t('admin.roles.user_other')})
                   </span>
-                  {r.is_director && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 font-semibold uppercase tracking-wide">Director</span>}
-                  {r.is_system && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-app-chip text-app-subtle font-semibold uppercase tracking-wide">Sistema</span>}
+                  {r.is_director && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 font-semibold uppercase tracking-wide">{t('admin.roles.director_badge')}</span>}
+                  {r.is_system && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-app-chip text-app-subtle font-semibold uppercase tracking-wide">{t('admin.roles.system_badge')}</span>}
                 </div>
                 <p className="text-xs text-app-muted mt-0.5">{r.description ?? '—'}</p>
                 <p className="text-[10px] uppercase tracking-wide text-app-subtle mt-1">{r.slug}</p>
@@ -140,7 +142,7 @@ export function AdminUsuariosRoles() {
                 <button
                   onClick={() => { setEditing(r); setShowForm(true) }}
                   className="p-1.5 rounded-lg text-app-subtle hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40"
-                  title="Editar"
+                  title={t('admin.roles.edit')}
                 >
                   <Pencil className="w-4 h-4" />
                 </button>
@@ -148,7 +150,7 @@ export function AdminUsuariosRoles() {
                   <button
                     onClick={() => setConfirmDelete(r)}
                     className="p-1.5 rounded-lg text-app-subtle hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40"
-                    title="Eliminar"
+                    title={t('admin.roles.delete')}
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -160,23 +162,23 @@ export function AdminUsuariosRoles() {
         </div>
       )}
 
-      <Modal open={showForm} onClose={() => setShowForm(false)} title={editing ? 'Editar rol' : 'Nuevo rol'}>
+      <Modal open={showForm} onClose={() => setShowForm(false)} title={editing ? t('admin.roles.modal_edit') : t('admin.roles.modal_new')}>
         <RoleForm
           initial={editing}
           onCancel={() => setShowForm(false)}
-          onSaved={async () => { setShowForm(false); success(editing ? 'Rol actualizado' : 'Rol creado'); await load() }}
+          onSaved={async () => { setShowForm(false); success(editing ? t('admin.roles.saved_updated') : t('admin.roles.saved_created')); await load() }}
         />
       </Modal>
 
       <ConfirmModal
         open={!!confirmDelete}
-        title="¿Eliminar rol?"
+        title={t('admin.roles.confirm_delete_title')}
         message={confirmDelete
-          ? `Vas a eliminar el rol "${confirmDelete.name}". ${(roleCounts[confirmDelete.slug] ?? 0) > 0
-            ? `Hay ${roleCounts[confirmDelete.slug]} usuario(s) con este rol asignado que perderán sus permisos correspondientes en cada proyecto.`
-            : 'Esta acción no se puede deshacer.'}`
+          ? ((roleCounts[confirmDelete.slug] ?? 0) > 0
+            ? t('admin.roles.confirm_delete_with_users', { name: confirmDelete.name, count: roleCounts[confirmDelete.slug] })
+            : t('admin.roles.confirm_delete_no_users', { name: confirmDelete.name }))
           : ''}
-        confirmLabel="Eliminar"
+        confirmLabel={t('admin.roles.delete')}
         variant="danger"
         onConfirm={() => { if (confirmDelete) void handleDelete(confirmDelete) }}
         onCancel={() => setConfirmDelete(undefined)}
@@ -186,6 +188,7 @@ export function AdminUsuariosRoles() {
 }
 
 function RoleForm({ initial, onCancel, onSaved }: { initial?: Role; onCancel: () => void; onSaved: () => void | Promise<void> }) {
+  const { t } = useTranslation()
   const [name, setName] = useState(initial?.name ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
   const [slug, setSlug] = useState(initial?.slug ?? '')
@@ -204,7 +207,7 @@ function RoleForm({ initial, onCancel, onSaved }: { initial?: Role; onCancel: ()
         await adminService.updateRole(initial!.id, { name: name.trim(), description: description.trim() || null })
       } else {
         if (!name.trim() || !slug.trim()) {
-          error('Nombre y slug son obligatorios')
+          error(t('admin.roles.form.name_slug_required'))
           setSaving(false)
           return
         }
@@ -212,7 +215,7 @@ function RoleForm({ initial, onCancel, onSaved }: { initial?: Role; onCancel: ()
       }
       await onSaved()
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'No se pudo guardar'
+      const msg = err instanceof Error ? err.message : t('admin.roles.form.save_failed')
       error(msg)
     } finally {
       setSaving(false)
@@ -222,7 +225,7 @@ function RoleForm({ initial, onCancel, onSaved }: { initial?: Role; onCancel: ()
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
       <div>
-        <label className={label}>Nombre *</label>
+        <label className={label}>{t('admin.roles.form.name')} *</label>
         <input
           className={input}
           required
@@ -231,35 +234,35 @@ function RoleForm({ initial, onCancel, onSaved }: { initial?: Role; onCancel: ()
             setName(e.target.value)
             if (!isEdit && !slugTouched) setSlug(slugify(e.target.value))
           }}
-          placeholder="Maestro de obra"
+          placeholder={t('admin.roles.form.name_placeholder')}
         />
       </div>
       <div>
-        <label className={label}>Slug (identificador interno) *</label>
+        <label className={label}>{t('admin.roles.form.slug')} *</label>
         <input
           className={input}
           required
           disabled={isEdit && initial?.is_system}
           value={slug}
           onChange={(e) => { setSlug(slugify(e.target.value)); setSlugTouched(true) }}
-          placeholder="maestro_de_obra"
+          placeholder={t('admin.roles.form.slug_placeholder')}
         />
-        <p className="text-[11px] text-app-subtle mt-1">Solo letras, números y guiones bajos. No se puede cambiar después.</p>
+        <p className="text-[11px] text-app-subtle mt-1">{t('admin.roles.form.slug_hint')}</p>
       </div>
       <div>
-        <label className={label}>Descripción</label>
+        <label className={label}>{t('admin.roles.form.description')}</label>
         <textarea
           className={input}
           rows={3}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Qué hace esta persona en obra"
+          placeholder={t('admin.roles.form.description_placeholder')}
         />
       </div>
       <div className="flex justify-end gap-2 pt-2 border-t border-app-border">
-        <button type="button" onClick={onCancel} className="px-4 py-2 text-sm border border-app-border rounded-lg text-app-muted hover:bg-app-hover">Cancelar</button>
+        <button type="button" onClick={onCancel} className="px-4 py-2 text-sm border border-app-border rounded-lg text-app-muted hover:bg-app-hover">{t('admin.roles.form.cancel')}</button>
         <button type="submit" disabled={saving} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium">
-          {saving ? 'Guardando...' : (isEdit ? 'Guardar' : 'Crear rol')}
+          {saving ? t('admin.roles.form.saving') : (isEdit ? t('admin.roles.form.save') : t('admin.roles.form.create'))}
         </button>
       </div>
     </form>

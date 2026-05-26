@@ -116,6 +116,57 @@ Registro financiero: libro diario (asientos, balance, cierre de periodo), CxP (f
 
 ---
 
+## Funciones recientes (v0.5.0)
+
+### Generar reporte mensual PDF
+
+El reporte mensual consolida en un solo PDF el resumen ejecutivo, la nomina, las compras y los avances del proyecto. Util para juntas de cierre con el Director.
+
+1. Entra al modulo **Reportes** desde el sidebar.
+2. Abre **Reporte mensual**.
+3. Selecciona el **proyecto** y el **mes** que quieres reportar.
+4. Pulsa **Generar**. El PDF se descarga en pocos segundos con las 4 secciones armadas.
+
+> Tip: si una seccion sale vacia, revisa que la nomina del mes este aprobada y que los avances esten capturados antes de generar.
+
+### Instalar la app en tu telefono
+
+NominApp funciona como PWA: se instala como una app nativa y soporta uso offline en Bitacora, Asistencia y Requisiciones.
+
+- **Android (Chrome / Edge):** al entrar a la app desde el navegador, aparece un prompt **"Anadir a pantalla de inicio"**. Si no sale, abre el menu del navegador (los tres puntos) y elige **Instalar app** o **Anadir a inicio**.
+- **iOS (Safari):** pulsa el icono de **Compartir** (cuadrado con flecha arriba) y elige **Anadir a inicio**. La app aparece como icono independiente.
+
+Una vez instalada, abrela desde el icono y haz login normal. Ingeniero y Almacenista la necesitan para trabajar en obra.
+
+### Tomar fotos en Asistencia y Bitacora
+
+Ahora puedes adjuntar foto en la captura de asistencia diaria y en las entradas de bitacora. La asistencia ademas guarda la geolocalizacion (GPS) del dispositivo.
+
+1. Entra a **Asistencia** o **Bitacora** desde el frente de obra.
+2. Pulsa **Tomar foto** dentro del registro.
+3. La primera vez el navegador pide permisos de **camara** (y de **ubicacion** en Asistencia). Acepta para continuar.
+4. Captura la foto, revisa la previsualizacion y guarda.
+
+> Si tu telefono niega el permiso, ve a los ajustes del navegador y habilita camara/ubicacion para el dominio de NominApp.
+
+### Cambiar idioma (ES / EN)
+
+La app soporta espanol e ingles. El selector de idioma esta en el **sidebar** (barra lateral izquierda), abajo del menu principal. Elige **ES** o **EN** y la interfaz se traduce al instante. La preferencia queda guardada en tu usuario.
+
+### Invitar usuarios por email
+
+Como administrador puedes invitar personas por correo sin tener que armar su cuenta manualmente: el sistema envia un email con el enlace de alta.
+
+1. Entra a `/admin/usuarios`.
+2. Pulsa **Nueva persona**.
+3. En el modal, abre la pestana **Invitar por email**.
+4. Captura el correo, el rol y los proyectos asignados.
+5. Pulsa **Enviar invitacion**. La persona recibe el correo y define su contrasena al entrar.
+
+> El invitado queda en estado `pendiente` hasta que activa su cuenta. Desde la lista de usuarios puedes reenviar la invitacion si caduca.
+
+---
+
 ## FAQs
 
 **No veo un modulo que esperaba ver.**

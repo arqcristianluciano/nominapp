@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useProjectStore } from '@/stores/projectStore'
 import { transactionService } from '@/services/transactionService'
 import { calcCxPDetails, type CxPItem } from '@/utils/financialCalculations'
+import { getErrorMessage } from '@/utils/errors'
 
 export interface CxPProjectGroup {
   projectName: string
@@ -14,6 +15,7 @@ export function useCxPConsolidadoTodos() {
   const { projects, fetchProjects } = useProjectStore()
   const [groups, setGroups] = useState<CxPProjectGroup[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [projectFilter, setProjectFilter] = useState<string>('all')
 
   const activeProjects = useMemo(
@@ -43,6 +45,7 @@ export function useCxPConsolidadoTodos() {
   useEffect(() => {
     async function loadAll() {
       if (activeProjects.length === 0) {
+        setError(null)
         setLoading(false)
         return
       }
@@ -71,7 +74,10 @@ export function useCxPConsolidadoTodos() {
           })
         }
         setGroups(results)
-      } catch {
+        setError(null)
+      } catch (err) {
+        console.warn('[useCxPConsolidadoTodos] load failed', err)
+        setError(getErrorMessage(err))
         setGroups([])
       } finally {
         setLoading(false)
@@ -85,6 +91,7 @@ export function useCxPConsolidadoTodos() {
   return {
     groups,
     loading,
+    error,
     projectFilter,
     activeProjects,
     displayedGroups,
