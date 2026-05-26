@@ -4,12 +4,14 @@ import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import { useAuthStore } from '@/stores/authStore'
 import { isDemoMode } from '@/lib/supabase'
+import { ENABLE_TEST_QUICK_LOGIN } from '@/constants/testUsers'
 import { LoginBrandPanel, LoginFormPanel } from '@/components/features/login/LoginSections'
 
-// El bloque de quick-access (cuentas provisionales) solo tiene sentido en demo o
-// en build de desarrollo. En producción real lo neutralizamos: ocultamos visualmente
-// la sección entera vía CSS (sin tocar LoginSections) y dejamos el callback como no-op.
-const showQuickAccess = isDemoMode || import.meta.env.MODE === 'development'
+// El bloque de quick-access (cuentas provisionales) se muestra en demo, en build
+// de desarrollo, o cuando ENABLE_TEST_QUICK_LOGIN está activo (fase de pruebas en
+// producción). En producción real, con el flag en false, lo neutralizamos:
+// ocultamos la sección vía CSS (sin tocar LoginSections) y dejamos el callback no-op.
+const showQuickAccess = ENABLE_TEST_QUICK_LOGIN || isDemoMode || import.meta.env.MODE === 'development'
 
 // Heuristica para distinguir "credenciales malas" (login devolvió false) vs
 // "no pudimos contactar al backend" (excepción de red / fetch). authService
@@ -43,7 +45,9 @@ export default function Login() {
   useEffect(() => {
     if (hydrated) return
     const done = useAuthStore.persist.onFinishHydration(() => setHydrated(true))
-    return () => { done?.() }
+    return () => {
+      done?.()
+    }
   }, [hydrated])
 
   if (hydrated && user) return <Navigate to={from} replace />
@@ -78,11 +82,7 @@ export default function Login() {
   }
 
   return (
-    <div
-      className={`min-h-screen flex flex-col bg-app-bg${
-        showQuickAccess ? '' : ' login--hide-quick-access'
-      }`}
-    >
+    <div className={`min-h-screen flex flex-col bg-app-bg${showQuickAccess ? '' : ' login--hide-quick-access'}`}>
       {/* En prod ocultamos el bloque de quick-access (renderizado dentro de LoginFormPanel)
           mediante una clase a nivel raíz, sin tocar LoginSections. Reemplaza el badge
           de "cuentas provisionales" del LoginQuickAccess por un hint visible solo en demo/dev. */}
