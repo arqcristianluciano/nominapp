@@ -89,7 +89,7 @@ async function markLoanAsPaid(loanId: string, context: LoanActionContext) {
   } catch (err) {
     console.error('[useLoansPage] markLoanAsPaid fallo', err)
     Sentry.captureException(err, { tags: { area: 'useLoansPage' } })
-    context.error('No se pudo marcar como pagado')
+    context.error(getErrorMessage(err) || 'No se pudo marcar como pagado')
   }
 }
 
@@ -102,7 +102,7 @@ async function cancelLoan(loanId: string, context: LoanActionContext) {
   } catch (err) {
     console.error('[useLoansPage] cancelLoan fallo', err)
     Sentry.captureException(err, { tags: { area: 'useLoansPage' } })
-    context.error('No se pudo cancelar el préstamo')
+    context.error(getErrorMessage(err) || 'No se pudo cancelar el préstamo')
     return false
   }
 }

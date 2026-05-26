@@ -9,6 +9,7 @@ import { exportToExcel } from '@/utils/excelExport'
 import { useToast } from '@/components/ui/Toast'
 import { useProjectStore } from '@/stores/projectStore'
 import { formatRD } from '@/utils/currency'
+import { getErrorMessage } from '@/utils/errors'
 
 export default function CubicacionMensualPage() {
   const { projectId } = useParams<{ projectId: string }>()
@@ -54,8 +55,8 @@ export default function CubicacionMensualPage() {
         },
       ])
       success('Exportado')
-    } catch {
-      error('No se pudo exportar')
+    } catch (err) {
+      error(getErrorMessage(err) || 'No se pudo exportar')
     }
   }
 

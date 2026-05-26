@@ -193,3 +193,42 @@ Diagnostico:
    ```
 
 3. Revisar `tracesSampleRate` y `replaysSessionSampleRate` en `sentry.client.ts`. En produccion con `sampleRate: 0` no se enviara nada. Confirmar tambien que el ad-blocker no este bloqueando `sentry.io`.
+
+## 9. "Tras la actualizacion de seguridad RLS, un usuario no ve datos que antes veia"
+
+Sintoma: despues de aplicar las migraciones de la auditoria (0.6.0), un usuario reporta que ya no ve proyectos, nominas, compras u otros registros que antes si aparecian.
+
+Causa: la migracion 043 cerro un leak cross-tenant en las lecturas. Antes el SELECT era demasiado permisivo y exponia datos de otros proyectos/empresas. Ahora el SELECT esta acotado a la membresia: el usuario solo ve datos de los proyectos donde es miembro (`project_members`), salvo que tenga un rol de director (acceso global a su empresa). No es un bug: es el comportamiento correcto.
+
+Diagnostico:
+
+1. Confirmar si el usuario es miembro del proyecto en cuestion:
+
+   ```sql
+   select pm.project_id, pm.role, p.name
+   from project_members pm
+   join projects p on p.id = pm.project_id
+   where pm.user_id = '<USER_ID>';
+   ```
+
+2. Revisar si el usuario tiene un rol de director (acceso amplio):
+
+   ```sql
+   select r.name from user_roles ur
+   join roles r on r.id = ur.role_id
+   where ur.user_id = '<USER_ID>';
+   ```
+
+Resolucion:
+
+- Si el acceso es legitimo, dar de alta al usuario como miembro del proyecto:
+
+  ```sql
+  insert into project_members (user_id, project_id, role)
+  values ('<USER_ID>', '<PROJECT_ID>', '<ROL>');
+  ```
+
+  O hacerlo desde la UI en `/admin/usuarios`, asignando el proyecto y el rol correspondiente.
+
+- Si el usuario necesita visibilidad global de la empresa, asignarle un rol de director en lugar de agregarlo proyecto por proyecto.
+- Tras el cambio, el usuario debe recargar la sesion (cerrar y volver a abrir, o `supabase.auth.refreshSession()`) para que el nuevo contexto de RLS aplique.

@@ -19,9 +19,14 @@ import type {
   TFontDictionary,
 } from 'pdfmake/interfaces'
 
+import { buildAppendixSection } from './sections/appendix'
+import type { AppendixInput, AppendixTransaction } from './sections/appendix'
 import type { BudgetBreakdownInput } from './sections/budgetBreakdown'
 import type { CashflowInput } from './sections/cashflow'
+import { buildCoverPage } from './sections/cover'
+import type { CoverInput } from './sections/cover'
 import type { ExecutiveSummaryInput } from './sections/executiveSummary'
+import { buildPageFooter } from './sections/footer'
 
 /* -------------------------------------------------------------------------- */
 /* Dynamic pdfmake loader                                                     */
@@ -323,6 +328,14 @@ export interface MonthlyReportInput {
   budgetBreakdown: BudgetBreakdownInput
   cashflow: CashflowInput
   payroll: MonthlyReportPayrollInput
+  /**
+   * Optional raw transactions for the month, rendered in the appendix section.
+   *
+   * Each entry only needs a date, description and signed amount; the appendix
+   * builder formats and truncates the list as needed. When omitted, the
+   * appendix degrades gracefully to an empty table.
+   */
+  transactions?: AppendixTransaction[]
 }
 
 /**
@@ -337,10 +350,28 @@ export interface MonthlyReportInput {
  * @returns A `TCreatedPdf` ready to be downloaded or further manipulated.
  */
 export function generateMonthlyReport(input: MonthlyReportInput): TCreatedPdf {
+  const generatedAt = new Date()
+
   const chrome: ReportChromeOptions = {
     companyName: input.project.companyName ?? 'NominApp',
     logo: input.project.logo,
-    generatedAt: new Date(),
+    generatedAt,
+  }
+
+  const coverInput: CoverInput = {
+    projectName: input.project.name,
+    client: input.project.client,
+    companyName: input.project.companyName,
+    month: { year: input.month.year, month: input.month.month },
+    generatedAt,
+  }
+
+  const appendixInput: AppendixInput = {
+    transactions: (input.transactions ?? []).map((tx) => ({
+      date: tx.date,
+      description: tx.description,
+      amount: tx.amount,
+    })),
   }
 
   const docDefinition: TDocumentDefinitions = {
@@ -364,10 +395,15 @@ export function generateMonthlyReport(input: MonthlyReportInput): TCreatedPdf {
       sectionTitle: { fontSize: 14, bold: true, margin: [0, 0, 0, 8] },
     },
     header: buildHeader(chrome),
-    footer: buildFooter(chrome),
-    // Sections are intentionally left empty: another agent will populate the
-    // content array using the section builders under `./sections`.
-    content: [],
+    footer: (currentPage, pageCount) =>
+      buildPageFooter(currentPage, pageCount, input.project?.name ?? ''),
+    content: [
+      // Cover page first (ends with pageBreak:'after').
+      ...buildCoverPage(coverInput),
+      // Body sections are populated by their respective builders/agents.
+      // Appendix last (starts with pageBreak:'before').
+      ...buildAppendixSection(appendixInput),
+    ],
   }
 
   return buildDocument(docDefinition)

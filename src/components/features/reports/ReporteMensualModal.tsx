@@ -5,8 +5,9 @@ import { useProjectStore } from '@/stores/projectStore'
 import {
   downloadPdf,
   generateMonthlyReport,
-  type MonthlyReportInput,
 } from '@/services/reports/pdfReportService'
+import { loadMonthlyReportData } from '@/services/reports/monthlyReportData'
+import { getErrorMessage } from '@/utils/errors'
 
 interface ReporteMensualModalProps {
   open: boolean
@@ -61,8 +62,8 @@ function buildLastTwelveMonths(reference: Date = new Date()): MonthOption[] {
  * Modal that lets the user pick a project + month and triggers the PDF
  * monthly report generation/download flow.
  *
- * Backend data loading is currently a stub (TBD): we pass zeroed sections to
- * {@link generateMonthlyReport} until the data-fetching service is wired up.
+ * The real reporting data is loaded via {@link loadMonthlyReportData} before
+ * the report is generated and downloaded.
  */
 export function ReporteMensualModal({ open, onClose }: ReporteMensualModalProps) {
   const { projects, fetchProjects } = useProjectStore()
@@ -114,44 +115,10 @@ export function ReporteMensualModal({ open, onClose }: ReporteMensualModalProps)
     }
     setGenerating(true)
     try {
-      // TODO: replace this stub with data loaded from the backend reporting
-      // service once it is available. For now we emit a report with zeroed
-      // sections so the download flow can be exercised end-to-end.
-      const input: MonthlyReportInput = {
-        project: {
-          id: selectedProject.id,
-          name: selectedProject.name,
-          companyName: selectedProject.company?.name,
-        },
-        month: {
-          year: selectedMonthOption.year,
-          month: selectedMonthOption.month,
-        },
-        executiveSummary: {
-          totalBudget: 0,
-          totalInvested: 0,
-          variance: 0,
-          progressPercent: 0,
-          projectGrandTotal: 0,
-          daysWorked: 0,
-          activeContractors: 0,
-          partidasInProgress: 0,
-          materialsReceived: 0,
-          monthlyTransactions: 0,
-        },
-        budgetBreakdown: { categories: [] },
-        cashflow: {
-          collections: { expected: 0, actual: 0 },
-          contractorPayments: { expected: 0, actual: 0 },
-          supplierPayments: { expected: 0, actual: 0 },
-          releasedPurchaseOrders: { expected: 0, actual: 0 },
-          indirects: { expected: 0, actual: 0 },
-        },
-        payroll: {
-          totalPaid: 0,
-          entriesCount: 0,
-        },
-      }
+      const input = await loadMonthlyReportData(
+        selectedProject.id,
+        selectedMonthOption.value,
+      )
       const doc = generateMonthlyReport(input)
       const monthLabel = `${selectedMonthOption.year}-${String(selectedMonthOption.month).padStart(2, '0')}`
       const filename = `reporte-mensual-${selectedProject.code || selectedProject.id}-${monthLabel}.pdf`
@@ -159,7 +126,7 @@ export function ReporteMensualModal({ open, onClose }: ReporteMensualModalProps)
       onClose()
     } catch (err) {
       console.error('[ReporteMensualModal] handleGenerate failed', err)
-      setError('No se pudo generar el reporte mensual. Intenta de nuevo.')
+      setError(getErrorMessage(err))
     } finally {
       setGenerating(false)
     }

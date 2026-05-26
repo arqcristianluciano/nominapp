@@ -2,9 +2,7 @@
   "nav": {
     "dashboard": "Dashboard",
     "projects": "Projects",
-    "payroll": "Payroll",
     "payrollReports": "Reports",
-    "reports": "Reports",
     "finance": "Financial Control",
     "budget": "Budget",
     "accountsPayable": "Accounts Payable",
@@ -36,6 +34,7 @@
     "searchPlaceholderMobile": "Search...",
     "searchTitle": "Search",
     "noResults": "No results for \"{{query}}\"",
+    "searchLoadError": "Couldn't load search",
     "logout": "Sign out",
     "types": {
       "proyecto": "Project",

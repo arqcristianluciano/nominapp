@@ -7,6 +7,7 @@ import { useToast } from '@/components/ui/Toast'
 import { useAuthStore } from '@/stores/authStore'
 import { useProjectStore } from '@/stores/projectStore'
 import { formatRD } from '@/utils/currency'
+import { getErrorMessage } from '@/utils/errors'
 
 interface InflowForm {
   expected_date: string
@@ -71,8 +72,8 @@ export default function FlujoCajaPage() {
       setShowForm(false)
       success('Ingreso esperado registrado')
       await load()
-    } catch {
-      error('No se pudo registrar')
+    } catch (err) {
+      error(getErrorMessage(err) || 'No se pudo registrar')
     } finally {
       setSaving(false)
     }
@@ -110,8 +111,8 @@ export default function FlujoCajaPage() {
         },
       ])
       success('Exportado')
-    } catch {
-      error('No se pudo exportar')
+    } catch (err) {
+      error(getErrorMessage(err) || 'No se pudo exportar')
     }
   }
 

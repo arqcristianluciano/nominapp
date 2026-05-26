@@ -8,6 +8,7 @@ import {
 import { exportToExcel } from '@/utils/excelExport'
 import { useAuthStore } from '@/stores/authStore'
 import { useToast } from '@/components/ui/Toast'
+import { getErrorMessage } from '@/utils/errors'
 
 const ACTION_LABEL: Record<ApprovalAction, string> = {
   submit_for_approval: 'Enviada a aprobación',
@@ -112,8 +113,8 @@ export default function AprobacionesPage() {
         },
       ])
       success('Exportado')
-    } catch {
-      error('No se pudo exportar')
+    } catch (err) {
+      error(getErrorMessage(err) || 'No se pudo exportar')
     }
   }
 

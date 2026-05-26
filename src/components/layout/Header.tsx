@@ -45,6 +45,7 @@ export function Header({ onMenuClick }: HeaderProps) {
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
   const [indexedSuppliers, setIndexedSuppliers] = useState<Array<{ id: string; name: string; rnc: string | null }>>([])
   const [indexedContractors, setIndexedContractors] = useState<Array<{ id: string; name: string; specialty: string | null }>>([])
+  const [searchLoadError, setSearchLoadError] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const mobileInputRef = useRef<HTMLInputElement>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
@@ -59,8 +60,10 @@ export function Header({ onMenuClick }: HeaderProps) {
         ])
         setIndexedSuppliers(suppliers.map((s) => ({ id: s.id, name: s.name, rnc: s.rnc })))
         setIndexedContractors(contractors.map((c) => ({ id: c.id, name: c.name, specialty: c.specialty })))
+        setSearchLoadError(false)
       } catch (err) {
         console.error('Failed to load search directory', err)
+        setSearchLoadError(true)
       }
     }
     loadSearchDirectory()
@@ -136,9 +139,9 @@ export function Header({ onMenuClick }: HeaderProps) {
   }, [])
 
   useEffect(() => {
-    if (mobileSearchOpen) {
-      setTimeout(() => mobileInputRef.current?.focus(), 50)
-    }
+    if (!mobileSearchOpen) return
+    const id = setTimeout(() => mobileInputRef.current?.focus(), 50)
+    return () => clearTimeout(id)
   }, [mobileSearchOpen])
 
   function handleSelect(url: string) {
@@ -156,7 +159,12 @@ export function Header({ onMenuClick }: HeaderProps) {
 
   const dropdownContent = (
     results.length === 0
-      ? <div className="px-4 py-3 text-sm text-app-muted">{t('header.noResults', { query })}</div>
+      ? (
+          <div className="px-4 py-3 text-sm text-app-muted">
+            {searchLoadError && <p className="mb-1 text-xs text-red-500 dark:text-red-400">{t('header.searchLoadError')}</p>}
+            {t('header.noResults', { query })}
+          </div>
+        )
       : results.map((item) => (
           <button
             key={`${item.type}-${item.id}`}

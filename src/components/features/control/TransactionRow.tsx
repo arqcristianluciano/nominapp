@@ -37,6 +37,46 @@ function TransactionRowComponent({
   const [cashedDate, setCashedDate] = useState(transaction.cashed_date || '')
   const [notes, setNotes] = useState(transaction.notes || '')
 
+  // Resync local edit state when the underlying transaction changes (e.g. a
+  // different row reuses this instance, or the same row gets refreshed/edited
+  // externally). useState initializers only run once, so without this the row
+  // would keep its stale initial values. We adjust state during render (the
+  // React-recommended pattern over a setState-in-useEffect) by tracking the
+  // last-synced transaction identity. Skip while the user is actively editing
+  // so in-progress edits are never clobbered. (Transaction has no
+  // `updated_at`, so we key on the id plus the underlying data fields.)
+  const syncKey = JSON.stringify([
+    transaction.id,
+    transaction.date,
+    transaction.budget_category_id,
+    transaction.description,
+    transaction.supplier_id,
+    transaction.quantity,
+    transaction.unit_price,
+    transaction.payment_condition,
+    transaction.invoice_number,
+    transaction.check_number,
+    transaction.bank,
+    transaction.cashed_date,
+    transaction.notes,
+  ])
+  const [syncedKey, setSyncedKey] = useState(syncKey)
+  if (syncedKey !== syncKey && !editing) {
+    setSyncedKey(syncKey)
+    setDate(transaction.date)
+    setBudgetCategoryId(transaction.budget_category_id || '')
+    setDescription(transaction.description)
+    setSupplierId(transaction.supplier_id || '')
+    setQuantity(transaction.quantity ?? '')
+    setUnitPrice(transaction.unit_price ?? '')
+    setPaymentCondition(transaction.payment_condition || '')
+    setInvoiceNumber(transaction.invoice_number || '')
+    setCheckNumber(transaction.check_number || '')
+    setBank(transaction.bank || '')
+    setCashedDate(transaction.cashed_date || '')
+    setNotes(transaction.notes || '')
+  }
+
   const total = (Number(quantity) || 0) * (Number(unitPrice) || 0)
 
   const handleSave = () => {

@@ -16,6 +16,27 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ### Fixed
 - Pendiente.
 
+## [0.6.0] - 2026-05-26
+
+### Security
+- Cerrado leak cross-tenant en SELECT: RLS ahora limita lecturas por proyecto/empresa (migracion 043).
+- WITH CHECK en INSERT de aprobaciones y proyectos para evitar insertar filas fuera del tenant (migracion 044).
+- Endurecimiento de la edge function `send-push`: auth verificada y CORS restringido a origenes permitidos.
+- Validacion de archivos (tamano, MIME y nombre) en la subida de documentos de usuario.
+
+### Fixed
+- Contexto de Toast memoizado para evitar loops de re-fetch.
+- `AttendanceForm` ya no pierde ediciones del usuario cuando llega la geolocalizacion.
+- Boton anidado invalido en `NotificationDropdown`.
+- Formularios (`TransactionRow`, `ProjectForm`) ahora resetean su estado al cambiar de entidad.
+- Errores ahora se muestran al usuario en ~12 lugares donde antes fallaban en silencio.
+
+### Added
+- Portada, pie de pagina y anexo en el PDF del reporte mensual.
+- `ReporteMensualModal` ahora carga datos reales (antes mostraba placeholders).
+- Constraints `NOT NULL` (migracion 045), `UNIQUE` de identidad (migracion 046) y llaves foraneas (migracion 047).
+- Indices de performance y ajuste de grants en RLS (migracion 048).
+
 ## [0.5.0] - 2026-05-21
 
 ### Added
@@ -116,7 +137,8 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - Alineacion de `PROJECT.md` con el estado actual del proyecto.
 - Registro de canvases oficiales de auditoria.
 
-[Unreleased]: https://github.com/arqcristianluciano/nominapp/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/arqcristianluciano/nominapp/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/arqcristianluciano/nominapp/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/arqcristianluciano/nominapp/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/arqcristianluciano/nominapp/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/arqcristianluciano/nominapp/releases/tag/v0.3.0

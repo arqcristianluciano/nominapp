@@ -1,6 +1,7 @@
 import { memo, useState } from 'react'
-import { ChevronLeft, ChevronRight, ImageIcon, MapPin, Trash2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ImageIcon, ImageOff, MapPin, Trash2 } from 'lucide-react'
 import { attendanceService, type AttendanceRecord } from '@/services/attendanceService'
+import { useToast } from '@/components/ui/Toast'
 import { parseDateLocal } from '@/utils/dateLocal'
 
 interface Props {
@@ -29,6 +30,8 @@ function buildMapsUrl(lat: number, lon: number): string {
 
 function PhotoLink({ path, label }: { path: string; label?: string }) {
   const [loading, setLoading] = useState(false)
+  const [failed, setFailed] = useState(false)
+  const { error: toastError } = useToast()
   async function handleClick(event: React.MouseEvent) {
     event.preventDefault()
     event.stopPropagation()
@@ -37,11 +40,24 @@ function PhotoLink({ path, label }: { path: string; label?: string }) {
     try {
       const url = await attendanceService.getPhotoUrl(path)
       window.open(url, '_blank', 'noopener,noreferrer')
-    } catch {
-      // Silently ignore - the URL may have failed to resolve.
+    } catch (err) {
+      console.warn('[AttendanceHistoryTable] photo url failed', err)
+      setFailed(true)
+      toastError('No se pudo abrir la foto.')
     } finally {
       setLoading(false)
     }
+  }
+  if (failed) {
+    return (
+      <span
+        className="flex items-center gap-1 text-xs text-app-subtle"
+        title="No se pudo cargar la foto"
+      >
+        <ImageOff className="w-3.5 h-3.5" />
+        <span>{label ? 'Foto no disponible' : 'No disponible'}</span>
+      </span>
+    )
   }
   return (
     <button

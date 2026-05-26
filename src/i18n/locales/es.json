@@ -2,9 +2,7 @@
   "nav": {
     "dashboard": "Dashboard",
     "projects": "Proyectos",
-    "payroll": "Nóminas",
     "payrollReports": "Reportes",
-    "reports": "Reportes",
     "finance": "Control Financiero",
     "budget": "Presupuesto",
     "accountsPayable": "Cuentas por Pagar",
@@ -36,6 +34,7 @@
     "searchPlaceholderMobile": "Buscar...",
     "searchTitle": "Buscar",
     "noResults": "Sin resultados para \"{{query}}\"",
+    "searchLoadError": "No se pudo cargar la búsqueda",
     "logout": "Cerrar sesión",
     "types": {
       "proyecto": "Proyecto",

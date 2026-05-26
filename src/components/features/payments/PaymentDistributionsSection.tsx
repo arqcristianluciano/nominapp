@@ -5,6 +5,7 @@ import { paymentDistributionService, type DistributionWithAccount } from '@/serv
 import { bankAccountService } from '@/services/bankAccountService'
 import { useToast } from '@/components/ui/Toast'
 import { formatRD } from '@/utils/currency'
+import { getErrorMessage } from '@/utils/errors'
 import type { BankAccount } from '@/types/database'
 
 const PAYMENT_METHODS = [
@@ -37,7 +38,7 @@ export function PaymentDistributionsSection({ periodId, grandTotal }: Props) {
     const data = await paymentDistributionService.getByPeriod(periodId).catch((err) => {
       console.error('[PaymentDistributionsSection] cargar distribuciones fallo', err)
       Sentry.captureException(err, { tags: { area: 'PaymentDistributionsSection' } })
-      toastError('No se pudieron cargar las distribuciones de pago')
+      toastError(`No se pudieron cargar las distribuciones de pago: ${getErrorMessage(err)}`)
       return [] as DistributionWithAccount[]
     })
     setDistributions(data)
@@ -51,7 +52,7 @@ export function PaymentDistributionsSection({ periodId, grandTotal }: Props) {
       .catch((err) => {
         console.error('[PaymentDistributionsSection] cargar cuentas bancarias fallo', err)
         Sentry.captureException(err, { tags: { area: 'PaymentDistributionsSection' } })
-        toastError('No se pudieron cargar las cuentas bancarias')
+        toastError(`No se pudieron cargar las cuentas bancarias: ${getErrorMessage(err)}`)
       })
   }, [load, periodId, toastError])
 

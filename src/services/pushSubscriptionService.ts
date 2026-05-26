@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase'
 
-export interface StoredPushSubscription {
+interface StoredPushSubscription {
   id: string
   user_id: string
   display_name: string | null
@@ -12,7 +12,7 @@ export interface StoredPushSubscription {
   last_seen_at: string
 }
 
-export interface SubscribeInput {
+interface SubscribeInput {
   user_id: string
   display_name?: string
   vapid_public_key: string

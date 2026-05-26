@@ -36,6 +36,11 @@ export function AttendanceForm({
   const [locating, setLocating] = useState(false)
   const { success, error: toastError } = useToast()
 
+  // Keep a ref to the latest form so async geolocation callbacks don't
+  // capture (and wipe) edits made while geolocation is resolving.
+  const formRef = useRef(form)
+  formRef.current = form
+
   // Resuelve signed URL para preview cuando ya hay foto guardada como path.
   useEffect(() => {
     let cancelled = false
@@ -72,7 +77,7 @@ export function AttendanceForm({
       (pos) => {
         setLocating(false)
         onChange({
-          ...form,
+          ...formRef.current,
           latitude: Number(pos.coords.latitude.toFixed(7)),
           longitude: Number(pos.coords.longitude.toFixed(7)),
         })
@@ -97,7 +102,7 @@ export function AttendanceForm({
       (pos) => {
         setLocating(false)
         onChange({
-          ...form,
+          ...formRef.current,
           latitude: Number(pos.coords.latitude.toFixed(7)),
           longitude: Number(pos.coords.longitude.toFixed(7)),
         })

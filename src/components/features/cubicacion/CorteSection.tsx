@@ -5,6 +5,7 @@ import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { useToast } from '@/components/ui/Toast'
 import { formatRD } from '@/utils/currency'
 import { parseDecimalInput } from '@/utils/decimalInput'
+import { getErrorMessage } from '@/utils/errors'
 import { CorteApprovalModal } from './CorteApprovalModal'
 import { LinkToPayrollModal } from './LinkToPayrollModal'
 import type { ContractCorte, ContractPartida, CorteStatus } from '@/types/database'
@@ -63,6 +64,7 @@ export function CorteSection({ contractId, projectId, contractorId, retentionPer
       setForm(emptyForm); setShowAdd(false); onRefresh()
     } catch (err) {
       console.warn('[CorteSection] handleCreate failed', err)
+      toastError(getErrorMessage(err) || 'No se pudo registrar el corte. Intenta de nuevo.')
     } finally { setSaving(false) }
   }
 

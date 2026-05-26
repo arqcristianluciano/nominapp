@@ -4,6 +4,7 @@ import { useProjectStore } from '@/stores/projectStore'
 import { projectService } from '@/services/projectService'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/components/ui/Toast'
+import { getErrorMessage } from '@/utils/errors'
 import type { Project } from '@/types/database'
 
 type ProjectFormInput = Parameters<typeof projectService.create>[0] & {
@@ -84,7 +85,7 @@ function useProjectActions({ fetchProjects, editing, setEditing, setShowCreate }
     } catch (err) {
       console.error('[useProjectsPage] handleUpdate fallo', err)
       Sentry.captureException(err, { tags: { area: 'useProjectsPage' } })
-      error('No se pudo actualizar el proyecto')
+      error(getErrorMessage(err) || 'No se pudo actualizar el proyecto')
     } finally {
       setSaving(false)
     }
