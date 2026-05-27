@@ -26,13 +26,13 @@ export interface AddProgressInput {
 }
 
 export interface MonthlyCubicationRow {
-  month: string                // YYYY-MM
+  month: string // YYYY-MM
   budget_category_id: string | null
   category_code: string | null
   category_name: string | null
-  cubicado: number             // Σ avance × precio presupuestado
-  costo_real: number           // Σ (salidas almacén + nómina aprobada + facturas) del mes imputadas al capítulo
-  desviacion: number           // costo_real - cubicado
+  cubicado: number // Σ avance × precio presupuestado
+  costo_real: number // Σ (salidas almacén + nómina aprobada + facturas) del mes imputadas al capítulo
+  desviacion: number // costo_real - cubicado
 }
 
 function monthKey(dateStr: string | null | undefined): string | null {
@@ -64,6 +64,51 @@ export const partidaProgressService = {
       .single()
     if (error) throw error
     return data as PartidaProgress
+  },
+
+  // Gasto real comprometido por capítulo (nómina aprobada/pagada + facturas de
+  // materiales imputadas a cada capítulo). Alimenta la columna "Gastado" del
+  // presupuesto para que refleje los gastos de los reportes de obra.
+  async getCommittedSpendByCategory(projectId: string): Promise<Record<string, number>> {
+    const result: Record<string, number> = {}
+
+    const { data: payrolls } = await supabase
+      .from('payroll_periods')
+      .select('id')
+      .eq('project_id', projectId)
+      .in('status', COMMITTED_PAYROLL_STATUSES)
+    const payrollIds = (payrolls ?? []).map((p: { id: string }) => p.id)
+    if (payrollIds.length === 0) return result
+
+    const add = (categoryId: string | null, value: number) => {
+      if (!categoryId || !Number.isFinite(value)) return
+      result[categoryId] = (result[categoryId] ?? 0) + value
+    }
+
+    const { data: laborItems } = await supabase
+      .from('labor_line_items')
+      .select('quantity, unit_price, budget_category_id')
+      .in('payroll_period_id', payrollIds)
+    for (const ll of (laborItems ?? []) as Array<{
+      quantity: number | null
+      unit_price: number | null
+      budget_category_id: string | null
+    }>) {
+      add(ll.budget_category_id, Number(ll.quantity ?? 0) * Number(ll.unit_price ?? 0))
+    }
+
+    const { data: invoices } = await supabase
+      .from('material_invoices')
+      .select('amount, budget_category_id')
+      .in('payroll_period_id', payrollIds)
+    for (const inv of (invoices ?? []) as Array<{
+      amount: number | null
+      budget_category_id: string | null
+    }>) {
+      add(inv.budget_category_id, Number(inv.amount ?? 0))
+    }
+
+    return result
   },
 
   async listByProject(projectId: string): Promise<PartidaProgress[]> {
@@ -180,7 +225,7 @@ export const partidaProgressService = {
       const month = monthKey(mv.date)
       if (!month) continue
       const value = Number(mv.quantity ?? 0) * Number(mv.unit_cost ?? 0)
-      const itemCat = mv.budget_item_id ? itemById.get(mv.budget_item_id)?.budget_category_id ?? null : null
+      const itemCat = mv.budget_item_id ? (itemById.get(mv.budget_item_id)?.budget_category_id ?? null) : null
       const categoryId = mv.budget_category_id ?? itemCat
       getRow(month, categoryId).costo_real += value
     }
