@@ -129,7 +129,20 @@ export function usePayroll(periodId: string | undefined) {
   )
 
   const updateLaborItem = useCallback(
-    async (id: string, updates: Record<string, unknown>) => {
+    async (
+      id: string,
+      updates: {
+        contractor_id?: string
+        description?: string
+        quantity?: number
+        unit?: string
+        unit_price?: number
+        is_advance?: boolean
+        is_advance_deduction?: boolean
+        budget_category_id?: string | null
+        notes?: string
+      },
+    ) => {
       setSaving(true)
       try {
         const updated = await payrollService.updateLaborItem(id, updates)
