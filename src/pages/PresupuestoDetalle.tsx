@@ -27,6 +27,7 @@ export default function PresupuestoDetalle() {
     handleAddItem,
     handleUpdateItem,
     handleDeleteItem,
+    handleDeleteCategory,
     handleAddPrice,
     handleUpdatePrice,
     handleDeletePrice,
@@ -53,6 +54,7 @@ export default function PresupuestoDetalle() {
         onAddItem={handleAddItem}
         onUpdateItem={handleUpdateItem}
         onDeleteItem={handleDeleteItem}
+        onDeleteCategory={handleDeleteCategory}
         onEditBudgetAmount={startEdit}
         onAddPrice={handleAddPrice}
         onUpdatePrice={handleUpdatePrice}

@@ -63,10 +63,13 @@ type EditHandlersArgs = {
 function useBudgetEditHandlers(args: EditHandlersArgs) {
   const { budget, editValue, editingId, setEditValue, setEditingId } = args
 
-  const startEdit = useCallback((id: string, amount: number) => {
-    setEditingId(id)
-    setEditValue(amount.toString())
-  }, [setEditValue, setEditingId])
+  const startEdit = useCallback(
+    (id: string, amount: number) => {
+      setEditingId(id)
+      setEditValue(amount.toString())
+    },
+    [setEditValue, setEditingId],
+  )
 
   const saveEdit = useCallback(async () => {
     if (!editingId) return
@@ -78,43 +81,51 @@ function useBudgetEditHandlers(args: EditHandlersArgs) {
 }
 
 function useBudgetItemHandlers(budgetItems: ReturnType<typeof useBudgetItems>) {
-  const handleAddItem = useCallback(async (data: Omit<BudgetItem, 'id'>) => {
-    await budgetItems.addItem(data)
-  }, [budgetItems])
-
-  const handleUpdateItem = useCallback(
-    async (
-      id: string,
-      categoryId: string,
-      changes: Partial<Omit<BudgetItem, 'id'>>
-    ) => {
-      await budgetItems.updateItem(id, categoryId, changes)
+  const handleAddItem = useCallback(
+    async (data: Omit<BudgetItem, 'id'>) => {
+      await budgetItems.addItem(data)
     },
-    [budgetItems]
+    [budgetItems],
   )
 
-  const handleDeleteItem = useCallback(async (id: string, categoryId: string) => {
-    await budgetItems.deleteItem(id, categoryId)
-  }, [budgetItems])
+  const handleUpdateItem = useCallback(
+    async (id: string, categoryId: string, changes: Partial<Omit<BudgetItem, 'id'>>) => {
+      await budgetItems.updateItem(id, categoryId, changes)
+    },
+    [budgetItems],
+  )
+
+  const handleDeleteItem = useCallback(
+    async (id: string, categoryId: string) => {
+      await budgetItems.deleteItem(id, categoryId)
+    },
+    [budgetItems],
+  )
 
   return { handleAddItem, handleUpdateItem, handleDeleteItem }
 }
 
 function usePriceHandlers(budgetItems: ReturnType<typeof useBudgetItems>) {
-  const handleAddPrice = useCallback(async (item: Omit<PriceListItem, 'id'>) => {
-    await budgetItems.addPriceListItem(item)
-  }, [budgetItems])
+  const handleAddPrice = useCallback(
+    async (item: Omit<PriceListItem, 'id'>) => {
+      await budgetItems.addPriceListItem(item)
+    },
+    [budgetItems],
+  )
 
   const handleUpdatePrice = useCallback(
     async (id: string, changes: Partial<Omit<PriceListItem, 'id'>>) => {
       await budgetItems.updatePriceListItem(id, changes)
     },
-    [budgetItems]
+    [budgetItems],
   )
 
-  const handleDeletePrice = useCallback(async (id: string) => {
-    await budgetItems.deletePriceListItem(id)
-  }, [budgetItems])
+  const handleDeletePrice = useCallback(
+    async (id: string) => {
+      await budgetItems.deletePriceListItem(id)
+    },
+    [budgetItems],
+  )
 
   return { handleAddPrice, handleUpdatePrice, handleDeletePrice }
 }
@@ -136,10 +147,7 @@ function useBudgetDetailPageContext(projectId: string | undefined) {
   const budgetItems = useBudgetItems(projectId)
   const project = useMemo(() => projects.find((item) => item.id === projectId), [projects, projectId])
   const categoryIds = useMemo(() => budget.rows.map((row) => row.category.id), [budget.rows])
-  const grandBudgeted = useMemo(
-    () => calculateGrandBudgeted({ budget, budgetItems }),
-    [budget, budgetItems]
-  )
+  const grandBudgeted = useMemo(() => calculateGrandBudgeted({ budget, budgetItems }), [budget, budgetItems])
 
   return {
     projects,
@@ -173,6 +181,13 @@ export function useBudgetDetailPage(projectId: string | undefined) {
   const itemHandlers = useBudgetItemHandlers(context.budgetItems)
   const priceHandlers = usePriceHandlers(context.budgetItems)
 
+  const handleDeleteCategory = useCallback(
+    async (categoryId: string) => {
+      await context.budget.deleteCategory(categoryId)
+    },
+    [context.budget],
+  )
+
   return {
     projects: context.projects,
     project: context.project,
@@ -182,6 +197,7 @@ export function useBudgetDetailPage(projectId: string | undefined) {
     ...editHandlers,
     ...itemHandlers,
     ...priceHandlers,
+    handleDeleteCategory,
     grandBudgeted: context.grandBudgeted,
   }
 }

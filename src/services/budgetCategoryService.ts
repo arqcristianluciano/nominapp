@@ -24,6 +24,11 @@ export const budgetCategoryService = {
     return data as BudgetCategory[]
   },
 
+  async delete(id: string) {
+    const { error } = await supabase.from('budget_categories').delete().eq('id', id)
+    if (error) throw error
+  },
+
   async updateBudgetAmount(id: string, budgeted_amount: number) {
     const { data, error } = await supabase
       .from('budget_categories')
@@ -47,10 +52,7 @@ export const budgetCategoryService = {
       budgeted_amount: 0,
     }))
 
-    const { data, error } = await supabase
-      .from('budget_categories')
-      .insert(categories)
-      .select()
+    const { data, error } = await supabase.from('budget_categories').insert(categories).select()
     if (error) throw error
     return (data as BudgetCategory[]).sort((a, b) => a.sort_order - b.sort_order)
   },
@@ -67,10 +69,7 @@ export const budgetCategoryService = {
       sort_order: c.sort_order,
       budgeted_amount: 0,
     }))
-    const { data, error } = await supabase
-      .from('budget_categories')
-      .insert(rows)
-      .select()
+    const { data, error } = await supabase.from('budget_categories').insert(rows).select()
     if (error) throw error
     return data as BudgetCategory[]
   },

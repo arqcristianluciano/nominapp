@@ -18,6 +18,7 @@ export function BudgetHierarchyTable({
   onAddItem,
   onUpdateItem,
   onDeleteItem,
+  onDeleteCategory,
   onEditBudgetAmount,
 }: {
   loading: boolean
@@ -29,6 +30,7 @@ export function BudgetHierarchyTable({
   onAddItem: (data: Omit<BudgetItem, 'id'>) => Promise<void>
   onUpdateItem: (id: string, categoryId: string, changes: Partial<Omit<BudgetItem, 'id'>>) => Promise<void>
   onDeleteItem: (id: string, categoryId: string) => Promise<void>
+  onDeleteCategory: (categoryId: string) => Promise<void>
   onEditBudgetAmount: (categoryId: string, amount: number) => void
 }) {
   if (loading) return <div className="text-sm text-app-muted">Cargando presupuesto...</div>
@@ -63,6 +65,7 @@ export function BudgetHierarchyTable({
               onAddItem={onAddItem}
               onUpdateItem={(id, changes) => onUpdateItem(id, row.category.id, changes)}
               onDeleteItem={(id) => onDeleteItem(id, row.category.id)}
+              onDeleteCategory={() => onDeleteCategory(row.category.id)}
               onEditBudgetAmount={() => onEditBudgetAmount(row.category.id, row.budgeted)}
             />
           ))}
@@ -74,11 +77,7 @@ export function BudgetHierarchyTable({
             </td>
             <td className={tdTotalClass}>{formatRD(spentTotal)}</td>
             <td className={tdTotalClass}>{formatRD(budgetedTotal)}</td>
-            <td
-              className={`px-3 py-3 text-xs font-bold text-right ${
-                diff < 0 ? 'text-red-600' : 'text-green-600'
-              }`}
-            >
+            <td className={`px-3 py-3 text-xs font-bold text-right ${diff < 0 ? 'text-red-600' : 'text-green-600'}`}>
               {formatRD(diff)}
             </td>
             <td />

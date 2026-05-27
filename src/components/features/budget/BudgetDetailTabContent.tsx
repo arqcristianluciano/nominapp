@@ -12,12 +12,9 @@ type Props = {
   itemsByCategory: Record<string, BudgetItem[]>
   priceList: PriceListItem[]
   onAddItem: (data: Omit<BudgetItem, 'id'>) => Promise<void>
-  onUpdateItem: (
-    id: string,
-    categoryId: string,
-    changes: Partial<Omit<BudgetItem, 'id'>>
-  ) => Promise<void>
+  onUpdateItem: (id: string, categoryId: string, changes: Partial<Omit<BudgetItem, 'id'>>) => Promise<void>
   onDeleteItem: (id: string, categoryId: string) => Promise<void>
+  onDeleteCategory: (categoryId: string) => Promise<void>
   onEditBudgetAmount: (id: string, amount: number) => void
   onAddPrice: (item: Omit<PriceListItem, 'id'>) => Promise<void>
   onUpdatePrice: (id: string, changes: Partial<Omit<PriceListItem, 'id'>>) => Promise<void>
@@ -37,6 +34,7 @@ export function BudgetDetailTabContent({
   onAddItem,
   onUpdateItem,
   onDeleteItem,
+  onDeleteCategory,
   onEditBudgetAmount,
   onAddPrice,
   onUpdatePrice,
@@ -55,6 +53,7 @@ export function BudgetDetailTabContent({
         onAddItem={onAddItem}
         onUpdateItem={onUpdateItem}
         onDeleteItem={onDeleteItem}
+        onDeleteCategory={onDeleteCategory}
         onEditBudgetAmount={onEditBudgetAmount}
       />
     )
