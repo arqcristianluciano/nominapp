@@ -16,7 +16,7 @@
     "test:e2e:report": "playwright show-report",
     "prepare": "husky install",
     "format": "prettier --write .",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc -b --noEmit",
     "check-all": "npm run lint && npm run typecheck && npm test && npm run build",
     "db:types": "echo 'Run via Supabase MCP'"
   },
