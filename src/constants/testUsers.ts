@@ -10,7 +10,7 @@
 // cualquier rol (incluido Director General). Es solo para la fase de pruebas.
 // Para desactivarlo: pon `false` (sin redeploy de código si lo mueves a env),
 // o borra este archivo + el componente LoginQuickAccess antes de salir a real.
-export const ENABLE_TEST_QUICK_LOGIN = true
+export const ENABLE_TEST_QUICK_LOGIN = false
 
 export interface TestUser {
   email: string
