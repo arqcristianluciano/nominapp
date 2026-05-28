@@ -1,10 +1,8 @@
-import { useState } from 'react'
 import type { BankAccount, Company } from '@/types/database'
 import { PAYMENT_CONDITIONS } from '@/constants/indirectCosts'
 import { DEFAULT_BUDGET_CATEGORIES } from '@/constants/budgetCategories'
 import { DOMINICAN_BANKS } from '@/constants/banks'
 import { ThemeToggle } from '@/components/layout/ThemeToggle'
-import { isSentryActive, sendTestEvent } from '@/lib/sentry'
 
 export function BankAccountsPanel({
   loading,
@@ -162,53 +160,6 @@ export function BudgetCategoriesPanel() {
   )
 }
 
-function SentryDiagnosticsPanel() {
-  const [result, setResult] = useState<{ kind: 'idle' } | { kind: 'sent'; id: string } | { kind: 'inactive' }>({
-    kind: 'idle',
-  })
-
-  const active = isSentryActive()
-
-  const handleTest = () => {
-    const id = sendTestEvent()
-    setResult(id ? { kind: 'sent', id } : { kind: 'inactive' })
-  }
-
-  return (
-    <div className="bg-app-surface rounded-xl border border-app-border p-6 space-y-3">
-      <h2 className="font-medium text-app-text">Diagnóstico de errores (Sentry)</h2>
-      <p className="text-sm text-app-muted">
-        Envía un error de prueba a Sentry para verificar que la captura y las alertas por correo funcionan. Cada prueba
-        genera un issue nuevo.
-      </p>
-      <p className="text-sm">
-        Estado:{' '}
-        {active ? (
-          <span className="text-green-600 font-medium">activo</span>
-        ) : (
-          <span className="text-amber-600 font-medium">inactivo (falta VITE_SENTRY_DSN)</span>
-        )}
-      </p>
-      <button
-        type="button"
-        onClick={handleTest}
-        disabled={!active}
-        className="px-3 py-2 rounded-lg border border-app-border text-sm font-medium text-app-text hover:bg-app-hover disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        Enviar error de prueba
-      </button>
-      {result.kind === 'sent' && (
-        <p className="text-sm text-green-600">
-          Evento enviado (id: {result.id}). Revisa tu correo y el dashboard de Sentry en unos segundos.
-        </p>
-      )}
-      {result.kind === 'inactive' && (
-        <p className="text-sm text-amber-600">Sentry no está activo: configura VITE_SENTRY_DSN en el entorno.</p>
-      )}
-    </div>
-  )
-}
-
 export function SystemPanel() {
   return (
     <>
@@ -238,7 +189,6 @@ export function SystemPanel() {
           </div>
         </div>
       </div>
-      <SentryDiagnosticsPanel />
     </>
   )
 }
