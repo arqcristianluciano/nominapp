@@ -101,14 +101,15 @@ export default function BudgetPartidaRow({
       </tr>
 
       {/* Filas de subpartidas */}
-      {expanded && items.map((item) => {
+      {expanded && items.map((item, idx) => {
         const itemTotal = item.quantity * item.unit_price
+        const displayCode = item.code || `${category.sort_order}.${idx + 1}`
         return (
           <tr key={item.id} className="border-b border-app-border bg-app-bg/50 hover:bg-blue-50/20">
             <td className="px-3 py-2" />
             <td className="px-3 py-2 pl-10">
               <div className="flex items-center gap-1.5">
-                {item.code && <span className="text-[10px] text-app-subtle font-mono w-8 shrink-0">{item.code}</span>}
+                <span className="text-[10px] text-app-subtle font-mono w-8 shrink-0">{displayCode}</span>
                 <span className="text-xs text-app-muted">{item.description}</span>
               </div>
               <div className="flex items-center gap-2 mt-0.5 pl-9">
@@ -144,6 +145,7 @@ export default function BudgetPartidaRow({
           category={category}
           priceList={priceList}
           editItem={editItem}
+          defaultCode={`${category.sort_order}.${items.length + 1}`}
           onSave={handleSave}
           onClose={() => { setShowForm(false); setEditItem(null) }}
         />
