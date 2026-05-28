@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { Header } from './Header'
+import { BottomNav } from './BottomNav'
 import { isDemoMode } from '@/lib/supabase'
 import { FlaskConical, WifiOff, X } from 'lucide-react'
 import { useOfflineQueue } from '@/hooks/useOfflineQueue'
@@ -12,7 +13,7 @@ export function AppLayout() {
   const { online, pendingCount, flushNow } = useOfflineQueue()
 
   return (
-    <div className="flex h-screen bg-app-bg">
+    <div className="flex h-screen h-[100dvh] bg-app-bg">
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div className="flex-1 flex flex-col min-w-0">
@@ -26,8 +27,8 @@ export function AppLayout() {
               <FlaskConical className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
               <span>
                 <strong>Modo Demo</strong> — datos de ejemplo en memoria. Configura{' '}
-                <code className="font-mono bg-amber-100 dark:bg-amber-900/60 px-1 rounded">.env</code>{' '}
-                con credenciales de Supabase para la base de datos real.
+                <code className="font-mono bg-amber-100 dark:bg-amber-900/60 px-1 rounded">.env</code> con credenciales
+                de Supabase para la base de datos real.
               </span>
             </div>
             <button
@@ -48,31 +49,30 @@ export function AppLayout() {
               <WifiOff className="w-3.5 h-3.5 shrink-0" />
               {!online ? (
                 <span>
-                  <strong>Sin conexión.</strong> Las solicitudes y avances se guardan localmente y se sincronizan
-                  cuando vuelva la red.
+                  <strong>Sin conexión.</strong> Las solicitudes y avances se guardan localmente y se sincronizan cuando
+                  vuelva la red.
                 </span>
               ) : (
                 <span>
-                  <strong>{pendingCount}</strong>{' '}
-                  {pendingCount === 1 ? 'cambio pendiente' : 'cambios pendientes'} de sincronizar.
+                  <strong>{pendingCount}</strong> {pendingCount === 1 ? 'cambio pendiente' : 'cambios pendientes'} de
+                  sincronizar.
                 </span>
               )}
             </div>
             {online && pendingCount > 0 && (
-              <button
-                onClick={() => void flushNow()}
-                className="px-2 py-1 rounded bg-white/10 hover:bg-white/20"
-              >
+              <button onClick={() => void flushNow()} className="px-2 py-1 rounded bg-white/10 hover:bg-white/20">
                 Sincronizar
               </button>
             )}
           </div>
         )}
 
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+        <main className="flex-1 overflow-y-auto p-4 lg:p-6 pb-24 lg:pb-6">
           <Outlet />
         </main>
       </div>
+
+      <BottomNav onMenuClick={() => setSidebarOpen(true)} />
     </div>
   )
 }

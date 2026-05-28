@@ -63,9 +63,7 @@ const NAV_SECTIONS: NavSection[] = [
   },
   {
     labelKey: 'nav.sections.compras',
-    items: [
-      { to: '/ordenes-compra', icon: ShoppingCart, labelKey: 'nav.purchaseOrders' },
-    ],
+    items: [{ to: '/ordenes-compra', icon: ShoppingCart, labelKey: 'nav.purchaseOrders' }],
   },
   {
     labelKey: 'nav.sections.recursos',
@@ -77,9 +75,7 @@ const NAV_SECTIONS: NavSection[] = [
   },
   {
     labelKey: 'nav.sections.planificacion',
-    items: [
-      { to: '/calendario', icon: Calendar, labelKey: 'nav.calendar', capability: 'canViewFinanzas' },
-    ],
+    items: [{ to: '/calendario', icon: Calendar, labelKey: 'nav.calendar', capability: 'canViewFinanzas' }],
   },
   {
     labelKey: 'nav.sections.reportes',
@@ -114,23 +110,17 @@ export function Sidebar({ open, onClose }: SidebarProps) {
     return 0
   }
 
-  const sections = NAV_SECTIONS
-    .map((section) => ({
-      ...section,
-      items: section.items.filter((item) => !item.capability || app[item.capability]),
-    }))
-    .filter((section) => section.items.length > 0)
+  const sections = NAV_SECTIONS.map((section) => ({
+    ...section,
+    items: section.items.filter((item) => !item.capability || app[item.capability]),
+  })).filter((section) => section.items.length > 0)
 
   return (
     <>
-      {open && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm"
-          onClick={onClose}
-        />
-      )}
+      {open && <div className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm" onClick={onClose} />}
 
       <aside
+        style={{ paddingTop: 'env(safe-area-inset-top)' }}
         className={`
           fixed top-0 left-0 z-50 h-full w-64 bg-app-surface border-r border-app-border
           flex flex-col
@@ -150,7 +140,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           <button
             type="button"
             onClick={onClose}
-            className="lg:hidden p-1 text-white/70 hover:text-white rounded-md hover:bg-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
+            className="lg:hidden p-2 -mr-1 text-white/70 hover:text-white rounded-md hover:bg-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
             title={t('nav.closeMenu')}
             aria-label={t('nav.closeMenuAria')}
           >
@@ -186,7 +176,9 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                           {isActive && (
                             <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-blue-600 dark:bg-blue-400 rounded-r-full" />
                           )}
-                          <item.icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-app-subtle group-hover:text-app-muted'}`} />
+                          <item.icon
+                            className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-app-subtle group-hover:text-app-muted'}`}
+                          />
                           <span className="flex-1 truncate">{t(item.labelKey)}</span>
                           {badge > 0 && (
                             <span className="text-[10px] font-bold bg-orange-500 text-white rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center leading-none shrink-0">
