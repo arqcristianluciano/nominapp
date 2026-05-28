@@ -10,6 +10,7 @@ interface Props {
   category: BudgetCategory
   priceList: PriceListItem[]
   editItem?: BudgetItem | null
+  defaultCode?: string
   onSave: (data: Omit<BudgetItem, 'id'>) => Promise<void>
   onClose: () => void
 }
@@ -23,8 +24,8 @@ const EMPTY_FORM = {
   notes: '',
 }
 
-export default function BudgetItemForm({ category, priceList, editItem, onSave, onClose }: Props) {
-  const [form, setForm] = useState(EMPTY_FORM)
+export default function BudgetItemForm({ category, priceList, editItem, defaultCode = '', onSave, onClose }: Props) {
+  const [form, setForm] = useState({ ...EMPTY_FORM, code: defaultCode })
   const [priceQuery, setPriceQuery] = useState('')
   const [showPriceList, setShowPriceList] = useState(false)
   const [saving, setSaving] = useState(false)
