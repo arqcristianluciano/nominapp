@@ -48,7 +48,10 @@ describe('mockSupabase filtros encadenados', () => {
 
   it('expone channel() con on/subscribe/unsubscribe encadenables', () => {
     expect(() => {
-      mockSupabase.channel('foo').on('x', {}, () => {}).subscribe()
+      mockSupabase
+        .channel('foo')
+        .on('x', {}, () => {})
+        .subscribe()
     }).not.toThrow()
 
     const ch = mockSupabase.channel('bar')
@@ -90,5 +93,17 @@ describe('mockSupabase filtros encadenados', () => {
 
     expect(res.error).toBeNull()
     expect((res.data as Array<{ id: string }>).map((r) => r.id)).toEqual([`${marker}-1`])
+  })
+})
+
+describe('mockSupabase realtime teardown', () => {
+  it('expone removeChannel y removeAllChannels (cleanup de hooks no debe romper en demo)', async () => {
+    expect(typeof mockSupabase.removeChannel).toBe('function')
+    expect(typeof mockSupabase.removeAllChannels).toBe('function')
+
+    const channel = mockSupabase.channel('test-channel')
+    // No debe lanzar y debe resolver (usePendingCortes hace `void removeChannel(channel)`).
+    await expect(mockSupabase.removeChannel(channel)).resolves.toBe('ok')
+    await expect(mockSupabase.removeAllChannels()).resolves.toEqual([])
   })
 })
