@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { UserPlus, X, AlertTriangle } from 'lucide-react'
-import type { BudgetCategory, Contractor, LaborLineItem, PriceListItem } from '@/types/database'
+import type { BudgetCategory, BudgetItem, Contractor, LaborLineItem, PriceListItem } from '@/types/database'
 import { MEASURE_UNITS } from '@/constants/measureUnits'
 import { contractorService } from '@/services/contractorService'
+import { budgetItemService } from '@/services/budgetItemService'
 import { parseDecimalInput } from '@/utils/decimalInput'
 import { mul, round2 } from '@/utils/money'
 
@@ -21,6 +22,7 @@ interface Props {
     is_advance: boolean
     is_advance_deduction: boolean
     budget_category_id?: string | null
+    budget_item_id?: string | null
   }) => Promise<void>
   onCancel: () => void
   saving: boolean
@@ -52,8 +54,29 @@ export function AddLaborItemForm({
   const [unit, setUnit] = useState(initialItem?.unit ?? 'M2')
   const [unitPrice, setUnitPrice] = useState(initialItem ? String(initialItem.unit_price) : '')
   const [budgetCategoryId, setBudgetCategoryId] = useState(initialItem?.budget_category_id ?? '')
+  const [budgetItemId, setBudgetItemId] = useState(initialItem?.budget_item_id ?? '')
+  const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([])
   const [isAdvance, setIsAdvance] = useState(initialItem?.is_advance ?? false)
   const [isDeduction, setIsDeduction] = useState(initialItem?.is_advance_deduction ?? false)
+
+  // Cargar las partidas del capítulo seleccionado para imputar la mano de
+  // obra a una partida concreta del presupuesto.
+  useEffect(() => {
+    let cancelled = false
+    const promise = budgetCategoryId
+      ? budgetItemService.getByCategoryId(budgetCategoryId)
+      : Promise.resolve([] as BudgetItem[])
+    promise
+      .then((data) => {
+        if (!cancelled) setBudgetItems(data)
+      })
+      .catch(() => {
+        if (!cancelled) setBudgetItems([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [budgetCategoryId])
 
   const [showNewForm, setShowNewForm] = useState(false)
   const [newName, setNewName] = useState('')
@@ -129,6 +152,7 @@ export function AddLaborItemForm({
       is_advance: isAdvance,
       is_advance_deduction: isDeduction,
       budget_category_id: budgetCategoryId || null,
+      budget_item_id: budgetItemId || null,
     })
   }
 
@@ -278,20 +302,42 @@ export function AddLaborItemForm({
       </div>
 
       {budgetCategories.length > 0 && (
-        <div>
-          <label className="block text-xs font-medium text-app-muted mb-1">Capítulo imputado (opcional)</label>
-          <select
-            value={budgetCategoryId}
-            onChange={(e) => setBudgetCategoryId(e.target.value)}
-            className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] sm:min-h-0"
-          >
-            <option value="">— Sin imputación específica —</option>
-            {budgetCategories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.code} {c.name}
-              </option>
-            ))}
-          </select>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-app-muted mb-1">Capítulo imputado (opcional)</label>
+            <select
+              value={budgetCategoryId}
+              onChange={(e) => {
+                setBudgetCategoryId(e.target.value)
+                setBudgetItemId('')
+              }}
+              className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] sm:min-h-0"
+            >
+              <option value="">— Sin imputación específica —</option>
+              {budgetCategories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.code} {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-app-muted mb-1">Partida (opcional)</label>
+            <select
+              value={budgetItemId}
+              onChange={(e) => setBudgetItemId(e.target.value)}
+              disabled={!budgetCategoryId}
+              className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] sm:min-h-0 disabled:opacity-50"
+            >
+              <option value="">— Sin partida específica —</option>
+              {budgetItems.map((it) => (
+                <option key={it.id} value={it.id}>
+                  {it.code ? `[${it.code}] ` : ''}
+                  {it.description}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       )}
 

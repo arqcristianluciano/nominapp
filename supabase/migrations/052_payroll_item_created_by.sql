@@ -1,4 +1,4 @@
--- 051_payroll_item_created_by
+-- 052_payroll_item_created_by
 -- Rastrea el AUTOR (created_by) de cada partida de mano de obra y de cada
 -- factura de materiales, para saber quién introdujo cada renglón del reporte.
 --

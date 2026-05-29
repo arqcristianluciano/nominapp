@@ -149,6 +149,8 @@ export interface LaborLineItem {
   budget_item_id: string | null
   created_by: string | null
   contractor?: Contractor
+  budget_category?: { code: string; name: string } | null
+  budget_item?: { code: string | null; description: string } | null
   /** Derivado (no es columna): nombre del autor resuelto desde user_profiles. */
   creator_name?: string | null
 }
@@ -166,8 +168,20 @@ export interface MaterialInvoice {
   notes: string | null
   created_by: string | null
   supplier?: Supplier
+  items?: MaterialInvoiceItem[]
+  budget_category?: { code: string; name: string } | null
+  budget_item?: { code: string | null; description: string } | null
   /** Derivado (no es columna): nombre del autor resuelto desde user_profiles. */
   creator_name?: string | null
+}
+
+export interface MaterialInvoiceItem {
+  id: string
+  material_invoice_id: string
+  description: string
+  amount: number
+  sort_order: number
+  created_at?: string
 }
 
 export interface IndirectCost {
@@ -344,6 +358,11 @@ export interface Database {
         Row: MaterialInvoice
         Insert: Omit<MaterialInvoice, 'id' | 'created_by' | 'creator_name'>
         Update: Partial<MaterialInvoice>
+      }
+      material_invoice_items: {
+        Row: MaterialInvoiceItem
+        Insert: Omit<MaterialInvoiceItem, 'id' | 'created_at'>
+        Update: Partial<MaterialInvoiceItem>
       }
       indirect_costs: { Row: IndirectCost; Insert: Omit<IndirectCost, 'id'>; Update: Partial<IndirectCost> }
       payment_distributions: {
