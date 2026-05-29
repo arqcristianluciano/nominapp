@@ -4,6 +4,7 @@ import type {
   PayrollPeriod,
   LaborLineItem,
   MaterialInvoice,
+  MaterialInvoiceItem,
   IndirectCost,
   PayrollStatus,
   Project,
@@ -15,7 +16,20 @@ import {
   calcLaborTotal,
   calcMaterialsTotal,
 } from '@/utils/calculations'
+import { buildInvoiceSummary, sumInvoiceItems } from '@/utils/materialInvoice'
+import { round2 } from '@/utils/money'
 import { approvalsService, type ApprovalAction } from '@/services/approvalsService'
+
+const INVOICE_BUCKET = 'invoice-attachments'
+
+/** Devuelve la factura con sus items ordenados por `sort_order` (no muta el original). */
+function sortInvoiceItems(invoice: MaterialInvoice): MaterialInvoice {
+  if (!invoice.items?.length) return invoice
+  return {
+    ...invoice,
+    items: [...invoice.items].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)),
+  }
+}
 
 // Estados en los que una nómina ya se considera comprometida (regla 7.6).
 // Cubicación, dashboard y plan-vs-real deben filtrar usando este conjunto.
@@ -51,16 +65,27 @@ export const payrollService = {
 
   async getPeriodDetail(periodId: string) {
     const [periodRes, laborRes, materialsRes, indirectRes] = await Promise.all([
-      supabase.from('payroll_periods').select('*, project:projects(*, company:companies(*))').eq('id', periodId).single(),
-      supabase.from('labor_line_items').select('*, contractor:contractors(*)').eq('payroll_period_id', periodId).order('sort_order'),
-      supabase.from('material_invoices').select('*, supplier:suppliers(*)').eq('payroll_period_id', periodId),
+      supabase
+        .from('payroll_periods')
+        .select('*, project:projects(*, company:companies(*))')
+        .eq('id', periodId)
+        .single(),
+      supabase
+        .from('labor_line_items')
+        .select('*, contractor:contractors(*)')
+        .eq('payroll_period_id', periodId)
+        .order('sort_order'),
+      supabase
+        .from('material_invoices')
+        .select('*, supplier:suppliers(*), items:material_invoice_items(*)')
+        .eq('payroll_period_id', periodId),
       supabase.from('indirect_costs').select('*').eq('payroll_period_id', periodId),
     ])
     if (periodRes.error) throw periodRes.error
     return {
       period: periodRes.data as PayrollPeriod,
       laborItems: (laborRes.data || []) as LaborLineItem[],
-      materialInvoices: (materialsRes.data || []) as MaterialInvoice[],
+      materialInvoices: ((materialsRes.data || []) as MaterialInvoice[]).map(sortInvoiceItems),
       indirectCosts: (indirectRes.data || []) as IndirectCost[],
     }
   },
@@ -119,12 +144,7 @@ export const payrollService = {
       level: 'info',
       data: { periodId: id, status },
     })
-    const { data, error } = await supabase
-      .from('payroll_periods')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single()
+    const { data, error } = await supabase.from('payroll_periods').update(updates).eq('id', id).select().single()
     if (error) throw error
 
     await approvalsService.log({
@@ -134,24 +154,22 @@ export const payrollService = {
       actor_display_name: actor?.displayName,
       payload_before: before ? { status: before.status } : null,
       payload_after: { status },
-      metadata: before
-        ? { period_number: before.period_number, project_id: before.project_id }
-        : {},
+      metadata: before ? { period_number: before.period_number, project_id: before.project_id } : {},
     })
 
     return data as PayrollPeriod
   },
 
-  async updatePeriodTotals(id: string, totals: {
-    total_labor: number
-    total_materials: number
-    total_indirect: number
-    grand_total: number
-  }) {
-    const { error } = await supabase
-      .from('payroll_periods')
-      .update(totals)
-      .eq('id', id)
+  async updatePeriodTotals(
+    id: string,
+    totals: {
+      total_labor: number
+      total_materials: number
+      total_indirect: number
+      grand_total: number
+    },
+  ) {
+    const { error } = await supabase.from('payroll_periods').update(totals).eq('id', id)
     if (error) throw error
   },
 
@@ -178,16 +196,9 @@ export const payrollService = {
   },
 
   async deletePeriod(id: string) {
-    const { data: period } = await supabase
-      .from('payroll_periods')
-      .select('*')
-      .eq('id', id)
-      .single()
+    const { data: period } = await supabase.from('payroll_periods').select('*').eq('id', id).single()
 
-    const { error } = await supabase
-      .from('payroll_periods')
-      .delete()
-      .eq('id', id)
+    const { error } = await supabase.from('payroll_periods').delete().eq('id', id)
     if (error) throw error
 
     await approvalsService
@@ -202,7 +213,10 @@ export const payrollService = {
 
   async duplicatePeriod(sourcePeriodId: string, projectId: string): Promise<PayrollPeriod> {
     const draft = await this.getDraftPeriod(projectId)
-    if (draft) throw new Error(`Ya existe el Reporte No. ${draft.period_number} en borrador. Concluye ese reporte antes de duplicar.`)
+    if (draft)
+      throw new Error(
+        `Ya existe el Reporte No. ${draft.period_number} en borrador. Concluye ese reporte antes de duplicar.`,
+      )
 
     const { laborItems, materialInvoices } = await this.getPeriodDetail(sourcePeriodId)
     const nextNum = await this.getNextPeriodNumber(projectId)
@@ -229,17 +243,34 @@ export const payrollService = {
       await supabase.from('labor_line_items').insert(laborRows)
     }
 
-    if (materialInvoices.length > 0) {
-      const matRows = materialInvoices.map((inv) => ({
-        payroll_period_id: newPeriod.id,
-        supplier_id: inv.supplier_id,
-        description: inv.description,
-        invoice_reference: inv.invoice_reference,
-        amount: inv.amount,
-        budget_category_id: inv.budget_category_id,
-        notes: inv.notes,
-      }))
-      await supabase.from('material_invoices').insert(matRows)
+    for (const inv of materialInvoices) {
+      const { data: newInvoice, error: invError } = await supabase
+        .from('material_invoices')
+        .insert({
+          payroll_period_id: newPeriod.id,
+          supplier_id: inv.supplier_id,
+          description: inv.description,
+          invoice_reference: inv.invoice_reference,
+          amount: inv.amount,
+          budget_category_id: inv.budget_category_id,
+          attachment_path: inv.attachment_path,
+          notes: inv.notes,
+        })
+        .select('id')
+        .single()
+      if (invError) throw invError
+
+      const items = inv.items ?? []
+      if (items.length > 0) {
+        await supabase.from('material_invoice_items').insert(
+          items.map((it, i) => ({
+            material_invoice_id: newInvoice.id,
+            description: it.description,
+            amount: it.amount,
+            sort_order: it.sort_order ?? i,
+          })),
+        )
+      }
     }
 
     return newPeriod
@@ -270,15 +301,18 @@ export const payrollService = {
     return data as LaborLineItem
   },
 
-  async updateLaborItem(id: string, updates: {
-    description?: string
-    quantity?: number
-    unit?: string
-    unit_price?: number
-    is_advance?: boolean
-    is_advance_deduction?: boolean
-    notes?: string
-  }) {
+  async updateLaborItem(
+    id: string,
+    updates: {
+      description?: string
+      quantity?: number
+      unit?: string
+      unit_price?: number
+      is_advance?: boolean
+      is_advance_deduction?: boolean
+      notes?: string
+    },
+  ) {
     const { data, error } = await supabase
       .from('labor_line_items')
       .update(updates)
@@ -290,10 +324,7 @@ export const payrollService = {
   },
 
   async deleteLaborItem(id: string) {
-    const { error } = await supabase
-      .from('labor_line_items')
-      .delete()
-      .eq('id', id)
+    const { error } = await supabase.from('labor_line_items').delete().eq('id', id)
     if (error) throw error
   },
 
@@ -302,27 +333,66 @@ export const payrollService = {
   async addMaterialInvoice(invoice: {
     payroll_period_id: string
     supplier_id: string
-    description: string
     invoice_reference?: string
-    amount: number
+    attachment_path?: string | null
     notes?: string
+    items: { description: string; amount: number }[]
   }) {
-    const { data, error } = await supabase
+    const items = invoice.items
+      .map((it) => ({ description: it.description.trim(), amount: round2(it.amount) }))
+      .filter((it) => it.description.length > 0 && Number.isFinite(it.amount))
+    if (items.length === 0) {
+      throw new Error('La factura debe tener al menos un ítem con descripción y monto.')
+    }
+
+    // `amount` y `description` quedan denormalizados en el encabezado para que
+    // reportes/impresion/export sigan funcionando sin leer la tabla de items.
+    const { data: header, error } = await supabase
       .from('material_invoices')
-      .insert(invoice)
+      .insert({
+        payroll_period_id: invoice.payroll_period_id,
+        supplier_id: invoice.supplier_id,
+        description: buildInvoiceSummary(items),
+        invoice_reference: invoice.invoice_reference ?? null,
+        attachment_path: invoice.attachment_path ?? null,
+        amount: sumInvoiceItems(items),
+        notes: invoice.notes ?? null,
+      })
       .select('*, supplier:suppliers(*)')
       .single()
     if (error) throw error
-    return data as MaterialInvoice
+
+    const { data: savedItems, error: itemsError } = await supabase
+      .from('material_invoice_items')
+      .insert(items.map((it, i) => ({ ...it, material_invoice_id: header.id, sort_order: i })))
+      .select()
+    if (itemsError) throw itemsError
+
+    return { ...(header as MaterialInvoice), items: (savedItems || []) as MaterialInvoiceItem[] }
   },
 
-  async updateMaterialInvoice(id: string, updates: {
-    description?: string
-    supplier_id?: string
-    invoice_reference?: string
-    amount?: number
-    notes?: string
-  }) {
+  /** Asocia (o limpia) el path del comprobante de una factura ya existente. */
+  async setInvoiceAttachment(invoiceId: string, attachmentPath: string | null) {
+    const { data, error } = await supabase
+      .from('material_invoices')
+      .update({ attachment_path: attachmentPath })
+      .eq('id', invoiceId)
+      .select('*, supplier:suppliers(*), items:material_invoice_items(*)')
+      .single()
+    if (error) throw error
+    return sortInvoiceItems(data as MaterialInvoice)
+  },
+
+  async updateMaterialInvoice(
+    id: string,
+    updates: {
+      description?: string
+      supplier_id?: string
+      invoice_reference?: string
+      amount?: number
+      notes?: string
+    },
+  ) {
     const { data, error } = await supabase
       .from('material_invoices')
       .update(updates)
@@ -334,23 +404,23 @@ export const payrollService = {
   },
 
   async deleteMaterialInvoice(id: string) {
-    const { error } = await supabase
-      .from('material_invoices')
-      .delete()
-      .eq('id', id)
+    const { error } = await supabase.from('material_invoices').delete().eq('id', id)
     if (error) throw error
   },
 
   // === INDIRECT COSTS ===
 
-  async saveIndirectCosts(periodId: string, costs: {
-    type: string
-    description: string
-    percentage?: number
-    base_amount?: number
-    calculated_amount: number
-    fixed_amount?: number
-  }[]) {
+  async saveIndirectCosts(
+    periodId: string,
+    costs: {
+      type: string
+      description: string
+      percentage?: number
+      base_amount?: number
+      calculated_amount: number
+      fixed_amount?: number
+    }[],
+  ) {
     const { data: existing } = await supabase
       .from('indirect_costs')
       .select('type, is_active')
@@ -367,10 +437,7 @@ export const payrollService = {
       payroll_period_id: periodId,
       is_active: activeByType.get(c.type) ?? true,
     }))
-    const { data, error } = await supabase
-      .from('indirect_costs')
-      .insert(rows)
-      .select()
+    const { data, error } = await supabase.from('indirect_costs').insert(rows).select()
     if (error) throw error
     return data as IndirectCost[]
   },
@@ -388,13 +455,26 @@ export const payrollService = {
 
   // === FILE ATTACHMENTS ===
 
-  async uploadInvoiceFile(file: File, periodId: string) {
-    const ext = file.name.split('.').pop()
-    const path = `invoices/${periodId}/${Date.now()}.${ext}`
+  /**
+   * Sube el comprobante de una factura al bucket privado `invoice-attachments`.
+   * El path es `<projectId>/<periodId>/<timestamp>-<nombre>` para que RLS pueda
+   * verificar la pertenencia al proyecto (primer segmento del path).
+   */
+  async uploadInvoiceFile(file: File, projectId: string, periodId: string) {
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+    const path = `${projectId}/${periodId}/${Date.now()}-${safeName}`
     const { error } = await supabase.storage
-      .from('attachments')
-      .upload(path, file)
+      .from(INVOICE_BUCKET)
+      .upload(path, file, { contentType: file.type || 'application/octet-stream', upsert: false })
     if (error) throw error
     return path
+  },
+
+  /** Genera una URL firmada (privada) para ver/descargar el comprobante. */
+  async getInvoiceFileUrl(path: string, expiresInSec = 60 * 60) {
+    const { data, error } = await supabase.storage.from(INVOICE_BUCKET).createSignedUrl(path, expiresInSec)
+    if (error) throw error
+    if (!data?.signedUrl) throw new Error('No signed URL returned')
+    return data.signedUrl
   },
 }
