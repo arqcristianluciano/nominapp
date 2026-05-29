@@ -1,4 +1,4 @@
-import { PackageCheck, Send, ShieldCheck, Trash2, Truck } from 'lucide-react'
+import { PackageCheck, RotateCcw, Send, ShieldCheck, Trash2, Truck } from 'lucide-react'
 
 interface Props {
   canEdit: boolean
@@ -6,14 +6,17 @@ interface Props {
   canApprove?: boolean
   canRelease?: boolean
   canReceive?: boolean
+  canReverseReceipt?: boolean
   status: string
   placingOrder: boolean
   receivingOrder?: boolean
+  reversingOrder?: boolean
   onSubmitForApproval: () => void
   onOpenApproval: () => void
   onPlaceCash: () => void
   onPlaceCredit: () => void
   onReceive?: () => void
+  onReverseReceipt?: () => void
   onDelete: () => void
 }
 
@@ -23,14 +26,17 @@ export function PurchaseOrderActions({
   canApprove = true,
   canRelease = false,
   canReceive = false,
+  canReverseReceipt = false,
   status,
   placingOrder,
   receivingOrder = false,
+  reversingOrder = false,
   onSubmitForApproval,
   onOpenApproval,
   onPlaceCash,
   onPlaceCredit,
   onReceive,
+  onReverseReceipt,
   onDelete,
 }: Props) {
   // Touch-friendly base classes: min-h-12 (~48px) on mobile — comfortably above
@@ -48,7 +54,17 @@ export function PurchaseOrderActions({
   // Almacenista dé entrada a la mercancía (capability 'receive_order').
   const awaitingReceipt = status === 'ordered'
 
-  const hasAnyAction = canSubmit || status === 'pending_approval' || awaitingRelease || awaitingReceipt || canEdit
+  // 'received' = mercancía ya recibida; el Almacenista puede revertir la
+  // recepción (corrección/devolución) mientras el stock siga disponible.
+  const isReceived = status === 'received'
+
+  const hasAnyAction =
+    canSubmit ||
+    status === 'pending_approval' ||
+    awaitingRelease ||
+    awaitingReceipt ||
+    (isReceived && canReverseReceipt) ||
+    canEdit
 
   if (!hasAnyAction) return null
 
@@ -107,6 +123,16 @@ export function PurchaseOrderActions({
         <p className="text-sm text-app-muted italic">
           Orden colocada con el suplidor. Pendiente de recepción en almacén por el Almacenista.
         </p>
+      )}
+      {isReceived && canReverseReceipt && (
+        <button
+          onClick={onReverseReceipt}
+          disabled={reversingOrder}
+          className={`${baseBtn} border border-amber-300 text-amber-700 hover:bg-amber-50 disabled:opacity-50`}
+        >
+          <RotateCcw className="w-4 h-4" />
+          {reversingOrder ? 'Revirtiendo…' : 'Revertir recepción (devolver de almacén)'}
+        </button>
       )}
       {canEdit && (
         <button

@@ -10,6 +10,7 @@ export interface InventoryItem {
   current_stock: number
   min_stock: number
   unit_cost: number
+  material_catalog_id?: string | null
   created_at: string
 }
 
@@ -86,6 +87,9 @@ export const inventoryService = {
   // Busca un material del proyecto por nombre (sin distinguir mayúsculas) y, si
   // no existe, lo crea. Usado por la recepción de órdenes de compra para dar
   // entrada a stock sin obligar al almacenista a pre-registrar el material.
+  // Al crear, intenta enlazarlo al catálogo global de materiales por descripción
+  // para que la entrada alimente el histórico de precios (migración 011); no
+  // crea entradas de catálogo nuevas (el catálogo es curado, con código único).
   async findOrCreateItem(input: {
     project_id: string
     name: string
@@ -100,14 +104,36 @@ export const inventoryService = {
       .ilike('name', name)
       .limit(1)
     if (existing && existing.length > 0) return existing[0] as InventoryItem
+
+    const { data: catalogMatch } = await supabase
+      .from('materials_catalog')
+      .select('id, unit')
+      .ilike('description', name)
+      .eq('is_active', true)
+      .limit(1)
+    const catalog = catalogMatch && catalogMatch.length > 0 ? catalogMatch[0] : null
+
     return this.createItem({
       project_id: input.project_id,
       name,
-      unit: input.unit?.trim() || 'UD',
+      unit: input.unit?.trim() || catalog?.unit || 'UD',
       current_stock: 0,
       min_stock: 0,
       unit_cost: input.unit_cost ?? 0,
+      material_catalog_id: catalog?.id ?? null,
     })
+  },
+
+  // Movimientos de inventario generados por una orden de compra (entradas de
+  // recepción y, si las hubo, reversas). Usado para revertir una recepción.
+  async getMovementsByPurchaseOrder(purchaseOrderId: string): Promise<InventoryMovement[]> {
+    const { data, error } = await supabase
+      .from('inventory_movements')
+      .select('*, item:inventory_items(id,name,unit)')
+      .eq('purchase_order_id', purchaseOrderId)
+      .order('date', { ascending: true })
+    if (error) throw error
+    return data ?? []
   },
 
   async deleteItem(id: string): Promise<void> {

@@ -307,4 +307,47 @@ describe('requisitionService - recepción de mercancía (entrada a almacén)', (
     })
     await expect(requisitionService.markReceived(req.id, 'Almacenista')).rejects.toThrow(/Orden colocada/i)
   })
+
+  it('enlaza el material de inventario al catálogo cuando la descripción coincide', async () => {
+    const name = `Varilla 1/2 ${Date.now()}`
+    const { data: catalog } = await supabase
+      .from('materials_catalog')
+      .insert({ code: `CAT-${Date.now()}`, description: name, unit: 'qq', is_active: true })
+      .select()
+      .single()
+
+    const req = await makeOrderedReq(name, 10, 100)
+    await requisitionService.markReceived(req.id, 'Almacenista')
+
+    const item = (await inventoryService.getItems(projectId)).find((i) => i.name === name)
+    expect(item?.material_catalog_id).toBe((catalog as { id: string }).id)
+  })
+
+  it('reverseReceipt deshace el stock y devuelve la OC a "ordered"', async () => {
+    const name = `Bloque ${Date.now()}`
+    const req = await makeOrderedReq(name, 25, 30)
+    await requisitionService.markReceived(req.id, 'Almacenista')
+
+    const itemBefore = (await inventoryService.getItems(projectId)).find((i) => i.name === name)
+    expect(itemBefore?.current_stock).toBe(25)
+
+    await requisitionService.reverseReceipt(req.id, 'Almacenista')
+
+    const after = await requisitionService.getById(req.id)
+    expect(after.status).toBe('ordered')
+    expect(after.received_by).toBeNull()
+    expect(after.received_at).toBeNull()
+
+    // El stock vuelve a 0 vía una salida compensatoria enlazada a la OC.
+    const itemAfter = (await inventoryService.getItems(projectId)).find((i) => i.name === name)
+    expect(itemAfter?.current_stock).toBe(0)
+
+    const poMovements = await inventoryService.getMovementsByPurchaseOrder(req.id)
+    expect(poMovements.some((m) => m.type === 'out' && m.quantity === 25)).toBe(true)
+  })
+
+  it('reverseReceipt rechaza una OC que no está "received"', async () => {
+    const req = await makeOrderedReq(`X ${Date.now()}`, 5, 10)
+    await expect(requisitionService.reverseReceipt(req.id, 'Almacenista')).rejects.toThrow(/Recibida/i)
+  })
 })

@@ -9,7 +9,7 @@ import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { usePurchaseOrderDetail } from '@/hooks/usePurchaseOrderDetail'
 import { useProjectRoles } from '@/hooks/useProjectRoles'
 import { useAuthStore } from '@/stores/authStore'
-import { PackageCheck, ShieldCheck, Send, Truck } from 'lucide-react'
+import { PackageCheck, RotateCcw, ShieldCheck, Send, Truck } from 'lucide-react'
 
 export default function PurchaseOrderDetail() {
   const {
@@ -26,6 +26,8 @@ export default function PurchaseOrderDetail() {
     excessModal,
     confirmReceive,
     receivingOrder,
+    confirmReverse,
+    reversingOrder,
     quotes,
     canEdit,
     canNegotiate,
@@ -37,6 +39,7 @@ export default function PurchaseOrderDetail() {
     setConfirmDeleteReq,
     setExcessModal,
     setConfirmReceive,
+    setConfirmReverse,
     handleAddQuote,
     handleNegotiate,
     handleDeleteQuote,
@@ -46,6 +49,7 @@ export default function PurchaseOrderDetail() {
     handleSubmitForApproval,
     handlePlaceOrder,
     handleMarkReceived,
+    handleReverseReceipt,
     handleValidateExcess,
     handleDelete,
   } = usePurchaseOrderDetail()
@@ -57,8 +61,10 @@ export default function PurchaseOrderDetail() {
   if (!req) return <div className="p-8 text-center text-app-muted">Solicitud no encontrada</div>
 
   // El Almacenista (capability 'receive_order') da entrada a la mercancía una
-  // vez la OC está colocada con el suplidor.
+  // vez la OC está colocada con el suplidor, y puede revertir la recepción si
+  // se registró por error o se devuelve al suplidor.
   const canReceive = req.status === 'ordered' && roles.canReceiveOrder
+  const canReverseReceipt = req.status === 'received' && roles.canReceiveOrder
 
   // Determine the primary mobile CTA for the sticky footer. Only ONE button is
   // duplicated in the footer (the most relevant action) to keep it compact.
@@ -106,6 +112,15 @@ export default function PurchaseOrderDetail() {
         disabled: receivingOrder,
       }
     }
+    if (canReverseReceipt) {
+      return {
+        label: reversingOrder ? 'Revirtiendo…' : 'Revertir recepción',
+        onClick: () => setConfirmReverse(true),
+        className: 'bg-amber-600 hover:bg-amber-700 text-white disabled:opacity-50',
+        icon: <RotateCcw className="w-4 h-4" />,
+        disabled: reversingOrder,
+      }
+    }
     return null
   })()
 
@@ -151,14 +166,17 @@ export default function PurchaseOrderDetail() {
               canApprove={roles.canReleasePurchaseOrder}
               canRelease={roles.isDirector}
               canReceive={canReceive}
+              canReverseReceipt={canReverseReceipt}
               status={req.status}
               placingOrder={placingOrder}
               receivingOrder={receivingOrder}
+              reversingOrder={reversingOrder}
               onSubmitForApproval={handleSubmitForApproval}
               onOpenApproval={() => setApprovalModal(true)}
               onPlaceCash={() => handlePlaceOrder('cash', user?.displayName)}
               onPlaceCredit={() => handlePlaceOrder('credit', user?.displayName)}
               onReceive={() => setConfirmReceive(true)}
+              onReverseReceipt={() => setConfirmReverse(true)}
               onDelete={() => setConfirmDeleteReq(true)}
             />
           </aside>
@@ -201,6 +219,16 @@ export default function PurchaseOrderDetail() {
           confirmLabel="Confirmar recepción"
           onConfirm={() => handleMarkReceived(user?.displayName)}
           onCancel={() => setConfirmReceive(false)}
+        />
+
+        <ConfirmModal
+          open={confirmReverse}
+          variant="warning"
+          title="Revertir recepción"
+          message="Se generará una salida de almacén que deshace el stock ingresado por esta orden y la orden volverá a 'Orden colocada'. Si parte del material ya fue consumido, la reversa no podrá completarse. ¿Continuar?"
+          confirmLabel="Revertir recepción"
+          onConfirm={() => handleReverseReceipt(user?.displayName)}
+          onCancel={() => setConfirmReverse(false)}
         />
       </div>
 

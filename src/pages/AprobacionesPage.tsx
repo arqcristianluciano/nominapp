@@ -17,6 +17,7 @@ const ACTION_LABEL: Record<ApprovalAction, string> = {
   budget_edit_post_approval: 'Edición de presupuesto',
   status_change: 'Cambio de estado',
   receive: 'Recibida',
+  reverse_receipt: 'Recepción revertida',
   create: 'Creación',
   delete: 'Eliminación',
   delete_cascade: 'Eliminación en cascada',

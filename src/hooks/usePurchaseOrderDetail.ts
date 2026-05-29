@@ -27,6 +27,8 @@ export function usePurchaseOrderDetail() {
   const [excessModal, setExcessModal] = useState(false)
   const [confirmReceive, setConfirmReceive] = useState(false)
   const [receivingOrder, setReceivingOrder] = useState(false)
+  const [confirmReverse, setConfirmReverse] = useState(false)
+  const [reversingOrder, setReversingOrder] = useState(false)
 
   const load = useCallback(async () => {
     if (!orderId) return
@@ -124,6 +126,18 @@ export function usePurchaseOrderDetail() {
     }
   }
 
+  async function handleReverseReceipt(actor?: string) {
+    if (!orderId) return
+    setReversingOrder(true)
+    try {
+      await requisitionService.reverseReceipt(orderId, actor ?? 'Almacenista')
+      setConfirmReverse(false)
+      await load()
+    } finally {
+      setReversingOrder(false)
+    }
+  }
+
   async function handleValidateExcess(validatedBy: string, motivo: string) {
     if (!orderId) return
     await requisitionService.validateExcess(orderId, validatedBy, motivo)
@@ -157,6 +171,8 @@ export function usePurchaseOrderDetail() {
     excessModal,
     confirmReceive,
     receivingOrder,
+    confirmReverse,
+    reversingOrder,
     quotes,
     canEdit,
     canNegotiate,
@@ -168,6 +184,7 @@ export function usePurchaseOrderDetail() {
     setConfirmDeleteReq,
     setExcessModal,
     setConfirmReceive,
+    setConfirmReverse,
     handleAddQuote,
     handleNegotiate,
     handleDeleteQuote,
@@ -177,6 +194,7 @@ export function usePurchaseOrderDetail() {
     handleSubmitForApproval,
     handlePlaceOrder,
     handleMarkReceived,
+    handleReverseReceipt,
     handleValidateExcess,
     handleDelete,
   }

@@ -441,6 +441,70 @@ export const requisitionService = {
     })
   },
 
+  // Reversa de una recepción ya registrada (corrección o devolución al
+  // suplidor). Genera salidas ('out') que compensan el stock neto que aún queda
+  // de la OC en almacén y devuelve la orden a 'ordered' para poder recibirla de
+  // nuevo. Se calcula por NETO (entradas - salidas) por material para no
+  // duplicar la reversa si la OC se recibió y revirtió más de una vez. Si parte
+  // del material ya se consumió, la salida correspondiente fallará por stock
+  // insuficiente (regla 7.5) y la reversa se aborta con un error claro.
+  async reverseReceipt(id: string, actor: string) {
+    const before = await this.getById(id)
+    if (before.status !== 'received') {
+      throw new Error('Solo se pueden revertir órdenes en estado "Recibida".')
+    }
+
+    const movements = await inventoryService.getMovementsByPurchaseOrder(id)
+    const netByItem = new Map<string, number>()
+    for (const m of movements) {
+      const delta = m.type === 'in' ? Number(m.quantity) : -Number(m.quantity)
+      netByItem.set(m.item_id, (netByItem.get(m.item_id) ?? 0) + delta)
+    }
+
+    const today = new Date().toISOString().slice(0, 10)
+    let reversed = 0
+    for (const [itemId, net] of netByItem) {
+      if (net <= 0) continue
+      await inventoryService.addMovement({
+        item_id: itemId,
+        project_id: before.project_id,
+        type: 'out',
+        quantity: net,
+        date: today,
+        purchase_order_id: id,
+        budget_item_id: before.budget_item_id,
+        budget_category_id: before.budget_category_id,
+        created_by: actor,
+        notes: `Reversa de recepción de orden ${before.req_number}`,
+      })
+      reversed += 1
+    }
+
+    const { error } = await supabase
+      .from('purchase_requisitions')
+      .update({
+        status: 'ordered',
+        received_at: null,
+        received_by: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+    if (error) throw error
+    await approvalsService.log({
+      entity_type: 'purchase_requisition',
+      entity_id: id,
+      action: 'reverse_receipt',
+      actor_display_name: actor,
+      payload_before: { status: before.status },
+      payload_after: { status: 'ordered' },
+      metadata: {
+        req_number: before.req_number,
+        project_id: before.project_id,
+        inventory_reversals: reversed,
+      },
+    })
+  },
+
   // Deriva las líneas de entrada a almacén de una OC. Prioriza los ítems de la
   // cotización aprobada (cantidad, unidad y precio reales); si la cotización no
   // tiene líneas, cae a los datos de la propia solicitud.
