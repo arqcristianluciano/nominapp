@@ -179,10 +179,11 @@ export function PayrollEditorMobileActionBar({
 
 type MaterialFormPayload = {
   supplier_id: string
-  description: string
   invoice_reference?: string
-  amount: number
+  attachment_path?: string | null
   budget_category_id?: string | null
+  budget_item_id?: string | null
+  items: { description: string; amount: number }[]
 }
 
 type LaborFormPayload = {
@@ -194,6 +195,7 @@ type LaborFormPayload = {
   is_advance: boolean
   is_advance_deduction: boolean
   budget_category_id?: string | null
+  budget_item_id?: string | null
 }
 
 export function PayrollEditorModals({
@@ -201,6 +203,8 @@ export function PayrollEditorModals({
   showAddLabor,
   editLaborItem,
   editMaterialInvoice,
+  periodId,
+  projectId,
   suppliers,
   contractors,
   laborTasks,
@@ -220,6 +224,8 @@ export function PayrollEditorModals({
   showAddLabor: boolean
   editLaborItem: LaborLineItem | null
   editMaterialInvoice: MaterialInvoice | null
+  periodId: string
+  projectId: string
   suppliers: Supplier[]
   contractors: Contractor[]
   laborTasks: PriceListItem[]
@@ -241,6 +247,8 @@ export function PayrollEditorModals({
         <AddMaterialForm
           suppliers={suppliers}
           budgetCategories={budgetCategories}
+          periodId={periodId}
+          projectId={projectId}
           onSubmit={onAddMaterial}
           onCancel={onCloseAddMaterial}
           saving={saving}
@@ -263,6 +271,8 @@ export function PayrollEditorModals({
             key={editMaterialInvoice.id}
             suppliers={suppliers}
             budgetCategories={budgetCategories}
+            periodId={periodId}
+            projectId={projectId}
             onSubmit={onUpdateMaterial}
             onCancel={onCloseEditMaterial}
             saving={saving}

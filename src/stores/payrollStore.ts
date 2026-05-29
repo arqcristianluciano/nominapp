@@ -43,8 +43,15 @@ export const usePayrollStore = create<PayrollStore>((set) => ({
 
     const [periodRes, laborRes, materialsRes] = await Promise.all([
       supabase.from('payroll_periods').select('*, project:projects(*)').eq('id', periodId).single(),
-      supabase.from('labor_line_items').select('*, contractor:contractors(*)').eq('payroll_period_id', periodId).order('sort_order'),
-      supabase.from('material_invoices').select('*, supplier:suppliers(*)').eq('payroll_period_id', periodId),
+      supabase
+        .from('labor_line_items')
+        .select('*, contractor:contractors(*)')
+        .eq('payroll_period_id', periodId)
+        .order('sort_order'),
+      supabase
+        .from('material_invoices')
+        .select('*, supplier:suppliers(*), items:material_invoice_items(*)')
+        .eq('payroll_period_id', periodId),
     ])
 
     const queryError = periodRes.error || laborRes.error || materialsRes.error
