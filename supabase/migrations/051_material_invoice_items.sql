@@ -44,6 +44,11 @@ RETURNS uuid LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, pg_t
   FROM public.material_invoices WHERE id = p_id;
 $$;
 
+-- Endurecimiento: la función SECURITY DEFINER no debe ser ejecutable por anon
+-- (mismo patrón que el resto de helpers _project_of_* / user_has_capability).
+REVOKE ALL ON FUNCTION public._project_of_material_invoice(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public._project_of_material_invoice(uuid) TO authenticated;
+
 -- 3) RLS para material_invoice_items: misma capacidad que la factura (edit_payroll).
 ALTER TABLE public.material_invoice_items ENABLE ROW LEVEL SECURITY;
 
