@@ -1,5 +1,5 @@
 -- =====================================================================
--- 050 - RLS: edicion de nomina por etapa (introduccion de datos vs aprobado)
+-- 052 - RLS: edicion de nomina por etapa (introduccion de datos vs aprobado)
 -- ---------------------------------------------------------------------
 -- Refuerza en el servidor la regla de negocio de edicion de reportes de
 -- nomina. Hasta ahora el bloqueo por estado vivia solo en el cliente
@@ -8,7 +8,7 @@
 -- estado del periodo. Esto permitia, a nivel de API, que un usuario con
 -- `edit_payroll` pero sin autorizacion editara un reporte ya aprobado.
 --
--- Regla (identica a utils/payrollEditing.ts -> canEditPayrollPeriod):
+-- Regla (identica a utils/payrollItemPermissions.ts -> canEditPayrollItems):
 --   * Etapa de introduccion de datos (status: draft, submitted):
 --       escribe quien captura los datos (`edit_payroll`) y tambien los
 --       usuarios autorizados (`approve_payroll`).

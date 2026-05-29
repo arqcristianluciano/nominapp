@@ -6,6 +6,8 @@ import { AddMaterialForm } from '@/components/features/payroll/AddMaterialForm'
 import type {
   BudgetCategory,
   Contractor,
+  LaborLineItem,
+  MaterialInvoice,
   PayrollPeriod,
   PayrollStatus,
   PriceListItem,
@@ -32,7 +34,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 // Aviso contextual sobre quién puede editar el reporte según su etapa.
 // - Borrador: estado de edición obvio, sin aviso.
-// - Enviado (aún editable): recuerda que puede editarse hasta la aprobación.
+// - Enviado (aún editable): recuerda que puede corregirse hasta la aprobación.
 // - Aprobado/Pagado editable: advierte que se editan datos ya comprometidos.
 // - Sin permiso de edición: explica por qué está bloqueado.
 export function PayrollEditNotice({ status, canEdit }: { status: PayrollStatus; canEdit: boolean }) {
@@ -182,9 +184,29 @@ export function PayrollEditorMobileActionBar({
   )
 }
 
+type MaterialFormPayload = {
+  supplier_id: string
+  description: string
+  invoice_reference?: string
+  amount: number
+}
+
+type LaborFormPayload = {
+  contractor_id: string
+  description: string
+  quantity: number
+  unit: string
+  unit_price: number
+  is_advance: boolean
+  is_advance_deduction: boolean
+  budget_category_id?: string | null
+}
+
 export function PayrollEditorModals({
   showAddMaterial,
   showAddLabor,
+  editLaborItem,
+  editMaterialInvoice,
   suppliers,
   contractors,
   laborTasks,
@@ -192,12 +214,18 @@ export function PayrollEditorModals({
   saving,
   onCloseAddMaterial,
   onCloseAddLabor,
+  onCloseEditLabor,
+  onCloseEditMaterial,
   onAddMaterial,
   onAddLabor,
+  onUpdateLabor,
+  onUpdateMaterial,
   onContractorCreated,
 }: {
   showAddMaterial: boolean
   showAddLabor: boolean
+  editLaborItem: LaborLineItem | null
+  editMaterialInvoice: MaterialInvoice | null
   suppliers: Supplier[]
   contractors: Contractor[]
   laborTasks: PriceListItem[]
@@ -205,22 +233,12 @@ export function PayrollEditorModals({
   saving: boolean
   onCloseAddMaterial: () => void
   onCloseAddLabor: () => void
-  onAddMaterial: (inv: {
-    supplier_id: string
-    description: string
-    invoice_reference?: string
-    amount: number
-  }) => Promise<void>
-  onAddLabor: (item: {
-    contractor_id: string
-    description: string
-    quantity: number
-    unit: string
-    unit_price: number
-    is_advance: boolean
-    is_advance_deduction: boolean
-    budget_category_id?: string | null
-  }) => Promise<void>
+  onCloseEditLabor: () => void
+  onCloseEditMaterial: () => void
+  onAddMaterial: (inv: MaterialFormPayload) => Promise<void>
+  onAddLabor: (item: LaborFormPayload) => Promise<void>
+  onUpdateLabor: (item: LaborFormPayload) => Promise<void>
+  onUpdateMaterial: (inv: MaterialFormPayload) => Promise<void>
   onContractorCreated: (contractor: Contractor) => void
 }) {
   return (
@@ -238,6 +256,35 @@ export function PayrollEditorModals({
           saving={saving}
           onContractorCreated={onContractorCreated}
         />
+      </Modal>
+      <Modal open={!!editMaterialInvoice} onClose={onCloseEditMaterial} title="Editar factura de materiales">
+        {editMaterialInvoice && (
+          <AddMaterialForm
+            key={editMaterialInvoice.id}
+            suppliers={suppliers}
+            onSubmit={onUpdateMaterial}
+            onCancel={onCloseEditMaterial}
+            saving={saving}
+            initialInvoice={editMaterialInvoice}
+            submitLabel="Guardar cambios"
+          />
+        )}
+      </Modal>
+      <Modal open={!!editLaborItem} onClose={onCloseEditLabor} title="Editar partida de mano de obra">
+        {editLaborItem && (
+          <AddLaborItemForm
+            key={editLaborItem.id}
+            contractors={contractors}
+            laborTasks={laborTasks}
+            budgetCategories={budgetCategories}
+            onSubmit={onUpdateLabor}
+            onCancel={onCloseEditLabor}
+            saving={saving}
+            onContractorCreated={onContractorCreated}
+            initialItem={editLaborItem}
+            submitLabel="Guardar cambios"
+          />
+        )}
       </Modal>
     </>
   )

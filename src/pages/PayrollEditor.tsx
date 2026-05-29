@@ -19,8 +19,15 @@ import { PayrollTotalsCards } from '@/components/features/payroll/PayrollTotalsC
 import { LaborItemsSection } from '@/components/features/payroll/LaborItemsSection'
 import { MaterialInvoicesSection } from '@/components/features/payroll/MaterialInvoicesSection'
 import { IndirectCostsSection } from '@/components/features/payroll/IndirectCostsSection'
-import { canEditPayrollPeriod } from '@/utils/payrollEditing'
-import type { BudgetCategory, Contractor, PriceListItem, Supplier } from '@/types/database'
+import { canEditPayrollItems } from '@/utils/payrollItemPermissions'
+import type {
+  BudgetCategory,
+  Contractor,
+  LaborLineItem,
+  MaterialInvoice,
+  PriceListItem,
+  Supplier,
+} from '@/types/database'
 
 export default function PayrollEditor() {
   const { periodId } = useParams<{ periodId: string }>()
@@ -32,6 +39,8 @@ export default function PayrollEditor() {
   const [budgetCategories, setBudgetCategories] = useState<BudgetCategory[]>([])
   const [showAddLabor, setShowAddLabor] = useState(false)
   const [showAddMaterial, setShowAddMaterial] = useState(false)
+  const [editLaborItem, setEditLaborItem] = useState<LaborLineItem | null>(null)
+  const [editMaterialInvoice, setEditMaterialInvoice] = useState<MaterialInvoice | null>(null)
 
   useEffect(() => {
     loadPayroll()
@@ -60,12 +69,13 @@ export default function PayrollEditor() {
   if (!payroll.period) return <div className="text-sm text-app-muted p-4">Nómina no encontrada</div>
 
   const { period } = payroll
-  // Mientras el reporte no sea aprobado puede editarlo quien introduce los datos
-  // (capability `edit_payroll`). Una vez aprobado, solo los usuarios autorizados
-  // (capability `approve_payroll`) pueden editarlo.
-  const canEdit = canEditPayrollPeriod(period.status, {
-    canEnterData: roles.canEditPayrollDraft,
-    isAuthorized: roles.canApprovePayroll,
+  // Mientras el reporte no esté aprobado puede editarlo quien introduce los datos
+  // (capability `edit_payroll`); una vez aprobado, solo los usuarios autorizados
+  // (capability `approve_payroll`), que además pueden editar en cualquier estado.
+  const canEdit = canEditPayrollItems({
+    status: period.status,
+    canEditDraft: roles.canEditPayrollDraft,
+    canEditCommitted: roles.canApprovePayroll,
   })
 
   return (
@@ -93,6 +103,7 @@ export default function PayrollEditor() {
         canEdit={canEdit}
         total={period.total_labor || 0}
         onOpenAdd={() => setShowAddLabor(true)}
+        onEdit={setEditLaborItem}
         onDelete={payroll.deleteLaborItem}
       />
       <MaterialInvoicesSection
@@ -100,6 +111,7 @@ export default function PayrollEditor() {
         canEdit={canEdit}
         total={period.total_materials || 0}
         onOpenAdd={() => setShowAddMaterial(true)}
+        onEdit={setEditMaterialInvoice}
         onDelete={payroll.deleteMaterialInvoice}
       />
       <IndirectCostsSection
@@ -127,6 +139,8 @@ export default function PayrollEditor() {
       <PayrollEditorModals
         showAddMaterial={showAddMaterial}
         showAddLabor={showAddLabor}
+        editLaborItem={editLaborItem}
+        editMaterialInvoice={editMaterialInvoice}
         suppliers={suppliers}
         contractors={contractors}
         laborTasks={laborTasks}
@@ -134,6 +148,8 @@ export default function PayrollEditor() {
         saving={payroll.saving}
         onCloseAddMaterial={() => setShowAddMaterial(false)}
         onCloseAddLabor={() => setShowAddLabor(false)}
+        onCloseEditLabor={() => setEditLaborItem(null)}
+        onCloseEditMaterial={() => setEditMaterialInvoice(null)}
         onAddMaterial={async (invoice) => {
           await payroll.addMaterialInvoice(invoice)
           setShowAddMaterial(false)
@@ -141,6 +157,18 @@ export default function PayrollEditor() {
         onAddLabor={async (item) => {
           await payroll.addLaborItem(item)
           setShowAddLabor(false)
+        }}
+        onUpdateLabor={async (item) => {
+          if (editLaborItem) {
+            await payroll.updateLaborItem(editLaborItem.id, item)
+            setEditLaborItem(null)
+          }
+        }}
+        onUpdateMaterial={async (invoice) => {
+          if (editMaterialInvoice) {
+            await payroll.updateMaterialInvoice(editMaterialInvoice.id, invoice)
+            setEditMaterialInvoice(null)
+          }
         }}
         onContractorCreated={(contractor) => setContractors((prev) => [contractor, ...prev])}
       />

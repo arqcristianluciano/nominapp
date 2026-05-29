@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import { Plus, Trash2 } from 'lucide-react'
+import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { formatRD } from '@/utils/currency'
 import type { LaborLineItem } from '@/types/database'
 
@@ -8,16 +8,18 @@ interface Props {
   canEdit: boolean
   total: number
   onOpenAdd: () => void
+  onEdit: (item: LaborLineItem) => void
   onDelete: (itemId: string) => void
 }
 
 interface LaborItemRowProps {
   item: LaborLineItem
   canEdit: boolean
+  onEdit: (item: LaborLineItem) => void
   onDelete: (itemId: string) => void
 }
 
-function LaborItemMobileCardComponent({ item, canEdit, onDelete }: LaborItemRowProps) {
+function LaborItemMobileCardComponent({ item, canEdit, onEdit, onDelete }: LaborItemRowProps) {
   return (
     <li className="bg-app-surface rounded-xl border border-app-border p-3">
       <div className="flex items-start justify-between gap-2">
@@ -26,13 +28,22 @@ function LaborItemMobileCardComponent({ item, canEdit, onDelete }: LaborItemRowP
           <p className="text-xs text-app-muted mt-0.5 break-words">{item.description}</p>
         </div>
         {canEdit && (
-          <button
-            onClick={() => onDelete(item.id)}
-            aria-label="Eliminar partida"
-            className="shrink-0 inline-flex items-center justify-center w-11 h-11 -mr-2 -mt-2 text-app-subtle hover:text-red-500 rounded-lg"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
+          <div className="shrink-0 flex items-center -mr-2 -mt-2">
+            <button
+              onClick={() => onEdit(item)}
+              aria-label="Editar partida"
+              className="inline-flex items-center justify-center w-11 h-11 text-app-subtle hover:text-blue-500 rounded-lg"
+            >
+              <Pencil className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => onDelete(item.id)}
+              aria-label="Eliminar partida"
+              className="inline-flex items-center justify-center w-11 h-11 text-app-subtle hover:text-red-500 rounded-lg"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
         )}
       </div>
       <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
@@ -55,7 +66,7 @@ function LaborItemMobileCardComponent({ item, canEdit, onDelete }: LaborItemRowP
 LaborItemMobileCardComponent.displayName = 'LaborItemMobileCard'
 const LaborItemMobileCard = memo(LaborItemMobileCardComponent)
 
-function LaborItemRowComponent({ item, canEdit, onDelete }: LaborItemRowProps) {
+function LaborItemRowComponent({ item, canEdit, onEdit, onDelete }: LaborItemRowProps) {
   return (
     <tr className="hover:bg-app-hover">
       <td className="px-4 py-2.5 text-app-text">{item.contractor?.name || '—'}</td>
@@ -65,13 +76,22 @@ function LaborItemRowComponent({ item, canEdit, onDelete }: LaborItemRowProps) {
       <td className="px-4 py-2.5 text-right font-medium text-app-text">{formatRD(item.quantity * item.unit_price)}</td>
       {canEdit && (
         <td className="px-2 py-2.5">
-          <button
-            onClick={() => onDelete(item.id)}
-            aria-label="Eliminar partida"
-            className="inline-flex items-center justify-center w-8 h-8 text-app-subtle hover:text-red-500 rounded"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
+          <div className="flex items-center justify-end gap-1">
+            <button
+              onClick={() => onEdit(item)}
+              aria-label="Editar partida"
+              className="inline-flex items-center justify-center w-8 h-8 text-app-subtle hover:text-blue-500 rounded"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => onDelete(item.id)}
+              aria-label="Eliminar partida"
+              className="inline-flex items-center justify-center w-8 h-8 text-app-subtle hover:text-red-500 rounded"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </td>
       )}
     </tr>
@@ -80,7 +100,7 @@ function LaborItemRowComponent({ item, canEdit, onDelete }: LaborItemRowProps) {
 LaborItemRowComponent.displayName = 'LaborItemRow'
 const LaborItemRow = memo(LaborItemRowComponent)
 
-export function LaborItemsSection({ items, canEdit, total, onOpenAdd, onDelete }: Props) {
+export function LaborItemsSection({ items, canEdit, total, onOpenAdd, onEdit, onDelete }: Props) {
   return (
     <section>
       <div className="flex items-center justify-between gap-2 mb-3">
@@ -105,7 +125,7 @@ export function LaborItemsSection({ items, canEdit, total, onOpenAdd, onDelete }
           {/* Mobile cards */}
           <ul className="sm:hidden space-y-2">
             {items.map((item) => (
-              <LaborItemMobileCard key={item.id} item={item} canEdit={canEdit} onDelete={onDelete} />
+              <LaborItemMobileCard key={item.id} item={item} canEdit={canEdit} onEdit={onEdit} onDelete={onDelete} />
             ))}
           </ul>
           {/* Desktop / tablet table */}
@@ -119,12 +139,12 @@ export function LaborItemsSection({ items, canEdit, total, onOpenAdd, onDelete }
                     <th className="text-right px-4 py-2.5 font-medium text-app-muted">Cant.</th>
                     <th className="text-right px-4 py-2.5 font-medium text-app-muted">Precio</th>
                     <th className="text-right px-4 py-2.5 font-medium text-app-muted">Subtotal</th>
-                    {canEdit && <th className="w-10" />}
+                    {canEdit && <th className="w-20" />}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-app-border">
                   {items.map((item) => (
-                    <LaborItemRow key={item.id} item={item} canEdit={canEdit} onDelete={onDelete} />
+                    <LaborItemRow key={item.id} item={item} canEdit={canEdit} onEdit={onEdit} onDelete={onDelete} />
                   ))}
                 </tbody>
               </table>

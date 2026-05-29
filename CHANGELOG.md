@@ -10,18 +10,20 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ### Added
 
 - Subpartidas del presupuesto numeradas automáticamente (1.1, 1.2, …) en la lista y en el modal de creación (#40).
+- Edición de partidas de mano de obra y facturas de materiales en el reporte de nómina: cada fila tiene un botón "Editar" con el formulario pre-cargado, evitando tener que borrar y rehacer ante un error. Mientras el reporte no esté aprobado (borrador o enviado) puede editar quien introduce los datos (`edit_payroll`); una vez aprobado/pagado solo la mayor jerarquía (`approve_payroll`), y esas correcciones quedan registradas en la bitácora de aprobaciones.
 
 ### Changed
 
-- Los reportes de nómina ahora pueden editarse mientras no estén aprobados: en estado "Enviado" quien introduce los datos (`edit_payroll`) sigue pudiendo corregir partidas, materiales, indirectos, cubicaciones y deducciones. Tras la aprobación, solo los usuarios autorizados (`approve_payroll`) pueden editar. Un aviso en el editor explica la etapa actual.
+- Un reporte de nómina enviado para aprobación ya no queda bloqueado: mientras no esté aprobado, quien introduce los datos (`edit_payroll`) puede seguir corrigiendo partidas, materiales, indirectos, cubicaciones y deducciones. Tras la aprobación, solo los usuarios autorizados (`approve_payroll`). Un aviso en el editor indica la etapa actual.
 
 ### Fixed
 
-- Pendiente.
+- La lista de precios ya permite guardar ítems de tipo "Ajuste". El constraint `category` de `price_list_items` omitía `adjustment`, por lo que esos precios fallaban en silencio al guardarse (migración 050).
+- `PriceListInlineForm` ahora muestra un toast de error cuando un precio no se puede guardar, en lugar de fallar en silencio.
 
 ### Security
 
-- La regla de edición de nómina por etapa ahora se aplica también en la base de datos (migración 050): la RLS de `labor_line_items`, `material_invoices` e `indirect_costs` exige `edit_payroll` mientras el reporte no esté aprobado y `approve_payroll` una vez aprobado (antes solo se exigía `edit_payroll` sin mirar el estado).
+- La regla de edición de nómina por etapa ahora se aplica también en la base de datos (migración 052): la RLS de `labor_line_items`, `material_invoices` e `indirect_costs` exige `edit_payroll` mientras el reporte no esté aprobado y `approve_payroll` una vez aprobado (antes solo se exigía `edit_payroll` sin mirar el estado).
 
 ## [0.6.0] - 2026-05-26
 

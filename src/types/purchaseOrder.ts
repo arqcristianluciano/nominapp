@@ -6,6 +6,7 @@ export type RequisitionStatus =
   | 'quoting'
   | 'pending_approval'
   | 'needs_revision'
+  | 'pendiente_liberacion'
   | 'approved'
   | 'ordered'
   | 'received'
@@ -86,6 +87,7 @@ export const REQ_STATUS_LABEL: Record<RequisitionStatus, string> = {
   quoting: 'En cotización',
   pending_approval: 'Pendiente aprobación',
   needs_revision: 'Requiere revisión',
+  pendiente_liberacion: 'Pendiente liberación',
   approved: 'Aprobada',
   ordered: 'Orden colocada',
   received: 'Recibida',
@@ -98,6 +100,7 @@ export const REQ_STATUS_COLOR: Record<RequisitionStatus, string> = {
   quoting: 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300',
   pending_approval: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950/40 dark:text-yellow-300',
   needs_revision: 'bg-orange-100 text-orange-800 dark:bg-orange-950/40 dark:text-orange-300',
+  pendiente_liberacion: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-300',
   approved: 'bg-green-100 text-green-800 dark:bg-green-950/40 dark:text-green-300',
   ordered: 'bg-purple-100 text-purple-800 dark:bg-purple-950/40 dark:text-purple-300',
   received: 'bg-teal-100 text-teal-800 dark:bg-teal-950/40 dark:text-teal-300',
