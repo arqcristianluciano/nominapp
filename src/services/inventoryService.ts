@@ -84,19 +84,32 @@ export const inventoryService = {
     if (error) throw error
   },
 
-  // Busca un material del proyecto por nombre (sin distinguir mayúsculas) y, si
-  // no existe, lo crea. Usado por la recepción de órdenes de compra para dar
-  // entrada a stock sin obligar al almacenista a pre-registrar el material.
-  // Al crear, intenta enlazarlo al catálogo global de materiales por descripción
-  // para que la entrada alimente el histórico de precios (migración 011); no
-  // crea entradas de catálogo nuevas (el catálogo es curado, con código único).
+  // Busca un material del proyecto y, si no existe, lo crea. Usado por la
+  // recepción de órdenes de compra para dar entrada a stock sin obligar al
+  // almacenista a pre-registrar el material. Reusa por catálogo (si la línea lo
+  // trae) o por nombre. Al crear, hereda unidad y stock mínimo del catálogo y lo
+  // enlaza para alimentar el histórico de precios (migración 011).
   async findOrCreateItem(input: {
     project_id: string
     name: string
     unit?: string | null
     unit_cost?: number | null
+    material_catalog_id?: string | null
   }): Promise<InventoryItem> {
     const name = input.name.trim()
+
+    // 1. Si la línea trae catálogo, reusa el material del proyecto enlazado a él.
+    if (input.material_catalog_id) {
+      const { data: byCatalog } = await supabase
+        .from('inventory_items')
+        .select('*')
+        .eq('project_id', input.project_id)
+        .eq('material_catalog_id', input.material_catalog_id)
+        .limit(1)
+      if (byCatalog && byCatalog.length > 0) return byCatalog[0] as InventoryItem
+    }
+
+    // 2. Reusa por nombre (sin distinguir mayúsculas).
     const { data: existing } = await supabase
       .from('inventory_items')
       .select('*')
@@ -105,12 +118,11 @@ export const inventoryService = {
       .limit(1)
     if (existing && existing.length > 0) return existing[0] as InventoryItem
 
-    const { data: catalogMatch } = await supabase
-      .from('materials_catalog')
-      .select('id, unit')
-      .ilike('description', name)
-      .eq('is_active', true)
-      .limit(1)
+    // 3. Resuelve el catálogo: por id (si vino) o por descripción.
+    const catalogQuery = supabase.from('materials_catalog').select('id, unit, default_min_stock')
+    const { data: catalogMatch } = input.material_catalog_id
+      ? await catalogQuery.eq('id', input.material_catalog_id).limit(1)
+      : await catalogQuery.ilike('description', name).eq('is_active', true).limit(1)
     const catalog = catalogMatch && catalogMatch.length > 0 ? catalogMatch[0] : null
 
     return this.createItem({
@@ -118,9 +130,9 @@ export const inventoryService = {
       name,
       unit: input.unit?.trim() || catalog?.unit || 'UD',
       current_stock: 0,
-      min_stock: 0,
+      min_stock: Number(catalog?.default_min_stock ?? 0),
       unit_cost: input.unit_cost ?? 0,
-      material_catalog_id: catalog?.id ?? null,
+      material_catalog_id: input.material_catalog_id ?? catalog?.id ?? null,
     })
   },
 

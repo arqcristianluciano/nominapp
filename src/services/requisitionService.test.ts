@@ -389,6 +389,32 @@ describe('requisitionService - recepción de mercancía (entrada a almacén)', (
     ).rejects.toThrow(/excede lo pendiente/i)
   })
 
+  it('hereda default_min_stock del catálogo al crear el material recibido', async () => {
+    const name = `Tornillo ${Date.now()}`
+    await supabase
+      .from('materials_catalog')
+      .insert({ code: `MC-${Date.now()}`, description: name, unit: 'caja', default_min_stock: 7, is_active: true })
+    const req = await makeOrderedReq(name, 5, 3)
+    await requisitionService.markReceived(req.id, 'Almacenista')
+    const item = (await inventoryService.getItems(projectId)).find((i) => i.name === name)
+    expect(item?.min_stock).toBe(7)
+  })
+
+  it('getReceiptProgress y getAll exponen el progreso recibido/pedido', async () => {
+    const name = `Pintura ${Date.now()}`
+    const req = await makeOrderedReq(name, 80, 4)
+    const lineId = requisitionService.getPendingReceiptLines(await requisitionService.getById(req.id))[0]
+      .quote_item_id as string
+    await requisitionService.receiveItems(req.id, 'Almacenista', [{ quote_item_id: lineId, quantity: 30 }])
+
+    expect(requisitionService.getReceiptProgress(await requisitionService.getById(req.id))).toEqual({
+      ordered: 80,
+      received: 30,
+    })
+    const inList = (await requisitionService.getAll()).find((r) => r.id === req.id)
+    expect(inList?.receipt_progress).toEqual({ ordered: 80, received: 30 })
+  })
+
   it('reverseReceipt sobre una OC parcial reinicia received_quantity y vuelve a "ordered"', async () => {
     const name = `Cal ${Date.now()}`
     const req = await makeOrderedReq(name, 50, 8)
