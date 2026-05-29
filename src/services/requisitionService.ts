@@ -4,6 +4,7 @@ import type { PurchaseRequisition, PurchaseQuote, RequisitionStatus, ReceiptProg
 import { approvalsService } from '@/services/approvalsService'
 import { pushNotificationService } from '@/services/pushNotificationService'
 import { inventoryService } from '@/services/inventoryService'
+import { lotService } from '@/services/lotService'
 
 function generateReqNumber(): string {
   const year = new Date().getFullYear()
@@ -462,7 +463,11 @@ export const requisitionService = {
   // cotización aprobada y, si ya se recibió todo lo pedido, marca la OC como
   // 'received'; si aún falta, queda en 'partially_received'. El stock se alimenta
   // ANTES de cambiar el estado; valida que no se reciba más de lo pendiente.
-  async receiveItems(id: string, receivedBy: string, receipts: { quote_item_id: string; quantity: number }[]) {
+  async receiveItems(
+    id: string,
+    receivedBy: string,
+    receipts: { quote_item_id: string; quantity: number; lot_number?: string | null; expiry_date?: string | null }[],
+  ) {
     const before = await this.getById(id)
     if (before.status !== 'ordered' && before.status !== 'partially_received') {
       throw new Error('Solo se puede recibir mercancía de órdenes colocadas o parcialmente recibidas.')
@@ -496,6 +501,23 @@ export const requisitionService = {
         unit_cost: it.unit_price != null ? Number(it.unit_price) : null,
         material_catalog_id: it.material_catalog_id ?? null,
       })
+
+      // Lote opcional para trazabilidad: solo si el almacenista indica número
+      // de lote o fecha de vencimiento.
+      let lotId: string | null = null
+      if (r.lot_number?.trim() || r.expiry_date) {
+        const lot = await lotService.create({
+          item_id: invItem.id,
+          lot_number: r.lot_number?.trim() || null,
+          quantity: Number(r.quantity),
+          unit_cost: it.unit_price != null ? Number(it.unit_price) : null,
+          received_date: today,
+          expiry_date: r.expiry_date || null,
+          notes: `Recepción de orden ${before.req_number}`,
+        })
+        lotId = lot.id
+      }
+
       await inventoryService.addMovement({
         item_id: invItem.id,
         project_id: before.project_id,
@@ -508,6 +530,7 @@ export const requisitionService = {
         budget_item_id: before.budget_item_id,
         budget_category_id: before.budget_category_id,
         created_by: receivedBy,
+        lot_id: lotId,
         notes: `Entrada por recepción de orden ${before.req_number}`,
       })
       const { error: upErr } = await supabase
@@ -615,9 +638,11 @@ export const requisitionService = {
 
     const movements = await inventoryService.getMovementsByPurchaseOrder(id)
     const netByItem = new Map<string, number>()
+    const lotIds = new Set<string>()
     for (const m of movements) {
       const delta = m.type === 'in' ? Number(m.quantity) : -Number(m.quantity)
       netByItem.set(m.item_id, (netByItem.get(m.item_id) ?? 0) + delta)
+      if (m.type === 'in' && m.lot_id) lotIds.add(m.lot_id)
     }
 
     const today = new Date().toISOString().slice(0, 10)
@@ -637,6 +662,11 @@ export const requisitionService = {
         notes: `Reversa de recepción de orden ${before.req_number}`,
       })
       reversed += 1
+    }
+
+    // Anula los lotes creados por esta recepción (su mercancía sale del stock).
+    for (const lotId of lotIds) {
+      await lotService.update(lotId, { quantity: 0 })
     }
 
     // Reinicia la cantidad recibida por línea de la cotización aprobada.

@@ -29,6 +29,7 @@ export interface InventoryMovement {
   unit_cost: number | null
   created_by: string | null
   override_motivo: string | null
+  lot_id: string | null
   created_at: string
   item?: { id: string; name: string; unit: string }
 }
@@ -46,6 +47,7 @@ export interface AddMovementInput {
   purchase_order_id?: string | null
   unit_cost?: number | null
   created_by?: string | null
+  lot_id?: string | null
   override?: { motivo: string; actor: string } | null
 }
 
@@ -227,6 +229,7 @@ export const inventoryService = {
         purchase_order_id: movement.purchase_order_id ?? null,
         unit_cost: movement.unit_cost ?? null,
         created_by: movement.created_by ?? null,
+        lot_id: movement.lot_id ?? null,
         override_motivo: movement.override?.motivo ?? null,
         created_at: now,
       })

@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { requisitionService } from './requisitionService'
 import { inventoryService } from './inventoryService'
+import { lotService } from './lotService'
 import { supabase } from '@/lib/supabase'
 
 const projectId = 'p1000000-0000-0000-0000-000000000099'
@@ -392,6 +393,29 @@ describe('requisitionService - recepción de mercancía (entrada a almacén)', (
     const item = (await inventoryService.getItems(projectId)).find((i) => i.material_catalog_id === catId)
     expect(item).toBeTruthy()
     expect(item?.name).toBe('Hormigón premezclado')
+  })
+
+  it('crea lote y enlaza el movimiento al recibir con lote/vencimiento; la reversa lo anula', async () => {
+    const name = `Membrana ${Date.now()}`
+    const req = await makeOrderedReq(name, 12, 9)
+    const lineId = requisitionService.getPendingReceiptLines(await requisitionService.getById(req.id))[0]
+      .quote_item_id as string
+    await requisitionService.receiveItems(req.id, 'Almacenista', [
+      { quote_item_id: lineId, quantity: 12, lot_number: 'L-001', expiry_date: '2027-01-01' },
+    ])
+
+    const item = (await inventoryService.getItems(projectId)).find((i) => i.name === name)!
+    const lots = await lotService.list(item.id)
+    expect(lots.length).toBe(1)
+    expect(lots[0].lot_number).toBe('L-001')
+    expect(lots[0].quantity).toBe(12)
+    expect(lots[0].expiry_date).toBe('2027-01-01')
+
+    const movs = await inventoryService.getMovementsByPurchaseOrder(req.id)
+    expect(movs.find((m) => m.type === 'in')?.lot_id).toBe(lots[0].id)
+
+    await requisitionService.reverseReceipt(req.id, 'Almacenista')
+    expect((await lotService.list(item.id))[0].quantity).toBe(0)
   })
 
   it('reverseReceipt rechaza una OC que no está "received"', async () => {

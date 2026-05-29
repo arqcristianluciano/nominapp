@@ -114,7 +114,10 @@ export function usePurchaseOrderDetail() {
     }
   }
 
-  async function handleReceiveItems(receipts: { quote_item_id: string; quantity: number }[], actor?: string) {
+  async function handleReceiveItems(
+    receipts: { quote_item_id: string; quantity: number; lot_number?: string | null; expiry_date?: string | null }[],
+    actor?: string,
+  ) {
     if (!orderId) return
     setReceivingOrder(true)
     try {
