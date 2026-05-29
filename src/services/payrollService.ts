@@ -279,12 +279,15 @@ export const payrollService = {
   async updateLaborItem(
     id: string,
     updates: {
+      contractor_id?: string
       description?: string
       quantity?: number
       unit?: string
       unit_price?: number
       is_advance?: boolean
       is_advance_deduction?: boolean
+      budget_category_id?: string | null
+      budget_item_id?: string | null
       notes?: string
     },
   ) {
@@ -292,7 +295,9 @@ export const payrollService = {
       .from('labor_line_items')
       .update(updates)
       .eq('id', id)
-      .select('*, contractor:contractors(*)')
+      .select(
+        '*, contractor:contractors(*), budget_category:budget_categories(code, name), budget_item:budget_items(code, description)',
+      )
       .single()
     if (error) throw error
     return data as LaborLineItem
@@ -334,13 +339,17 @@ export const payrollService = {
       invoice_reference?: string
       amount?: number
       notes?: string
+      budget_category_id?: string | null
+      budget_item_id?: string | null
     },
   ) {
     const { data, error } = await supabase
       .from('material_invoices')
       .update(updates)
       .eq('id', id)
-      .select('*, supplier:suppliers(*)')
+      .select(
+        '*, supplier:suppliers(*), budget_category:budget_categories(code, name), budget_item:budget_items(code, description)',
+      )
       .single()
     if (error) throw error
     return data as MaterialInvoice

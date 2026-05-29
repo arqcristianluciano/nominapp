@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { UserPlus, X, AlertTriangle } from 'lucide-react'
-import type { BudgetCategory, BudgetItem, Contractor, PriceListItem } from '@/types/database'
+import type { BudgetCategory, BudgetItem, Contractor, LaborLineItem, PriceListItem } from '@/types/database'
 import { MEASURE_UNITS } from '@/constants/measureUnits'
 import { contractorService } from '@/services/contractorService'
 import { budgetItemService } from '@/services/budgetItemService'
@@ -27,6 +27,10 @@ interface Props {
   onCancel: () => void
   saving: boolean
   onContractorCreated?: (contractor: Contractor) => void
+  /** Si se pasa, el formulario opera en modo edición (campos pre-cargados). */
+  initialItem?: LaborLineItem
+  /** Texto del botón de envío (por defecto "Agregar partida"). */
+  submitLabel?: string
 }
 
 export function AddLaborItemForm({
@@ -37,17 +41,23 @@ export function AddLaborItemForm({
   onCancel,
   saving,
   onContractorCreated,
+  initialItem,
+  submitLabel,
 }: Props) {
-  const [contractorId, setContractorId] = useState('')
+  const isEdit = !!initialItem
+  const [contractorId, setContractorId] = useState(initialItem?.contractor_id ?? '')
   const [selectedTaskId, setSelectedTaskId] = useState('')
-  const [quantity, setQuantity] = useState('')
-  const [unit, setUnit] = useState('M2')
-  const [unitPrice, setUnitPrice] = useState('')
-  const [budgetCategoryId, setBudgetCategoryId] = useState('')
-  const [budgetItemId, setBudgetItemId] = useState('')
+  // En edición la descripción se conserva del ítem (puede no existir como tarea
+  // en la lista de precios); seleccionar una tarea la sobreescribe.
+  const [description, setDescription] = useState(initialItem?.description ?? '')
+  const [quantity, setQuantity] = useState(initialItem ? String(Math.abs(initialItem.quantity)) : '')
+  const [unit, setUnit] = useState(initialItem?.unit ?? 'M2')
+  const [unitPrice, setUnitPrice] = useState(initialItem ? String(initialItem.unit_price) : '')
+  const [budgetCategoryId, setBudgetCategoryId] = useState(initialItem?.budget_category_id ?? '')
+  const [budgetItemId, setBudgetItemId] = useState(initialItem?.budget_item_id ?? '')
   const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([])
-  const [isAdvance, setIsAdvance] = useState(false)
-  const [isDeduction, setIsDeduction] = useState(false)
+  const [isAdvance, setIsAdvance] = useState(initialItem?.is_advance ?? false)
+  const [isDeduction, setIsDeduction] = useState(initialItem?.is_advance_deduction ?? false)
 
   // Cargar las partidas del capítulo seleccionado para imputar la mano de
   // obra a una partida concreta del presupuesto.
@@ -73,8 +83,6 @@ export function AddLaborItemForm({
   const [newSpecialty, setNewSpecialty] = useState('')
   const [savingNew, setSavingNew] = useState(false)
 
-  const selectedTask = laborTasks.find((t) => t.id === selectedTaskId)
-
   function handleSelectChange(value: string) {
     if (value === NEW_CONTRACTOR_VALUE) {
       setShowNewForm(true)
@@ -91,6 +99,7 @@ export function AddLaborItemForm({
     if (task) {
       setUnit(task.unit)
       setUnitPrice(String(task.unit_price))
+      setDescription(task.description.toUpperCase())
     }
   }
 
@@ -123,16 +132,20 @@ export function AddLaborItemForm({
 
   const subtotal = round2(mul(parseDecimalInput(quantity) ?? 0, parseDecimalInput(unitPrice) ?? 0))
 
+  // En alta se exige elegir una tarea de la lista; en edición basta con tener
+  // una descripción (la tarea es opcional, solo para rellenar precio/unidad).
+  const missingRequired =
+    showNewForm || !contractorId || !quantity || !unitPrice || (isEdit ? !description.trim() : !selectedTaskId)
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (saving) return
-    if (showNewForm || !contractorId || !selectedTask || !quantity || !unitPrice) return
+    if (saving || missingRequired) return
     const qtyNum = parseDecimalInput(quantity)
     const priceNum = parseDecimalInput(unitPrice)
     if (qtyNum === null || priceNum === null) return
     await onSubmit({
       contractor_id: contractorId,
-      description: selectedTask.description.toUpperCase(),
+      description: description.trim().toUpperCase(),
       quantity: isDeduction ? -Math.abs(qtyNum) : qtyNum,
       unit,
       unit_price: priceNum,
@@ -202,23 +215,27 @@ export function AddLaborItemForm({
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-app-muted mb-1">Tarea / Descripción *</label>
+        <label className="block text-xs font-medium text-app-muted mb-1">
+          {isEdit ? 'Tarea (opcional — rellena desde la lista de precios)' : 'Tarea / Descripción *'}
+        </label>
         {laborTasks.length === 0 ? (
-          <div className="flex items-start gap-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-xs text-amber-700 dark:text-amber-400">
-            <AlertTriangle size={14} className="mt-0.5 shrink-0" />
-            <span>
-              No hay tareas de mano de obra en la lista de precios de este proyecto. Agrégalas desde{' '}
-              <strong>Presupuesto → Lista de precios</strong>.
-            </span>
-          </div>
+          !isEdit && (
+            <div className="flex items-start gap-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-xs text-amber-700 dark:text-amber-400">
+              <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+              <span>
+                No hay tareas de mano de obra en la lista de precios de este proyecto. Agrégalas desde{' '}
+                <strong>Presupuesto → Lista de precios</strong>.
+              </span>
+            </div>
+          )
         ) : (
           <select
             value={selectedTaskId}
             onChange={(e) => handleTaskSelect(e.target.value)}
-            required
+            required={!isEdit}
             className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] sm:min-h-0"
           >
-            <option value="">Seleccionar tarea...</option>
+            <option value="">{isEdit ? 'Mantener descripción actual…' : 'Seleccionar tarea...'}</option>
             {laborTasks.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.code ? `[${t.code}] ` : ''}
@@ -228,6 +245,19 @@ export function AddLaborItemForm({
           </select>
         )}
       </div>
+
+      {isEdit && (
+        <div>
+          <label className="block text-xs font-medium text-app-muted mb-1">Descripción *</label>
+          <input
+            type="text"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            required
+            className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] sm:min-h-0"
+          />
+        </div>
+      )}
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         <div>
@@ -354,11 +384,11 @@ export function AddLaborItemForm({
         </button>
         <button
           type="submit"
-          disabled={saving || showNewForm || !contractorId || !selectedTaskId || !quantity || !unitPrice}
+          disabled={saving || missingRequired}
           aria-busy={saving}
           className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] sm:min-h-0"
         >
-          {saving ? 'Guardando...' : 'Agregar partida'}
+          {saving ? 'Guardando...' : (submitLabel ?? 'Agregar partida')}
         </button>
       </div>
     </form>

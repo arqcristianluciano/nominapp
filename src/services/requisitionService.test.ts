@@ -95,9 +95,7 @@ describe('requisitionService - regla 7.1 (excedente)', () => {
       unit: 'saco',
       resource_type: 'material',
     })
-    await expect(
-      requisitionService.validateExcess(req.id, 'gerente', '   '),
-    ).rejects.toThrow(/Motivo obligatorio/)
+    await expect(requisitionService.validateExcess(req.id, 'gerente', '   ')).rejects.toThrow(/Motivo obligatorio/)
   })
 })
 
@@ -116,9 +114,7 @@ describe('requisitionService - regla 7.3 (1 cotización requiere justificación)
       subtotal: 1000,
       tax_percent: 0,
     })
-    await expect(
-      requisitionService.approve(req.id, 'q-fake', 'gerente', 'sig'),
-    ).rejects.toThrow(/justificación/i)
+    await expect(requisitionService.approve(req.id, 'q-fake', 'gerente', 'sig')).rejects.toThrow(/justificación/i)
   })
 
   it('acepta approve con 1 cotización + justificación', async () => {
@@ -143,6 +139,78 @@ describe('requisitionService - regla 7.3 (1 cotización requiere justificación)
         singleQuoteJustification: 'Único proveedor disponible en la zona',
       }),
     ).resolves.not.toThrow()
+  })
+})
+
+describe('requisitionService - regla 7.2 (doble aprobación: Director → Administrador)', () => {
+  async function makeApprovableReq() {
+    const req = await requisitionService.create({
+      project_id: projectId,
+      description: 'OC dos cotizaciones',
+      requested_by: 'ing-obra',
+    })
+    const quoteIds: string[] = []
+    for (const total of [1000, 1200]) {
+      const { data: quote } = await supabase
+        .from('purchase_quotes')
+        .insert({
+          requisition_id: req.id,
+          supplier_id: 'sup-test',
+          total,
+          subtotal: total,
+          tax_percent: 0,
+        })
+        .select()
+        .single()
+      quoteIds.push((quote as { id: string }).id)
+    }
+    return { req, quoteId: quoteIds[0] }
+  }
+
+  it('approve() del Director deja la OC en pendiente_liberacion (no la emite)', async () => {
+    const { req, quoteId } = await makeApprovableReq()
+    await requisitionService.approve(req.id, quoteId, 'Director Proyecto', 'sig')
+
+    const after = await requisitionService.getById(req.id)
+    expect(after.status).toBe('pendiente_liberacion')
+    expect(after.approved_by).toBe('Director Proyecto')
+    expect(after.approved_quote_id).toBe(quoteId)
+    // No debe emitirse todavía: la liberación final es del Administrador.
+    expect(after.status).not.toBe('ordered')
+    expect(after.ordered_at).toBeFalsy()
+    expect(after.released_by).toBeFalsy()
+  })
+
+  it('placeOrder() del Administrador libera y emite la OC (última liberación)', async () => {
+    const { req, quoteId } = await makeApprovableReq()
+    await requisitionService.approve(req.id, quoteId, 'Director Proyecto', 'sig')
+    await requisitionService.placeOrder(req.id, 'cash', 'Administrador General')
+
+    const after = await requisitionService.getById(req.id)
+    expect(after.status).toBe('ordered')
+    expect(after.payment_type).toBe('cash')
+    expect(after.released_by).toBe('Administrador General')
+    expect(after.released_at).not.toBeNull()
+    expect(after.ordered_at).not.toBeNull()
+
+    // La liberación queda registrada en la bitácora de aprobaciones.
+    const { data: approvals } = await supabase
+      .from('approvals')
+      .select('*')
+      .eq('entity_id', req.id)
+      .eq('action', 'release')
+    expect((approvals ?? []).length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('placeOrder() rechaza una OC que el Director aún no ha aprobado', async () => {
+    const req = await requisitionService.create({
+      project_id: projectId,
+      description: 'OC sin aprobar',
+      requested_by: 'ing-obra',
+    })
+    await expect(requisitionService.placeOrder(req.id, 'cash', 'Administrador General')).rejects.toThrow(
+      /pendiente de liberación/i,
+    )
   })
 })
 

@@ -9,12 +9,24 @@ import { useProjectRoles } from '@/hooks/useProjectRoles'
 import { PaymentDistributionsSection } from '@/components/features/payments/PaymentDistributionsSection'
 import { LoanDeductionSection } from '@/components/features/payroll/LoanDeductionSection'
 import { CubicacionesPayrollSection } from '@/components/features/cubicacion/CubicacionesPayrollSection'
-import { PayrollEditorHeader, PayrollEditorMobileActionBar, PayrollEditorModals } from '@/components/features/payroll/PayrollEditorSections'
+import {
+  PayrollEditorHeader,
+  PayrollEditorMobileActionBar,
+  PayrollEditorModals,
+} from '@/components/features/payroll/PayrollEditorSections'
 import { PayrollTotalsCards } from '@/components/features/payroll/PayrollTotalsCards'
 import { LaborItemsSection } from '@/components/features/payroll/LaborItemsSection'
 import { MaterialInvoicesSection } from '@/components/features/payroll/MaterialInvoicesSection'
 import { IndirectCostsSection } from '@/components/features/payroll/IndirectCostsSection'
-import type { BudgetCategory, Contractor, PriceListItem, Supplier } from '@/types/database'
+import { canEditPayrollItems } from '@/utils/payrollItemPermissions'
+import type {
+  BudgetCategory,
+  Contractor,
+  LaborLineItem,
+  MaterialInvoice,
+  PriceListItem,
+  Supplier,
+} from '@/types/database'
 
 export default function PayrollEditor() {
   const { periodId } = useParams<{ periodId: string }>()
@@ -26,13 +38,12 @@ export default function PayrollEditor() {
   const [budgetCategories, setBudgetCategories] = useState<BudgetCategory[]>([])
   const [showAddLabor, setShowAddLabor] = useState(false)
   const [showAddMaterial, setShowAddMaterial] = useState(false)
+  const [editLaborItem, setEditLaborItem] = useState<LaborLineItem | null>(null)
+  const [editMaterialInvoice, setEditMaterialInvoice] = useState<MaterialInvoice | null>(null)
 
   useEffect(() => {
     loadPayroll()
-    Promise.all([
-      supplierService.getAll(),
-      contractorService.getAll(),
-    ]).then(([nextSuppliers, nextContractors]) => {
+    Promise.all([supplierService.getAll(), contractorService.getAll()]).then(([nextSuppliers, nextContractors]) => {
       setSuppliers(nextSuppliers)
       setContractors(nextContractors)
     })
@@ -58,18 +69,59 @@ export default function PayrollEditor() {
 
   const { period } = payroll
   const isDraft = period.status === 'draft'
+  // Opción A: en borrador edita quien tiene permiso de edición; en reportes ya
+  // comprometidos (enviado/aprobado/pagado) solo la mayor jerarquía (Director).
+  const canEditItems = canEditPayrollItems({
+    isDraft,
+    canEditDraft: roles.canEditPayrollDraft,
+    canEditCommitted: roles.canApprovePayroll,
+  })
 
   return (
     <div className="space-y-6 max-w-5xl pb-24 sm:pb-0">
-      <PayrollEditorHeader period={period} saving={payroll.saving} canApprove={roles.canApprovePayroll} onUpdateStatus={payroll.updateStatus} />
+      <PayrollEditorHeader
+        period={period}
+        saving={payroll.saving}
+        canApprove={roles.canApprovePayroll}
+        onUpdateStatus={payroll.updateStatus}
+      />
 
       {payroll.error && <div className="text-sm text-red-600 bg-red-50 rounded-lg px-4 py-3">{payroll.error}</div>}
 
-      <PayrollTotalsCards labor={period.total_labor || 0} materials={period.total_materials || 0} indirect={period.total_indirect || 0} grandTotal={period.grand_total || 0} />
+      <PayrollTotalsCards
+        labor={period.total_labor || 0}
+        materials={period.total_materials || 0}
+        indirect={period.total_indirect || 0}
+        grandTotal={period.grand_total || 0}
+      />
 
-      <LaborItemsSection items={payroll.laborItems} isDraft={isDraft} total={period.total_labor || 0} onOpenAdd={() => setShowAddLabor(true)} onDelete={payroll.deleteLaborItem} />
-      <MaterialInvoicesSection invoices={payroll.materialInvoices} isDraft={isDraft} total={period.total_materials || 0} onOpenAdd={() => setShowAddMaterial(true)} onDelete={payroll.deleteMaterialInvoice} />
-      <IndirectCostsSection costs={payroll.indirectCosts} isDraft={isDraft} saving={payroll.saving} total={period.total_indirect || 0} onToggleActive={payroll.setIndirectActive} />
+      <LaborItemsSection
+        items={payroll.laborItems}
+        isDraft={isDraft}
+        canEdit={canEditItems}
+        total={period.total_labor || 0}
+        budgetCategories={budgetCategories}
+        onOpenAdd={() => setShowAddLabor(true)}
+        onEdit={setEditLaborItem}
+        onDelete={payroll.deleteLaborItem}
+      />
+      <MaterialInvoicesSection
+        invoices={payroll.materialInvoices}
+        isDraft={isDraft}
+        canEdit={canEditItems}
+        total={period.total_materials || 0}
+        budgetCategories={budgetCategories}
+        onOpenAdd={() => setShowAddMaterial(true)}
+        onEdit={setEditMaterialInvoice}
+        onDelete={payroll.deleteMaterialInvoice}
+      />
+      <IndirectCostsSection
+        costs={payroll.indirectCosts}
+        isDraft={isDraft}
+        saving={payroll.saving}
+        total={period.total_indirect || 0}
+        onToggleActive={payroll.setIndirectActive}
+      />
 
       <CubicacionesPayrollSection
         periodId={period.id}
@@ -88,6 +140,8 @@ export default function PayrollEditor() {
       <PayrollEditorModals
         showAddMaterial={showAddMaterial}
         showAddLabor={showAddLabor}
+        editLaborItem={editLaborItem}
+        editMaterialInvoice={editMaterialInvoice}
         suppliers={suppliers}
         contractors={contractors}
         laborTasks={laborTasks}
@@ -95,12 +149,37 @@ export default function PayrollEditor() {
         saving={payroll.saving}
         onCloseAddMaterial={() => setShowAddMaterial(false)}
         onCloseAddLabor={() => setShowAddLabor(false)}
-        onAddMaterial={async (invoice) => { await payroll.addMaterialInvoice(invoice); setShowAddMaterial(false) }}
-        onAddLabor={async (item) => { await payroll.addLaborItem(item); setShowAddLabor(false) }}
+        onCloseEditLabor={() => setEditLaborItem(null)}
+        onCloseEditMaterial={() => setEditMaterialInvoice(null)}
+        onAddMaterial={async (invoice) => {
+          await payroll.addMaterialInvoice(invoice)
+          setShowAddMaterial(false)
+        }}
+        onAddLabor={async (item) => {
+          await payroll.addLaborItem(item)
+          setShowAddLabor(false)
+        }}
+        onUpdateLabor={async (item) => {
+          if (editLaborItem) {
+            await payroll.updateLaborItem(editLaborItem.id, item)
+            setEditLaborItem(null)
+          }
+        }}
+        onUpdateMaterial={async (invoice) => {
+          if (editMaterialInvoice) {
+            await payroll.updateMaterialInvoice(editMaterialInvoice.id, invoice)
+            setEditMaterialInvoice(null)
+          }
+        }}
         onContractorCreated={(contractor) => setContractors((prev) => [contractor, ...prev])}
       />
 
-      <PayrollEditorMobileActionBar period={period} saving={payroll.saving} canApprove={roles.canApprovePayroll} onUpdateStatus={payroll.updateStatus} />
+      <PayrollEditorMobileActionBar
+        period={period}
+        saving={payroll.saving}
+        canApprove={roles.canApprovePayroll}
+        onUpdateStatus={payroll.updateStatus}
+      />
     </div>
   )
 }

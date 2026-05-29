@@ -1,39 +1,51 @@
 import { memo } from 'react'
-import { Plus, Trash2 } from 'lucide-react'
+import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { formatRD } from '@/utils/currency'
-import type { MaterialInvoice } from '@/types/database'
+import type { BudgetCategory, MaterialInvoice } from '@/types/database'
 
 interface Props {
   invoices: MaterialInvoice[]
   isDraft: boolean
+  canEdit: boolean
   total: number
+  budgetCategories?: BudgetCategory[]
   onOpenAdd: () => void
+  onEdit: (invoice: MaterialInvoice) => void
   onDelete: (invoiceId: string) => void
 }
 
 interface MaterialInvoiceRowProps {
   invoice: MaterialInvoice
   isDraft: boolean
+  canEdit: boolean
+  budgetCategories: BudgetCategory[]
+  onEdit: (invoice: MaterialInvoice) => void
   onDelete: (invoiceId: string) => void
 }
 
-/**
- * Etiqueta legible de la imputación al presupuesto (capítulo y/o partida).
- * Devuelve null cuando la factura no está imputada a nada.
- */
-function imputationLabel(invoice: MaterialInvoice): string | null {
-  const parts: string[] = []
-  if (invoice.budget_category) {
-    parts.push(`${invoice.budget_category.code} ${invoice.budget_category.name}`.trim())
-  }
-  if (invoice.budget_item) {
-    const code = invoice.budget_item.code ? `[${invoice.budget_item.code}] ` : ''
-    parts.push(`${code}${invoice.budget_item.description}`)
-  }
-  return parts.length > 0 ? parts.join(' › ') : null
+// El capítulo y la partida imputados se muestran como referencia; se editan
+// desde el modal de edición (lápiz), que incluye los selectores.
+function chapterLabel(budgetCategoryId: string | null, budgetCategories: BudgetCategory[]): string {
+  if (!budgetCategoryId) return '—'
+  const cat = budgetCategories.find((c) => c.id === budgetCategoryId)
+  return cat ? `${cat.code} ${cat.name}` : '—'
 }
 
-function MaterialInvoiceMobileCardComponent({ invoice, isDraft, onDelete }: MaterialInvoiceRowProps) {
+// Partida imputada (desde el embed budget_item). Null si no hay partida.
+function partidaLabel(invoice: MaterialInvoice): string | null {
+  if (!invoice.budget_item) return null
+  const code = invoice.budget_item.code ? `[${invoice.budget_item.code}] ` : ''
+  return `${code}${invoice.budget_item.description}`
+}
+
+function MaterialInvoiceMobileCardComponent({
+  invoice,
+  isDraft,
+  canEdit,
+  budgetCategories,
+  onEdit,
+  onDelete,
+}: MaterialInvoiceRowProps) {
   return (
     <li className="bg-app-surface rounded-xl border border-app-border p-3">
       <div className="flex items-start justify-between gap-2">
@@ -45,51 +57,96 @@ function MaterialInvoiceMobileCardComponent({ invoice, isDraft, onDelete }: Mate
               <span className="text-xs text-app-subtle ml-1">{invoice.invoice_reference}</span>
             )}
           </p>
-          {imputationLabel(invoice) && (
-            <p className="text-[11px] text-app-subtle mt-0.5 break-words">↳ {imputationLabel(invoice)}</p>
-          )}
         </div>
-        {isDraft && (
-          <button
-            onClick={() => onDelete(invoice.id)}
-            aria-label="Eliminar factura"
-            className="shrink-0 inline-flex items-center justify-center w-11 h-11 -mr-2 -mt-2 text-app-subtle hover:text-red-500 rounded-lg"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
+        {(canEdit || isDraft) && (
+          <div className="shrink-0 flex items-center -mr-2 -mt-2">
+            {canEdit && (
+              <button
+                onClick={() => onEdit(invoice)}
+                aria-label="Editar factura"
+                className="inline-flex items-center justify-center w-11 h-11 text-app-subtle hover:text-blue-500 rounded-lg"
+              >
+                <Pencil className="w-4 h-4" />
+              </button>
+            )}
+            {isDraft && (
+              <button
+                onClick={() => onDelete(invoice.id)}
+                aria-label="Eliminar factura"
+                className="inline-flex items-center justify-center w-11 h-11 text-app-subtle hover:text-red-500 rounded-lg"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         )}
       </div>
       <div className="mt-2 flex items-center justify-between text-xs">
         <span className="text-app-subtle">Monto</span>
         <span className="font-medium text-app-text">{formatRD(invoice.amount)}</span>
       </div>
+      {budgetCategories.length > 0 && (
+        <div className="mt-2 text-xs">
+          <span className="text-app-subtle">Capítulo: </span>
+          <span className="text-app-text">{chapterLabel(invoice.budget_category_id, budgetCategories)}</span>
+          {partidaLabel(invoice) && (
+            <span className="block text-app-subtle mt-0.5">Partida: {partidaLabel(invoice)}</span>
+          )}
+        </div>
+      )}
     </li>
   )
 }
 MaterialInvoiceMobileCardComponent.displayName = 'MaterialInvoiceMobileCard'
 const MaterialInvoiceMobileCard = memo(MaterialInvoiceMobileCardComponent)
 
-function MaterialInvoiceRowComponent({ invoice, isDraft, onDelete }: MaterialInvoiceRowProps) {
+function MaterialInvoiceRowComponent({
+  invoice,
+  isDraft,
+  canEdit,
+  budgetCategories,
+  onEdit,
+  onDelete,
+}: MaterialInvoiceRowProps) {
+  const showChapter = budgetCategories.length > 0
   return (
     <tr className="hover:bg-app-hover">
       <td className="px-4 py-2.5 text-app-text">{invoice.supplier?.name || '—'}</td>
       <td className="px-4 py-2.5 text-app-muted">
         {invoice.description}
         {invoice.invoice_reference && <span className="text-xs text-app-subtle ml-1">{invoice.invoice_reference}</span>}
-        {imputationLabel(invoice) && (
-          <span className="block text-[11px] text-app-subtle mt-0.5">↳ {imputationLabel(invoice)}</span>
-        )}
       </td>
+      {showChapter && (
+        <td className="px-4 py-2.5 text-app-muted">
+          {chapterLabel(invoice.budget_category_id, budgetCategories)}
+          {partidaLabel(invoice) && (
+            <span className="block text-[11px] text-app-subtle mt-0.5">{partidaLabel(invoice)}</span>
+          )}
+        </td>
+      )}
       <td className="px-4 py-2.5 text-right font-medium text-app-text">{formatRD(invoice.amount)}</td>
-      {isDraft && (
+      {(isDraft || canEdit) && (
         <td className="px-2 py-2.5">
-          <button
-            onClick={() => onDelete(invoice.id)}
-            aria-label="Eliminar factura"
-            className="inline-flex items-center justify-center w-8 h-8 text-app-subtle hover:text-red-500 rounded"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
+          <div className="flex items-center justify-end gap-1">
+            {canEdit && (
+              <button
+                onClick={() => onEdit(invoice)}
+                aria-label="Editar factura"
+                className="inline-flex items-center justify-center w-8 h-8 text-app-subtle hover:text-blue-500 rounded"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+              </button>
+            )}
+            {isDraft && (
+              <button
+                onClick={() => onDelete(invoice.id)}
+                aria-label="Eliminar factura"
+                className="inline-flex items-center justify-center w-8 h-8 text-app-subtle hover:text-red-500 rounded"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
         </td>
       )}
     </tr>
@@ -98,7 +155,18 @@ function MaterialInvoiceRowComponent({ invoice, isDraft, onDelete }: MaterialInv
 MaterialInvoiceRowComponent.displayName = 'MaterialInvoiceRow'
 const MaterialInvoiceRow = memo(MaterialInvoiceRowComponent)
 
-export function MaterialInvoicesSection({ invoices, isDraft, total, onOpenAdd, onDelete }: Props) {
+export function MaterialInvoicesSection({
+  invoices,
+  isDraft,
+  canEdit,
+  total,
+  budgetCategories = [],
+  onOpenAdd,
+  onEdit,
+  onDelete,
+}: Props) {
+  const showActionsColumn = isDraft || canEdit
+  const showChapter = budgetCategories.length > 0
   return (
     <section>
       <div className="flex items-center justify-between gap-2 mb-3">
@@ -123,7 +191,15 @@ export function MaterialInvoicesSection({ invoices, isDraft, total, onOpenAdd, o
           {/* Mobile cards */}
           <ul className="sm:hidden space-y-2">
             {invoices.map((invoice) => (
-              <MaterialInvoiceMobileCard key={invoice.id} invoice={invoice} isDraft={isDraft} onDelete={onDelete} />
+              <MaterialInvoiceMobileCard
+                key={invoice.id}
+                invoice={invoice}
+                isDraft={isDraft}
+                canEdit={canEdit}
+                budgetCategories={budgetCategories}
+                onEdit={onEdit}
+                onDelete={onDelete}
+              />
             ))}
           </ul>
           {/* Desktop / tablet table */}
@@ -134,13 +210,22 @@ export function MaterialInvoicesSection({ invoices, isDraft, total, onOpenAdd, o
                   <tr className="bg-app-bg border-b border-app-border">
                     <th className="text-left px-4 py-2.5 font-medium text-app-muted">Proveedor</th>
                     <th className="text-left px-4 py-2.5 font-medium text-app-muted">Descripción</th>
+                    {showChapter && <th className="text-left px-4 py-2.5 font-medium text-app-muted">Capítulo</th>}
                     <th className="text-right px-4 py-2.5 font-medium text-app-muted">Monto</th>
-                    {isDraft && <th className="w-10" />}
+                    {showActionsColumn && <th className="w-20" />}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-app-border">
                   {invoices.map((invoice) => (
-                    <MaterialInvoiceRow key={invoice.id} invoice={invoice} isDraft={isDraft} onDelete={onDelete} />
+                    <MaterialInvoiceRow
+                      key={invoice.id}
+                      invoice={invoice}
+                      isDraft={isDraft}
+                      canEdit={canEdit}
+                      budgetCategories={budgetCategories}
+                      onEdit={onEdit}
+                      onDelete={onDelete}
+                    />
                   ))}
                 </tbody>
               </table>

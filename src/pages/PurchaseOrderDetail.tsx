@@ -71,10 +71,10 @@ export default function PurchaseOrderDetail() {
         icon: <ShieldCheck className="w-4 h-4" />,
       }
     }
-    if (req.status === 'approved') {
+    if ((req.status === 'pendiente_liberacion' || req.status === 'approved') && roles.isDirector) {
       return {
-        label: placingOrder ? 'Colocando…' : 'Colocar orden — Contado',
-        onClick: () => handlePlaceOrder('cash'),
+        label: placingOrder ? 'Liberando…' : 'Liberar y colocar — Contado',
+        onClick: () => handlePlaceOrder('cash', user?.displayName),
         className: 'bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50',
         icon: <Truck className="w-4 h-4" />,
         disabled: placingOrder,
@@ -131,12 +131,13 @@ export default function PurchaseOrderDetail() {
               canEdit={canEdit}
               canSubmit={canSubmit}
               canApprove={roles.canReleasePurchaseOrder}
+              canRelease={roles.isDirector}
               status={req.status}
               placingOrder={placingOrder}
               onSubmitForApproval={handleSubmitForApproval}
               onOpenApproval={() => setApprovalModal(true)}
-              onPlaceCash={() => handlePlaceOrder('cash')}
-              onPlaceCredit={() => handlePlaceOrder('credit')}
+              onPlaceCash={() => handlePlaceOrder('cash', user?.displayName)}
+              onPlaceCredit={() => handlePlaceOrder('credit', user?.displayName)}
               onDelete={() => setConfirmDeleteReq(true)}
             />
           </aside>
