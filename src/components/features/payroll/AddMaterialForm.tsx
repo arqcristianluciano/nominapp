@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Supplier } from '@/types/database'
+import type { MaterialInvoice, Supplier } from '@/types/database'
 
 interface Props {
   suppliers: Supplier[]
@@ -11,13 +11,17 @@ interface Props {
   }) => Promise<void>
   onCancel: () => void
   saving: boolean
+  /** Si se pasa, el formulario opera en modo edición (campos pre-cargados). */
+  initialInvoice?: MaterialInvoice
+  /** Texto del botón de envío (por defecto "Agregar factura"). */
+  submitLabel?: string
 }
 
-export function AddMaterialForm({ suppliers, onSubmit, onCancel, saving }: Props) {
-  const [supplierId, setSupplierId] = useState('')
-  const [description, setDescription] = useState('')
-  const [reference, setReference] = useState('')
-  const [amount, setAmount] = useState('')
+export function AddMaterialForm({ suppliers, onSubmit, onCancel, saving, initialInvoice, submitLabel }: Props) {
+  const [supplierId, setSupplierId] = useState(initialInvoice?.supplier_id ?? '')
+  const [description, setDescription] = useState(initialInvoice?.description ?? '')
+  const [reference, setReference] = useState(initialInvoice?.invoice_reference ?? '')
+  const [amount, setAmount] = useState(initialInvoice ? String(initialInvoice.amount) : '')
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -41,9 +45,13 @@ export function AddMaterialForm({ suppliers, onSubmit, onCancel, saving }: Props
           className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="">Seleccionar proveedor...</option>
-          {suppliers.filter(s => s.is_active).map(s => (
-            <option key={s.id} value={s.id}>{s.name}</option>
-          ))}
+          {suppliers
+            .filter((s) => s.is_active)
+            .map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
         </select>
       </div>
 
@@ -92,7 +100,7 @@ export function AddMaterialForm({ suppliers, onSubmit, onCancel, saving }: Props
           disabled={saving || !supplierId || !description || !amount}
           className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {saving ? 'Guardando...' : 'Agregar factura'}
+          {saving ? 'Guardando...' : (submitLabel ?? 'Agregar factura')}
         </button>
       </div>
     </form>

@@ -21,6 +21,7 @@ const ACTION_LABEL: Record<ApprovalAction, string> = {
   delete: 'Eliminación',
   delete_cascade: 'Eliminación en cascada',
   update_indirects: 'Actualización de indirectos',
+  update: 'Edición de partida/factura',
 }
 
 const ENTITY_LABEL: Record<string, string> = {
