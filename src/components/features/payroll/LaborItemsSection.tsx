@@ -17,6 +17,22 @@ interface LaborItemRowProps {
   onDelete: (itemId: string) => void
 }
 
+/**
+ * Etiqueta legible de la imputación al presupuesto (capítulo y/o partida).
+ * Devuelve null cuando la partida no está imputada a nada.
+ */
+function imputationLabel(item: LaborLineItem): string | null {
+  const parts: string[] = []
+  if (item.budget_category) {
+    parts.push(`${item.budget_category.code} ${item.budget_category.name}`.trim())
+  }
+  if (item.budget_item) {
+    const code = item.budget_item.code ? `[${item.budget_item.code}] ` : ''
+    parts.push(`${code}${item.budget_item.description}`)
+  }
+  return parts.length > 0 ? parts.join(' › ') : null
+}
+
 function LaborItemMobileCardComponent({ item, isDraft, onDelete }: LaborItemRowProps) {
   return (
     <li className="bg-app-surface rounded-xl border border-app-border p-3">
@@ -24,6 +40,9 @@ function LaborItemMobileCardComponent({ item, isDraft, onDelete }: LaborItemRowP
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium text-app-text truncate">{item.contractor?.name || '—'}</p>
           <p className="text-xs text-app-muted mt-0.5 break-words">{item.description}</p>
+          {imputationLabel(item) && (
+            <p className="text-[11px] text-app-subtle mt-0.5 break-words">↳ {imputationLabel(item)}</p>
+          )}
         </div>
         {isDraft && (
           <button
@@ -59,7 +78,12 @@ function LaborItemRowComponent({ item, isDraft, onDelete }: LaborItemRowProps) {
   return (
     <tr className="hover:bg-app-hover">
       <td className="px-4 py-2.5 text-app-text">{item.contractor?.name || '—'}</td>
-      <td className="px-4 py-2.5 text-app-muted">{item.description}</td>
+      <td className="px-4 py-2.5 text-app-muted">
+        {item.description}
+        {imputationLabel(item) && (
+          <span className="block text-[11px] text-app-subtle mt-0.5">↳ {imputationLabel(item)}</span>
+        )}
+      </td>
       <td className="px-4 py-2.5 text-right text-app-text">{item.quantity.toLocaleString('es-DO')}</td>
       <td className="px-4 py-2.5 text-right text-app-text">{formatRD(item.unit_price)}</td>
       <td className="px-4 py-2.5 text-right font-medium text-app-text">{formatRD(item.quantity * item.unit_price)}</td>
@@ -91,11 +115,16 @@ export function LaborItemsSection({ items, isDraft, total, onOpenAdd, onDelete }
             aria-label="Agregar partida"
             className="flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 bg-app-surface border border-app-border text-sm font-medium rounded-lg hover:bg-app-hover min-h-[44px] sm:min-h-0"
           >
-            <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Agregar partida</span><span className="sm:hidden">Agregar</span>
+            <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Agregar partida</span>
+            <span className="sm:hidden">Agregar</span>
           </button>
         )}
       </div>
-      {items.length === 0 ? <div className="bg-app-surface rounded-xl border border-app-border p-8 text-center text-sm text-app-subtle">No hay partidas de mano de obra registradas</div> : (
+      {items.length === 0 ? (
+        <div className="bg-app-surface rounded-xl border border-app-border p-8 text-center text-sm text-app-subtle">
+          No hay partidas de mano de obra registradas
+        </div>
+      ) : (
         <>
           {/* Mobile cards */}
           <ul className="sm:hidden space-y-2">
@@ -107,7 +136,16 @@ export function LaborItemsSection({ items, isDraft, total, onOpenAdd, onDelete }
           <div className="hidden sm:block bg-app-surface rounded-xl border border-app-border overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm min-w-[640px]">
-                <thead><tr className="bg-app-bg border-b border-app-border"><th className="text-left px-4 py-2.5 font-medium text-app-muted">Contratista</th><th className="text-left px-4 py-2.5 font-medium text-app-muted">Descripción</th><th className="text-right px-4 py-2.5 font-medium text-app-muted">Cant.</th><th className="text-right px-4 py-2.5 font-medium text-app-muted">Precio</th><th className="text-right px-4 py-2.5 font-medium text-app-muted">Subtotal</th>{isDraft && <th className="w-10" />}</tr></thead>
+                <thead>
+                  <tr className="bg-app-bg border-b border-app-border">
+                    <th className="text-left px-4 py-2.5 font-medium text-app-muted">Contratista</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-app-muted">Descripción</th>
+                    <th className="text-right px-4 py-2.5 font-medium text-app-muted">Cant.</th>
+                    <th className="text-right px-4 py-2.5 font-medium text-app-muted">Precio</th>
+                    <th className="text-right px-4 py-2.5 font-medium text-app-muted">Subtotal</th>
+                    {isDraft && <th className="w-10" />}
+                  </tr>
+                </thead>
                 <tbody className="divide-y divide-app-border">
                   {items.map((item) => (
                     <LaborItemRow key={item.id} item={item} isDraft={isDraft} onDelete={onDelete} />
@@ -118,7 +156,10 @@ export function LaborItemsSection({ items, isDraft, total, onOpenAdd, onDelete }
           </div>
         </>
       )}
-      <div className="mt-3 bg-blue-50 dark:bg-blue-950/40 rounded-lg px-4 py-3 flex justify-between items-center"><span className="text-sm font-medium text-blue-800 dark:text-blue-400">Total mano de obra</span><span className="text-sm font-semibold text-blue-800 dark:text-blue-400">{formatRD(total)}</span></div>
+      <div className="mt-3 bg-blue-50 dark:bg-blue-950/40 rounded-lg px-4 py-3 flex justify-between items-center">
+        <span className="text-sm font-medium text-blue-800 dark:text-blue-400">Total mano de obra</span>
+        <span className="text-sm font-semibold text-blue-800 dark:text-blue-400">{formatRD(total)}</span>
+      </div>
     </section>
   )
 }

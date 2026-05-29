@@ -11,6 +11,8 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 
 - Subpartidas del presupuesto numeradas automáticamente (1.1, 1.2, …) en la lista y en el modal de creación (#40).
 - Las facturas de materiales ahora se pueden imputar a un capítulo y a una partida del presupuesto, igual que la mano de obra.
+- Las listas de mano de obra y materiales del editor de nómina muestran el capítulo/partida imputado de cada renglón.
+- Nueva vista "Por partida (acumulado)" en Cubicación: costo real imputado por partida (salidas de almacén, mano de obra y facturas) frente al presupuesto, con exportación a Excel.
 
 ### Changed
 

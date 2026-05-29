@@ -17,6 +17,22 @@ interface MaterialInvoiceRowProps {
   onDelete: (invoiceId: string) => void
 }
 
+/**
+ * Etiqueta legible de la imputación al presupuesto (capítulo y/o partida).
+ * Devuelve null cuando la factura no está imputada a nada.
+ */
+function imputationLabel(invoice: MaterialInvoice): string | null {
+  const parts: string[] = []
+  if (invoice.budget_category) {
+    parts.push(`${invoice.budget_category.code} ${invoice.budget_category.name}`.trim())
+  }
+  if (invoice.budget_item) {
+    const code = invoice.budget_item.code ? `[${invoice.budget_item.code}] ` : ''
+    parts.push(`${code}${invoice.budget_item.description}`)
+  }
+  return parts.length > 0 ? parts.join(' › ') : null
+}
+
 function MaterialInvoiceMobileCardComponent({ invoice, isDraft, onDelete }: MaterialInvoiceRowProps) {
   return (
     <li className="bg-app-surface rounded-xl border border-app-border p-3">
@@ -25,8 +41,13 @@ function MaterialInvoiceMobileCardComponent({ invoice, isDraft, onDelete }: Mate
           <p className="text-sm font-medium text-app-text truncate">{invoice.supplier?.name || '—'}</p>
           <p className="text-xs text-app-muted mt-0.5 break-words">
             {invoice.description}
-            {invoice.invoice_reference && <span className="text-xs text-app-subtle ml-1">{invoice.invoice_reference}</span>}
+            {invoice.invoice_reference && (
+              <span className="text-xs text-app-subtle ml-1">{invoice.invoice_reference}</span>
+            )}
           </p>
+          {imputationLabel(invoice) && (
+            <p className="text-[11px] text-app-subtle mt-0.5 break-words">↳ {imputationLabel(invoice)}</p>
+          )}
         </div>
         {isDraft && (
           <button
@@ -52,7 +73,13 @@ function MaterialInvoiceRowComponent({ invoice, isDraft, onDelete }: MaterialInv
   return (
     <tr className="hover:bg-app-hover">
       <td className="px-4 py-2.5 text-app-text">{invoice.supplier?.name || '—'}</td>
-      <td className="px-4 py-2.5 text-app-muted">{invoice.description}{invoice.invoice_reference && <span className="text-xs text-app-subtle ml-1">{invoice.invoice_reference}</span>}</td>
+      <td className="px-4 py-2.5 text-app-muted">
+        {invoice.description}
+        {invoice.invoice_reference && <span className="text-xs text-app-subtle ml-1">{invoice.invoice_reference}</span>}
+        {imputationLabel(invoice) && (
+          <span className="block text-[11px] text-app-subtle mt-0.5">↳ {imputationLabel(invoice)}</span>
+        )}
+      </td>
       <td className="px-4 py-2.5 text-right font-medium text-app-text">{formatRD(invoice.amount)}</td>
       {isDraft && (
         <td className="px-2 py-2.5">
@@ -82,11 +109,16 @@ export function MaterialInvoicesSection({ invoices, isDraft, total, onOpenAdd, o
             aria-label="Agregar factura"
             className="flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 bg-app-surface border border-app-border text-sm font-medium rounded-lg hover:bg-app-hover min-h-[44px] sm:min-h-0"
           >
-            <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Agregar factura</span><span className="sm:hidden">Agregar</span>
+            <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Agregar factura</span>
+            <span className="sm:hidden">Agregar</span>
           </button>
         )}
       </div>
-      {invoices.length === 0 ? <div className="bg-app-surface rounded-xl border border-app-border p-8 text-center text-sm text-app-subtle">No hay facturas de materiales registradas</div> : (
+      {invoices.length === 0 ? (
+        <div className="bg-app-surface rounded-xl border border-app-border p-8 text-center text-sm text-app-subtle">
+          No hay facturas de materiales registradas
+        </div>
+      ) : (
         <>
           {/* Mobile cards */}
           <ul className="sm:hidden space-y-2">
@@ -98,7 +130,14 @@ export function MaterialInvoicesSection({ invoices, isDraft, total, onOpenAdd, o
           <div className="hidden sm:block bg-app-surface rounded-xl border border-app-border overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm min-w-[520px]">
-                <thead><tr className="bg-app-bg border-b border-app-border"><th className="text-left px-4 py-2.5 font-medium text-app-muted">Proveedor</th><th className="text-left px-4 py-2.5 font-medium text-app-muted">Descripción</th><th className="text-right px-4 py-2.5 font-medium text-app-muted">Monto</th>{isDraft && <th className="w-10" />}</tr></thead>
+                <thead>
+                  <tr className="bg-app-bg border-b border-app-border">
+                    <th className="text-left px-4 py-2.5 font-medium text-app-muted">Proveedor</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-app-muted">Descripción</th>
+                    <th className="text-right px-4 py-2.5 font-medium text-app-muted">Monto</th>
+                    {isDraft && <th className="w-10" />}
+                  </tr>
+                </thead>
                 <tbody className="divide-y divide-app-border">
                   {invoices.map((invoice) => (
                     <MaterialInvoiceRow key={invoice.id} invoice={invoice} isDraft={isDraft} onDelete={onDelete} />
@@ -109,7 +148,10 @@ export function MaterialInvoicesSection({ invoices, isDraft, total, onOpenAdd, o
           </div>
         </>
       )}
-      <div className="mt-3 bg-amber-50 dark:bg-amber-950/40 rounded-lg px-4 py-3 flex justify-between items-center"><span className="text-sm font-medium text-amber-800 dark:text-amber-400">Total materiales</span><span className="text-sm font-semibold text-amber-800 dark:text-amber-400">{formatRD(total)}</span></div>
+      <div className="mt-3 bg-amber-50 dark:bg-amber-950/40 rounded-lg px-4 py-3 flex justify-between items-center">
+        <span className="text-sm font-medium text-amber-800 dark:text-amber-400">Total materiales</span>
+        <span className="text-sm font-semibold text-amber-800 dark:text-amber-400">{formatRD(total)}</span>
+      </div>
     </section>
   )
 }
