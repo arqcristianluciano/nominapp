@@ -1,30 +1,12 @@
 import { expect, test } from '@playwright/test'
+import { loginDemo } from './helpers'
 
-// Flujo end-to-end de nómina: login admin -> proyecto -> crear nómina ->
+// Flujo end-to-end de nómina: login -> proyecto -> crear nómina ->
 // agregar partida de mano de obra -> enviar -> aprobar.
 // Solo valida que la UI responda; no valida cálculos.
 
-async function loginAdmin(page: import('@playwright/test').Page) {
-  await page.goto('/login', { waitUntil: 'domcontentloaded' })
-  // Quick-access "Administrador" cuando hay backend real (admin@nominapp.local).
-  // Fallback al demo user "Cristian" cuando corremos contra el mock store local.
-  const adminButton = page.getByRole('button', { name: 'Administrador' })
-  if (await adminButton.count()) {
-    await adminButton.click()
-    await page.waitForTimeout(200)
-    if (!/\/$/.test(page.url())) {
-      await page.getByRole('button', { name: 'Cristian' }).click()
-      await page.getByRole('button', { name: 'Iniciar sesión' }).click()
-    }
-  } else {
-    await page.getByRole('button', { name: 'Cristian' }).click()
-    await page.getByRole('button', { name: 'Iniciar sesión' }).click()
-  }
-  await expect(page).toHaveURL(/\/$/)
-}
-
 test('flujo de nómina: crear, agregar partida, enviar y aprobar', async ({ page }) => {
-  await loginAdmin(page)
+  await loginDemo(page)
 
   // 1) Seleccionar el primer proyecto del listado.
   await page.goto('/proyectos')
@@ -51,7 +33,10 @@ test('flujo de nómina: crear, agregar partida, enviar y aprobar', async ({ page
   await expect(page.getByText('Borrador').first()).toBeVisible()
 
   // 4) Agregar una partida de mano de obra.
-  await page.getByRole('button', { name: /Agregar partida|Agregar$/ }).first().click()
+  await page
+    .getByRole('button', { name: /Agregar partida|Agregar$/ })
+    .first()
+    .click()
   await expect(page.getByRole('heading', { name: 'Agregar partida de mano de obra' })).toBeVisible()
 
   // Seleccionar primer contratista disponible (omite la opción "Seleccionar..." y "Crear nuevo").
@@ -75,10 +60,16 @@ test('flujo de nómina: crear, agregar partida, enviar y aprobar', async ({ page
   await expect(page.getByText('No hay partidas de mano de obra registradas')).toHaveCount(0)
 
   // 6) Enviar la nómina (draft -> submitted).
-  await page.getByRole('button', { name: /Enviar para aprobación/i }).first().click()
+  await page
+    .getByRole('button', { name: /Enviar para aprobación/i })
+    .first()
+    .click()
   await expect(page.getByText('Enviado').first()).toBeVisible({ timeout: 5000 })
 
   // 7) Aprobar la nómina (submitted -> approved).
-  await page.getByRole('button', { name: /Aprobar reporte/i }).first().click()
+  await page
+    .getByRole('button', { name: /Aprobar reporte/i })
+    .first()
+    .click()
   await expect(page.getByText('Aprobado').first()).toBeVisible({ timeout: 5000 })
 })

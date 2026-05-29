@@ -1,14 +1,8 @@
 import { expect, test } from '@playwright/test'
+import { loginDemo } from './helpers'
 
 // Smoke E2E para los flujos nuevos del Nivel 1.
 // Modo demo: mockSupabase reinicia en memoria por sesión.
-
-async function loginDemo(page: import('@playwright/test').Page) {
-  await page.goto('/login', { waitUntil: 'domcontentloaded' })
-  await page.getByRole('button', { name: 'Cristian' }).click()
-  await page.getByRole('button', { name: 'Iniciar sesión' }).click()
-  await expect(page).toHaveURL(/\/$/)
-}
 
 test('crear solicitud sin partida queda en draft', async ({ page }) => {
   await loginDemo(page)

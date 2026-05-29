@@ -1,16 +1,11 @@
 import { expect, test } from '@playwright/test'
+import { loginDemo } from './helpers'
 
-// Smoke test para /admin/usuarios.
-// Login como admin@nominapp.local (botón de acceso rápido "Administrador").
-
-async function loginAdmin(page: import('@playwright/test').Page) {
-  await page.goto('/login', { waitUntil: 'domcontentloaded' })
-  await page.getByRole('button', { name: 'Administrador' }).click()
-  await expect(page).toHaveURL(/\/$/)
-}
+// Smoke test para /admin/usuarios. En modo demo el usuario "cristian" tiene
+// todas las capabilities (incluida manage_users), así que cubre este flujo.
 
 test('admin/usuarios: tabs Personas, Matriz de permisos y Roles renderizan', async ({ page }) => {
-  await loginAdmin(page)
+  await loginDemo(page)
 
   await page.goto('/admin/usuarios')
   await expect(page.getByRole('heading', { name: 'Administración de usuarios' })).toBeVisible()
@@ -24,14 +19,10 @@ test('admin/usuarios: tabs Personas, Matriz de permisos y Roles renderizan', asy
   // 2) Tab Matriz de permisos — debe mostrar el grid de capacidades.
   await page.getByRole('button', { name: /Matriz de permisos/ }).click()
   await expect(page.getByRole('columnheader', { name: 'Acción' })).toBeVisible()
-  await expect(
-    page.getByText(/Tildea o destildea cualquier celda/i),
-  ).toBeVisible()
+  await expect(page.getByText(/Tildea o destildea cualquier celda/i)).toBeVisible()
 
   // 3) Tab Roles — debe mostrar la lista de roles.
   await page.getByRole('button', { name: /^Roles$/ }).click()
   await expect(page.getByRole('button', { name: /Nuevo rol/i })).toBeVisible()
-  await expect(
-    page.getByText(/Los 8 roles del sistema/i),
-  ).toBeVisible()
+  await expect(page.getByText(/Los 8 roles del sistema/i)).toBeVisible()
 })
