@@ -19,6 +19,7 @@ interface Props {
   onClose: () => void
   onSubmit: (
     receipts: { quote_item_id: string; quantity: number; lot_number?: string | null; expiry_date?: string | null }[],
+    conduceFile?: File | null,
   ) => void
 }
 
@@ -34,6 +35,8 @@ export function ReceiveOrderModal({ open, lines, saving = false, onClose, onSubm
   const [qty, setQty] = useState<Record<string, string>>({})
   // Lote/vencimiento opcionales por línea (trazabilidad).
   const [lotInfo, setLotInfo] = useState<Record<string, { lot_number: string; expiry_date: string }>>({})
+  // Conduce / nota de entrega (opcional) de toda la recepción.
+  const [conduce, setConduce] = useState<File | null>(null)
 
   useEffect(() => {
     if (!open) return
@@ -41,6 +44,7 @@ export function ReceiveOrderModal({ open, lines, saving = false, onClose, onSubm
     for (const l of trackable) init[l.quote_item_id as string] = String(l.remaining_quantity)
     setQty(init)
     setLotInfo({})
+    setConduce(null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
@@ -63,7 +67,7 @@ export function ReceiveOrderModal({ open, lines, saving = false, onClose, onSubm
   function submit() {
     if (!canSubmit) return
     if (isFallback) {
-      onSubmit([])
+      onSubmit([], conduce)
       return
     }
     const receipts = parsed
@@ -74,7 +78,7 @@ export function ReceiveOrderModal({ open, lines, saving = false, onClose, onSubm
         lot_number: lotInfo[p.id]?.lot_number?.trim() || null,
         expiry_date: lotInfo[p.id]?.expiry_date || null,
       }))
-    onSubmit(receipts)
+    onSubmit(receipts, conduce)
   }
 
   return (
@@ -180,6 +184,18 @@ export function ReceiveOrderModal({ open, lines, saving = false, onClose, onSubm
         {anyInvalid && (
           <p className="text-sm text-red-500">Hay cantidades inválidas (mayores al pendiente o negativas).</p>
         )}
+
+        <div className="border-t border-app-border pt-3">
+          <label className="block text-xs font-medium text-app-muted mb-1">Conduce / nota de entrega (opcional)</label>
+          <input
+            type="file"
+            accept="image/*,application/pdf"
+            disabled={saving}
+            onChange={(e) => setConduce(e.target.files?.[0] ?? null)}
+            className="block w-full text-sm text-app-muted file:mr-3 file:rounded-md file:border-0 file:bg-app-chip file:px-3 file:py-1.5 file:text-sm file:text-app-text hover:file:bg-app-hover"
+          />
+          {conduce && <p className="text-xs text-app-subtle mt-1">Adjunto: {conduce.name}</p>}
+        </div>
 
         <div className="flex flex-col sm:flex-row sm:justify-end gap-2 pt-2">
           <button

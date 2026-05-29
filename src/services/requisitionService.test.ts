@@ -418,6 +418,21 @@ describe('requisitionService - recepción de mercancía (entrada a almacén)', (
     expect((await lotService.list(item.id))[0].quantity).toBe(0)
   })
 
+  it('guarda el attachment_path (conduce) en los movimientos de la recepción', async () => {
+    const name = `Tubería ${Date.now()}`
+    const req = await makeOrderedReq(name, 6, 20)
+    const lineId = requisitionService.getPendingReceiptLines(await requisitionService.getById(req.id))[0]
+      .quote_item_id as string
+    await requisitionService.receiveItems(
+      req.id,
+      'Almacenista',
+      [{ quote_item_id: lineId, quantity: 6 }],
+      'proj/po/conduce.pdf',
+    )
+    const movs = await inventoryService.getMovementsByPurchaseOrder(req.id)
+    expect(movs.find((m) => m.type === 'in')?.attachment_path).toBe('proj/po/conduce.pdf')
+  })
+
   it('reverseReceipt rechaza una OC que no está "received"', async () => {
     const req = await makeOrderedReq(`X ${Date.now()}`, 5, 10)
     await expect(requisitionService.reverseReceipt(req.id, 'Almacenista')).rejects.toThrow(/Recibida/i)

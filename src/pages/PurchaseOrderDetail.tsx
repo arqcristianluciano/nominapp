@@ -6,6 +6,7 @@ import { PurchaseOrderQuotesSection } from '@/components/features/purchase-order
 import { PurchaseOrderSignatureCard } from '@/components/features/purchase-orders/PurchaseOrderSignatureCard'
 import { ExcessValidationModal } from '@/components/features/purchase-orders/ExcessValidationModal'
 import { ReceiveOrderModal } from '@/components/features/purchase-orders/ReceiveOrderModal'
+import { ReceiptConducesCard } from '@/components/features/purchase-orders/ReceiptConducesCard'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { usePurchaseOrderDetail } from '@/hooks/usePurchaseOrderDetail'
 import { useProjectRoles } from '@/hooks/useProjectRoles'
@@ -31,6 +32,7 @@ export default function PurchaseOrderDetail() {
     reversingOrder,
     quotes,
     pendingReceiptLines,
+    conduces,
     canEdit,
     canNegotiate,
     missingQuotes,
@@ -181,6 +183,7 @@ export default function PurchaseOrderDetail() {
               onReverseReceipt={() => setConfirmReverse(true)}
               onDelete={() => setConfirmDeleteReq(true)}
             />
+            <ReceiptConducesCard paths={conduces} />
           </aside>
         </div>
 
@@ -218,7 +221,7 @@ export default function PurchaseOrderDetail() {
           lines={pendingReceiptLines}
           saving={receivingOrder}
           onClose={() => setConfirmReceive(false)}
-          onSubmit={(receipts) => handleReceiveItems(receipts, user?.displayName)}
+          onSubmit={(receipts, file) => handleReceiveItems(receipts, user?.displayName, file)}
         />
 
         <ConfirmModal

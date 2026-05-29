@@ -467,6 +467,7 @@ export const requisitionService = {
     id: string,
     receivedBy: string,
     receipts: { quote_item_id: string; quantity: number; lot_number?: string | null; expiry_date?: string | null }[],
+    attachmentPath?: string | null,
   ) {
     const before = await this.getById(id)
     if (before.status !== 'ordered' && before.status !== 'partially_received') {
@@ -531,6 +532,7 @@ export const requisitionService = {
         budget_category_id: before.budget_category_id,
         created_by: receivedBy,
         lot_id: lotId,
+        attachment_path: attachmentPath ?? null,
         notes: `Entrada por recepción de orden ${before.req_number}`,
       })
       const { error: upErr } = await supabase

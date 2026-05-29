@@ -2,6 +2,8 @@ import * as Sentry from '@sentry/react'
 import { supabase } from '@/lib/supabase'
 import { approvalsService } from '@/services/approvalsService'
 
+const RECEIPT_BUCKET = 'receipt-attachments'
+
 export interface InventoryItem {
   id: string
   project_id: string
@@ -30,6 +32,7 @@ export interface InventoryMovement {
   created_by: string | null
   override_motivo: string | null
   lot_id: string | null
+  attachment_path: string | null
   created_at: string
   item?: { id: string; name: string; unit: string }
 }
@@ -48,6 +51,7 @@ export interface AddMovementInput {
   unit_cost?: number | null
   created_by?: string | null
   lot_id?: string | null
+  attachment_path?: string | null
   override?: { motivo: string; actor: string } | null
 }
 
@@ -230,6 +234,7 @@ export const inventoryService = {
         unit_cost: movement.unit_cost ?? null,
         created_by: movement.created_by ?? null,
         lot_id: movement.lot_id ?? null,
+        attachment_path: movement.attachment_path ?? null,
         override_motivo: movement.override?.motivo ?? null,
         created_at: now,
       })
@@ -268,5 +273,27 @@ export const inventoryService = {
 
   getLowStockItems(items: InventoryItem[]): InventoryItem[] {
     return items.filter((i) => i.current_stock <= i.min_stock)
+  },
+
+  // === CONDUCE / NOTA DE ENTREGA (bucket privado receipt-attachments) ===
+
+  // Sube el conduce de una recepción. El path va prefijado por <projectId> para
+  // que la RLS verifique el permiso al proyecto. Devuelve el path almacenado.
+  async uploadReceiptAttachment(file: File, projectId: string, purchaseOrderId: string): Promise<string> {
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+    const path = `${projectId}/${purchaseOrderId}/${Date.now()}-${safeName}`
+    const { error } = await supabase.storage
+      .from(RECEIPT_BUCKET)
+      .upload(path, file, { contentType: file.type || 'application/octet-stream', upsert: false })
+    if (error) throw error
+    return path
+  },
+
+  // URL firmada (privada) para ver/descargar el conduce.
+  async getReceiptAttachmentUrl(path: string, expiresInSec = 60 * 60): Promise<string> {
+    const { data, error } = await supabase.storage.from(RECEIPT_BUCKET).createSignedUrl(path, expiresInSec)
+    if (error) throw error
+    if (!data?.signedUrl) throw new Error('No signed URL returned')
+    return data.signedUrl
   },
 }

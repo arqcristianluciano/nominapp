@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { requisitionService } from '@/services/requisitionService'
 import { quoteService } from '@/services/quoteService'
 import { supplierService } from '@/services/supplierService'
+import { inventoryService } from '@/services/inventoryService'
 import type { Supplier } from '@/types/database'
 import type { PurchaseRequisition } from '@/types/purchaseOrder'
 
@@ -29,14 +30,24 @@ export function usePurchaseOrderDetail() {
   const [receivingOrder, setReceivingOrder] = useState(false)
   const [confirmReverse, setConfirmReverse] = useState(false)
   const [reversingOrder, setReversingOrder] = useState(false)
+  const [conduces, setConduces] = useState<string[]>([])
 
   const load = useCallback(async () => {
     if (!orderId) return
     setLoading(true)
     try {
-      const [data, sups] = await Promise.all([requisitionService.getById(orderId), supplierService.getAll()])
+      const [data, sups, movs] = await Promise.all([
+        requisitionService.getById(orderId),
+        supplierService.getAll(),
+        inventoryService.getMovementsByPurchaseOrder(orderId).catch(() => []),
+      ])
       setReq(data)
       setSuppliers(sups)
+      setConduces(
+        Array.from(
+          new Set(movs.filter((m) => m.type === 'in' && m.attachment_path).map((m) => m.attachment_path as string)),
+        ),
+      )
     } finally {
       setLoading(false)
     }
@@ -117,11 +128,22 @@ export function usePurchaseOrderDetail() {
   async function handleReceiveItems(
     receipts: { quote_item_id: string; quantity: number; lot_number?: string | null; expiry_date?: string | null }[],
     actor?: string,
+    conduceFile?: File | null,
   ) {
     if (!orderId) return
     setReceivingOrder(true)
     try {
-      await requisitionService.receiveItems(orderId, actor ?? 'Almacenista', receipts)
+      // El conduce es opcional y best-effort: si la subida falla, la recepción
+      // continúa sin adjunto.
+      let attachmentPath: string | null = null
+      if (conduceFile && req) {
+        try {
+          attachmentPath = await inventoryService.uploadReceiptAttachment(conduceFile, req.project_id, orderId)
+        } catch (err) {
+          console.warn('[usePurchaseOrderDetail] subida de conduce falló (no-bloqueante)', err)
+        }
+      }
+      await requisitionService.receiveItems(orderId, actor ?? 'Almacenista', receipts, attachmentPath)
       setConfirmReceive(false)
       await load()
     } finally {
@@ -179,6 +201,7 @@ export function usePurchaseOrderDetail() {
     reversingOrder,
     quotes,
     pendingReceiptLines,
+    conduces,
     canEdit,
     canNegotiate,
     missingQuotes,
