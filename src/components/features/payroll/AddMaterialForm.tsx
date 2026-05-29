@@ -48,6 +48,9 @@ export function AddMaterialForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {initialInvoice?.creator_name && (
+        <p className="text-xs text-app-subtle">Agregado por {initialInvoice.creator_name}</p>
+      )}
       <div>
         <label className="block text-xs font-medium text-app-muted mb-1">Proveedor *</label>
         <select
