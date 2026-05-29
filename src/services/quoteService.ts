@@ -8,7 +8,13 @@ type CreateQuotePayload = {
   valid_until?: string
   tax_percent: number
   notes?: string
-  items: Array<{ description: string; quantity: number; unit: string; unit_price: number }>
+  items: Array<{
+    description: string
+    quantity: number
+    unit: string
+    unit_price: number
+    material_catalog_id?: string | null
+  }>
 }
 
 export const quoteService = {
@@ -39,6 +45,7 @@ export const quoteService = {
       unit: i.unit,
       unit_price: i.unit_price,
       subtotal: i.quantity * i.unit_price,
+      material_catalog_id: i.material_catalog_id ?? null,
     }))
     const { error: itemErr } = await supabase.from('purchase_quote_items').insert(itemRows)
     if (itemErr) throw itemErr

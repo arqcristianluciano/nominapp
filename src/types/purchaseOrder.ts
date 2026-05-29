@@ -89,6 +89,7 @@ export interface PurchaseQuoteItem {
   unit_price: number
   subtotal: number
   received_quantity?: number
+  material_catalog_id?: string | null
 }
 
 export const REQ_STATUS_LABEL: Record<RequisitionStatus, string> = {

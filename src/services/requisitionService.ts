@@ -494,6 +494,7 @@ export const requisitionService = {
         name: it.description,
         unit: it.unit,
         unit_cost: it.unit_price != null ? Number(it.unit_price) : null,
+        material_catalog_id: it.material_catalog_id ?? null,
       })
       await inventoryService.addMovement({
         item_id: invItem.id,

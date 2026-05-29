@@ -346,6 +346,54 @@ describe('requisitionService - recepción de mercancía (entrada a almacén)', (
     expect(poMovements.some((m) => m.type === 'out' && m.quantity === 25)).toBe(true)
   })
 
+  it('vincula la entrada de almacén por material_catalog_id de la línea de cotización', async () => {
+    const { data: cat } = await supabase
+      .from('materials_catalog')
+      .insert({ code: `CC-${Date.now()}`, description: `Catalogado ${Date.now()}`, unit: 'm3', is_active: true })
+      .select()
+      .single()
+    const catId = (cat as { id: string }).id
+
+    const req = await requisitionService.create({
+      project_id: projectId,
+      description: 'OC catálogo',
+      requested_by: 'ing-obra',
+      budget_item_id: itemId,
+      quantity_requested: 10,
+      unit: 'm3',
+      resource_type: 'material',
+    })
+    const quoteIds: string[] = []
+    for (const [supplier, total] of [
+      ['s1', 100],
+      ['s2', 150],
+    ] as const) {
+      const { data: q } = await supabase
+        .from('purchase_quotes')
+        .insert({ requisition_id: req.id, supplier_id: supplier, total, subtotal: total, tax_percent: 0 })
+        .select()
+        .single()
+      const qId = (q as { id: string }).id
+      quoteIds.push(qId)
+      await supabase.from('purchase_quote_items').insert({
+        quote_id: qId,
+        description: 'Hormigón premezclado',
+        quantity: 10,
+        unit: 'm3',
+        unit_price: 10,
+        subtotal: 100,
+        material_catalog_id: catId,
+      })
+    }
+    await requisitionService.approve(req.id, quoteIds[0], 'Director', 'sig')
+    await requisitionService.placeOrder(req.id, 'cash', 'Admin')
+    await requisitionService.markReceived(req.id, 'Almacenista')
+
+    const item = (await inventoryService.getItems(projectId)).find((i) => i.material_catalog_id === catId)
+    expect(item).toBeTruthy()
+    expect(item?.name).toBe('Hormigón premezclado')
+  })
+
   it('reverseReceipt rechaza una OC que no está "received"', async () => {
     const req = await makeOrderedReq(`X ${Date.now()}`, 5, 10)
     await expect(requisitionService.reverseReceipt(req.id, 'Almacenista')).rejects.toThrow(/Recibida/i)
