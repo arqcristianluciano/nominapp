@@ -3,8 +3,12 @@ import { Breadcrumb } from '@/components/ui/Breadcrumb'
 import type { PurchaseRequisition } from '@/types/purchaseOrder'
 import { REQ_STATUS_COLOR, REQ_STATUS_LABEL } from '@/types/purchaseOrder'
 import { formatNumber } from '@/utils/currency'
+import { requisitionService } from '@/services/requisitionService'
+import { ReceiptProgressBadge } from './ReceiptProgressBadge'
 
 export function PurchaseOrderHeader({ req }: { req: PurchaseRequisition }) {
+  const showProgress = ['ordered', 'partially_received', 'received'].includes(req.status)
+  const progress = showProgress ? requisitionService.getReceiptProgress(req) : null
   return (
     <>
       <div>
@@ -14,6 +18,7 @@ export function PurchaseOrderHeader({ req }: { req: PurchaseRequisition }) {
           <span className={`px-3 py-1 rounded-full text-xs font-medium ${REQ_STATUS_COLOR[req.status]}`}>
             {REQ_STATUS_LABEL[req.status]}
           </span>
+          {progress && <ReceiptProgressBadge progress={progress} />}
         </div>
         <p className="text-sm text-app-muted mt-0.5">{req.description}</p>
         {req.quantity_requested != null && (

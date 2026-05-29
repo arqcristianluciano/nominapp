@@ -53,6 +53,14 @@ export interface PurchaseRequisition {
   received_by: string | null
   project?: Project
   quotes?: PurchaseQuote[]
+  // Progreso de recepción (cantidad pedida vs recibida sumando las líneas de la
+  // cotización aprobada). Lo calcula requisitionService para listas/detalle.
+  receipt_progress?: ReceiptProgress
+}
+
+export interface ReceiptProgress {
+  ordered: number
+  received: number
 }
 
 export interface PurchaseQuote {
@@ -81,6 +89,7 @@ export interface PurchaseQuoteItem {
   unit_price: number
   subtotal: number
   received_quantity?: number
+  material_catalog_id?: string | null
 }
 
 export const REQ_STATUS_LABEL: Record<RequisitionStatus, string> = {

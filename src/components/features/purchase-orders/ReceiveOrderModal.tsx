@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { PackageCheck } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 
@@ -17,7 +17,10 @@ interface Props {
   lines: PendingReceiptLine[]
   saving?: boolean
   onClose: () => void
-  onSubmit: (receipts: { quote_item_id: string; quantity: number }[]) => void
+  onSubmit: (
+    receipts: { quote_item_id: string; quantity: number; lot_number?: string | null; expiry_date?: string | null }[],
+    conduceFile?: File | null,
+  ) => void
 }
 
 // Modal de recepción de mercancía. Permite recibir cada línea total o
@@ -30,12 +33,18 @@ export function ReceiveOrderModal({ open, lines, saving = false, onClose, onSubm
 
   // Cantidad a recibir por línea (string para edición controlada).
   const [qty, setQty] = useState<Record<string, string>>({})
+  // Lote/vencimiento opcionales por línea (trazabilidad).
+  const [lotInfo, setLotInfo] = useState<Record<string, { lot_number: string; expiry_date: string }>>({})
+  // Conduce / nota de entrega (opcional) de toda la recepción.
+  const [conduce, setConduce] = useState<File | null>(null)
 
   useEffect(() => {
     if (!open) return
     const init: Record<string, string> = {}
     for (const l of trackable) init[l.quote_item_id as string] = String(l.remaining_quantity)
     setQty(init)
+    setLotInfo({})
+    setConduce(null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
@@ -58,11 +67,18 @@ export function ReceiveOrderModal({ open, lines, saving = false, onClose, onSubm
   function submit() {
     if (!canSubmit) return
     if (isFallback) {
-      onSubmit([])
+      onSubmit([], conduce)
       return
     }
-    const receipts = parsed.filter((p) => !p.invalid && p.n > 0).map((p) => ({ quote_item_id: p.id, quantity: p.n }))
-    onSubmit(receipts)
+    const receipts = parsed
+      .filter((p) => !p.invalid && p.n > 0)
+      .map((p) => ({
+        quote_item_id: p.id,
+        quantity: p.n,
+        lot_number: lotInfo[p.id]?.lot_number?.trim() || null,
+        expiry_date: lotInfo[p.id]?.expiry_date || null,
+      }))
+    onSubmit(receipts, conduce)
   }
 
   return (
@@ -94,33 +110,70 @@ export function ReceiveOrderModal({ open, lines, saving = false, onClose, onSubm
                 </tr>
               </thead>
               <tbody>
-                {parsed.map(({ line, id, value, invalid }) => {
+                {parsed.map(({ line, id, value, invalid, n }) => {
                   const done = line.remaining_quantity <= 1e-9
+                  const showLot = !done && n > 0
                   return (
-                    <tr key={id} className="border-b border-app-border/60 last:border-0">
-                      <td className="py-2 pr-2">
-                        <p className="text-app-text break-words">{line.description}</p>
-                        <p className="text-app-subtle text-xs">{line.unit}</p>
-                      </td>
-                      <td className="py-2 px-2 text-right tabular-nums">{line.ordered_quantity}</td>
-                      <td className="py-2 px-2 text-right tabular-nums">{line.received_quantity}</td>
-                      <td className="py-2 px-2 text-right tabular-nums">{line.remaining_quantity}</td>
-                      <td className="py-2 pl-2 text-right">
-                        <input
-                          type="number"
-                          min={0}
-                          max={line.remaining_quantity}
-                          step="any"
-                          disabled={done || saving}
-                          value={done ? '' : value}
-                          placeholder={done ? 'Completo' : undefined}
-                          onChange={(e) => setQty((prev) => ({ ...prev, [id]: e.target.value }))}
-                          className={`w-28 text-right rounded-md border px-2 py-1.5 bg-app-bg disabled:opacity-50 ${
-                            invalid ? 'border-red-400 focus:border-red-500' : 'border-app-border'
-                          }`}
-                        />
-                      </td>
-                    </tr>
+                    <Fragment key={id}>
+                      <tr className="border-b border-app-border/60 last:border-0">
+                        <td className="py-2 pr-2">
+                          <p className="text-app-text break-words">{line.description}</p>
+                          <p className="text-app-subtle text-xs">{line.unit}</p>
+                        </td>
+                        <td className="py-2 px-2 text-right tabular-nums">{line.ordered_quantity}</td>
+                        <td className="py-2 px-2 text-right tabular-nums">{line.received_quantity}</td>
+                        <td className="py-2 px-2 text-right tabular-nums">{line.remaining_quantity}</td>
+                        <td className="py-2 pl-2 text-right">
+                          <input
+                            type="number"
+                            min={0}
+                            max={line.remaining_quantity}
+                            step="any"
+                            disabled={done || saving}
+                            value={done ? '' : value}
+                            placeholder={done ? 'Completo' : undefined}
+                            onChange={(e) => setQty((prev) => ({ ...prev, [id]: e.target.value }))}
+                            className={`w-28 text-right rounded-md border px-2 py-1.5 bg-app-bg disabled:opacity-50 ${
+                              invalid ? 'border-red-400 focus:border-red-500' : 'border-app-border'
+                            }`}
+                          />
+                        </td>
+                      </tr>
+                      {showLot && (
+                        <tr className="border-b border-app-border/60 last:border-0">
+                          <td colSpan={5} className="pb-3 pt-0">
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-app-subtle">
+                              <span>Lote / vencimiento (opcional):</span>
+                              <input
+                                type="text"
+                                placeholder="N° de lote"
+                                disabled={saving}
+                                value={lotInfo[id]?.lot_number ?? ''}
+                                onChange={(e) =>
+                                  setLotInfo((prev) => ({
+                                    ...prev,
+                                    [id]: { lot_number: e.target.value, expiry_date: prev[id]?.expiry_date ?? '' },
+                                  }))
+                                }
+                                className="rounded-md border border-app-border px-2 py-1 bg-app-bg w-36"
+                              />
+                              <input
+                                type="date"
+                                disabled={saving}
+                                value={lotInfo[id]?.expiry_date ?? ''}
+                                onChange={(e) =>
+                                  setLotInfo((prev) => ({
+                                    ...prev,
+                                    [id]: { lot_number: prev[id]?.lot_number ?? '', expiry_date: e.target.value },
+                                  }))
+                                }
+                                className="rounded-md border border-app-border px-2 py-1 bg-app-bg"
+                              />
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
                   )
                 })}
               </tbody>
@@ -131,6 +184,18 @@ export function ReceiveOrderModal({ open, lines, saving = false, onClose, onSubm
         {anyInvalid && (
           <p className="text-sm text-red-500">Hay cantidades inválidas (mayores al pendiente o negativas).</p>
         )}
+
+        <div className="border-t border-app-border pt-3">
+          <label className="block text-xs font-medium text-app-muted mb-1">Conduce / nota de entrega (opcional)</label>
+          <input
+            type="file"
+            accept="image/*,application/pdf"
+            disabled={saving}
+            onChange={(e) => setConduce(e.target.files?.[0] ?? null)}
+            className="block w-full text-sm text-app-muted file:mr-3 file:rounded-md file:border-0 file:bg-app-chip file:px-3 file:py-1.5 file:text-sm file:text-app-text hover:file:bg-app-hover"
+          />
+          {conduce && <p className="text-xs text-app-subtle mt-1">Adjunto: {conduce.name}</p>}
+        </div>
 
         <div className="flex flex-col sm:flex-row sm:justify-end gap-2 pt-2">
           <button

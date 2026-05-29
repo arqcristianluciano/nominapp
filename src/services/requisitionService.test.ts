@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { requisitionService } from './requisitionService'
 import { inventoryService } from './inventoryService'
+import { lotService } from './lotService'
 import { supabase } from '@/lib/supabase'
 
 const projectId = 'p1000000-0000-0000-0000-000000000099'
@@ -346,6 +347,92 @@ describe('requisitionService - recepción de mercancía (entrada a almacén)', (
     expect(poMovements.some((m) => m.type === 'out' && m.quantity === 25)).toBe(true)
   })
 
+  it('vincula la entrada de almacén por material_catalog_id de la línea de cotización', async () => {
+    const { data: cat } = await supabase
+      .from('materials_catalog')
+      .insert({ code: `CC-${Date.now()}`, description: `Catalogado ${Date.now()}`, unit: 'm3', is_active: true })
+      .select()
+      .single()
+    const catId = (cat as { id: string }).id
+
+    const req = await requisitionService.create({
+      project_id: projectId,
+      description: 'OC catálogo',
+      requested_by: 'ing-obra',
+      budget_item_id: itemId,
+      quantity_requested: 10,
+      unit: 'm3',
+      resource_type: 'material',
+    })
+    const quoteIds: string[] = []
+    for (const [supplier, total] of [
+      ['s1', 100],
+      ['s2', 150],
+    ] as const) {
+      const { data: q } = await supabase
+        .from('purchase_quotes')
+        .insert({ requisition_id: req.id, supplier_id: supplier, total, subtotal: total, tax_percent: 0 })
+        .select()
+        .single()
+      const qId = (q as { id: string }).id
+      quoteIds.push(qId)
+      await supabase.from('purchase_quote_items').insert({
+        quote_id: qId,
+        description: 'Hormigón premezclado',
+        quantity: 10,
+        unit: 'm3',
+        unit_price: 10,
+        subtotal: 100,
+        material_catalog_id: catId,
+      })
+    }
+    await requisitionService.approve(req.id, quoteIds[0], 'Director', 'sig')
+    await requisitionService.placeOrder(req.id, 'cash', 'Admin')
+    await requisitionService.markReceived(req.id, 'Almacenista')
+
+    const item = (await inventoryService.getItems(projectId)).find((i) => i.material_catalog_id === catId)
+    expect(item).toBeTruthy()
+    expect(item?.name).toBe('Hormigón premezclado')
+  })
+
+  it('crea lote y enlaza el movimiento al recibir con lote/vencimiento; la reversa lo anula', async () => {
+    const name = `Membrana ${Date.now()}`
+    const req = await makeOrderedReq(name, 12, 9)
+    const lineId = requisitionService.getPendingReceiptLines(await requisitionService.getById(req.id))[0]
+      .quote_item_id as string
+    await requisitionService.receiveItems(req.id, 'Almacenista', [
+      { quote_item_id: lineId, quantity: 12, lot_number: 'L-001', expiry_date: '2027-01-01' },
+    ])
+
+    const item = (await inventoryService.getItems(projectId)).find((i) => i.name === name)!
+    const lots = await lotService.list(item.id)
+    expect(lots.length).toBe(1)
+    expect(lots[0].lot_number).toBe('L-001')
+    expect(lots[0].quantity).toBe(12)
+    expect(lots[0].expiry_date).toBe('2027-01-01')
+
+    const movs = await inventoryService.getMovementsByPurchaseOrder(req.id)
+    expect(movs.find((m) => m.type === 'in')?.lot_id).toBe(lots[0].id)
+
+    await requisitionService.reverseReceipt(req.id, 'Almacenista')
+    expect((await lotService.list(item.id))[0].quantity).toBe(0)
+  })
+
+  it('guarda el attachment_path (conduce) en los movimientos de la recepción', async () => {
+    const name = `Tubería ${Date.now()}`
+    const req = await makeOrderedReq(name, 6, 20)
+    const lineId = requisitionService.getPendingReceiptLines(await requisitionService.getById(req.id))[0]
+      .quote_item_id as string
+    await requisitionService.receiveItems(
+      req.id,
+      'Almacenista',
+      [{ quote_item_id: lineId, quantity: 6 }],
+      'proj/po/conduce.pdf',
+    )
+    const movs = await inventoryService.getMovementsByPurchaseOrder(req.id)
+    expect(movs.find((m) => m.type === 'in')?.attachment_path).toBe('proj/po/conduce.pdf')
+  })
+
   it('reverseReceipt rechaza una OC que no está "received"', async () => {
     const req = await makeOrderedReq(`X ${Date.now()}`, 5, 10)
     await expect(requisitionService.reverseReceipt(req.id, 'Almacenista')).rejects.toThrow(/Recibida/i)
@@ -387,6 +474,32 @@ describe('requisitionService - recepción de mercancía (entrada a almacén)', (
     await expect(
       requisitionService.receiveItems(req.id, 'Almacenista', [{ quote_item_id: lineId, quantity: 11 }]),
     ).rejects.toThrow(/excede lo pendiente/i)
+  })
+
+  it('hereda default_min_stock del catálogo al crear el material recibido', async () => {
+    const name = `Tornillo ${Date.now()}`
+    await supabase
+      .from('materials_catalog')
+      .insert({ code: `MC-${Date.now()}`, description: name, unit: 'caja', default_min_stock: 7, is_active: true })
+    const req = await makeOrderedReq(name, 5, 3)
+    await requisitionService.markReceived(req.id, 'Almacenista')
+    const item = (await inventoryService.getItems(projectId)).find((i) => i.name === name)
+    expect(item?.min_stock).toBe(7)
+  })
+
+  it('getReceiptProgress y getAll exponen el progreso recibido/pedido', async () => {
+    const name = `Pintura ${Date.now()}`
+    const req = await makeOrderedReq(name, 80, 4)
+    const lineId = requisitionService.getPendingReceiptLines(await requisitionService.getById(req.id))[0]
+      .quote_item_id as string
+    await requisitionService.receiveItems(req.id, 'Almacenista', [{ quote_item_id: lineId, quantity: 30 }])
+
+    expect(requisitionService.getReceiptProgress(await requisitionService.getById(req.id))).toEqual({
+      ordered: 80,
+      received: 30,
+    })
+    const inList = (await requisitionService.getAll()).find((r) => r.id === req.id)
+    expect(inList?.receipt_progress).toEqual({ ordered: 80, received: 30 })
   })
 
   it('reverseReceipt sobre una OC parcial reinicia received_quantity y vuelve a "ordered"', async () => {
