@@ -1,7 +1,5 @@
 import { SEED_DATA } from './mockData'
-import type {
-  MockDb, MockFilter, MockOrder, MockResult, MockRow, MockTable, MockOperation,
-} from './mockSupabase.types'
+import type { MockDb, MockFilter, MockOrder, MockResult, MockRow, MockTable, MockOperation } from './mockSupabase.types'
 
 const db: MockDb = {}
 
@@ -28,7 +26,7 @@ function resolveRelations(_table: string, row: MockRow, selectStr: string): Mock
     } else if (!row[fkField]) {
       if (db[foreignTable]) {
         const hasManyRows = db[foreignTable].filter((fr) =>
-          Object.keys(fr).some((k) => k.endsWith('_id') && fr[k] === row.id)
+          Object.keys(fr).some((k) => k.endsWith('_id') && fr[k] === row.id),
         )
         result[alias] = hasManyRows.length > 0 ? hasManyRows : (row[alias] ?? null)
       } else {
@@ -46,27 +44,36 @@ function unaccent(s: string): string {
 
 function matchPattern(value: unknown, pattern: string, caseInsensitive: boolean): boolean {
   if (value == null) return false
-  const norm = (s: string) => caseInsensitive ? unaccent(s.toLowerCase()) : s
+  const norm = (s: string) => (caseInsensitive ? unaccent(s.toLowerCase()) : s)
   const target = norm(String(value))
   const pat = norm(pattern)
-  const regex = new RegExp('^' + pat.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/%/g, '.*').replace(/_/g, '.') + '$')
+  const regex = new RegExp(
+    '^' +
+      pat
+        .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+        .replace(/%/g, '.*')
+        .replace(/_/g, '.') +
+      '$',
+  )
   return regex.test(target)
 }
 
 function applyFilters(rows: MockRow[], filters: MockFilter[]): MockRow[] {
-  return rows.filter((r) => filters.every((f) => {
-    const v = r[f.field]
-    if (f.op === 'eq') return v === f.value
-    if (f.op === 'neq') return v !== f.value
-    if (f.op === 'gt') return (v as number) > (f.value as number)
-    if (f.op === 'gte') return (v as number) >= (f.value as number)
-    if (f.op === 'lt') return (v as number) < (f.value as number)
-    if (f.op === 'lte') return (v as number) <= (f.value as number)
-    if (f.op === 'in') return Array.isArray(f.value) && f.value.includes(v)
-    if (f.op === 'ilike') return matchPattern(v, String(f.value), true)
-    if (f.op === 'like') return matchPattern(v, String(f.value), false)
-    return true
-  }))
+  return rows.filter((r) =>
+    filters.every((f) => {
+      const v = r[f.field]
+      if (f.op === 'eq') return v === f.value
+      if (f.op === 'neq') return v !== f.value
+      if (f.op === 'gt') return (v as number) > (f.value as number)
+      if (f.op === 'gte') return (v as number) >= (f.value as number)
+      if (f.op === 'lt') return (v as number) < (f.value as number)
+      if (f.op === 'lte') return (v as number) <= (f.value as number)
+      if (f.op === 'in') return Array.isArray(f.value) && f.value.includes(v)
+      if (f.op === 'ilike') return matchPattern(v, String(f.value), true)
+      if (f.op === 'like') return matchPattern(v, String(f.value), false)
+      return true
+    }),
+  )
 }
 
 function applyOrFilter(rows: MockRow[], orFilter: string): MockRow[] {
@@ -79,7 +86,7 @@ function applyOrFilter(rows: MockRow[], orFilter: string): MockRow[] {
       if (op === 'eq') return String(r[field]) === val
       if (op === 'is' && val === 'true') return r[field] === true
       return false
-    })
+    }),
   )
 }
 
@@ -106,7 +113,9 @@ class MockQueryBuilder {
   private _data: MockRow | MockRow[] | null = null
   private _orFilter: string | null = null
 
-  constructor(table: string) { this._table = table }
+  constructor(table: string) {
+    this._table = table
+  }
 
   select(fields = '*'): this {
     this._select = fields
@@ -126,31 +135,77 @@ class MockQueryBuilder {
     return this
   }
 
-  delete(): this { this._operation = 'delete'; return this }
-  eq(field: string, value: unknown): this { this._filters.push({ field, op: 'eq', value }); return this }
-  neq(field: string, value: unknown): this { this._filters.push({ field, op: 'neq', value }); return this }
-  gt(field: string, value: unknown): this { this._filters.push({ field, op: 'gt', value }); return this }
-  gte(field: string, value: unknown): this { this._filters.push({ field, op: 'gte', value }); return this }
-  lt(field: string, value: unknown): this { this._filters.push({ field, op: 'lt', value }); return this }
-  lte(field: string, value: unknown): this { this._filters.push({ field, op: 'lte', value }); return this }
-  ilike(field: string, pattern: string): this { this._filters.push({ field, op: 'ilike', value: pattern }); return this }
-  like(field: string, pattern: string): this { this._filters.push({ field, op: 'like', value: pattern }); return this }
-  is(field: string, value: unknown): this { this._filters.push({ field, op: 'eq', value }); return this }
-  in(field: string, values: unknown[]): this { this._filters.push({ field, op: 'in', value: values }); return this }
-  or(filterStr: string): this { this._orFilter = filterStr; return this }
+  delete(): this {
+    this._operation = 'delete'
+    return this
+  }
+  eq(field: string, value: unknown): this {
+    this._filters.push({ field, op: 'eq', value })
+    return this
+  }
+  neq(field: string, value: unknown): this {
+    this._filters.push({ field, op: 'neq', value })
+    return this
+  }
+  gt(field: string, value: unknown): this {
+    this._filters.push({ field, op: 'gt', value })
+    return this
+  }
+  gte(field: string, value: unknown): this {
+    this._filters.push({ field, op: 'gte', value })
+    return this
+  }
+  lt(field: string, value: unknown): this {
+    this._filters.push({ field, op: 'lt', value })
+    return this
+  }
+  lte(field: string, value: unknown): this {
+    this._filters.push({ field, op: 'lte', value })
+    return this
+  }
+  ilike(field: string, pattern: string): this {
+    this._filters.push({ field, op: 'ilike', value: pattern })
+    return this
+  }
+  like(field: string, pattern: string): this {
+    this._filters.push({ field, op: 'like', value: pattern })
+    return this
+  }
+  is(field: string, value: unknown): this {
+    this._filters.push({ field, op: 'eq', value })
+    return this
+  }
+  in(field: string, values: unknown[]): this {
+    this._filters.push({ field, op: 'in', value: values })
+    return this
+  }
+  or(filterStr: string): this {
+    this._orFilter = filterStr
+    return this
+  }
   order(field: string, options?: { ascending?: boolean }): this {
     this._order.push({ field, ascending: options?.ascending ?? true })
     return this
   }
-  limit(n: number): this { this._limit = n; return this }
-  single(): this { this._single = true; return this }
-  maybeSingle(): this { this._single = true; return this }
+  limit(n: number): this {
+    this._limit = n
+    return this
+  }
+  single(): this {
+    this._single = true
+    return this
+  }
+  maybeSingle(): this {
+    this._single = true
+    return this
+  }
 
-  async then(
-    resolve: (result: MockResult) => void,
-    reject?: (err: unknown) => void
-  ): Promise<void> {
-    try { resolve(this.execute()) } catch (e) { if (reject) reject(e) }
+  async then(resolve: (result: MockResult) => void, reject?: (err: unknown) => void): Promise<void> {
+    try {
+      resolve(this.execute())
+    } catch (e) {
+      if (reject) reject(e)
+    }
   }
 
   execute(): MockResult {
@@ -170,9 +225,7 @@ class MockQueryBuilder {
     rows = applyOrder(rows, this._order)
     if (this._limit) rows = rows.slice(0, this._limit)
     rows = rows.map((r) => resolveRelations(this._table, r, this._select))
-    return this._single
-      ? { data: rows[0] || null, error: null }
-      : { data: rows, error: null }
+    return this._single ? { data: rows[0] || null, error: null } : { data: rows, error: null }
   }
 
   private executeInsert(table: MockTable): MockResult {
@@ -244,7 +297,57 @@ function createMockChannel(name: string): MockChannel {
   return channel
 }
 
+// Stub mínimo de Storage para modo demo. Mantiene los archivos subidos en
+// memoria (object URLs) durante la sesión para que adjuntar y "ver" funcionen
+// sin un backend real. No persiste entre recargas.
+const storageObjects = new Map<string, string>()
+
+function createObjectUrlSafe(blob: Blob): string | null {
+  if (typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
+    return URL.createObjectURL(blob)
+  }
+  return null
+}
+
+function mockStorageBucket() {
+  return {
+    async upload(path: string, file: Blob): Promise<MockResult<{ path: string }>> {
+      const url = createObjectUrlSafe(file)
+      if (url) storageObjects.set(path, url)
+      return { data: { path }, error: null }
+    },
+    async createSignedUrl(path: string): Promise<MockResult<{ signedUrl: string } | null>> {
+      const signedUrl = storageObjects.get(path)
+      return { data: signedUrl ? { signedUrl } : null, error: null }
+    },
+    async remove(paths: string[]): Promise<MockResult<null>> {
+      for (const p of paths) {
+        const url = storageObjects.get(p)
+        if (url && typeof URL !== 'undefined' && typeof URL.revokeObjectURL === 'function') {
+          URL.revokeObjectURL(url)
+        }
+        storageObjects.delete(p)
+      }
+      return { data: null, error: null }
+    },
+  }
+}
+
 export const mockSupabase = {
-  from(table: string) { return new MockQueryBuilder(table) },
-  channel(name: string): MockChannel { return createMockChannel(name) },
+  from(table: string) {
+    return new MockQueryBuilder(table)
+  },
+  channel(name: string): MockChannel {
+    return createMockChannel(name)
+  },
+  // Realtime no-op en demo: los componentes llaman removeChannel() al desmontar.
+  removeChannel(): Promise<'ok'> {
+    return Promise.resolve('ok')
+  },
+  // El bucket se ignora en demo: todos los archivos viven en el mismo store en memoria.
+  storage: {
+    from() {
+      return mockStorageBucket()
+    },
+  },
 }
