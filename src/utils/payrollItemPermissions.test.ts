@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canEditPayrollItems } from './payrollItemPermissions'
+import { canEditPayrollItems, canReturnPayrollToDraft } from './payrollItemPermissions'
 
 describe('canEditPayrollItems (opción A: editor en borrador + Director siempre)', () => {
   it('borrador: el editor (edit_payroll) puede editar', () => {
@@ -26,5 +26,25 @@ describe('canEditPayrollItems (opción A: editor en borrador + Director siempre)
 
   it('borrador: la mayor jerarquía siempre puede editar', () => {
     expect(canEditPayrollItems({ isDraft: true, canEditDraft: false, canEditCommitted: true })).toBe(true)
+  })
+})
+
+describe('canReturnPayrollToDraft', () => {
+  it('mayor jerarquía puede devolver desde enviado y desde aprobado', () => {
+    expect(canReturnPayrollToDraft({ status: 'submitted', canApprove: true })).toBe(true)
+    expect(canReturnPayrollToDraft({ status: 'approved', canApprove: true })).toBe(true)
+  })
+
+  it('sin permiso de aprobación nunca puede devolver', () => {
+    expect(canReturnPayrollToDraft({ status: 'submitted', canApprove: false })).toBe(false)
+    expect(canReturnPayrollToDraft({ status: 'approved', canApprove: false })).toBe(false)
+  })
+
+  it('un reporte pagado no se devuelve (pagos ya distribuidos)', () => {
+    expect(canReturnPayrollToDraft({ status: 'paid', canApprove: true })).toBe(false)
+  })
+
+  it('un borrador no se "devuelve" (ya es borrador)', () => {
+    expect(canReturnPayrollToDraft({ status: 'draft', canApprove: true })).toBe(false)
   })
 })
