@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { budgetItemDisplayCode, nextBudgetItemCode, partidaPrefix } from './budgetItemCode'
+import {
+  assignImportCodes,
+  budgetItemDisplayCode,
+  maxBudgetItemSuffix,
+  nextBudgetItemCode,
+  partidaPrefix,
+} from './budgetItemCode'
 import type { BudgetCategory, BudgetItem } from '@/types/database'
 
 function category(code: string, sort_order: number): Pick<BudgetCategory, 'code' | 'sort_order'> {
@@ -78,5 +84,64 @@ describe('budgetItemDisplayCode', () => {
 
   it('respeta el prefijo alfanumérico en el respaldo', () => {
     expect(budgetItemDisplayCode(category('T2 - EXCAVACION', 2), item(null), 1)).toBe('T2.2')
+  })
+})
+
+describe('maxBudgetItemSuffix', () => {
+  it('devuelve el mayor sufijo que sigue el patrón de la partida', () => {
+    const items = [item('1.1'), item('1.7'), item('1.3')]
+    expect(maxBudgetItemSuffix(category('1 - PRELIMINARES', 1), items)).toBe(7)
+  })
+
+  it('devuelve 0 cuando ninguna subpartida sigue el patrón', () => {
+    expect(maxBudgetItemSuffix(category('1 - PRELIMINARES', 1), [item(null), item('2.4')])).toBe(0)
+  })
+})
+
+describe('assignImportCodes', () => {
+  function importItem(code: string | null, budget_category_id: string) {
+    return { code, budget_category_id, description: 'x' }
+  }
+
+  it('numera desde 1 las subpartidas sin código de una partida nueva', () => {
+    const catById = new Map([['cat-1', category('1 - PRELIMINARES', 1)]])
+    const result = assignImportCodes(
+      [importItem(null, 'cat-1'), importItem(null, 'cat-1'), importItem(null, 'cat-1')],
+      catById,
+    )
+    expect(result.map((r) => r.code)).toEqual(['1.1', '1.2', '1.3'])
+  })
+
+  it('continúa desde el mayor código existente de la partida', () => {
+    const catById = new Map([['cat-1', category('1 - PRELIMINARES', 1)]])
+    const existing = { 'cat-1': [item('1.1'), item('1.2')] }
+    const result = assignImportCodes([importItem(null, 'cat-1'), importItem(null, 'cat-1')], catById, existing)
+    expect(result.map((r) => r.code)).toEqual(['1.3', '1.4'])
+  })
+
+  it('respeta los códigos del Excel y continúa la secuencia sin colisión', () => {
+    const catById = new Map([['cat-1', category('1 - PRELIMINARES', 1)]])
+    const result = assignImportCodes(
+      [importItem('1.5', 'cat-1'), importItem(null, 'cat-1'), importItem(null, 'cat-1')],
+      catById,
+    )
+    expect(result.map((r) => r.code)).toEqual(['1.5', '1.6', '1.7'])
+  })
+
+  it('numera por partida de forma independiente (prefijos distintos)', () => {
+    const catById = new Map([
+      ['cat-1', category('1 - PRELIMINARES', 1)],
+      ['cat-t2', category('T2 - EXCAVACION', 2)],
+    ])
+    const result = assignImportCodes(
+      [importItem(null, 'cat-1'), importItem(null, 'cat-t2'), importItem(null, 'cat-1')],
+      catById,
+    )
+    expect(result.map((r) => r.code)).toEqual(['1.1', 'T2.1', '1.2'])
+  })
+
+  it('deja el ítem intacto si su categoría no es conocida', () => {
+    const result = assignImportCodes([importItem(null, 'desconocida')], new Map())
+    expect(result[0].code).toBeNull()
   })
 })

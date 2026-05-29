@@ -23,6 +23,32 @@ function escapeRegExp(value: string): string {
 }
 
 /**
+ * Mayor sufijo numérico entre las subpartidas que ya siguen el patrón
+ * `"<prefijo>.<número>"` de la partida. Devuelve 0 si ninguna lo sigue.
+ */
+export function maxBudgetItemSuffix(category: CategoryLike, items: ItemLike[]): number {
+  const prefix = partidaPrefix(category)
+  const pattern = new RegExp(`^${escapeRegExp(prefix)}\\.(\\d+)$`)
+  let max = 0
+  for (const item of items) {
+    const code = item.code?.trim()
+    if (!code) continue
+    const match = pattern.exec(code)
+    if (match) {
+      const value = parseInt(match[1], 10)
+      if (value > max) max = value
+    }
+  }
+  return max
+}
+
+/** Sufijo numérico final de un código, o null si no termina en número. */
+function trailingNumber(code: string | null | undefined): number | null {
+  const match = code?.trim().match(/(\d+)\s*$/)
+  return match ? parseInt(match[1], 10) : null
+}
+
+/**
  * Siguiente código consecutivo para una nueva subpartida: `"<prefijo>.<n>"`.
  *
  * `n` se calcula como el mayor sufijo numérico existente que ya sigue el
@@ -33,23 +59,55 @@ function escapeRegExp(value: string): string {
  */
 export function nextBudgetItemCode(category: CategoryLike, items: ItemLike[]): string {
   const prefix = partidaPrefix(category)
-  const pattern = new RegExp(`^${escapeRegExp(prefix)}\\.(\\d+)$`)
+  const max = maxBudgetItemSuffix(category, items)
+  const next = max > 0 ? max + 1 : items.length + 1
+  return `${prefix}.${next}`
+}
 
-  let maxSuffix = 0
-  let matched = false
-  for (const item of items) {
-    const code = item.code?.trim()
-    if (!code) continue
-    const match = pattern.exec(code)
-    if (match) {
-      matched = true
-      const value = parseInt(match[1], 10)
-      if (value > maxSuffix) maxSuffix = value
+/**
+ * Asigna códigos consecutivos a subpartidas que se van a importar y que no
+ * traen código, continuando desde el mayor código existente de cada partida.
+ * Los códigos que ya vengan definidos (p. ej. del Excel) se respetan, pero
+ * avanzan el contador para que los autogenerados que sigan no colisionen.
+ *
+ * Es una función pura: no muta la entrada y requiere que cada ítem ya tenga
+ * resuelto su `budget_category_id`.
+ */
+export function assignImportCodes<T extends { code: string | null; budget_category_id: string }>(
+  items: T[],
+  categoryById: Map<string, CategoryLike>,
+  existingItemsByCategory: Record<string, ItemLike[]> = {},
+): T[] {
+  const counter = new Map<string, number>()
+  const suffixOf = (categoryId: string): number => {
+    if (!counter.has(categoryId)) {
+      const category = categoryById.get(categoryId)
+      const existing = existingItemsByCategory[categoryId] ?? []
+      counter.set(categoryId, category ? maxBudgetItemSuffix(category, existing) : 0)
     }
+    return counter.get(categoryId) ?? 0
   }
 
-  const next = matched ? maxSuffix + 1 : items.length + 1
-  return `${prefix}.${next}`
+  return items.map((item) => {
+    const categoryId = item.budget_category_id
+    const existingCode = item.code?.trim()
+
+    if (existingCode) {
+      // Respetar el código del Excel; avanzar el contador si su sufijo es mayor.
+      const trailing = trailingNumber(existingCode)
+      if (trailing !== null && trailing > suffixOf(categoryId)) {
+        counter.set(categoryId, trailing)
+      }
+      return { ...item, code: existingCode }
+    }
+
+    const category = categoryById.get(categoryId)
+    if (!category) return item // Sin categoría conocida: no se puede numerar.
+
+    const next = suffixOf(categoryId) + 1
+    counter.set(categoryId, next)
+    return { ...item, code: `${partidaPrefix(category)}.${next}` }
+  })
 }
 
 /**
