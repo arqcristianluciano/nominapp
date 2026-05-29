@@ -88,7 +88,10 @@ export function AddMaterialForm({
       : Promise.resolve([] as BudgetItem[])
     promise
       .then((data) => {
-        if (!cancelled) setBudgetItems(data)
+        if (cancelled) return
+        setBudgetItems(data)
+        // Si el capítulo tiene una sola partida, sugerirla autoseleccionándola.
+        if (data.length === 1) setBudgetItemId((prev) => prev || data[0].id)
       })
       .catch(() => {
         if (!cancelled) setBudgetItems([])
@@ -239,6 +242,11 @@ export function AddMaterialForm({
                 </option>
               ))}
             </select>
+            {budgetCategoryId && !budgetItemId && budgetItems.length > 0 && (
+              <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-1">
+                Sugerencia: asigna una partida para el seguimiento de costo por partida.
+              </p>
+            )}
           </div>
         </div>
       )}
