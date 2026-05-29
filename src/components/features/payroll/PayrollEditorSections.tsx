@@ -148,6 +148,7 @@ type MaterialFormPayload = {
   supplier_id: string
   invoice_reference?: string
   attachment_path?: string | null
+  budget_category_id?: string | null
   items: { description: string; amount: number }[]
 }
 
@@ -210,6 +211,7 @@ export function PayrollEditorModals({
       <Modal open={showAddMaterial} onClose={onCloseAddMaterial} title="Agregar factura de materiales">
         <AddMaterialForm
           suppliers={suppliers}
+          budgetCategories={budgetCategories}
           periodId={periodId}
           projectId={projectId}
           onSubmit={onAddMaterial}
@@ -233,6 +235,7 @@ export function PayrollEditorModals({
           <AddMaterialForm
             key={editMaterialInvoice.id}
             suppliers={suppliers}
+            budgetCategories={budgetCategories}
             periodId={periodId}
             projectId={projectId}
             onSubmit={onUpdateMaterial}

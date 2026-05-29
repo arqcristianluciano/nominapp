@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { AlertTriangle, FileText, Loader2, Paperclip, Plus, Trash2, X } from 'lucide-react'
-import type { MaterialInvoice, Supplier } from '@/types/database'
+import type { BudgetCategory, MaterialInvoice, Supplier } from '@/types/database'
 import { payrollService } from '@/services/payrollService'
 import { parseDecimalInput } from '@/utils/decimalInput'
 import { sumInvoiceItems } from '@/utils/materialInvoice'
@@ -13,12 +13,14 @@ interface ItemDraft {
 
 interface Props {
   suppliers: Supplier[]
+  budgetCategories?: BudgetCategory[]
   periodId: string
   projectId: string
   onSubmit: (invoice: {
     supplier_id: string
     invoice_reference?: string
     attachment_path?: string | null
+    budget_category_id?: string | null
     items: { description: string; amount: number }[]
   }) => Promise<void>
   onCancel: () => void
@@ -50,6 +52,7 @@ function initialItems(invoice?: MaterialInvoice): ItemDraft[] {
 
 export function AddMaterialForm({
   suppliers,
+  budgetCategories = [],
   periodId,
   projectId,
   onSubmit,
@@ -60,6 +63,7 @@ export function AddMaterialForm({
 }: Props) {
   const [supplierId, setSupplierId] = useState(initialInvoice?.supplier_id ?? '')
   const [reference, setReference] = useState(initialInvoice?.invoice_reference ?? '')
+  const [budgetCategoryId, setBudgetCategoryId] = useState(initialInvoice?.budget_category_id ?? '')
   const [items, setItems] = useState<ItemDraft[]>(() => initialItems(initialInvoice))
 
   const [attachmentPath, setAttachmentPath] = useState<string | null>(initialInvoice?.attachment_path ?? null)
@@ -143,6 +147,7 @@ export function AddMaterialForm({
       supplier_id: supplierId,
       invoice_reference: reference.trim() || undefined,
       attachment_path: attachmentPath,
+      budget_category_id: budgetCategoryId || null,
       items: validItems.map((it) => ({ description: it.description.trim().toUpperCase(), amount: it.amount })),
     })
   }
@@ -173,6 +178,20 @@ export function AddMaterialForm({
           className={inputCls}
         />
       </div>
+
+      {budgetCategories.length > 0 && (
+        <div>
+          <label className="block text-xs font-medium text-app-muted mb-1">Capítulo imputado (opcional)</label>
+          <select value={budgetCategoryId} onChange={(e) => setBudgetCategoryId(e.target.value)} className={inputCls}>
+            <option value="">— Sin imputación específica —</option>
+            {budgetCategories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.code} {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* Ítems de la factura */}
       <div>

@@ -2,13 +2,14 @@ import { memo, useRef, useState } from 'react'
 import { AlertTriangle, ExternalLink, Loader2, Paperclip, Pencil, Plus, Trash2 } from 'lucide-react'
 import { formatRD } from '@/utils/currency'
 import { payrollService } from '@/services/payrollService'
-import type { MaterialInvoice } from '@/types/database'
+import type { BudgetCategory, MaterialInvoice } from '@/types/database'
 
 interface Props {
   invoices: MaterialInvoice[]
   isDraft: boolean
   canEdit: boolean
   total: number
+  budgetCategories?: BudgetCategory[]
   onOpenAdd: () => void
   onEdit: (invoice: MaterialInvoice) => void
   onDelete: (invoiceId: string) => void
@@ -19,6 +20,7 @@ interface InvoiceCardProps {
   invoice: MaterialInvoice
   isDraft: boolean
   canEdit: boolean
+  budgetCategories: BudgetCategory[]
   onEdit: (invoice: MaterialInvoice) => void
   onDelete: (invoiceId: string) => void
   onAttach: (invoiceId: string, file: File) => Promise<void>
@@ -30,7 +32,23 @@ function isAllowedFile(file: File): boolean {
   return file.type.startsWith('image/') || file.type === 'application/pdf'
 }
 
-function InvoiceCardComponent({ invoice, isDraft, canEdit, onEdit, onDelete, onAttach }: InvoiceCardProps) {
+// El capítulo imputado se muestra como referencia; se edita desde el modal de
+// edición (lápiz), que incluye el selector "Capítulo imputado".
+function chapterLabel(budgetCategoryId: string | null, budgetCategories: BudgetCategory[]): string {
+  if (!budgetCategoryId) return '—'
+  const cat = budgetCategories.find((c) => c.id === budgetCategoryId)
+  return cat ? `${cat.code} ${cat.name}` : '—'
+}
+
+function InvoiceCardComponent({
+  invoice,
+  isDraft,
+  canEdit,
+  budgetCategories,
+  onEdit,
+  onDelete,
+  onAttach,
+}: InvoiceCardProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const [uploading, setUploading] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
@@ -38,6 +56,7 @@ function InvoiceCardComponent({ invoice, isDraft, canEdit, onEdit, onDelete, onA
 
   const items = invoice.items ?? []
   const hasAttachment = !!invoice.attachment_path
+  const showChapter = budgetCategories.length > 0
 
   async function handleFile(file: File | null | undefined) {
     if (!file) return
@@ -124,6 +143,13 @@ function InvoiceCardComponent({ invoice, isDraft, canEdit, onEdit, onDelete, onA
         )}
       </ul>
 
+      {showChapter && (
+        <p className="mt-2 text-xs">
+          <span className="text-app-subtle">Capítulo: </span>
+          <span className="text-app-text">{chapterLabel(invoice.budget_category_id, budgetCategories)}</span>
+        </p>
+      )}
+
       {/* Comprobante: link cuando existe, advertencia + adjuntar cuando falta */}
       <div className="mt-2.5 flex flex-wrap items-center gap-2">
         {hasAttachment ? (
@@ -176,6 +202,7 @@ export function MaterialInvoicesSection({
   isDraft,
   canEdit,
   total,
+  budgetCategories = [],
   onOpenAdd,
   onEdit,
   onDelete,
@@ -208,6 +235,7 @@ export function MaterialInvoicesSection({
               invoice={invoice}
               isDraft={isDraft}
               canEdit={canEdit}
+              budgetCategories={budgetCategories}
               onEdit={onEdit}
               onDelete={onDelete}
               onAttach={onAttach}

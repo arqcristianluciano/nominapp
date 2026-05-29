@@ -312,6 +312,7 @@ export const payrollService = {
       is_advance?: boolean
       is_advance_deduction?: boolean
       budget_category_id?: string | null
+      budget_item_id?: string | null
       notes?: string
     },
   ) {
@@ -338,6 +339,8 @@ export const payrollService = {
     invoice_reference?: string
     attachment_path?: string | null
     notes?: string
+    budget_category_id?: string | null
+    budget_item_id?: string | null
     items: { description: string; amount: number }[]
   }) {
     const items = invoice.items
@@ -359,6 +362,8 @@ export const payrollService = {
         attachment_path: invoice.attachment_path ?? null,
         amount: sumInvoiceItems(items),
         notes: invoice.notes ?? null,
+        budget_category_id: invoice.budget_category_id ?? null,
+        budget_item_id: invoice.budget_item_id ?? null,
       })
       .select('*, supplier:suppliers(*)')
       .single()
@@ -392,6 +397,8 @@ export const payrollService = {
       invoice_reference?: string | null
       attachment_path?: string | null
       notes?: string | null
+      budget_category_id?: string | null
+      budget_item_id?: string | null
       items?: { description: string; amount: number }[]
     },
   ) {
@@ -402,6 +409,8 @@ export const payrollService = {
     if (updates.invoice_reference !== undefined) headerPatch.invoice_reference = updates.invoice_reference || null
     if (updates.attachment_path !== undefined) headerPatch.attachment_path = updates.attachment_path
     if (updates.notes !== undefined) headerPatch.notes = updates.notes
+    if (updates.budget_category_id !== undefined) headerPatch.budget_category_id = updates.budget_category_id
+    if (updates.budget_item_id !== undefined) headerPatch.budget_item_id = updates.budget_item_id
 
     let items: { description: string; amount: number }[] | null = null
     if (updates.items) {
