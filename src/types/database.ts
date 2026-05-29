@@ -148,6 +148,8 @@ export interface LaborLineItem {
   budget_category_id: string | null
   budget_item_id: string | null
   contractor?: Contractor
+  budget_category?: { code: string; name: string } | null
+  budget_item?: { code: string | null; description: string } | null
 }
 
 export interface MaterialInvoice {
@@ -163,6 +165,8 @@ export interface MaterialInvoice {
   notes: string | null
   supplier?: Supplier
   items?: MaterialInvoiceItem[]
+  budget_category?: { code: string; name: string } | null
+  budget_item?: { code: string | null; description: string } | null
 }
 
 export interface MaterialInvoiceItem {

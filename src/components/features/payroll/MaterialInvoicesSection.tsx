@@ -32,12 +32,19 @@ function isAllowedFile(file: File): boolean {
   return file.type.startsWith('image/') || file.type === 'application/pdf'
 }
 
-// El capítulo imputado se muestra como referencia; se edita desde el modal de
-// edición (lápiz), que incluye el selector "Capítulo imputado".
+// El capítulo y la partida imputados se muestran como referencia; se editan
+// desde el modal de edición (lápiz), que incluye los selectores.
 function chapterLabel(budgetCategoryId: string | null, budgetCategories: BudgetCategory[]): string {
   if (!budgetCategoryId) return '—'
   const cat = budgetCategories.find((c) => c.id === budgetCategoryId)
   return cat ? `${cat.code} ${cat.name}` : '—'
+}
+
+// Partida imputada (desde el embed budget_item). Null si no hay partida.
+function partidaLabel(invoice: MaterialInvoice): string | null {
+  if (!invoice.budget_item) return null
+  const code = invoice.budget_item.code ? `[${invoice.budget_item.code}] ` : ''
+  return `${code}${invoice.budget_item.description}`
 }
 
 function InvoiceCardComponent({
@@ -57,6 +64,7 @@ function InvoiceCardComponent({
   const items = invoice.items ?? []
   const hasAttachment = !!invoice.attachment_path
   const showChapter = budgetCategories.length > 0
+  const partida = partidaLabel(invoice)
 
   async function handleFile(file: File | null | undefined) {
     if (!file) return
@@ -147,6 +155,7 @@ function InvoiceCardComponent({
         <p className="mt-2 text-xs">
           <span className="text-app-subtle">Capítulo: </span>
           <span className="text-app-text">{chapterLabel(invoice.budget_category_id, budgetCategories)}</span>
+          {partida && <span className="block text-app-subtle mt-0.5">Partida: {partida}</span>}
         </p>
       )}
 

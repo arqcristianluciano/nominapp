@@ -203,6 +203,7 @@ export function usePayroll(periodId: string | undefined) {
       invoice_reference?: string
       attachment_path?: string | null
       budget_category_id?: string | null
+      budget_item_id?: string | null
       notes?: string
       items: { description: string; amount: number }[]
     }) => {
