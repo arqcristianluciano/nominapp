@@ -18,6 +18,7 @@ import { PayrollTotalsCards } from '@/components/features/payroll/PayrollTotalsC
 import { LaborItemsSection } from '@/components/features/payroll/LaborItemsSection'
 import { MaterialInvoicesSection } from '@/components/features/payroll/MaterialInvoicesSection'
 import { IndirectCostsSection } from '@/components/features/payroll/IndirectCostsSection'
+import { PayrollHistorySection } from '@/components/features/payroll/PayrollHistorySection'
 import { canEditPayrollItems } from '@/utils/payrollItemPermissions'
 import type {
   BudgetCategory,
@@ -132,6 +133,8 @@ export default function PayrollEditor() {
       />
 
       <LoanDeductionSection periodId={period.id} isDraft={isDraft} />
+
+      <PayrollHistorySection periodId={period.id} />
 
       {(period.status === 'approved' || period.status === 'paid') && (
         <PaymentDistributionsSection periodId={period.id} grandTotal={period.grand_total || 0} />
