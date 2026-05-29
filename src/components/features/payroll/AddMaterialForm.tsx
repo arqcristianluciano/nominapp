@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Building2, X } from 'lucide-react'
 import type { Supplier } from '@/types/database'
 import { supplierService } from '@/services/supplierService'
+import { isRNC } from '@/utils/validators'
 
 const NEW_SUPPLIER_VALUE = '__NEW__'
 
@@ -28,6 +29,7 @@ export function AddMaterialForm({ suppliers, onSubmit, onCancel, saving, onSuppl
   const [newName, setNewName] = useState('')
   const [newRnc, setNewRnc] = useState('')
   const [savingNew, setSavingNew] = useState(false)
+  const [newError, setNewError] = useState<string | null>(null)
 
   function handleSelectChange(value: string) {
     if (value === NEW_SUPPLIER_VALUE) {
@@ -42,11 +44,17 @@ export function AddMaterialForm({ suppliers, onSubmit, onCancel, saving, onSuppl
   async function handleCreateSupplier() {
     if (savingNew) return
     if (!newName.trim()) return
+    setNewError(null)
+    const rncTrimmed = newRnc.trim()
+    if (rncTrimmed && !isRNC(rncTrimmed)) {
+      setNewError('RNC inválido (9 u 11 dígitos)')
+      return
+    }
     setSavingNew(true)
     try {
       const created = await supplierService.create({
         name: newName.trim().toUpperCase(),
-        rnc: newRnc.trim() || undefined,
+        rnc: rncTrimmed || undefined,
       })
       onSupplierCreated?.(created)
       setSupplierId(created.id)
@@ -55,6 +63,7 @@ export function AddMaterialForm({ suppliers, onSubmit, onCancel, saving, onSuppl
       setNewRnc('')
     } catch (err) {
       console.warn('[AddMaterialForm] handleCreateSupplier failed', err)
+      setNewError('No se pudo crear el proveedor. Intenta de nuevo.')
     } finally {
       setSavingNew(false)
     }
@@ -64,6 +73,7 @@ export function AddMaterialForm({ suppliers, onSubmit, onCancel, saving, onSuppl
     setShowNewForm(false)
     setNewName('')
     setNewRnc('')
+    setNewError(null)
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -122,6 +132,11 @@ export function AddMaterialForm({ suppliers, onSubmit, onCancel, saving, onSuppl
               placeholder="RNC (opcional)"
               className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+            {newError && (
+              <div className="text-xs text-red-600 dark:text-red-400" role="alert">
+                {newError}
+              </div>
+            )}
             <button
               type="button"
               onClick={handleCreateSupplier}
