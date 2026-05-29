@@ -1,23 +1,26 @@
 import { useState } from 'react'
-import type { Supplier } from '@/types/database'
+import type { BudgetCategory, Supplier } from '@/types/database'
 
 interface Props {
   suppliers: Supplier[]
+  budgetCategories?: BudgetCategory[]
   onSubmit: (invoice: {
     supplier_id: string
     description: string
     invoice_reference?: string
     amount: number
+    budget_category_id?: string | null
   }) => Promise<void>
   onCancel: () => void
   saving: boolean
 }
 
-export function AddMaterialForm({ suppliers, onSubmit, onCancel, saving }: Props) {
+export function AddMaterialForm({ suppliers, budgetCategories = [], onSubmit, onCancel, saving }: Props) {
   const [supplierId, setSupplierId] = useState('')
   const [description, setDescription] = useState('')
   const [reference, setReference] = useState('')
   const [amount, setAmount] = useState('')
+  const [budgetCategoryId, setBudgetCategoryId] = useState('')
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -27,6 +30,7 @@ export function AddMaterialForm({ suppliers, onSubmit, onCancel, saving }: Props
       description: description.toUpperCase(),
       invoice_reference: reference || undefined,
       amount: parseFloat(amount),
+      budget_category_id: budgetCategoryId || null,
     })
   }
 
@@ -41,9 +45,13 @@ export function AddMaterialForm({ suppliers, onSubmit, onCancel, saving }: Props
           className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="">Seleccionar proveedor...</option>
-          {suppliers.filter(s => s.is_active).map(s => (
-            <option key={s.id} value={s.id}>{s.name}</option>
-          ))}
+          {suppliers
+            .filter((s) => s.is_active)
+            .map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
         </select>
       </div>
 
@@ -82,6 +90,24 @@ export function AddMaterialForm({ suppliers, onSubmit, onCancel, saving }: Props
           />
         </div>
       </div>
+
+      {budgetCategories.length > 0 && (
+        <div>
+          <label className="block text-xs font-medium text-app-muted mb-1">Capítulo imputado (opcional)</label>
+          <select
+            value={budgetCategoryId}
+            onChange={(e) => setBudgetCategoryId(e.target.value)}
+            className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">— Sin imputación específica —</option>
+            {budgetCategories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.code} {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div className="flex justify-end gap-2 pt-2">
         <button type="button" onClick={onCancel} className="px-4 py-2 text-sm text-app-muted hover:text-app-text">

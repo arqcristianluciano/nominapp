@@ -93,8 +93,12 @@ export default function PayrollEditor() {
         invoices={payroll.materialInvoices}
         isDraft={isDraft}
         total={period.total_materials || 0}
+        budgetCategories={budgetCategories}
         onOpenAdd={() => setShowAddMaterial(true)}
         onDelete={payroll.deleteMaterialInvoice}
+        onUpdateImputation={(invoiceId, budgetCategoryId) =>
+          payroll.updateMaterialInvoice(invoiceId, { budget_category_id: budgetCategoryId })
+        }
       />
       <IndirectCostsSection
         costs={payroll.indirectCosts}

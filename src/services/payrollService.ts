@@ -305,6 +305,8 @@ export const payrollService = {
     invoice_reference?: string
     amount: number
     notes?: string
+    budget_category_id?: string | null
+    budget_item_id?: string | null
   }) {
     const { data, error } = await supabase
       .from('material_invoices')
@@ -323,6 +325,8 @@ export const payrollService = {
       invoice_reference?: string
       amount?: number
       notes?: string
+      budget_category_id?: string | null
+      budget_item_id?: string | null
     },
   ) {
     const { data, error } = await supabase
