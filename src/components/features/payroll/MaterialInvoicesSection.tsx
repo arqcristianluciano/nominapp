@@ -23,12 +23,19 @@ interface MaterialInvoiceRowProps {
   onDelete: (invoiceId: string) => void
 }
 
-// El capítulo imputado se muestra como referencia; se edita desde el modal de
-// edición (lápiz), que incluye el selector "Capítulo imputado".
+// El capítulo y la partida imputados se muestran como referencia; se editan
+// desde el modal de edición (lápiz), que incluye los selectores.
 function chapterLabel(budgetCategoryId: string | null, budgetCategories: BudgetCategory[]): string {
   if (!budgetCategoryId) return '—'
   const cat = budgetCategories.find((c) => c.id === budgetCategoryId)
   return cat ? `${cat.code} ${cat.name}` : '—'
+}
+
+// Partida imputada (desde el embed budget_item). Null si no hay partida.
+function partidaLabel(invoice: MaterialInvoice): string | null {
+  if (!invoice.budget_item) return null
+  const code = invoice.budget_item.code ? `[${invoice.budget_item.code}] ` : ''
+  return `${code}${invoice.budget_item.description}`
 }
 
 function MaterialInvoiceMobileCardComponent({
@@ -82,6 +89,9 @@ function MaterialInvoiceMobileCardComponent({
         <div className="mt-2 text-xs">
           <span className="text-app-subtle">Capítulo: </span>
           <span className="text-app-text">{chapterLabel(invoice.budget_category_id, budgetCategories)}</span>
+          {partidaLabel(invoice) && (
+            <span className="block text-app-subtle mt-0.5">Partida: {partidaLabel(invoice)}</span>
+          )}
         </div>
       )}
     </li>
@@ -107,7 +117,12 @@ function MaterialInvoiceRowComponent({
         {invoice.invoice_reference && <span className="text-xs text-app-subtle ml-1">{invoice.invoice_reference}</span>}
       </td>
       {showChapter && (
-        <td className="px-4 py-2.5 text-app-muted">{chapterLabel(invoice.budget_category_id, budgetCategories)}</td>
+        <td className="px-4 py-2.5 text-app-muted">
+          {chapterLabel(invoice.budget_category_id, budgetCategories)}
+          {partidaLabel(invoice) && (
+            <span className="block text-[11px] text-app-subtle mt-0.5">{partidaLabel(invoice)}</span>
+          )}
+        </td>
       )}
       <td className="px-4 py-2.5 text-right font-medium text-app-text">{formatRD(invoice.amount)}</td>
       {(isDraft || canEdit) && (

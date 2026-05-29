@@ -150,6 +150,7 @@ type MaterialFormPayload = {
   invoice_reference?: string
   amount: number
   budget_category_id?: string | null
+  budget_item_id?: string | null
 }
 
 type LaborFormPayload = {
@@ -161,6 +162,7 @@ type LaborFormPayload = {
   is_advance: boolean
   is_advance_deduction: boolean
   budget_category_id?: string | null
+  budget_item_id?: string | null
 }
 
 export function PayrollEditorModals({

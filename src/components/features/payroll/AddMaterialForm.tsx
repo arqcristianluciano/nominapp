@@ -1,5 +1,6 @@
-import { useState } from 'react'
-import type { BudgetCategory, MaterialInvoice, Supplier } from '@/types/database'
+import { useEffect, useState } from 'react'
+import type { BudgetCategory, BudgetItem, MaterialInvoice, Supplier } from '@/types/database'
+import { budgetItemService } from '@/services/budgetItemService'
 
 interface Props {
   suppliers: Supplier[]
@@ -10,6 +11,7 @@ interface Props {
     invoice_reference?: string
     amount: number
     budget_category_id?: string | null
+    budget_item_id?: string | null
   }) => Promise<void>
   onCancel: () => void
   saving: boolean
@@ -33,6 +35,27 @@ export function AddMaterialForm({
   const [reference, setReference] = useState(initialInvoice?.invoice_reference ?? '')
   const [amount, setAmount] = useState(initialInvoice ? String(initialInvoice.amount) : '')
   const [budgetCategoryId, setBudgetCategoryId] = useState(initialInvoice?.budget_category_id ?? '')
+  const [budgetItemId, setBudgetItemId] = useState(initialInvoice?.budget_item_id ?? '')
+  const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([])
+
+  // Cargar las partidas del capítulo seleccionado para permitir imputar la
+  // factura a una partida concreta del presupuesto.
+  useEffect(() => {
+    let cancelled = false
+    const promise = budgetCategoryId
+      ? budgetItemService.getByCategoryId(budgetCategoryId)
+      : Promise.resolve([] as BudgetItem[])
+    promise
+      .then((data) => {
+        if (!cancelled) setBudgetItems(data)
+      })
+      .catch(() => {
+        if (!cancelled) setBudgetItems([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [budgetCategoryId])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -43,6 +66,7 @@ export function AddMaterialForm({
       invoice_reference: reference || undefined,
       amount: parseFloat(amount),
       budget_category_id: budgetCategoryId || null,
+      budget_item_id: budgetItemId || null,
     })
   }
 
@@ -104,20 +128,42 @@ export function AddMaterialForm({
       </div>
 
       {budgetCategories.length > 0 && (
-        <div>
-          <label className="block text-xs font-medium text-app-muted mb-1">Capítulo imputado (opcional)</label>
-          <select
-            value={budgetCategoryId}
-            onChange={(e) => setBudgetCategoryId(e.target.value)}
-            className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">— Sin imputación específica —</option>
-            {budgetCategories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.code} {c.name}
-              </option>
-            ))}
-          </select>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-app-muted mb-1">Capítulo imputado (opcional)</label>
+            <select
+              value={budgetCategoryId}
+              onChange={(e) => {
+                setBudgetCategoryId(e.target.value)
+                setBudgetItemId('')
+              }}
+              className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">— Sin imputación específica —</option>
+              {budgetCategories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.code} {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-app-muted mb-1">Partida (opcional)</label>
+            <select
+              value={budgetItemId}
+              onChange={(e) => setBudgetItemId(e.target.value)}
+              disabled={!budgetCategoryId}
+              className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+            >
+              <option value="">— Sin partida específica —</option>
+              {budgetItems.map((it) => (
+                <option key={it.id} value={it.id}>
+                  {it.code ? `[${it.code}] ` : ''}
+                  {it.description}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       )}
 

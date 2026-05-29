@@ -58,10 +58,17 @@ export const payrollService = {
         .single(),
       supabase
         .from('labor_line_items')
-        .select('*, contractor:contractors(*)')
+        .select(
+          '*, contractor:contractors(*), budget_category:budget_categories(code, name), budget_item:budget_items(code, description)',
+        )
         .eq('payroll_period_id', periodId)
         .order('sort_order'),
-      supabase.from('material_invoices').select('*, supplier:suppliers(*)').eq('payroll_period_id', periodId),
+      supabase
+        .from('material_invoices')
+        .select(
+          '*, supplier:suppliers(*), budget_category:budget_categories(code, name), budget_item:budget_items(code, description)',
+        )
+        .eq('payroll_period_id', periodId),
       supabase.from('indirect_costs').select('*').eq('payroll_period_id', periodId),
     ])
     if (periodRes.error) throw periodRes.error
@@ -261,7 +268,9 @@ export const payrollService = {
     const { data, error } = await supabase
       .from('labor_line_items')
       .insert(item)
-      .select('*, contractor:contractors(*)')
+      .select(
+        '*, contractor:contractors(*), budget_category:budget_categories(code, name), budget_item:budget_items(code, description)',
+      )
       .single()
     if (error) throw error
     return data as LaborLineItem
@@ -286,7 +295,9 @@ export const payrollService = {
       .from('labor_line_items')
       .update(updates)
       .eq('id', id)
-      .select('*, contractor:contractors(*)')
+      .select(
+        '*, contractor:contractors(*), budget_category:budget_categories(code, name), budget_item:budget_items(code, description)',
+      )
       .single()
     if (error) throw error
     return data as LaborLineItem
@@ -312,7 +323,9 @@ export const payrollService = {
     const { data, error } = await supabase
       .from('material_invoices')
       .insert(invoice)
-      .select('*, supplier:suppliers(*)')
+      .select(
+        '*, supplier:suppliers(*), budget_category:budget_categories(code, name), budget_item:budget_items(code, description)',
+      )
       .single()
     if (error) throw error
     return data as MaterialInvoice
@@ -334,7 +347,9 @@ export const payrollService = {
       .from('material_invoices')
       .update(updates)
       .eq('id', id)
-      .select('*, supplier:suppliers(*)')
+      .select(
+        '*, supplier:suppliers(*), budget_category:budget_categories(code, name), budget_item:budget_items(code, description)',
+      )
       .single()
     if (error) throw error
     return data as MaterialInvoice
