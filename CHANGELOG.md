@@ -19,6 +19,10 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 
 - Pendiente.
 
+### Security
+
+- La regla de edición de nómina por etapa ahora se aplica también en la base de datos (migración 050): la RLS de `labor_line_items`, `material_invoices` e `indirect_costs` exige `edit_payroll` mientras el reporte no esté aprobado y `approve_payroll` una vez aprobado (antes solo se exigía `edit_payroll` sin mirar el estado).
+
 ## [0.6.0] - 2026-05-26
 
 ### Security

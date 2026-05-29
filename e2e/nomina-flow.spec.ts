@@ -51,7 +51,10 @@ test('flujo de nómina: crear, agregar partida, enviar y aprobar', async ({ page
   await expect(page.getByText('Borrador').first()).toBeVisible()
 
   // 4) Agregar una partida de mano de obra.
-  await page.getByRole('button', { name: /Agregar partida|Agregar$/ }).first().click()
+  await page
+    .getByRole('button', { name: /Agregar partida|Agregar$/ })
+    .first()
+    .click()
   await expect(page.getByRole('heading', { name: 'Agregar partida de mano de obra' })).toBeVisible()
 
   // Seleccionar primer contratista disponible (omite la opción "Seleccionar..." y "Crear nuevo").
@@ -75,10 +78,26 @@ test('flujo de nómina: crear, agregar partida, enviar y aprobar', async ({ page
   await expect(page.getByText('No hay partidas de mano de obra registradas')).toHaveCount(0)
 
   // 6) Enviar la nómina (draft -> submitted).
-  await page.getByRole('button', { name: /Enviar para aprobación/i }).first().click()
+  await page
+    .getByRole('button', { name: /Enviar para aprobación/i })
+    .first()
+    .click()
   await expect(page.getByText('Enviado').first()).toBeVisible({ timeout: 5000 })
 
+  // 6b) Un reporte enviado sigue siendo editable hasta su aprobación: el aviso
+  // del editor lo indica y los controles de edición siguen presentes (antes
+  // quedaban bloqueados al salir de "Borrador").
+  await expect(page.getByText(/puedes editarlo mientras no sea aprobado/i)).toBeVisible()
+  await expect(page.getByRole('button', { name: /Agregar partida|Agregar$/ }).first()).toBeVisible()
+
   // 7) Aprobar la nómina (submitted -> approved).
-  await page.getByRole('button', { name: /Aprobar reporte/i }).first().click()
+  await page
+    .getByRole('button', { name: /Aprobar reporte/i })
+    .first()
+    .click()
   await expect(page.getByText('Aprobado').first()).toBeVisible({ timeout: 5000 })
+
+  // 7b) Tras la aprobación, la edición queda reservada a usuarios autorizados;
+  // el admin (director) lo es, así que el aviso lo refleja.
+  await expect(page.getByText(/usuario autorizado/i)).toBeVisible()
 })
