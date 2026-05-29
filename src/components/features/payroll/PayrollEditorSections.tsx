@@ -176,6 +176,7 @@ export function PayrollEditorModals({
     is_advance: boolean
     is_advance_deduction: boolean
     budget_category_id?: string | null
+    budget_item_id?: string | null
   }) => Promise<void>
   onContractorCreated: (contractor: Contractor) => void
 }) {
