@@ -100,6 +100,7 @@ export default function PayrollEditor() {
         isDraft={isDraft}
         canEdit={canEditItems}
         total={period.total_labor || 0}
+        budgetCategories={budgetCategories}
         onOpenAdd={() => setShowAddLabor(true)}
         onEdit={setEditLaborItem}
         onDelete={payroll.deleteLaborItem}
@@ -109,6 +110,7 @@ export default function PayrollEditor() {
         isDraft={isDraft}
         canEdit={canEditItems}
         total={period.total_materials || 0}
+        budgetCategories={budgetCategories}
         onOpenAdd={() => setShowAddMaterial(true)}
         onEdit={setEditMaterialInvoice}
         onDelete={payroll.deleteMaterialInvoice}

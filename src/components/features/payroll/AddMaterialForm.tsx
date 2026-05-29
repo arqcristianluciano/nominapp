@@ -1,13 +1,15 @@
 import { useState } from 'react'
-import type { MaterialInvoice, Supplier } from '@/types/database'
+import type { BudgetCategory, MaterialInvoice, Supplier } from '@/types/database'
 
 interface Props {
   suppliers: Supplier[]
+  budgetCategories?: BudgetCategory[]
   onSubmit: (invoice: {
     supplier_id: string
     description: string
     invoice_reference?: string
     amount: number
+    budget_category_id?: string | null
   }) => Promise<void>
   onCancel: () => void
   saving: boolean
@@ -17,11 +19,20 @@ interface Props {
   submitLabel?: string
 }
 
-export function AddMaterialForm({ suppliers, onSubmit, onCancel, saving, initialInvoice, submitLabel }: Props) {
+export function AddMaterialForm({
+  suppliers,
+  budgetCategories = [],
+  onSubmit,
+  onCancel,
+  saving,
+  initialInvoice,
+  submitLabel,
+}: Props) {
   const [supplierId, setSupplierId] = useState(initialInvoice?.supplier_id ?? '')
   const [description, setDescription] = useState(initialInvoice?.description ?? '')
   const [reference, setReference] = useState(initialInvoice?.invoice_reference ?? '')
   const [amount, setAmount] = useState(initialInvoice ? String(initialInvoice.amount) : '')
+  const [budgetCategoryId, setBudgetCategoryId] = useState(initialInvoice?.budget_category_id ?? '')
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -31,6 +42,7 @@ export function AddMaterialForm({ suppliers, onSubmit, onCancel, saving, initial
       description: description.toUpperCase(),
       invoice_reference: reference || undefined,
       amount: parseFloat(amount),
+      budget_category_id: budgetCategoryId || null,
     })
   }
 
@@ -90,6 +102,24 @@ export function AddMaterialForm({ suppliers, onSubmit, onCancel, saving, initial
           />
         </div>
       </div>
+
+      {budgetCategories.length > 0 && (
+        <div>
+          <label className="block text-xs font-medium text-app-muted mb-1">Capítulo imputado (opcional)</label>
+          <select
+            value={budgetCategoryId}
+            onChange={(e) => setBudgetCategoryId(e.target.value)}
+            className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">— Sin imputación específica —</option>
+            {budgetCategories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.code} {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div className="flex justify-end gap-2 pt-2">
         <button type="button" onClick={onCancel} className="px-4 py-2 text-sm text-app-muted hover:text-app-text">

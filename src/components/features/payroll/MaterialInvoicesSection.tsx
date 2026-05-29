@@ -1,13 +1,14 @@
 import { memo } from 'react'
 import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { formatRD } from '@/utils/currency'
-import type { MaterialInvoice } from '@/types/database'
+import type { BudgetCategory, MaterialInvoice } from '@/types/database'
 
 interface Props {
   invoices: MaterialInvoice[]
   isDraft: boolean
   canEdit: boolean
   total: number
+  budgetCategories?: BudgetCategory[]
   onOpenAdd: () => void
   onEdit: (invoice: MaterialInvoice) => void
   onDelete: (invoiceId: string) => void
@@ -17,11 +18,27 @@ interface MaterialInvoiceRowProps {
   invoice: MaterialInvoice
   isDraft: boolean
   canEdit: boolean
+  budgetCategories: BudgetCategory[]
   onEdit: (invoice: MaterialInvoice) => void
   onDelete: (invoiceId: string) => void
 }
 
-function MaterialInvoiceMobileCardComponent({ invoice, isDraft, canEdit, onEdit, onDelete }: MaterialInvoiceRowProps) {
+// El capítulo imputado se muestra como referencia; se edita desde el modal de
+// edición (lápiz), que incluye el selector "Capítulo imputado".
+function chapterLabel(budgetCategoryId: string | null, budgetCategories: BudgetCategory[]): string {
+  if (!budgetCategoryId) return '—'
+  const cat = budgetCategories.find((c) => c.id === budgetCategoryId)
+  return cat ? `${cat.code} ${cat.name}` : '—'
+}
+
+function MaterialInvoiceMobileCardComponent({
+  invoice,
+  isDraft,
+  canEdit,
+  budgetCategories,
+  onEdit,
+  onDelete,
+}: MaterialInvoiceRowProps) {
   return (
     <li className="bg-app-surface rounded-xl border border-app-border p-3">
       <div className="flex items-start justify-between gap-2">
@@ -61,13 +78,27 @@ function MaterialInvoiceMobileCardComponent({ invoice, isDraft, canEdit, onEdit,
         <span className="text-app-subtle">Monto</span>
         <span className="font-medium text-app-text">{formatRD(invoice.amount)}</span>
       </div>
+      {budgetCategories.length > 0 && (
+        <div className="mt-2 text-xs">
+          <span className="text-app-subtle">Capítulo: </span>
+          <span className="text-app-text">{chapterLabel(invoice.budget_category_id, budgetCategories)}</span>
+        </div>
+      )}
     </li>
   )
 }
 MaterialInvoiceMobileCardComponent.displayName = 'MaterialInvoiceMobileCard'
 const MaterialInvoiceMobileCard = memo(MaterialInvoiceMobileCardComponent)
 
-function MaterialInvoiceRowComponent({ invoice, isDraft, canEdit, onEdit, onDelete }: MaterialInvoiceRowProps) {
+function MaterialInvoiceRowComponent({
+  invoice,
+  isDraft,
+  canEdit,
+  budgetCategories,
+  onEdit,
+  onDelete,
+}: MaterialInvoiceRowProps) {
+  const showChapter = budgetCategories.length > 0
   return (
     <tr className="hover:bg-app-hover">
       <td className="px-4 py-2.5 text-app-text">{invoice.supplier?.name || '—'}</td>
@@ -75,6 +106,9 @@ function MaterialInvoiceRowComponent({ invoice, isDraft, canEdit, onEdit, onDele
         {invoice.description}
         {invoice.invoice_reference && <span className="text-xs text-app-subtle ml-1">{invoice.invoice_reference}</span>}
       </td>
+      {showChapter && (
+        <td className="px-4 py-2.5 text-app-muted">{chapterLabel(invoice.budget_category_id, budgetCategories)}</td>
+      )}
       <td className="px-4 py-2.5 text-right font-medium text-app-text">{formatRD(invoice.amount)}</td>
       {(isDraft || canEdit) && (
         <td className="px-2 py-2.5">
@@ -106,8 +140,18 @@ function MaterialInvoiceRowComponent({ invoice, isDraft, canEdit, onEdit, onDele
 MaterialInvoiceRowComponent.displayName = 'MaterialInvoiceRow'
 const MaterialInvoiceRow = memo(MaterialInvoiceRowComponent)
 
-export function MaterialInvoicesSection({ invoices, isDraft, canEdit, total, onOpenAdd, onEdit, onDelete }: Props) {
+export function MaterialInvoicesSection({
+  invoices,
+  isDraft,
+  canEdit,
+  total,
+  budgetCategories = [],
+  onOpenAdd,
+  onEdit,
+  onDelete,
+}: Props) {
   const showActionsColumn = isDraft || canEdit
+  const showChapter = budgetCategories.length > 0
   return (
     <section>
       <div className="flex items-center justify-between gap-2 mb-3">
@@ -137,6 +181,7 @@ export function MaterialInvoicesSection({ invoices, isDraft, canEdit, total, onO
                 invoice={invoice}
                 isDraft={isDraft}
                 canEdit={canEdit}
+                budgetCategories={budgetCategories}
                 onEdit={onEdit}
                 onDelete={onDelete}
               />
@@ -150,6 +195,7 @@ export function MaterialInvoicesSection({ invoices, isDraft, canEdit, total, onO
                   <tr className="bg-app-bg border-b border-app-border">
                     <th className="text-left px-4 py-2.5 font-medium text-app-muted">Proveedor</th>
                     <th className="text-left px-4 py-2.5 font-medium text-app-muted">Descripción</th>
+                    {showChapter && <th className="text-left px-4 py-2.5 font-medium text-app-muted">Capítulo</th>}
                     <th className="text-right px-4 py-2.5 font-medium text-app-muted">Monto</th>
                     {showActionsColumn && <th className="w-20" />}
                   </tr>
@@ -161,6 +207,7 @@ export function MaterialInvoicesSection({ invoices, isDraft, canEdit, total, onO
                       invoice={invoice}
                       isDraft={isDraft}
                       canEdit={canEdit}
+                      budgetCategories={budgetCategories}
                       onEdit={onEdit}
                       onDelete={onDelete}
                     />

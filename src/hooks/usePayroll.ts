@@ -198,7 +198,14 @@ export function usePayroll(periodId: string | undefined) {
   )
 
   const addMaterialInvoice = useCallback(
-    async (invoice: { supplier_id: string; description: string; invoice_reference?: string; amount: number }) => {
+    async (invoice: {
+      supplier_id: string
+      description: string
+      invoice_reference?: string
+      amount: number
+      budget_category_id?: string | null
+      budget_item_id?: string | null
+    }) => {
       if (!periodId) return
       setSaving(true)
       try {

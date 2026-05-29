@@ -1,13 +1,14 @@
 import { memo } from 'react'
 import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { formatRD } from '@/utils/currency'
-import type { LaborLineItem } from '@/types/database'
+import type { BudgetCategory, LaborLineItem } from '@/types/database'
 
 interface Props {
   items: LaborLineItem[]
   isDraft: boolean
   canEdit: boolean
   total: number
+  budgetCategories?: BudgetCategory[]
   onOpenAdd: () => void
   onEdit: (item: LaborLineItem) => void
   onDelete: (itemId: string) => void
@@ -17,11 +18,27 @@ interface LaborItemRowProps {
   item: LaborLineItem
   isDraft: boolean
   canEdit: boolean
+  budgetCategories: BudgetCategory[]
   onEdit: (item: LaborLineItem) => void
   onDelete: (itemId: string) => void
 }
 
-function LaborItemMobileCardComponent({ item, isDraft, canEdit, onEdit, onDelete }: LaborItemRowProps) {
+// El capítulo imputado se muestra como referencia; se edita desde el modal de
+// edición (lápiz), que ya incluye el selector "Capítulo imputado".
+function chapterLabel(budgetCategoryId: string | null, budgetCategories: BudgetCategory[]): string {
+  if (!budgetCategoryId) return '—'
+  const cat = budgetCategories.find((c) => c.id === budgetCategoryId)
+  return cat ? `${cat.code} ${cat.name}` : '—'
+}
+
+function LaborItemMobileCardComponent({
+  item,
+  isDraft,
+  canEdit,
+  budgetCategories,
+  onEdit,
+  onDelete,
+}: LaborItemRowProps) {
   return (
     <li className="bg-app-surface rounded-xl border border-app-border p-3">
       <div className="flex items-start justify-between gap-2">
@@ -66,17 +83,27 @@ function LaborItemMobileCardComponent({ item, isDraft, canEdit, onEdit, onDelete
           <div className="font-medium text-app-text">{formatRD(item.quantity * item.unit_price)}</div>
         </div>
       </div>
+      {budgetCategories.length > 0 && (
+        <div className="mt-2 text-xs">
+          <span className="text-app-subtle">Capítulo: </span>
+          <span className="text-app-text">{chapterLabel(item.budget_category_id, budgetCategories)}</span>
+        </div>
+      )}
     </li>
   )
 }
 LaborItemMobileCardComponent.displayName = 'LaborItemMobileCard'
 const LaborItemMobileCard = memo(LaborItemMobileCardComponent)
 
-function LaborItemRowComponent({ item, isDraft, canEdit, onEdit, onDelete }: LaborItemRowProps) {
+function LaborItemRowComponent({ item, isDraft, canEdit, budgetCategories, onEdit, onDelete }: LaborItemRowProps) {
+  const showChapter = budgetCategories.length > 0
   return (
     <tr className="hover:bg-app-hover">
       <td className="px-4 py-2.5 text-app-text">{item.contractor?.name || '—'}</td>
       <td className="px-4 py-2.5 text-app-muted">{item.description}</td>
+      {showChapter && (
+        <td className="px-4 py-2.5 text-app-muted">{chapterLabel(item.budget_category_id, budgetCategories)}</td>
+      )}
       <td className="px-4 py-2.5 text-right text-app-text">{item.quantity.toLocaleString('es-DO')}</td>
       <td className="px-4 py-2.5 text-right text-app-text">{formatRD(item.unit_price)}</td>
       <td className="px-4 py-2.5 text-right font-medium text-app-text">{formatRD(item.quantity * item.unit_price)}</td>
@@ -110,8 +137,18 @@ function LaborItemRowComponent({ item, isDraft, canEdit, onEdit, onDelete }: Lab
 LaborItemRowComponent.displayName = 'LaborItemRow'
 const LaborItemRow = memo(LaborItemRowComponent)
 
-export function LaborItemsSection({ items, isDraft, canEdit, total, onOpenAdd, onEdit, onDelete }: Props) {
+export function LaborItemsSection({
+  items,
+  isDraft,
+  canEdit,
+  total,
+  budgetCategories = [],
+  onOpenAdd,
+  onEdit,
+  onDelete,
+}: Props) {
   const showActionsColumn = isDraft || canEdit
+  const showChapter = budgetCategories.length > 0
   return (
     <section>
       <div className="flex items-center justify-between gap-2 mb-3">
@@ -141,6 +178,7 @@ export function LaborItemsSection({ items, isDraft, canEdit, total, onOpenAdd, o
                 item={item}
                 isDraft={isDraft}
                 canEdit={canEdit}
+                budgetCategories={budgetCategories}
                 onEdit={onEdit}
                 onDelete={onDelete}
               />
@@ -154,6 +192,7 @@ export function LaborItemsSection({ items, isDraft, canEdit, total, onOpenAdd, o
                   <tr className="bg-app-bg border-b border-app-border">
                     <th className="text-left px-4 py-2.5 font-medium text-app-muted">Contratista</th>
                     <th className="text-left px-4 py-2.5 font-medium text-app-muted">Descripción</th>
+                    {showChapter && <th className="text-left px-4 py-2.5 font-medium text-app-muted">Capítulo</th>}
                     <th className="text-right px-4 py-2.5 font-medium text-app-muted">Cant.</th>
                     <th className="text-right px-4 py-2.5 font-medium text-app-muted">Precio</th>
                     <th className="text-right px-4 py-2.5 font-medium text-app-muted">Subtotal</th>
@@ -167,6 +206,7 @@ export function LaborItemsSection({ items, isDraft, canEdit, total, onOpenAdd, o
                       item={item}
                       isDraft={isDraft}
                       canEdit={canEdit}
+                      budgetCategories={budgetCategories}
                       onEdit={onEdit}
                       onDelete={onDelete}
                     />

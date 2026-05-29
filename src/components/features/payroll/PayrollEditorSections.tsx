@@ -149,6 +149,7 @@ type MaterialFormPayload = {
   description: string
   invoice_reference?: string
   amount: number
+  budget_category_id?: string | null
 }
 
 type LaborFormPayload = {
@@ -204,7 +205,13 @@ export function PayrollEditorModals({
   return (
     <>
       <Modal open={showAddMaterial} onClose={onCloseAddMaterial} title="Agregar factura de materiales">
-        <AddMaterialForm suppliers={suppliers} onSubmit={onAddMaterial} onCancel={onCloseAddMaterial} saving={saving} />
+        <AddMaterialForm
+          suppliers={suppliers}
+          budgetCategories={budgetCategories}
+          onSubmit={onAddMaterial}
+          onCancel={onCloseAddMaterial}
+          saving={saving}
+        />
       </Modal>
       <Modal open={showAddLabor} onClose={onCloseAddLabor} title="Agregar partida de mano de obra">
         <AddLaborItemForm
@@ -222,6 +229,7 @@ export function PayrollEditorModals({
           <AddMaterialForm
             key={editMaterialInvoice.id}
             suppliers={suppliers}
+            budgetCategories={budgetCategories}
             onSubmit={onUpdateMaterial}
             onCancel={onCloseEditMaterial}
             saving={saving}
