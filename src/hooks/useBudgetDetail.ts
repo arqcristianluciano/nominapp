@@ -19,23 +19,47 @@ export function useBudgetDetail(projectId: string | undefined) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const load = useCallback(async (filters?: { dateFrom?: string; dateTo?: string }) => {
-    if (!projectId) return
-    setLoading(true)
+  const load = useCallback(
+    async (filters?: {
+      dateFrom?: string
+      dateTo?: string
+    }): Promise<{ categories: BudgetCategory[]; transactions: TransactionWithRelations[] }> => {
+      if (!projectId) return { categories: [], transactions: [] }
+      setLoading(true)
+      setError(null)
+      try {
+        const [cats, txns] = await Promise.all([
+          budgetCategoryService.initializeForProject(projectId),
+          transactionService.getByProject(projectId, filters),
+        ])
+        setCategories(cats)
+        setTransactions(txns)
+        return { categories: cats, transactions: txns }
+      } catch (e) {
+        setError(getErrorMessage(e))
+        return { categories: [], transactions: [] }
+      } finally {
+        setLoading(false)
+      }
+    },
+    [projectId],
+  )
+
+  const removeCategories = useCallback(async (categoryIds: string[]) => {
+    if (categoryIds.length === 0) return
+    setSaving(true)
     setError(null)
     try {
-      const [cats, txns] = await Promise.all([
-        budgetCategoryService.initializeForProject(projectId),
-        transactionService.getByProject(projectId, filters),
-      ])
-      setCategories(cats)
-      setTransactions(txns)
+      await budgetCategoryService.deleteMany(categoryIds)
+      const removed = new Set(categoryIds)
+      setCategories((prev) => prev.filter((c) => !removed.has(c.id)))
     } catch (e) {
       setError(getErrorMessage(e))
+      throw e
     } finally {
-      setLoading(false)
+      setSaving(false)
     }
-  }, [projectId])
+  }, [])
 
   const updateBudget = useCallback(async (categoryId: string, amount: number) => {
     setSaving(true)
@@ -68,7 +92,7 @@ export function useBudgetDetail(projectId: string | undefined) {
         budgeted: acc.budgeted + row.budgeted,
         difference: acc.difference + row.difference,
       }),
-      { spent: 0, budgeted: 0, difference: 0 }
+      { spent: 0, budgeted: 0, difference: 0 },
     )
   }, [rows])
 
@@ -80,5 +104,6 @@ export function useBudgetDetail(projectId: string | undefined) {
     error,
     load,
     updateBudget,
+    removeCategories,
   }
 }

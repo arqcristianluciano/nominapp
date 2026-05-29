@@ -56,6 +56,7 @@ export function BudgetPresupuestoTab({
   onUpdateItem,
   onDeleteItem,
   onEditBudgetAmount,
+  onDeleteCategory,
 }: {
   loading: boolean
   rows: Array<{ category: BudgetCategory; spent: number; budgeted: number }>
@@ -67,6 +68,7 @@ export function BudgetPresupuestoTab({
   onUpdateItem: (id: string, categoryId: string, changes: Partial<Omit<BudgetItem, 'id'>>) => Promise<void>
   onDeleteItem: (id: string, categoryId: string) => Promise<void>
   onEditBudgetAmount: (id: string, amount: number) => void
+  onDeleteCategory?: (categoryId: string) => Promise<void>
 }) {
   return (
     <>
@@ -82,6 +84,7 @@ export function BudgetPresupuestoTab({
         onUpdateItem={onUpdateItem}
         onDeleteItem={onDeleteItem}
         onEditBudgetAmount={onEditBudgetAmount}
+        onDeleteCategory={onDeleteCategory}
       />
     </>
   )

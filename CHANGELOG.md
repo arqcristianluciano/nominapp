@@ -8,23 +8,30 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ## [Unreleased]
 
 ### Added
+
 - Subpartidas del presupuesto numeradas automáticamente (1.1, 1.2, …) en la lista y en el modal de creación (#40).
+- Al importar un presupuesto desde Excel, las partidas que quedan vacías (sin subpartidas, sin monto y sin gasto) se detectan automáticamente y se ofrece eliminarlas en un solo paso, pidiendo confirmación antes de borrar.
+- Botón para eliminar manualmente una partida vacía desde la tabla de presupuesto, con confirmación.
 
 ### Changed
+
 - Pendiente.
 
 ### Fixed
+
 - Pendiente.
 
 ## [0.6.0] - 2026-05-26
 
 ### Security
+
 - Cerrado leak cross-tenant en SELECT: RLS ahora limita lecturas por proyecto/empresa (migracion 043).
 - WITH CHECK en INSERT de aprobaciones y proyectos para evitar insertar filas fuera del tenant (migracion 044).
 - Endurecimiento de la edge function `send-push`: auth verificada y CORS restringido a origenes permitidos.
 - Validacion de archivos (tamano, MIME y nombre) en la subida de documentos de usuario.
 
 ### Fixed
+
 - Contexto de Toast memoizado para evitar loops de re-fetch.
 - `AttendanceForm` ya no pierde ediciones del usuario cuando llega la geolocalizacion.
 - Boton anidado invalido en `NotificationDropdown`.
@@ -32,6 +39,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - Errores ahora se muestran al usuario en ~12 lugares donde antes fallaban en silencio.
 
 ### Added
+
 - Portada, pie de pagina y anexo en el PDF del reporte mensual.
 - `ReporteMensualModal` ahora carga datos reales (antes mostraba placeholders).
 - Constraints `NOT NULL` (migracion 045), `UNIQUE` de identidad (migracion 046) y llaves foraneas (migracion 047).
@@ -40,6 +48,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ## [0.5.0] - 2026-05-21
 
 ### Added
+
 - Reporte mensual PDF con 4 secciones (resumen ejecutivo, nomina, compras, avances) (#24).
 - PWA instalable en Android e iOS con manifest y service worker pulidos (#24).
 - Internacionalizacion ES/EN con selector de idioma en sidebar (#24).
@@ -51,19 +60,23 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - Specs e2e adicionales para los flujos nuevos (#24).
 
 ### Changed
+
 - Auditoria mobile profunda aplicada en Cubicaciones, Nomina, Ordenes de Compra, Inventario y CxP (#24).
 
 ### Fixed
+
 - Error de build TypeScript en `executiveSummary` (#24).
 - Panel de exportar en pantalla de Settings (#24).
 
 ### Migrations
+
 - `040_bitacora_photos`: soporte de fotos en bitacora diaria (#24).
 - `041_attendance_photo_geo`: foto y coordenadas GPS en asistencia (#24).
 
 ## [0.4.0] - 2026-05-21
 
 ### Added
+
 - Pagina `/admin/usuarios` con CRUD de personas y matriz editable de permisos por rol/proyecto (#19).
 - Aplicacion de matriz de permisos v2 en UI y politicas RLS para los 8 roles del documento (#11).
 - Nuevos gates de rol y validaciones derivadas del barrido de auditoria (#21, #22).
@@ -71,26 +84,31 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - Tooling y documentacion ampliada producto del barrido 40-v2 (#23).
 
 ### Changed
+
 - Endurecimiento de politicas RLS por rol/proyecto y consolidacion del helper de membresia (#21, #22).
 - Reorganizacion de flujos administrativos y mejoras de accesibilidad (a11y) en pantallas existentes (#22).
 - Ajustes de UX y consistencia visual derivados de los batches criticos y altos del barrido (#21).
 
 ### Fixed
+
 - Correcciones criticas y de prioridad alta detectadas por los 12 + 30 agentes de auditoria (#21).
 - Arreglos de base de datos, features admin y tests reportados en la tercera ronda (#22).
 - Estabilizacion de docs, features y tests producto del barrido 40-v2 (#23).
 
 ### Security
+
 - Refuerzo de RLS por rol/proyecto y validacion de permisos en la matriz v2 (#11, #21, #22).
 - Verificacion de gates de rol en endpoints y vistas sensibles (#19, #22).
 
 ### Documentation
+
 - Actualizacion de documentacion tecnica y de auditoria derivada del barrido 40-agentes (#23).
 - Documentacion de la matriz de permisos v2 y del modulo `/admin/usuarios` (#11, #19).
 
 ## [0.3.0] - 2026-05-19
 
 ### Added
+
 - Integracion de Sentry para captura de errores de cliente (observabilidad) (#16).
 - Quick-access provisional de login con los 8 roles del documento.
 - Web Push end-to-end: Edge Function, UI y trigger.
@@ -110,6 +128,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - Cobertura e2e de flujos criticos de presupuesto recientemente arreglados (#14).
 
 ### Changed
+
 - Centralizacion de membresia en `is_member_of_project` y uso de `projects.created_by` (#17).
 - Unificacion de helpers compartidos entre `parseBudgetExcel` y `parseMercadoExcel` (#15).
 - Formateo de JSX one-liners en componentes de presupuesto (#13).
@@ -118,6 +137,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - Hardening de flujos UX y estabilizacion del dashboard y comportamiento e2e.
 
 ### Fixed
+
 - Romper recursion RLS y crear partidas nuevas al importar Excel de presupuesto (#12).
 - Rellenado de tokens NULL en `auth.users` (#10).
 - Permitir crear proyecto cuando no hay empresas (#7).
@@ -129,10 +149,12 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - Mock: `unaccent` en `ilike` y `custom_indirects` en tests.
 
 ### Security
+
 - Activacion de RLS baseline permissive en todas las tablas de `public`.
 - Endurecimiento de RLS por rol/proyecto y completado de empresas faltantes.
 
 ### Documentation
+
 - Documentacion de migraciones aplicadas en produccion via MCP.
 - Alineacion de `PROJECT.md` con el estado actual del proyecto.
 - Registro de canvases oficiales de auditoria.
