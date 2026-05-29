@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase'
 import type { PurchaseRequisition, PurchaseQuote, RequisitionStatus } from '@/types/purchaseOrder'
 import { approvalsService } from '@/services/approvalsService'
 import { pushNotificationService } from '@/services/pushNotificationService'
+import { inventoryService } from '@/services/inventoryService'
 
 function generateReqNumber(): string {
   const year = new Date().getFullYear()
@@ -377,8 +378,44 @@ export const requisitionService = {
     })
   },
 
+  // Recepción de mercancía (entrada de almacén). Solo aplica a órdenes ya
+  // colocadas ('ordered'). Da entrada al stock del proyecto creando movimientos
+  // de inventario tipo 'in' (uno por línea de la cotización aprobada, con
+  // fallback a la propia solicitud) enlazados a la OC vía purchase_order_id, y
+  // luego marca la orden como 'received'. El stock se alimenta ANTES de cambiar
+  // el estado: si la entrada de inventario falla, la orden permanece colocada y
+  // se puede reintentar sin duplicar movimientos.
   async markReceived(id: string, receivedBy: string) {
     const before = await this.getById(id)
+    if (before.status !== 'ordered') {
+      throw new Error('Solo se pueden recibir órdenes en estado "Orden colocada".')
+    }
+
+    const movements = this.buildReceiptMovements(before)
+    const today = new Date().toISOString().slice(0, 10)
+    for (const m of movements) {
+      const item = await inventoryService.findOrCreateItem({
+        project_id: before.project_id,
+        name: m.name,
+        unit: m.unit,
+        unit_cost: m.unit_cost,
+      })
+      await inventoryService.addMovement({
+        item_id: item.id,
+        project_id: before.project_id,
+        type: 'in',
+        quantity: m.quantity,
+        date: today,
+        unit_cost: m.unit_cost,
+        supplier_id: m.supplier_id,
+        purchase_order_id: id,
+        budget_item_id: before.budget_item_id,
+        budget_category_id: before.budget_category_id,
+        created_by: receivedBy,
+        notes: `Entrada por recepción de orden ${before.req_number}`,
+      })
+    }
+
     const { error } = await supabase
       .from('purchase_requisitions')
       .update({
@@ -396,8 +433,52 @@ export const requisitionService = {
       actor_display_name: receivedBy,
       payload_before: { status: before.status },
       payload_after: { status: 'received' },
-      metadata: { req_number: before.req_number, project_id: before.project_id },
+      metadata: {
+        req_number: before.req_number,
+        project_id: before.project_id,
+        inventory_entries: movements.length,
+      },
     })
+  },
+
+  // Deriva las líneas de entrada a almacén de una OC. Prioriza los ítems de la
+  // cotización aprobada (cantidad, unidad y precio reales); si la cotización no
+  // tiene líneas, cae a los datos de la propia solicitud.
+  buildReceiptMovements(req: PurchaseRequisition): {
+    name: string
+    unit: string | null
+    quantity: number
+    unit_cost: number | null
+    supplier_id: string | null
+  }[] {
+    const approvedQuote = (req.quotes ?? []).find((q) => q.id === req.approved_quote_id)
+    const supplierId = approvedQuote?.supplier_id ?? null
+    const items = approvedQuote?.items ?? []
+    if (items.length > 0) {
+      return items
+        .filter((it) => Number(it.quantity) > 0 && it.description?.trim())
+        .map((it) => ({
+          name: it.description,
+          unit: it.unit,
+          quantity: Number(it.quantity),
+          unit_cost: it.unit_price != null ? Number(it.unit_price) : null,
+          supplier_id: supplierId,
+        }))
+    }
+    // Fallback: la solicitud describe un único material.
+    const qty = Number(req.quantity_requested ?? 0)
+    if (qty > 0 && req.description?.trim()) {
+      return [
+        {
+          name: req.description,
+          unit: req.unit,
+          quantity: qty,
+          unit_cost: null,
+          supplier_id: supplierId,
+        },
+      ]
+    }
+    return []
   },
 
   async delete(id: string) {

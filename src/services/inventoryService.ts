@@ -83,6 +83,33 @@ export const inventoryService = {
     if (error) throw error
   },
 
+  // Busca un material del proyecto por nombre (sin distinguir mayúsculas) y, si
+  // no existe, lo crea. Usado por la recepción de órdenes de compra para dar
+  // entrada a stock sin obligar al almacenista a pre-registrar el material.
+  async findOrCreateItem(input: {
+    project_id: string
+    name: string
+    unit?: string | null
+    unit_cost?: number | null
+  }): Promise<InventoryItem> {
+    const name = input.name.trim()
+    const { data: existing } = await supabase
+      .from('inventory_items')
+      .select('*')
+      .eq('project_id', input.project_id)
+      .ilike('name', name)
+      .limit(1)
+    if (existing && existing.length > 0) return existing[0] as InventoryItem
+    return this.createItem({
+      project_id: input.project_id,
+      name,
+      unit: input.unit?.trim() || 'UD',
+      current_stock: 0,
+      min_stock: 0,
+      unit_cost: input.unit_cost ?? 0,
+    })
+  },
+
   async deleteItem(id: string): Promise<void> {
     const { error } = await supabase.from('inventory_items').delete().eq('id', id)
     if (error) throw error

@@ -1,16 +1,19 @@
-import { Send, ShieldCheck, Trash2, Truck } from 'lucide-react'
+import { PackageCheck, Send, ShieldCheck, Trash2, Truck } from 'lucide-react'
 
 interface Props {
   canEdit: boolean
   canSubmit: boolean
   canApprove?: boolean
   canRelease?: boolean
+  canReceive?: boolean
   status: string
   placingOrder: boolean
+  receivingOrder?: boolean
   onSubmitForApproval: () => void
   onOpenApproval: () => void
   onPlaceCash: () => void
   onPlaceCredit: () => void
+  onReceive?: () => void
   onDelete: () => void
 }
 
@@ -19,12 +22,15 @@ export function PurchaseOrderActions({
   canSubmit,
   canApprove = true,
   canRelease = false,
+  canReceive = false,
   status,
   placingOrder,
+  receivingOrder = false,
   onSubmitForApproval,
   onOpenApproval,
   onPlaceCash,
   onPlaceCredit,
+  onReceive,
   onDelete,
 }: Props) {
   // Touch-friendly base classes: min-h-12 (~48px) on mobile — comfortably above
@@ -38,7 +44,11 @@ export function PurchaseOrderActions({
   // con OC anteriores al paso de liberación.
   const awaitingRelease = status === 'pendiente_liberacion' || status === 'approved'
 
-  const hasAnyAction = canSubmit || status === 'pending_approval' || awaitingRelease || canEdit
+  // 'ordered' = OC ya colocada con el suplidor, a la espera de que el
+  // Almacenista dé entrada a la mercancía (capability 'receive_order').
+  const awaitingReceipt = status === 'ordered'
+
+  const hasAnyAction = canSubmit || status === 'pending_approval' || awaitingRelease || awaitingReceipt || canEdit
 
   if (!hasAnyAction) return null
 
@@ -81,6 +91,21 @@ export function PurchaseOrderActions({
       {awaitingRelease && !canRelease && (
         <p className="text-sm text-app-muted italic">
           Aprobada por el Director. Pendiente de liberación final del Administrador (Director General).
+        </p>
+      )}
+      {awaitingReceipt && canReceive && (
+        <button
+          onClick={onReceive}
+          disabled={receivingOrder}
+          className={`${baseBtn} bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-50`}
+        >
+          <PackageCheck className="w-4 h-4" />
+          {receivingOrder ? 'Registrando entrada…' : 'Recibir mercancía (dar entrada a almacén)'}
+        </button>
+      )}
+      {awaitingReceipt && !canReceive && (
+        <p className="text-sm text-app-muted italic">
+          Orden colocada con el suplidor. Pendiente de recepción en almacén por el Almacenista.
         </p>
       )}
       {canEdit && (

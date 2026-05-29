@@ -25,6 +25,8 @@ export function usePurchaseOrderDetail() {
   const [deleteQuoteId, setDeleteQuoteId] = useState<string | null>(null)
   const [confirmDeleteReq, setConfirmDeleteReq] = useState(false)
   const [excessModal, setExcessModal] = useState(false)
+  const [confirmReceive, setConfirmReceive] = useState(false)
+  const [receivingOrder, setReceivingOrder] = useState(false)
 
   const load = useCallback(async () => {
     if (!orderId) return
@@ -110,6 +112,18 @@ export function usePurchaseOrderDetail() {
     }
   }
 
+  async function handleMarkReceived(actor?: string) {
+    if (!orderId) return
+    setReceivingOrder(true)
+    try {
+      await requisitionService.markReceived(orderId, actor ?? 'Almacenista')
+      setConfirmReceive(false)
+      await load()
+    } finally {
+      setReceivingOrder(false)
+    }
+  }
+
   async function handleValidateExcess(validatedBy: string, motivo: string) {
     if (!orderId) return
     await requisitionService.validateExcess(orderId, validatedBy, motivo)
@@ -141,6 +155,8 @@ export function usePurchaseOrderDetail() {
     deleteQuoteId,
     confirmDeleteReq,
     excessModal,
+    confirmReceive,
+    receivingOrder,
     quotes,
     canEdit,
     canNegotiate,
@@ -151,6 +167,7 @@ export function usePurchaseOrderDetail() {
     setDeleteQuoteId,
     setConfirmDeleteReq,
     setExcessModal,
+    setConfirmReceive,
     handleAddQuote,
     handleNegotiate,
     handleDeleteQuote,
@@ -159,6 +176,7 @@ export function usePurchaseOrderDetail() {
     handleReject,
     handleSubmitForApproval,
     handlePlaceOrder,
+    handleMarkReceived,
     handleValidateExcess,
     handleDelete,
   }

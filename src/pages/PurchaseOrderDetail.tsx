@@ -5,10 +5,11 @@ import { PurchaseOrderDetailModals } from '@/components/features/purchase-orders
 import { PurchaseOrderQuotesSection } from '@/components/features/purchase-orders/PurchaseOrderQuotesSection'
 import { PurchaseOrderSignatureCard } from '@/components/features/purchase-orders/PurchaseOrderSignatureCard'
 import { ExcessValidationModal } from '@/components/features/purchase-orders/ExcessValidationModal'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { usePurchaseOrderDetail } from '@/hooks/usePurchaseOrderDetail'
 import { useProjectRoles } from '@/hooks/useProjectRoles'
 import { useAuthStore } from '@/stores/authStore'
-import { ShieldCheck, Send, Truck } from 'lucide-react'
+import { PackageCheck, ShieldCheck, Send, Truck } from 'lucide-react'
 
 export default function PurchaseOrderDetail() {
   const {
@@ -23,6 +24,8 @@ export default function PurchaseOrderDetail() {
     deleteQuoteId,
     confirmDeleteReq,
     excessModal,
+    confirmReceive,
+    receivingOrder,
     quotes,
     canEdit,
     canNegotiate,
@@ -33,6 +36,7 @@ export default function PurchaseOrderDetail() {
     setDeleteQuoteId,
     setConfirmDeleteReq,
     setExcessModal,
+    setConfirmReceive,
     handleAddQuote,
     handleNegotiate,
     handleDeleteQuote,
@@ -41,6 +45,7 @@ export default function PurchaseOrderDetail() {
     handleReject,
     handleSubmitForApproval,
     handlePlaceOrder,
+    handleMarkReceived,
     handleValidateExcess,
     handleDelete,
   } = usePurchaseOrderDetail()
@@ -50,6 +55,10 @@ export default function PurchaseOrderDetail() {
 
   if (loading) return <div className="p-8 text-center text-app-subtle">Cargando…</div>
   if (!req) return <div className="p-8 text-center text-app-muted">Solicitud no encontrada</div>
+
+  // El Almacenista (capability 'receive_order') da entrada a la mercancía una
+  // vez la OC está colocada con el suplidor.
+  const canReceive = req.status === 'ordered' && roles.canReceiveOrder
 
   // Determine the primary mobile CTA for the sticky footer. Only ONE button is
   // duplicated in the footer (the most relevant action) to keep it compact.
@@ -86,6 +95,15 @@ export default function PurchaseOrderDetail() {
         onClick: () => setExcessModal(true),
         className: 'bg-amber-600 hover:bg-amber-700 text-white',
         icon: <ShieldCheck className="w-4 h-4" />,
+      }
+    }
+    if (canReceive) {
+      return {
+        label: receivingOrder ? 'Registrando entrada…' : 'Recibir mercancía',
+        onClick: () => setConfirmReceive(true),
+        className: 'bg-teal-600 hover:bg-teal-700 text-white disabled:opacity-50',
+        icon: <PackageCheck className="w-4 h-4" />,
+        disabled: receivingOrder,
       }
     }
     return null
@@ -132,12 +150,15 @@ export default function PurchaseOrderDetail() {
               canSubmit={canSubmit}
               canApprove={roles.canReleasePurchaseOrder}
               canRelease={roles.isDirector}
+              canReceive={canReceive}
               status={req.status}
               placingOrder={placingOrder}
+              receivingOrder={receivingOrder}
               onSubmitForApproval={handleSubmitForApproval}
               onOpenApproval={() => setApprovalModal(true)}
               onPlaceCash={() => handlePlaceOrder('cash', user?.displayName)}
               onPlaceCredit={() => handlePlaceOrder('credit', user?.displayName)}
+              onReceive={() => setConfirmReceive(true)}
               onDelete={() => setConfirmDeleteReq(true)}
             />
           </aside>
@@ -170,6 +191,16 @@ export default function PurchaseOrderDetail() {
           onClose={() => setExcessModal(false)}
           onValidate={handleValidateExcess}
           defaultValidator={user?.displayName}
+        />
+
+        <ConfirmModal
+          open={confirmReceive}
+          variant="warning"
+          title="Recibir mercancía"
+          message="Se dará entrada al stock del proyecto con las cantidades y precios de la cotización aprobada, y la orden quedará marcada como Recibida. ¿Confirmar la recepción?"
+          confirmLabel="Confirmar recepción"
+          onConfirm={() => handleMarkReceived(user?.displayName)}
+          onCancel={() => setConfirmReceive(false)}
         />
       </div>
 
