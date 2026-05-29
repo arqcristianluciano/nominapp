@@ -32,6 +32,10 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - `PriceListInlineForm` ahora muestra un toast de error cuando un precio no se puede guardar, en lugar de fallar en silencio.
 - El selector de la distribución de pagos ya no aparece vacío: antes dependía de la tabla `bank_accounts` (sin registros) en vez de los beneficiarios.
 
+### Security
+
+- RLS de autoría en partidas/facturas (migración 056): corregir o borrar un renglón de mano de obra o una factura ahora solo lo permite su autor (`created_by`) o la mayor jerarquía (`approve_payroll`); antes bastaba `edit_payroll`. Insertar sigue requiriendo `edit_payroll`. **Requiere validación en Supabase antes de aplicar.**
+
 ## [0.6.0] - 2026-05-26
 
 ### Security
