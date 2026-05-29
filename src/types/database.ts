@@ -194,15 +194,21 @@ export interface IndirectCost {
 export interface PaymentDistribution {
   id: string
   payroll_period_id: string
-  bank_account_id: string
+  /** Cuenta bancaria interna (flujo legacy). Opcional: hoy el pago se asigna a un beneficiario. */
+  bank_account_id: string | null
   amount: number
   payment_method: 'deposit' | 'transfer' | 'check' | 'cash'
+  /** Nombre del beneficiario (contratista o proveedor). */
   beneficiary: string | null
+  beneficiary_type: 'contractor' | 'supplier' | null
+  beneficiary_id: string | null
+  /** Snapshot de los datos bancarios del beneficiario al momento del pago. */
+  bank_name: string | null
+  bank_account: string | null
   check_number: string | null
   status: 'pending' | 'completed' | 'cancelled'
   instructions: string | null
   completed_at: string | null
-  bank_account?: BankAccount
 }
 
 export interface Transaction {

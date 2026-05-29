@@ -22,12 +22,14 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ### Changed
 
 - El editor y la impresión de nómina ahora muestran las facturas de materiales detalladas por ítem.
+- Distribución de pagos: ahora se selecciona un beneficiario (contratista o proveedor) y los datos bancarios se copian automáticamente desde su ficha, en lugar de exigir una cuenta bancaria interna (migración 052).
 
 ### Fixed
 
 - Modo demo: el cliente mock ahora implementa `removeChannel` y un stub de `storage`, evitando el crash al navegar y permitiendo adjuntar/ver comprobantes en demo.
 - La lista de precios ya permite guardar ítems de tipo "Ajuste". El constraint `category` de `price_list_items` omitía `adjustment`, por lo que esos precios fallaban en silencio al guardarse (migración 050).
 - `PriceListInlineForm` ahora muestra un toast de error cuando un precio no se puede guardar, en lugar de fallar en silencio.
+- El selector de la distribución de pagos ya no aparece vacío: antes dependía de la tabla `bank_accounts` (sin registros) en vez de los beneficiarios.
 
 ## [0.6.0] - 2026-05-26
 

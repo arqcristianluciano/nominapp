@@ -1,19 +1,19 @@
 import { useCallback, useEffect, useState } from 'react'
 import * as Sentry from '@sentry/react'
 import { Plus, Trash2, CheckCircle } from 'lucide-react'
-import { paymentDistributionService, type DistributionWithAccount } from '@/services/paymentDistributionService'
-import { bankAccountService } from '@/services/bankAccountService'
+import { paymentDistributionService, type Beneficiary } from '@/services/paymentDistributionService'
+import { DistributionForm, type DistributionFormValues } from './DistributionForm'
 import { useToast } from '@/components/ui/Toast'
 import { formatRD } from '@/utils/currency'
 import { getErrorMessage } from '@/utils/errors'
-import type { BankAccount } from '@/types/database'
+import type { PaymentDistribution } from '@/types/database'
 
-const PAYMENT_METHODS = [
-  { value: 'transfer', label: 'Transferencia' },
-  { value: 'check', label: 'Cheque' },
-  { value: 'deposit', label: 'Depósito' },
-  { value: 'cash', label: 'Efectivo' },
-]
+const METHOD_LABELS: Record<PaymentDistribution['payment_method'], string> = {
+  transfer: 'Transferencia',
+  check: 'Cheque',
+  deposit: 'Depósito',
+  cash: 'Efectivo',
+}
 
 interface Props {
   periodId: string
@@ -21,73 +21,63 @@ interface Props {
 }
 
 export function PaymentDistributionsSection({ periodId, grandTotal }: Props) {
-  const [distributions, setDistributions] = useState<DistributionWithAccount[]>([])
-  const [accounts, setAccounts] = useState<BankAccount[]>([])
+  const [distributions, setDistributions] = useState<PaymentDistribution[]>([])
+  const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([])
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const { error: toastError } = useToast()
-
-  const [bankAccountId, setBankAccountId] = useState('')
-  const [beneficiary, setBeneficiary] = useState('')
-  const [amount, setAmount] = useState('')
-  const [method, setMethod] = useState('transfer')
-  const [checkNumber, setCheckNumber] = useState('')
 
   const load = useCallback(async () => {
     const data = await paymentDistributionService.getByPeriod(periodId).catch((err) => {
       console.error('[PaymentDistributionsSection] cargar distribuciones fallo', err)
       Sentry.captureException(err, { tags: { area: 'PaymentDistributionsSection' } })
       toastError(`No se pudieron cargar las distribuciones de pago: ${getErrorMessage(err)}`)
-      return [] as DistributionWithAccount[]
+      return [] as PaymentDistribution[]
     })
     setDistributions(data)
   }, [periodId, toastError])
 
   useEffect(() => {
     load()
-    bankAccountService
-      .getAll()
-      .then(setAccounts)
+    paymentDistributionService
+      .getBeneficiaries()
+      .then(setBeneficiaries)
       .catch((err) => {
-        console.error('[PaymentDistributionsSection] cargar cuentas bancarias fallo', err)
+        console.error('[PaymentDistributionsSection] cargar beneficiarios fallo', err)
         Sentry.captureException(err, { tags: { area: 'PaymentDistributionsSection' } })
-        toastError(`No se pudieron cargar las cuentas bancarias: ${getErrorMessage(err)}`)
+        toastError(`No se pudieron cargar los beneficiarios: ${getErrorMessage(err)}`)
       })
   }, [load, periodId, toastError])
 
-  async function handleAdd(e: React.FormEvent) {
-    e.preventDefault()
-    const numericAmount = Number(amount)
-    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
-      setError('El monto debe ser mayor que cero.')
-      return
-    }
-    if (numericAmount > pendiente + 0.0001) {
-      setError('El monto excede lo pendiente por distribuir.')
-      return
-    }
+  const totalDistributed = distributions.reduce((sum, d) => sum + d.amount, 0)
+  const pendiente = grandTotal - totalDistributed
 
-    setError(null)
+  async function handleAdd(values: DistributionFormValues) {
     setSaving(true)
     try {
-      await paymentDistributionService.create({
-        payroll_period_id: periodId,
-        bank_account_id: bankAccountId,
-        beneficiary: beneficiary || null,
-        amount: numericAmount,
-        payment_method: method as 'transfer' | 'check' | 'deposit' | 'cash',
-        check_number: checkNumber || null,
-        status: 'pending',
-        instructions: null,
-        completed_at: null,
-      }, grandTotal)
-      setBankAccountId(''); setBeneficiary(''); setAmount(''); setMethod('transfer'); setCheckNumber('')
+      await paymentDistributionService.create(
+        {
+          payroll_period_id: periodId,
+          bank_account_id: null,
+          beneficiary: values.beneficiary,
+          beneficiary_type: values.beneficiary_type,
+          beneficiary_id: values.beneficiary_id,
+          bank_name: values.bank_name,
+          bank_account: values.bank_account,
+          amount: values.amount,
+          payment_method: values.payment_method,
+          check_number: values.check_number,
+          status: 'pending',
+          instructions: null,
+          completed_at: null,
+        },
+        grandTotal,
+      )
       setShowForm(false)
       await load()
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo agregar el pago.')
-    } finally { setSaving(false) }
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function handleComplete(id: string) {
@@ -100,63 +90,32 @@ export function PaymentDistributionsSection({ periodId, grandTotal }: Props) {
     await load()
   }
 
-  const totalDistributed = distributions.reduce((sum, d) => sum + d.amount, 0)
-  const pendiente = grandTotal - totalDistributed
-
-  const inputClass = 'px-2 py-1.5 border border-app-border rounded text-xs focus:ring-1 focus:ring-blue-500'
-
   return (
     <section>
       <div className="flex items-center justify-between mb-3">
         <div>
           <h2 className="text-lg font-medium text-app-text">Distribución de pagos</h2>
           {pendiente > 0.01 && <p className="text-xs text-amber-600 mt-0.5">Falta distribuir: {formatRD(pendiente)}</p>}
-          {pendiente <= 0 && distributions.length > 0 && <p className="text-xs text-green-600 mt-0.5">Total distribuido completo</p>}
+          {pendiente <= 0 && distributions.length > 0 && (
+            <p className="text-xs text-green-600 mt-0.5">Total distribuido completo</p>
+          )}
         </div>
-        <button onClick={() => setShowForm(!showForm)} className="flex items-center gap-1.5 px-3 py-1.5 bg-app-surface border border-app-border text-sm font-medium rounded-lg hover:bg-app-hover">
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-app-surface border border-app-border text-sm font-medium rounded-lg hover:bg-app-hover"
+        >
           <Plus className="w-4 h-4" /> Agregar pago
         </button>
       </div>
 
       {showForm && (
-        <form onSubmit={handleAdd} className="bg-app-bg rounded-xl border border-app-border p-4 mb-4 space-y-3">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="col-span-2 sm:col-span-1">
-              <label className="text-[10px] font-medium text-app-muted mb-1 block">Cuenta bancaria</label>
-              <select value={bankAccountId} onChange={(e) => setBankAccountId(e.target.value)} className={`${inputClass} w-full`} required>
-                <option value="">Seleccionar...</option>
-                {accounts.map((a) => <option key={a.id} value={a.id}>{a.bank_name} — {a.account_number}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="text-[10px] font-medium text-app-muted mb-1 block">Beneficiario</label>
-              <input type="text" value={beneficiary} onChange={(e) => setBeneficiary(e.target.value)} className={`${inputClass} w-full`} placeholder="Nombre..." />
-            </div>
-            <div>
-              <label className="text-[10px] font-medium text-app-muted mb-1 block">Monto (RD$) *</label>
-              <input type="number" step="any" value={amount} onChange={(e) => setAmount(e.target.value)} className={`${inputClass} w-full`} placeholder="0.00" required />
-            </div>
-            <div>
-              <label className="text-[10px] font-medium text-app-muted mb-1 block">Método</label>
-              <select value={method} onChange={(e) => setMethod(e.target.value)} className={`${inputClass} w-full`}>
-                {PAYMENT_METHODS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
-              </select>
-            </div>
-          </div>
-          {method === 'check' && (
-            <div className="w-48">
-              <label className="text-[10px] font-medium text-app-muted mb-1 block">No. cheque</label>
-              <input type="text" value={checkNumber} onChange={(e) => setCheckNumber(e.target.value)} className={`${inputClass} w-full`} />
-            </div>
-          )}
-          <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setShowForm(false)} className="px-3 py-1.5 text-xs text-app-muted border border-app-border rounded-lg hover:bg-app-hover">Cancelar</button>
-            <button type="submit" disabled={saving} className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50">
-              {saving ? 'Guardando...' : 'Agregar'}
-            </button>
-          </div>
-          {error && <p className="text-xs text-red-600">{error}</p>}
-        </form>
+        <DistributionForm
+          beneficiaries={beneficiaries}
+          pendiente={pendiente}
+          saving={saving}
+          onSubmit={handleAdd}
+          onCancel={() => setShowForm(false)}
+        />
       )}
 
       {distributions.length === 0 ? (
@@ -166,32 +125,56 @@ export function PaymentDistributionsSection({ periodId, grandTotal }: Props) {
       ) : (
         <div className="bg-app-surface rounded-xl border border-app-border overflow-hidden">
           <table className="w-full text-sm">
-            <thead><tr className="bg-app-bg border-b border-app-border">
-              <th className="px-4 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">Banco / Cuenta</th>
-              <th className="px-4 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">Beneficiario</th>
-              <th className="px-4 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">Método</th>
-              <th className="px-4 py-2 text-right text-[10px] font-semibold text-app-muted uppercase">Monto</th>
-              <th className="px-4 py-2 text-center text-[10px] font-semibold text-app-muted uppercase">Estado</th>
-              <th className="w-20" />
-            </tr></thead>
+            <thead>
+              <tr className="bg-app-bg border-b border-app-border">
+                <th className="px-4 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">Beneficiario</th>
+                <th className="px-4 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">
+                  Banco / Cuenta
+                </th>
+                <th className="px-4 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">Método</th>
+                <th className="px-4 py-2 text-right text-[10px] font-semibold text-app-muted uppercase">Monto</th>
+                <th className="px-4 py-2 text-center text-[10px] font-semibold text-app-muted uppercase">Estado</th>
+                <th className="w-20" />
+              </tr>
+            </thead>
             <tbody className="divide-y divide-app-border">
               {distributions.map((d) => (
                 <tr key={d.id} className="hover:bg-app-hover">
-                  <td className="px-4 py-2.5 text-xs text-app-text">{d.bank_account?.bank_name || '—'}<span className="text-app-subtle ml-1 text-[10px]">{d.bank_account?.account_number}</span></td>
-                  <td className="px-4 py-2.5 text-xs text-app-muted">{d.beneficiary || '—'}</td>
-                  <td className="px-4 py-2.5 text-xs text-app-muted capitalize">{d.payment_method}{d.check_number ? ` #${d.check_number}` : ''}</td>
+                  <td className="px-4 py-2.5 text-xs text-app-text">{d.beneficiary || '—'}</td>
+                  <td className="px-4 py-2.5 text-xs text-app-muted">
+                    {d.bank_name || '—'}
+                    {d.bank_account ? <span className="text-app-subtle ml-1 text-[10px]">{d.bank_account}</span> : null}
+                  </td>
+                  <td className="px-4 py-2.5 text-xs text-app-muted">
+                    {METHOD_LABELS[d.payment_method] ?? d.payment_method}
+                    {d.check_number ? ` #${d.check_number}` : ''}
+                  </td>
                   <td className="px-4 py-2.5 text-xs font-semibold text-app-text text-right">{formatRD(d.amount)}</td>
                   <td className="px-4 py-2.5 text-center">
-                    {d.status === 'completed'
-                      ? <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-50 text-green-700 font-medium">Completado</span>
-                      : <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 font-medium">Pendiente</span>}
+                    {d.status === 'completed' ? (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-50 text-green-700 font-medium">
+                        Completado
+                      </span>
+                    ) : (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 font-medium">
+                        Pendiente
+                      </span>
+                    )}
                   </td>
                   <td className="px-2 py-2.5">
                     <div className="flex items-center gap-1 justify-end">
                       {d.status !== 'completed' && (
-                        <button onClick={() => handleComplete(d.id)} title="Marcar completado" className="p-1 text-app-subtle hover:text-green-500"><CheckCircle className="w-3.5 h-3.5" /></button>
+                        <button
+                          onClick={() => handleComplete(d.id)}
+                          title="Marcar completado"
+                          className="p-1 text-app-subtle hover:text-green-500"
+                        >
+                          <CheckCircle className="w-3.5 h-3.5" />
+                        </button>
                       )}
-                      <button onClick={() => handleDelete(d.id)} className="p-1 text-app-subtle hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => handleDelete(d.id)} className="p-1 text-app-subtle hover:text-red-500">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -199,7 +182,9 @@ export function PaymentDistributionsSection({ periodId, grandTotal }: Props) {
             </tbody>
             <tfoot>
               <tr className="bg-app-bg border-t border-app-border">
-                <td colSpan={3} className="px-4 py-2 text-xs font-semibold text-app-muted">Total distribuido</td>
+                <td colSpan={3} className="px-4 py-2 text-xs font-semibold text-app-muted">
+                  Total distribuido
+                </td>
                 <td className="px-4 py-2 text-xs font-bold text-app-text text-right">{formatRD(totalDistributed)}</td>
                 <td colSpan={2} />
               </tr>
