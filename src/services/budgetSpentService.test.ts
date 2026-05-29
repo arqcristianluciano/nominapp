@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 const projectId = `p_spent_${Date.now()}`
 const catA = `cat_spent_a_${Date.now()}`
 const catB = `cat_spent_b_${Date.now()}`
+const itemA = `item_spent_a_${Date.now()}`
 const approvedPeriod = `per_appr_${Date.now()}`
 const draftPeriod = `per_draft_${Date.now()}`
 
@@ -14,6 +15,16 @@ beforeAll(async () => {
     { id: catA, project_id: projectId, code: '01', name: 'Preliminares', sort_order: 0, budgeted_amount: 100000 },
     { id: catB, project_id: projectId, code: '02', name: 'Demoliciones', sort_order: 1, budgeted_amount: 50000 },
   ])
+  // Partida bajo el capítulo A, para imputaciones a nivel de budget_item.
+  await supabase.from('budget_items').insert({
+    id: itemA,
+    budget_category_id: catA,
+    description: 'Limpieza',
+    unit: 'm2',
+    quantity: 100,
+    unit_price: 50,
+    sort_order: 0,
+  })
   // Reporte comprometido (aprobado) — debe contar.
   await supabase.from('payroll_periods').insert({
     id: approvedPeriod,
@@ -66,26 +77,56 @@ beforeAll(async () => {
       sort_order: 1,
     },
   ])
-  await supabase
-    .from('material_invoices')
-    .insert([
-      {
-        payroll_period_id: approvedPeriod,
-        supplier_id: 's1',
-        description: 'Cemento',
-        amount: 3000,
-        budget_category_id: catB,
-      },
-    ])
+  await supabase.from('material_invoices').insert([
+    {
+      payroll_period_id: approvedPeriod,
+      supplier_id: 's1',
+      description: 'Cemento',
+      amount: 3000,
+      budget_category_id: catB,
+    },
+  ])
+
+  // Salidas de almacén imputadas: una por capítulo (catB) y otra por partida (itemA → catA).
+  await supabase.from('inventory_movements').insert([
+    {
+      project_id: projectId,
+      type: 'out',
+      quantity: 2,
+      unit_cost: 250,
+      date: '2026-05-12',
+      budget_category_id: catB,
+      budget_item_id: null,
+    },
+    {
+      project_id: projectId,
+      type: 'out',
+      quantity: 4,
+      unit_cost: 100,
+      date: '2026-05-12',
+      budget_category_id: null,
+      budget_item_id: itemA,
+    },
+    // Entrada (type='in'): NO debe contar como gasto.
+    {
+      project_id: projectId,
+      type: 'in',
+      quantity: 10,
+      unit_cost: 1000,
+      date: '2026-05-12',
+      budget_category_id: catB,
+      budget_item_id: null,
+    },
+  ])
 })
 
 describe('budgetSpentService.getImputedCostByCategory', () => {
-  it('suma mano de obra y materiales de reportes comprometidos por capítulo', async () => {
+  it('suma mano de obra, materiales e inventario imputados por capítulo', async () => {
     const map = await budgetSpentService.getImputedCostByCategory(projectId)
-    // Sólo el reporte aprobado: 5 × 1000 en Preliminares.
-    expect(map[catA]).toBe(5000)
-    // Factura de material en Demoliciones.
-    expect(map[catB]).toBe(3000)
+    // Preliminares: 5×1000 (mano de obra) + 4×100 (salida de almacén vía partida) = 5400.
+    expect(map[catA]).toBe(5400)
+    // Demoliciones: factura 3000 + salida 2×250 = 3500. La entrada (type='in') no cuenta.
+    expect(map[catB]).toBe(3500)
   })
 
   it('excluye reportes en borrador del rango de fechas', async () => {
@@ -94,6 +135,7 @@ describe('budgetSpentService.getImputedCostByCategory', () => {
       dateTo: '2026-05-31',
     })
     // El reporte en borrador (10 × 2000) NO se incluye aunque cae en el rango.
-    expect(map[catA]).toBe(5000)
+    // catA = 5000 (mano de obra) + 400 (inventario) = 5400.
+    expect(map[catA]).toBe(5400)
   })
 })
