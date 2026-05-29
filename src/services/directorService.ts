@@ -42,7 +42,10 @@ export const directorService = {
     ] = await Promise.all([
       supabase.from('projects').select('*, company:companies(id, name, rnc)'),
       supabase.from('budget_categories').select('project_id, budgeted_amount'),
-      supabase.from('payroll_periods').select('project_id, grand_total, status').in('status', COMMITTED_PAYROLL_STATUSES),
+      supabase
+        .from('payroll_periods')
+        .select('project_id, grand_total, status')
+        .in('status', COMMITTED_PAYROLL_STATUSES),
       supabase.from('transactions').select('project_id, total, payment_condition'),
       supabase.from('purchase_requisitions').select('project_id, status'),
       supabase.from('inventory_items').select('project_id, current_stock, min_stock'),
@@ -50,24 +53,15 @@ export const directorService = {
 
     const budgetByProject = new Map<string, number>()
     for (const cat of (categories ?? []) as Array<{ project_id: string; budgeted_amount: number | null }>) {
-      budgetByProject.set(
-        cat.project_id,
-        (budgetByProject.get(cat.project_id) ?? 0) + Number(cat.budgeted_amount ?? 0),
-      )
+      budgetByProject.set(cat.project_id, (budgetByProject.get(cat.project_id) ?? 0) + Number(cat.budgeted_amount ?? 0))
     }
 
     const actualByProject = new Map<string, number>()
     for (const p of (payrolls ?? []) as Array<{ project_id: string; grand_total: number | null }>) {
-      actualByProject.set(
-        p.project_id,
-        (actualByProject.get(p.project_id) ?? 0) + Number(p.grand_total ?? 0),
-      )
+      actualByProject.set(p.project_id, (actualByProject.get(p.project_id) ?? 0) + Number(p.grand_total ?? 0))
     }
     for (const t of (transactions ?? []) as Array<{ project_id: string; total: number | null }>) {
-      actualByProject.set(
-        t.project_id,
-        (actualByProject.get(t.project_id) ?? 0) + Number(t.total ?? 0),
-      )
+      actualByProject.set(t.project_id, (actualByProject.get(t.project_id) ?? 0) + Number(t.total ?? 0))
     }
 
     const cxpByProject = new Map<string, number>()
@@ -82,7 +76,7 @@ export const directorService = {
 
     const pendingReqByProject = new Map<string, number>()
     for (const r of (requisitions ?? []) as Array<{ project_id: string; status: string }>) {
-      if (['pendiente_validacion', 'pending_approval'].includes(r.status)) {
+      if (['pendiente_validacion', 'pending_approval', 'pendiente_liberacion'].includes(r.status)) {
         pendingReqByProject.set(r.project_id, (pendingReqByProject.get(r.project_id) ?? 0) + 1)
       }
     }
@@ -98,27 +92,36 @@ export const directorService = {
       }
     }
 
-    return (projects ?? []).map((p: { id: string; name: string; code: string; status: string; company_id: string; company?: { name?: string } }) => {
-      const total_budget = budgetByProject.get(p.id) ?? 0
-      const total_actual = actualByProject.get(p.id) ?? 0
-      const variance = total_actual - total_budget
-      const variance_pct = total_budget > 0 ? (variance / total_budget) * 100 : 0
-      return {
-        project_id: p.id,
-        project_name: p.name,
-        project_code: p.code,
-        company_id: p.company_id,
-        company_name: p.company?.name ?? '',
-        status: p.status,
-        total_budget,
-        total_actual,
-        variance,
-        variance_pct,
-        cxp_pending: cxpByProject.get(p.id) ?? 0,
-        pending_requisitions: pendingReqByProject.get(p.id) ?? 0,
-        low_stock_items: lowStockByProject.get(p.id) ?? 0,
-      }
-    })
+    return (projects ?? []).map(
+      (p: {
+        id: string
+        name: string
+        code: string
+        status: string
+        company_id: string
+        company?: { name?: string }
+      }) => {
+        const total_budget = budgetByProject.get(p.id) ?? 0
+        const total_actual = actualByProject.get(p.id) ?? 0
+        const variance = total_actual - total_budget
+        const variance_pct = total_budget > 0 ? (variance / total_budget) * 100 : 0
+        return {
+          project_id: p.id,
+          project_name: p.name,
+          project_code: p.code,
+          company_id: p.company_id,
+          company_name: p.company?.name ?? '',
+          status: p.status,
+          total_budget,
+          total_actual,
+          variance,
+          variance_pct,
+          cxp_pending: cxpByProject.get(p.id) ?? 0,
+          pending_requisitions: pendingReqByProject.get(p.id) ?? 0,
+          low_stock_items: lowStockByProject.get(p.id) ?? 0,
+        }
+      },
+    )
   },
 
   // KPIs agregados por empresa.

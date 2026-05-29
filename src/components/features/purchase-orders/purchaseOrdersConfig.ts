@@ -4,6 +4,7 @@ export const PURCHASE_ORDER_STATUS_OPTIONS = [
   { value: 'pendiente_validacion', label: 'Pendiente validación' },
   { value: 'quoting', label: 'En cotización' },
   { value: 'pending_approval', label: 'Pendiente' },
+  { value: 'pendiente_liberacion', label: 'Pendiente liberación' },
   { value: 'approved', label: 'Aprobado' },
   { value: 'ordered', label: 'Ordenado' },
   { value: 'received', label: 'Recibido' },

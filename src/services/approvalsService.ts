@@ -17,7 +17,7 @@ export type ApprovalAction =
   | 'approve'
   | 'reject'
   | 'return_for_revision'
-  | 'release' // OC pendiente_liberacion → liberada (regla 7.2)
+  | 'release' // Administrador libera la OC: pendiente_liberacion → ordered (regla 7.2)
   | 'validate_excess' // solicitud que excede plan (regla 7.1)
   | 'override_stock' // override de stock negativo (regla 7.5)
   | 'budget_edit_post_approval' // versionado de presupuesto (regla 7.7)
