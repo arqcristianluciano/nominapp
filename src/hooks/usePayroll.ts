@@ -200,11 +200,12 @@ export function usePayroll(periodId: string | undefined) {
   const addMaterialInvoice = useCallback(
     async (invoice: {
       supplier_id: string
-      description: string
       invoice_reference?: string
-      amount: number
+      attachment_path?: string | null
       budget_category_id?: string | null
       budget_item_id?: string | null
+      notes?: string
+      items: { description: string; amount: number }[]
     }) => {
       if (!periodId) return
       setSaving(true)
@@ -242,6 +243,28 @@ export function usePayroll(periodId: string | undefined) {
       }
     },
     [laborItems, materialInvoices, period, recalcTotals],
+  )
+
+  // Sube el comprobante (imagen/PDF) y lo asocia a una factura ya guardada.
+  // Usado por el flujo "guardar con advertencia": la factura puede crearse sin
+  // comprobante y adjuntarse después desde la lista. No altera totales.
+  const attachInvoiceFile = useCallback(
+    async (invoiceId: string, file: File) => {
+      if (!periodId || !period?.project_id) return
+      setSaving(true)
+      setError(null)
+      try {
+        const path = await payrollService.uploadInvoiceFile(file, period.project_id, periodId)
+        const updated = await payrollService.setInvoiceAttachment(invoiceId, path)
+        setMaterialInvoices((prev) => prev.map((i) => (i.id === invoiceId ? updated : i)))
+      } catch (e) {
+        setError(getErrorMessage(e))
+        throw e
+      } finally {
+        setSaving(false)
+      }
+    },
+    [periodId, period?.project_id],
   )
 
   const deleteMaterialInvoice = useCallback(
@@ -310,6 +333,7 @@ export function usePayroll(periodId: string | undefined) {
     deleteLaborItem,
     addMaterialInvoice,
     updateMaterialInvoice,
+    attachInvoiceFile,
     deleteMaterialInvoice,
     updateStatus,
     setIndirectActive,

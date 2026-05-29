@@ -164,8 +164,18 @@ export interface MaterialInvoice {
   attachment_path: string | null
   notes: string | null
   supplier?: Supplier
+  items?: MaterialInvoiceItem[]
   budget_category?: { code: string; name: string } | null
   budget_item?: { code: string | null; description: string } | null
+}
+
+export interface MaterialInvoiceItem {
+  id: string
+  material_invoice_id: string
+  description: string
+  amount: number
+  sort_order: number
+  created_at?: string
 }
 
 export interface IndirectCost {
@@ -339,6 +349,11 @@ export interface Database {
         Update: Partial<LaborLineItem>
       }
       material_invoices: { Row: MaterialInvoice; Insert: Omit<MaterialInvoice, 'id'>; Update: Partial<MaterialInvoice> }
+      material_invoice_items: {
+        Row: MaterialInvoiceItem
+        Insert: Omit<MaterialInvoiceItem, 'id' | 'created_at'>
+        Update: Partial<MaterialInvoiceItem>
+      }
       indirect_costs: { Row: IndirectCost; Insert: Omit<IndirectCost, 'id'>; Update: Partial<IndirectCost> }
       payment_distributions: {
         Row: PaymentDistribution

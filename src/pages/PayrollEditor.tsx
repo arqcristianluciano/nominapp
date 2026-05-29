@@ -114,6 +114,7 @@ export default function PayrollEditor() {
         onOpenAdd={() => setShowAddMaterial(true)}
         onEdit={setEditMaterialInvoice}
         onDelete={payroll.deleteMaterialInvoice}
+        onAttach={payroll.attachInvoiceFile}
       />
       <IndirectCostsSection
         costs={payroll.indirectCosts}
@@ -142,6 +143,8 @@ export default function PayrollEditor() {
         showAddLabor={showAddLabor}
         editLaborItem={editLaborItem}
         editMaterialInvoice={editMaterialInvoice}
+        periodId={period.id}
+        projectId={period.project_id}
         suppliers={suppliers}
         contractors={contractors}
         laborTasks={laborTasks}
