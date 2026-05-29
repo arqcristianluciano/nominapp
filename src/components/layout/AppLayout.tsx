@@ -1,16 +1,19 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { Header } from './Header'
 import { BottomNav } from './BottomNav'
 import { isDemoMode } from '@/lib/supabase'
-import { FlaskConical, WifiOff, X } from 'lucide-react'
+import { FlaskConical, RefreshCw, WifiOff, X } from 'lucide-react'
 import { useOfflineQueue } from '@/hooks/useOfflineQueue'
+import { usePullToRefresh } from '@/hooks/usePullToRefresh'
 
 export function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [demoDismissed, setDemoDismissed] = useState(false)
   const { online, pendingCount, flushNow } = useOfflineQueue()
+  const mainRef = useRef<HTMLElement>(null)
+  const { pull, refreshing, threshold } = usePullToRefresh(mainRef, () => window.location.reload())
 
   return (
     <div className="flex h-screen h-[100dvh] bg-app-bg">
@@ -34,7 +37,7 @@ export function AppLayout() {
             <button
               type="button"
               onClick={() => setDemoDismissed(true)}
-              className="p-1 rounded text-amber-500 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 focus-visible:ring-offset-amber-50 dark:focus-visible:ring-offset-amber-950/30"
+              className="p-1 rounded text-amber-500 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors shrink-0 flex items-center justify-center [@media(pointer:coarse)]:min-h-[44px] [@media(pointer:coarse)]:min-w-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 focus-visible:ring-offset-amber-50 dark:focus-visible:ring-offset-amber-950/30"
               title="Cerrar aviso de modo demo"
               aria-label="Cerrar aviso de modo demo"
             >
@@ -67,7 +70,21 @@ export function AppLayout() {
           </div>
         )}
 
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6 pb-24 lg:pb-6">
+        <main ref={mainRef} className="relative flex-1 overflow-y-auto p-4 lg:p-6 pb-24 lg:pb-6">
+          {(pull > 0 || refreshing) && (
+            <div
+              className="lg:hidden pointer-events-none absolute left-1/2 top-1 z-10 flex items-center justify-center w-9 h-9 rounded-full bg-app-surface border border-app-border shadow-sm"
+              style={{
+                transform: `translate(-50%, ${Math.max(0, pull - 8)}px)`,
+                opacity: Math.min(1, pull / threshold),
+              }}
+            >
+              <RefreshCw
+                className={`w-4 h-4 text-blue-600 dark:text-blue-400 ${refreshing ? 'animate-spin' : ''}`}
+                style={refreshing ? undefined : { transform: `rotate(${(pull / threshold) * 270}deg)` }}
+              />
+            </div>
+          )}
           <Outlet />
         </main>
       </div>
