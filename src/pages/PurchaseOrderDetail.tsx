@@ -5,6 +5,7 @@ import { PurchaseOrderDetailModals } from '@/components/features/purchase-orders
 import { PurchaseOrderQuotesSection } from '@/components/features/purchase-orders/PurchaseOrderQuotesSection'
 import { PurchaseOrderSignatureCard } from '@/components/features/purchase-orders/PurchaseOrderSignatureCard'
 import { ExcessValidationModal } from '@/components/features/purchase-orders/ExcessValidationModal'
+import { ReceiveOrderModal } from '@/components/features/purchase-orders/ReceiveOrderModal'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { usePurchaseOrderDetail } from '@/hooks/usePurchaseOrderDetail'
 import { useProjectRoles } from '@/hooks/useProjectRoles'
@@ -29,6 +30,7 @@ export default function PurchaseOrderDetail() {
     confirmReverse,
     reversingOrder,
     quotes,
+    pendingReceiptLines,
     canEdit,
     canNegotiate,
     missingQuotes,
@@ -48,7 +50,7 @@ export default function PurchaseOrderDetail() {
     handleReject,
     handleSubmitForApproval,
     handlePlaceOrder,
-    handleMarkReceived,
+    handleReceiveItems,
     handleReverseReceipt,
     handleValidateExcess,
     handleDelete,
@@ -63,8 +65,8 @@ export default function PurchaseOrderDetail() {
   // El Almacenista (capability 'receive_order') da entrada a la mercancía una
   // vez la OC está colocada con el suplidor, y puede revertir la recepción si
   // se registró por error o se devuelve al suplidor.
-  const canReceive = req.status === 'ordered' && roles.canReceiveOrder
-  const canReverseReceipt = req.status === 'received' && roles.canReceiveOrder
+  const canReceive = (req.status === 'ordered' || req.status === 'partially_received') && roles.canReceiveOrder
+  const canReverseReceipt = (req.status === 'received' || req.status === 'partially_received') && roles.canReceiveOrder
 
   // Determine the primary mobile CTA for the sticky footer. Only ONE button is
   // duplicated in the footer (the most relevant action) to keep it compact.
@@ -211,14 +213,12 @@ export default function PurchaseOrderDetail() {
           defaultValidator={user?.displayName}
         />
 
-        <ConfirmModal
+        <ReceiveOrderModal
           open={confirmReceive}
-          variant="warning"
-          title="Recibir mercancía"
-          message="Se dará entrada al stock del proyecto con las cantidades y precios de la cotización aprobada, y la orden quedará marcada como Recibida. ¿Confirmar la recepción?"
-          confirmLabel="Confirmar recepción"
-          onConfirm={() => handleMarkReceived(user?.displayName)}
-          onCancel={() => setConfirmReceive(false)}
+          lines={pendingReceiptLines}
+          saving={receivingOrder}
+          onClose={() => setConfirmReceive(false)}
+          onSubmit={(receipts) => handleReceiveItems(receipts, user?.displayName)}
         />
 
         <ConfirmModal

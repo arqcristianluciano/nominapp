@@ -350,4 +350,61 @@ describe('requisitionService - recepción de mercancía (entrada a almacén)', (
     const req = await makeOrderedReq(`X ${Date.now()}`, 5, 10)
     await expect(requisitionService.reverseReceipt(req.id, 'Almacenista')).rejects.toThrow(/Recibida/i)
   })
+
+  it('receiveItems parcial deja la OC en "partially_received" y completa el resto', async () => {
+    const name = `Arena ${Date.now()}`
+    const req = await makeOrderedReq(name, 100, 5)
+    const lines = requisitionService.getPendingReceiptLines(await requisitionService.getById(req.id))
+    const lineId = lines[0].quote_item_id as string
+
+    // Primera entrega: 40 de 100.
+    await requisitionService.receiveItems(req.id, 'Almacenista', [{ quote_item_id: lineId, quantity: 40 }])
+    let after = await requisitionService.getById(req.id)
+    expect(after.status).toBe('partially_received')
+    expect(after.received_at).toBeNull()
+
+    let item = (await inventoryService.getItems(projectId)).find((i) => i.name === name)
+    expect(item?.current_stock).toBe(40)
+
+    const pending = requisitionService.getPendingReceiptLines(after)
+    expect(pending[0].received_quantity).toBe(40)
+    expect(pending[0].remaining_quantity).toBe(60)
+
+    // Segunda entrega: los 60 restantes → completa.
+    await requisitionService.receiveItems(req.id, 'Almacenista', [{ quote_item_id: lineId, quantity: 60 }])
+    after = await requisitionService.getById(req.id)
+    expect(after.status).toBe('received')
+    expect(after.received_by).toBe('Almacenista')
+
+    item = (await inventoryService.getItems(projectId)).find((i) => i.name === name)
+    expect(item?.current_stock).toBe(100)
+  })
+
+  it('receiveItems rechaza recibir más de lo pendiente', async () => {
+    const req = await makeOrderedReq(`Grava ${Date.now()}`, 10, 5)
+    const lines = requisitionService.getPendingReceiptLines(await requisitionService.getById(req.id))
+    const lineId = lines[0].quote_item_id as string
+    await expect(
+      requisitionService.receiveItems(req.id, 'Almacenista', [{ quote_item_id: lineId, quantity: 11 }]),
+    ).rejects.toThrow(/excede lo pendiente/i)
+  })
+
+  it('reverseReceipt sobre una OC parcial reinicia received_quantity y vuelve a "ordered"', async () => {
+    const name = `Cal ${Date.now()}`
+    const req = await makeOrderedReq(name, 50, 8)
+    const lines = requisitionService.getPendingReceiptLines(await requisitionService.getById(req.id))
+    const lineId = lines[0].quote_item_id as string
+    await requisitionService.receiveItems(req.id, 'Almacenista', [{ quote_item_id: lineId, quantity: 20 }])
+
+    await requisitionService.reverseReceipt(req.id, 'Almacenista')
+    const after = await requisitionService.getById(req.id)
+    expect(after.status).toBe('ordered')
+
+    const pending = requisitionService.getPendingReceiptLines(after)
+    expect(pending[0].received_quantity).toBe(0)
+    expect(pending[0].remaining_quantity).toBe(50)
+
+    const item = (await inventoryService.getItems(projectId)).find((i) => i.name === name)
+    expect(item?.current_stock).toBe(0)
+  })
 })

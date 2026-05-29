@@ -18,6 +18,7 @@ const COMMITTING_STATUSES: RequisitionStatus[] = [
   'pendiente_liberacion',
   'approved',
   'ordered',
+  'partially_received',
   'received',
 ]
 
@@ -378,19 +379,123 @@ export const requisitionService = {
     })
   },
 
-  // Recepción de mercancía (entrada de almacén). Solo aplica a órdenes ya
-  // colocadas ('ordered'). Da entrada al stock del proyecto creando movimientos
-  // de inventario tipo 'in' (uno por línea de la cotización aprobada, con
-  // fallback a la propia solicitud) enlazados a la OC vía purchase_order_id, y
-  // luego marca la orden como 'received'. El stock se alimenta ANTES de cambiar
-  // el estado: si la entrada de inventario falla, la orden permanece colocada y
-  // se puede reintentar sin duplicar movimientos.
+  // Recepción TOTAL de mercancía: recibe todo el pendiente de la OC de una vez.
+  // Atajo sobre receiveItems (recibe lo que falte de cada línea). Para órdenes
+  // sin líneas de cotización usa el fallback de la propia solicitud.
   async markReceived(id: string, receivedBy: string) {
     const before = await this.getById(id)
-    if (before.status !== 'ordered') {
+    if (before.status !== 'ordered' && before.status !== 'partially_received') {
       throw new Error('Solo se pueden recibir órdenes en estado "Orden colocada".')
     }
+    const approvedQuote = (before.quotes ?? []).find((q) => q.id === before.approved_quote_id)
+    const items = approvedQuote?.items ?? []
+    if (items.length === 0) return this.receiveAllFallback(before, receivedBy)
 
+    const receipts = items
+      .map((it) => ({
+        quote_item_id: it.id,
+        quantity: Number(it.quantity) - Number(it.received_quantity ?? 0),
+      }))
+      .filter((r) => r.quantity > 0)
+    return this.receiveItems(id, receivedBy, receipts)
+  },
+
+  // Recepción de mercancía línea por línea (soporta entregas parciales). Por
+  // cada línea recibida da entrada al stock (movimiento 'in' enlazado a la OC,
+  // recalcula costo promedio), acumula received_quantity en la línea de la
+  // cotización aprobada y, si ya se recibió todo lo pedido, marca la OC como
+  // 'received'; si aún falta, queda en 'partially_received'. El stock se alimenta
+  // ANTES de cambiar el estado; valida que no se reciba más de lo pendiente.
+  async receiveItems(id: string, receivedBy: string, receipts: { quote_item_id: string; quantity: number }[]) {
+    const before = await this.getById(id)
+    if (before.status !== 'ordered' && before.status !== 'partially_received') {
+      throw new Error('Solo se puede recibir mercancía de órdenes colocadas o parcialmente recibidas.')
+    }
+    const approvedQuote = (before.quotes ?? []).find((q) => q.id === before.approved_quote_id)
+    const items = approvedQuote?.items ?? []
+    if (items.length === 0) return this.receiveAllFallback(before, receivedBy)
+
+    const byId = new Map(items.map((it) => [it.id, it]))
+    const valid = receipts.filter((r) => Number(r.quantity) > 0)
+    if (valid.length === 0) throw new Error('Indica al menos una cantidad a recibir.')
+
+    const today = new Date().toISOString().slice(0, 10)
+    const supplierId = approvedQuote?.supplier_id ?? null
+    const EPS = 1e-9
+    for (const r of valid) {
+      const it = byId.get(r.quote_item_id)
+      if (!it) throw new Error('Línea de cotización no encontrada.')
+      const ordered = Number(it.quantity)
+      const received = Number(it.received_quantity ?? 0)
+      const remaining = ordered - received
+      if (Number(r.quantity) > remaining + EPS) {
+        throw new Error(
+          `La cantidad a recibir de "${it.description}" (${r.quantity}) excede lo pendiente (${remaining}).`,
+        )
+      }
+      const invItem = await inventoryService.findOrCreateItem({
+        project_id: before.project_id,
+        name: it.description,
+        unit: it.unit,
+        unit_cost: it.unit_price != null ? Number(it.unit_price) : null,
+      })
+      await inventoryService.addMovement({
+        item_id: invItem.id,
+        project_id: before.project_id,
+        type: 'in',
+        quantity: Number(r.quantity),
+        date: today,
+        unit_cost: it.unit_price != null ? Number(it.unit_price) : null,
+        supplier_id: supplierId,
+        purchase_order_id: id,
+        budget_item_id: before.budget_item_id,
+        budget_category_id: before.budget_category_id,
+        created_by: receivedBy,
+        notes: `Entrada por recepción de orden ${before.req_number}`,
+      })
+      const { error: upErr } = await supabase
+        .from('purchase_quote_items')
+        .update({ received_quantity: received + Number(r.quantity) })
+        .eq('id', it.id)
+      if (upErr) throw upErr
+    }
+
+    // ¿Quedó todo el pedido recibido? (received previo + lo recibido ahora).
+    const fullyReceived = items.every((it) => {
+      const justNow = valid.find((r) => r.quote_item_id === it.id)?.quantity ?? 0
+      return Number(it.received_quantity ?? 0) + Number(justNow) >= Number(it.quantity) - EPS
+    })
+    const newStatus: RequisitionStatus = fullyReceived ? 'received' : 'partially_received'
+
+    const { error } = await supabase
+      .from('purchase_requisitions')
+      .update({
+        status: newStatus,
+        received_at: fullyReceived ? new Date().toISOString() : null,
+        received_by: fullyReceived ? receivedBy : null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+    if (error) throw error
+    await approvalsService.log({
+      entity_type: 'purchase_requisition',
+      entity_id: id,
+      action: 'receive',
+      actor_display_name: receivedBy,
+      payload_before: { status: before.status },
+      payload_after: { status: newStatus },
+      metadata: {
+        req_number: before.req_number,
+        project_id: before.project_id,
+        partial: !fullyReceived,
+        lines_received: valid.length,
+      },
+    })
+  },
+
+  // Recepción total para OCs sin líneas de cotización (fallback): un solo
+  // material descrito en la propia solicitud. No admite parcial.
+  async receiveAllFallback(before: PurchaseRequisition, receivedBy: string) {
     const movements = this.buildReceiptMovements(before)
     const today = new Date().toISOString().slice(0, 10)
     for (const m of movements) {
@@ -408,14 +513,13 @@ export const requisitionService = {
         date: today,
         unit_cost: m.unit_cost,
         supplier_id: m.supplier_id,
-        purchase_order_id: id,
+        purchase_order_id: before.id,
         budget_item_id: before.budget_item_id,
         budget_category_id: before.budget_category_id,
         created_by: receivedBy,
         notes: `Entrada por recepción de orden ${before.req_number}`,
       })
     }
-
     const { error } = await supabase
       .from('purchase_requisitions')
       .update({
@@ -424,34 +528,30 @@ export const requisitionService = {
         received_by: receivedBy,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', id)
+      .eq('id', before.id)
     if (error) throw error
     await approvalsService.log({
       entity_type: 'purchase_requisition',
-      entity_id: id,
+      entity_id: before.id,
       action: 'receive',
       actor_display_name: receivedBy,
       payload_before: { status: before.status },
       payload_after: { status: 'received' },
-      metadata: {
-        req_number: before.req_number,
-        project_id: before.project_id,
-        inventory_entries: movements.length,
-      },
+      metadata: { req_number: before.req_number, project_id: before.project_id, inventory_entries: movements.length },
     })
   },
 
-  // Reversa de una recepción ya registrada (corrección o devolución al
-  // suplidor). Genera salidas ('out') que compensan el stock neto que aún queda
-  // de la OC en almacén y devuelve la orden a 'ordered' para poder recibirla de
-  // nuevo. Se calcula por NETO (entradas - salidas) por material para no
-  // duplicar la reversa si la OC se recibió y revirtió más de una vez. Si parte
-  // del material ya se consumió, la salida correspondiente fallará por stock
-  // insuficiente (regla 7.5) y la reversa se aborta con un error claro.
+  // Reversa de una recepción (corrección o devolución al suplidor). Genera
+  // salidas ('out') que compensan el stock neto que aún queda de la OC en
+  // almacén, pone received_quantity de las líneas en 0 y devuelve la orden a
+  // 'ordered'. Aplica a OCs 'received' y 'partially_received'. Se calcula por
+  // NETO (entradas - salidas) por material para no duplicar si se recibió y
+  // revirtió varias veces. Si parte del material ya se consumió, la salida
+  // falla por stock insuficiente (regla 7.5) y la reversa se aborta.
   async reverseReceipt(id: string, actor: string) {
     const before = await this.getById(id)
-    if (before.status !== 'received') {
-      throw new Error('Solo se pueden revertir órdenes en estado "Recibida".')
+    if (before.status !== 'received' && before.status !== 'partially_received') {
+      throw new Error('Solo se pueden revertir órdenes recibidas o parcialmente recibidas.')
     }
 
     const movements = await inventoryService.getMovementsByPurchaseOrder(id)
@@ -480,6 +580,14 @@ export const requisitionService = {
       reversed += 1
     }
 
+    // Reinicia la cantidad recibida por línea de la cotización aprobada.
+    const approvedQuote = (before.quotes ?? []).find((q) => q.id === before.approved_quote_id)
+    for (const it of approvedQuote?.items ?? []) {
+      if (Number(it.received_quantity ?? 0) !== 0) {
+        await supabase.from('purchase_quote_items').update({ received_quantity: 0 }).eq('id', it.id)
+      }
+    }
+
     const { error } = await supabase
       .from('purchase_requisitions')
       .update({
@@ -505,9 +613,56 @@ export const requisitionService = {
     })
   },
 
-  // Deriva las líneas de entrada a almacén de una OC. Prioriza los ítems de la
-  // cotización aprobada (cantidad, unidad y precio reales); si la cotización no
-  // tiene líneas, cae a los datos de la propia solicitud.
+  // Líneas pendientes de recibir de una OC, para el modal de recepción. Usa las
+  // líneas de la cotización aprobada (con su received_quantity); si no hay,
+  // expone la propia solicitud como una única línea sin seguimiento parcial.
+  getPendingReceiptLines(req: PurchaseRequisition): {
+    quote_item_id: string | null
+    description: string
+    unit: string | null
+    unit_price: number | null
+    ordered_quantity: number
+    received_quantity: number
+    remaining_quantity: number
+  }[] {
+    const approvedQuote = (req.quotes ?? []).find((q) => q.id === req.approved_quote_id)
+    const items = approvedQuote?.items ?? []
+    if (items.length > 0) {
+      return items
+        .filter((it) => Number(it.quantity) > 0 && it.description?.trim())
+        .map((it) => {
+          const ordered = Number(it.quantity)
+          const received = Number(it.received_quantity ?? 0)
+          return {
+            quote_item_id: it.id,
+            description: it.description,
+            unit: it.unit,
+            unit_price: it.unit_price != null ? Number(it.unit_price) : null,
+            ordered_quantity: ordered,
+            received_quantity: received,
+            remaining_quantity: Math.max(0, ordered - received),
+          }
+        })
+    }
+    const qty = Number(req.quantity_requested ?? 0)
+    if (qty > 0 && req.description?.trim()) {
+      return [
+        {
+          quote_item_id: null,
+          description: req.description,
+          unit: req.unit,
+          unit_price: null,
+          ordered_quantity: qty,
+          received_quantity: 0,
+          remaining_quantity: qty,
+        },
+      ]
+    }
+    return []
+  },
+
+  // Deriva las líneas de entrada a almacén para el fallback (OC sin líneas de
+  // cotización): un único material descrito en la propia solicitud.
   buildReceiptMovements(req: PurchaseRequisition): {
     name: string
     unit: string | null
@@ -517,19 +672,6 @@ export const requisitionService = {
   }[] {
     const approvedQuote = (req.quotes ?? []).find((q) => q.id === req.approved_quote_id)
     const supplierId = approvedQuote?.supplier_id ?? null
-    const items = approvedQuote?.items ?? []
-    if (items.length > 0) {
-      return items
-        .filter((it) => Number(it.quantity) > 0 && it.description?.trim())
-        .map((it) => ({
-          name: it.description,
-          unit: it.unit,
-          quantity: Number(it.quantity),
-          unit_cost: it.unit_price != null ? Number(it.unit_price) : null,
-          supplier_id: supplierId,
-        }))
-    }
-    // Fallback: la solicitud describe un único material.
     const qty = Number(req.quantity_requested ?? 0)
     if (qty > 0 && req.description?.trim()) {
       return [

@@ -114,11 +114,11 @@ export function usePurchaseOrderDetail() {
     }
   }
 
-  async function handleMarkReceived(actor?: string) {
+  async function handleReceiveItems(receipts: { quote_item_id: string; quantity: number }[], actor?: string) {
     if (!orderId) return
     setReceivingOrder(true)
     try {
-      await requisitionService.markReceived(orderId, actor ?? 'Almacenista')
+      await requisitionService.receiveItems(orderId, actor ?? 'Almacenista', receipts)
       setConfirmReceive(false)
       await load()
     } finally {
@@ -152,6 +152,7 @@ export function usePurchaseOrderDetail() {
   }
 
   const quotes = req?.quotes || []
+  const pendingReceiptLines = req ? requisitionService.getPendingReceiptLines(req) : []
   const canEdit = ['draft', 'quoting', 'needs_revision'].includes(req?.status ?? '')
   const canNegotiate = ['quoting', 'needs_revision', 'pending_approval'].includes(req?.status ?? '')
   const missingQuotes = Math.max(0, MIN_QUOTES - quotes.length)
@@ -174,6 +175,7 @@ export function usePurchaseOrderDetail() {
     confirmReverse,
     reversingOrder,
     quotes,
+    pendingReceiptLines,
     canEdit,
     canNegotiate,
     missingQuotes,
@@ -193,7 +195,7 @@ export function usePurchaseOrderDetail() {
     handleReject,
     handleSubmitForApproval,
     handlePlaceOrder,
-    handleMarkReceived,
+    handleReceiveItems,
     handleReverseReceipt,
     handleValidateExcess,
     handleDelete,

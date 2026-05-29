@@ -50,20 +50,24 @@ export function PurchaseOrderActions({
   // con OC anteriores al paso de liberación.
   const awaitingRelease = status === 'pendiente_liberacion' || status === 'approved'
 
-  // 'ordered' = OC ya colocada con el suplidor, a la espera de que el
-  // Almacenista dé entrada a la mercancía (capability 'receive_order').
+  // 'ordered' = OC colocada con el suplidor; 'partially_received' = recibida en
+  // parte. En ambos el Almacenista (capability 'receive_order') puede dar entrada
+  // (o continuar dándola) a la mercancía.
   const awaitingReceipt = status === 'ordered'
+  const partiallyReceived = status === 'partially_received'
+  const canShowReceive = awaitingReceipt || partiallyReceived
 
-  // 'received' = mercancía ya recibida; el Almacenista puede revertir la
-  // recepción (corrección/devolución) mientras el stock siga disponible.
-  const isReceived = status === 'received'
+  // 'received' o 'partially_received' = se puede revertir la recepción
+  // (corrección/devolución) mientras el stock siga disponible.
+  const canShowReverse = status === 'received' || partiallyReceived
 
   const hasAnyAction =
     canSubmit ||
     status === 'pending_approval' ||
     awaitingRelease ||
     awaitingReceipt ||
-    (isReceived && canReverseReceipt) ||
+    (canShowReceive && canReceive) ||
+    (canShowReverse && canReverseReceipt) ||
     canEdit
 
   if (!hasAnyAction) return null
@@ -109,14 +113,18 @@ export function PurchaseOrderActions({
           Aprobada por el Director. Pendiente de liberación final del Administrador (Director General).
         </p>
       )}
-      {awaitingReceipt && canReceive && (
+      {canShowReceive && canReceive && (
         <button
           onClick={onReceive}
           disabled={receivingOrder}
           className={`${baseBtn} bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-50`}
         >
           <PackageCheck className="w-4 h-4" />
-          {receivingOrder ? 'Registrando entrada…' : 'Recibir mercancía (dar entrada a almacén)'}
+          {receivingOrder
+            ? 'Registrando entrada…'
+            : partiallyReceived
+              ? 'Recibir mercancía (continuar entrada)'
+              : 'Recibir mercancía (dar entrada a almacén)'}
         </button>
       )}
       {awaitingReceipt && !canReceive && (
@@ -124,7 +132,7 @@ export function PurchaseOrderActions({
           Orden colocada con el suplidor. Pendiente de recepción en almacén por el Almacenista.
         </p>
       )}
-      {isReceived && canReverseReceipt && (
+      {canShowReverse && canReverseReceipt && (
         <button
           onClick={onReverseReceipt}
           disabled={reversingOrder}
