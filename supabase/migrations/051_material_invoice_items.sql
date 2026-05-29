@@ -1,4 +1,4 @@
--- Migration 050: Items por factura de materiales + comprobante (imagen/PDF)
+-- Migration 051: Items por factura de materiales + comprobante (imagen/PDF)
 --
 -- Hasta ahora una factura de materiales (`material_invoices`) era una sola
 -- linea: proveedor + descripcion + monto. Este cambio permite que UNA factura
