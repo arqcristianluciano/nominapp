@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { requisitionService } from './requisitionService'
+import { inventoryService } from './inventoryService'
 import { supabase } from '@/lib/supabase'
 
 const projectId = 'p1000000-0000-0000-0000-000000000099'
@@ -231,5 +232,179 @@ describe('requisitionService - availability calculation', () => {
     // No verifico el número exacto porque otros tests pueden haber añadido más;
     // solo verifico la fórmula básica.
     expect(avail.available_quantity).toBeLessThanOrEqual(avail.planned_quantity)
+  })
+})
+
+describe('requisitionService - recepción de mercancía (entrada a almacén)', () => {
+  // Lleva una OC hasta 'ordered' con una cotización aprobada de una sola línea.
+  async function makeOrderedReq(materialName: string, qty: number, unitPrice: number) {
+    const req = await requisitionService.create({
+      project_id: projectId,
+      description: materialName,
+      requested_by: 'ing-obra',
+      budget_item_id: itemId,
+      quantity_requested: qty,
+      unit: 'saco',
+      resource_type: 'material',
+    })
+    const quoteIds: string[] = []
+    for (const [supplier, total] of [
+      ['sup-a', unitPrice * qty],
+      ['sup-b', unitPrice * qty + 500],
+    ] as const) {
+      const { data: quote } = await supabase
+        .from('purchase_quotes')
+        .insert({ requisition_id: req.id, supplier_id: supplier, total, subtotal: total, tax_percent: 0 })
+        .select()
+        .single()
+      const qId = (quote as { id: string }).id
+      quoteIds.push(qId)
+      await supabase.from('purchase_quote_items').insert({
+        quote_id: qId,
+        description: materialName,
+        quantity: qty,
+        unit: 'saco',
+        unit_price: unitPrice,
+        subtotal: unitPrice * qty,
+      })
+    }
+    await requisitionService.approve(req.id, quoteIds[0], 'Director Proyecto', 'sig')
+    await requisitionService.placeOrder(req.id, 'cash', 'Administrador General')
+    return req
+  }
+
+  it('markReceived da entrada al stock y marca la OC como Recibida', async () => {
+    const name = `Cemento Portland ${Date.now()}`
+    const req = await makeOrderedReq(name, 40, 250)
+
+    await requisitionService.markReceived(req.id, 'Almacenista')
+
+    const after = await requisitionService.getById(req.id)
+    expect(after.status).toBe('received')
+    expect(after.received_by).toBe('Almacenista')
+    expect(after.received_at).not.toBeNull()
+
+    // El material entró a stock por la cantidad de la cotización aprobada.
+    const items = await inventoryService.getItems(projectId)
+    const item = items.find((i) => i.name === name)
+    expect(item).toBeTruthy()
+    expect(item?.current_stock).toBe(40)
+    expect(item?.unit_cost).toBe(250)
+
+    // El movimiento de entrada quedó enlazado a la OC.
+    const movements = await inventoryService.getMovements(projectId)
+    const mv = movements.find((m) => m.purchase_order_id === req.id)
+    expect(mv).toBeTruthy()
+    expect(mv?.type).toBe('in')
+    expect(mv?.quantity).toBe(40)
+  })
+
+  it('markReceived rechaza una OC que no está en estado "ordered"', async () => {
+    const req = await requisitionService.create({
+      project_id: projectId,
+      description: 'OC no colocada',
+      requested_by: 'ing-obra',
+    })
+    await expect(requisitionService.markReceived(req.id, 'Almacenista')).rejects.toThrow(/Orden colocada/i)
+  })
+
+  it('enlaza el material de inventario al catálogo cuando la descripción coincide', async () => {
+    const name = `Varilla 1/2 ${Date.now()}`
+    const { data: catalog } = await supabase
+      .from('materials_catalog')
+      .insert({ code: `CAT-${Date.now()}`, description: name, unit: 'qq', is_active: true })
+      .select()
+      .single()
+
+    const req = await makeOrderedReq(name, 10, 100)
+    await requisitionService.markReceived(req.id, 'Almacenista')
+
+    const item = (await inventoryService.getItems(projectId)).find((i) => i.name === name)
+    expect(item?.material_catalog_id).toBe((catalog as { id: string }).id)
+  })
+
+  it('reverseReceipt deshace el stock y devuelve la OC a "ordered"', async () => {
+    const name = `Bloque ${Date.now()}`
+    const req = await makeOrderedReq(name, 25, 30)
+    await requisitionService.markReceived(req.id, 'Almacenista')
+
+    const itemBefore = (await inventoryService.getItems(projectId)).find((i) => i.name === name)
+    expect(itemBefore?.current_stock).toBe(25)
+
+    await requisitionService.reverseReceipt(req.id, 'Almacenista')
+
+    const after = await requisitionService.getById(req.id)
+    expect(after.status).toBe('ordered')
+    expect(after.received_by).toBeNull()
+    expect(after.received_at).toBeNull()
+
+    // El stock vuelve a 0 vía una salida compensatoria enlazada a la OC.
+    const itemAfter = (await inventoryService.getItems(projectId)).find((i) => i.name === name)
+    expect(itemAfter?.current_stock).toBe(0)
+
+    const poMovements = await inventoryService.getMovementsByPurchaseOrder(req.id)
+    expect(poMovements.some((m) => m.type === 'out' && m.quantity === 25)).toBe(true)
+  })
+
+  it('reverseReceipt rechaza una OC que no está "received"', async () => {
+    const req = await makeOrderedReq(`X ${Date.now()}`, 5, 10)
+    await expect(requisitionService.reverseReceipt(req.id, 'Almacenista')).rejects.toThrow(/Recibida/i)
+  })
+
+  it('receiveItems parcial deja la OC en "partially_received" y completa el resto', async () => {
+    const name = `Arena ${Date.now()}`
+    const req = await makeOrderedReq(name, 100, 5)
+    const lines = requisitionService.getPendingReceiptLines(await requisitionService.getById(req.id))
+    const lineId = lines[0].quote_item_id as string
+
+    // Primera entrega: 40 de 100.
+    await requisitionService.receiveItems(req.id, 'Almacenista', [{ quote_item_id: lineId, quantity: 40 }])
+    let after = await requisitionService.getById(req.id)
+    expect(after.status).toBe('partially_received')
+    expect(after.received_at).toBeNull()
+
+    let item = (await inventoryService.getItems(projectId)).find((i) => i.name === name)
+    expect(item?.current_stock).toBe(40)
+
+    const pending = requisitionService.getPendingReceiptLines(after)
+    expect(pending[0].received_quantity).toBe(40)
+    expect(pending[0].remaining_quantity).toBe(60)
+
+    // Segunda entrega: los 60 restantes → completa.
+    await requisitionService.receiveItems(req.id, 'Almacenista', [{ quote_item_id: lineId, quantity: 60 }])
+    after = await requisitionService.getById(req.id)
+    expect(after.status).toBe('received')
+    expect(after.received_by).toBe('Almacenista')
+
+    item = (await inventoryService.getItems(projectId)).find((i) => i.name === name)
+    expect(item?.current_stock).toBe(100)
+  })
+
+  it('receiveItems rechaza recibir más de lo pendiente', async () => {
+    const req = await makeOrderedReq(`Grava ${Date.now()}`, 10, 5)
+    const lines = requisitionService.getPendingReceiptLines(await requisitionService.getById(req.id))
+    const lineId = lines[0].quote_item_id as string
+    await expect(
+      requisitionService.receiveItems(req.id, 'Almacenista', [{ quote_item_id: lineId, quantity: 11 }]),
+    ).rejects.toThrow(/excede lo pendiente/i)
+  })
+
+  it('reverseReceipt sobre una OC parcial reinicia received_quantity y vuelve a "ordered"', async () => {
+    const name = `Cal ${Date.now()}`
+    const req = await makeOrderedReq(name, 50, 8)
+    const lines = requisitionService.getPendingReceiptLines(await requisitionService.getById(req.id))
+    const lineId = lines[0].quote_item_id as string
+    await requisitionService.receiveItems(req.id, 'Almacenista', [{ quote_item_id: lineId, quantity: 20 }])
+
+    await requisitionService.reverseReceipt(req.id, 'Almacenista')
+    const after = await requisitionService.getById(req.id)
+    expect(after.status).toBe('ordered')
+
+    const pending = requisitionService.getPendingReceiptLines(after)
+    expect(pending[0].received_quantity).toBe(0)
+    expect(pending[0].remaining_quantity).toBe(50)
+
+    const item = (await inventoryService.getItems(projectId)).find((i) => i.name === name)
+    expect(item?.current_stock).toBe(0)
   })
 })

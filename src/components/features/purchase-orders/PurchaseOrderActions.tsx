@@ -1,16 +1,22 @@
-import { Send, ShieldCheck, Trash2, Truck } from 'lucide-react'
+import { PackageCheck, RotateCcw, Send, ShieldCheck, Trash2, Truck } from 'lucide-react'
 
 interface Props {
   canEdit: boolean
   canSubmit: boolean
   canApprove?: boolean
   canRelease?: boolean
+  canReceive?: boolean
+  canReverseReceipt?: boolean
   status: string
   placingOrder: boolean
+  receivingOrder?: boolean
+  reversingOrder?: boolean
   onSubmitForApproval: () => void
   onOpenApproval: () => void
   onPlaceCash: () => void
   onPlaceCredit: () => void
+  onReceive?: () => void
+  onReverseReceipt?: () => void
   onDelete: () => void
 }
 
@@ -19,12 +25,18 @@ export function PurchaseOrderActions({
   canSubmit,
   canApprove = true,
   canRelease = false,
+  canReceive = false,
+  canReverseReceipt = false,
   status,
   placingOrder,
+  receivingOrder = false,
+  reversingOrder = false,
   onSubmitForApproval,
   onOpenApproval,
   onPlaceCash,
   onPlaceCredit,
+  onReceive,
+  onReverseReceipt,
   onDelete,
 }: Props) {
   // Touch-friendly base classes: min-h-12 (~48px) on mobile — comfortably above
@@ -38,7 +50,25 @@ export function PurchaseOrderActions({
   // con OC anteriores al paso de liberación.
   const awaitingRelease = status === 'pendiente_liberacion' || status === 'approved'
 
-  const hasAnyAction = canSubmit || status === 'pending_approval' || awaitingRelease || canEdit
+  // 'ordered' = OC colocada con el suplidor; 'partially_received' = recibida en
+  // parte. En ambos el Almacenista (capability 'receive_order') puede dar entrada
+  // (o continuar dándola) a la mercancía.
+  const awaitingReceipt = status === 'ordered'
+  const partiallyReceived = status === 'partially_received'
+  const canShowReceive = awaitingReceipt || partiallyReceived
+
+  // 'received' o 'partially_received' = se puede revertir la recepción
+  // (corrección/devolución) mientras el stock siga disponible.
+  const canShowReverse = status === 'received' || partiallyReceived
+
+  const hasAnyAction =
+    canSubmit ||
+    status === 'pending_approval' ||
+    awaitingRelease ||
+    awaitingReceipt ||
+    (canShowReceive && canReceive) ||
+    (canShowReverse && canReverseReceipt) ||
+    canEdit
 
   if (!hasAnyAction) return null
 
@@ -82,6 +112,35 @@ export function PurchaseOrderActions({
         <p className="text-sm text-app-muted italic">
           Aprobada por el Director. Pendiente de liberación final del Administrador (Director General).
         </p>
+      )}
+      {canShowReceive && canReceive && (
+        <button
+          onClick={onReceive}
+          disabled={receivingOrder}
+          className={`${baseBtn} bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-50`}
+        >
+          <PackageCheck className="w-4 h-4" />
+          {receivingOrder
+            ? 'Registrando entrada…'
+            : partiallyReceived
+              ? 'Recibir mercancía (continuar entrada)'
+              : 'Recibir mercancía (dar entrada a almacén)'}
+        </button>
+      )}
+      {awaitingReceipt && !canReceive && (
+        <p className="text-sm text-app-muted italic">
+          Orden colocada con el suplidor. Pendiente de recepción en almacén por el Almacenista.
+        </p>
+      )}
+      {canShowReverse && canReverseReceipt && (
+        <button
+          onClick={onReverseReceipt}
+          disabled={reversingOrder}
+          className={`${baseBtn} border border-amber-300 text-amber-700 hover:bg-amber-50 disabled:opacity-50`}
+        >
+          <RotateCcw className="w-4 h-4" />
+          {reversingOrder ? 'Revirtiendo…' : 'Revertir recepción (devolver de almacén)'}
+        </button>
       )}
       {canEdit && (
         <button

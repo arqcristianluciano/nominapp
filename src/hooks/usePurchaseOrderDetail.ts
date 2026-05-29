@@ -25,6 +25,10 @@ export function usePurchaseOrderDetail() {
   const [deleteQuoteId, setDeleteQuoteId] = useState<string | null>(null)
   const [confirmDeleteReq, setConfirmDeleteReq] = useState(false)
   const [excessModal, setExcessModal] = useState(false)
+  const [confirmReceive, setConfirmReceive] = useState(false)
+  const [receivingOrder, setReceivingOrder] = useState(false)
+  const [confirmReverse, setConfirmReverse] = useState(false)
+  const [reversingOrder, setReversingOrder] = useState(false)
 
   const load = useCallback(async () => {
     if (!orderId) return
@@ -110,6 +114,30 @@ export function usePurchaseOrderDetail() {
     }
   }
 
+  async function handleReceiveItems(receipts: { quote_item_id: string; quantity: number }[], actor?: string) {
+    if (!orderId) return
+    setReceivingOrder(true)
+    try {
+      await requisitionService.receiveItems(orderId, actor ?? 'Almacenista', receipts)
+      setConfirmReceive(false)
+      await load()
+    } finally {
+      setReceivingOrder(false)
+    }
+  }
+
+  async function handleReverseReceipt(actor?: string) {
+    if (!orderId) return
+    setReversingOrder(true)
+    try {
+      await requisitionService.reverseReceipt(orderId, actor ?? 'Almacenista')
+      setConfirmReverse(false)
+      await load()
+    } finally {
+      setReversingOrder(false)
+    }
+  }
+
   async function handleValidateExcess(validatedBy: string, motivo: string) {
     if (!orderId) return
     await requisitionService.validateExcess(orderId, validatedBy, motivo)
@@ -124,6 +152,7 @@ export function usePurchaseOrderDetail() {
   }
 
   const quotes = req?.quotes || []
+  const pendingReceiptLines = req ? requisitionService.getPendingReceiptLines(req) : []
   const canEdit = ['draft', 'quoting', 'needs_revision'].includes(req?.status ?? '')
   const canNegotiate = ['quoting', 'needs_revision', 'pending_approval'].includes(req?.status ?? '')
   const missingQuotes = Math.max(0, MIN_QUOTES - quotes.length)
@@ -141,7 +170,12 @@ export function usePurchaseOrderDetail() {
     deleteQuoteId,
     confirmDeleteReq,
     excessModal,
+    confirmReceive,
+    receivingOrder,
+    confirmReverse,
+    reversingOrder,
     quotes,
+    pendingReceiptLines,
     canEdit,
     canNegotiate,
     missingQuotes,
@@ -151,6 +185,8 @@ export function usePurchaseOrderDetail() {
     setDeleteQuoteId,
     setConfirmDeleteReq,
     setExcessModal,
+    setConfirmReceive,
+    setConfirmReverse,
     handleAddQuote,
     handleNegotiate,
     handleDeleteQuote,
@@ -159,6 +195,8 @@ export function usePurchaseOrderDetail() {
     handleReject,
     handleSubmitForApproval,
     handlePlaceOrder,
+    handleReceiveItems,
+    handleReverseReceipt,
     handleValidateExcess,
     handleDelete,
   }

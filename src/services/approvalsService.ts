@@ -23,6 +23,7 @@ export type ApprovalAction =
   | 'budget_edit_post_approval' // versionado de presupuesto (regla 7.7)
   | 'status_change'
   | 'receive' // OC recibida en almacén
+  | 'reverse_receipt' // reversa de recepción: vuelve la OC a 'ordered' y deshace el stock
   | 'create'
   | 'delete'
   | 'delete_cascade'
