@@ -137,11 +137,17 @@ export const notificationService = {
 
     const notifications: AppNotification[] = []
 
-    for (const po of (poRes.data || []) as { id: string; req_number: string; project?: { name?: string } | null }[]) {
+    for (const po of (poRes.data || []) as {
+      id: string
+      req_number: string
+      status: string
+      project?: { name?: string } | null
+    }[]) {
+      const awaitingRelease = po.status === 'pendiente_liberacion'
       notifications.push({
         id: `po-${po.id}`,
         level: 'warning',
-        title: 'OC pendiente de aprobación',
+        title: awaitingRelease ? 'OC pendiente de liberación' : 'OC pendiente de aprobación',
         description: `${po.req_number}${po.project ? ` — ${po.project.name}` : ''}`,
         link: `/ordenes-compra/${po.id}`,
       })
