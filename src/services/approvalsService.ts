@@ -27,6 +27,7 @@ export type ApprovalAction =
   | 'delete'
   | 'delete_cascade'
   | 'update_indirects'
+  | 'update' // edición de una partida/factura en un reporte ya comprometido
 
 export interface LogApprovalInput {
   entity_type: ApprovalEntity

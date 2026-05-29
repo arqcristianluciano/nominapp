@@ -18,7 +18,15 @@ import { PayrollTotalsCards } from '@/components/features/payroll/PayrollTotalsC
 import { LaborItemsSection } from '@/components/features/payroll/LaborItemsSection'
 import { MaterialInvoicesSection } from '@/components/features/payroll/MaterialInvoicesSection'
 import { IndirectCostsSection } from '@/components/features/payroll/IndirectCostsSection'
-import type { BudgetCategory, Contractor, PriceListItem, Supplier } from '@/types/database'
+import { canEditPayrollItems } from '@/utils/payrollItemPermissions'
+import type {
+  BudgetCategory,
+  Contractor,
+  LaborLineItem,
+  MaterialInvoice,
+  PriceListItem,
+  Supplier,
+} from '@/types/database'
 
 export default function PayrollEditor() {
   const { periodId } = useParams<{ periodId: string }>()
@@ -30,6 +38,8 @@ export default function PayrollEditor() {
   const [budgetCategories, setBudgetCategories] = useState<BudgetCategory[]>([])
   const [showAddLabor, setShowAddLabor] = useState(false)
   const [showAddMaterial, setShowAddMaterial] = useState(false)
+  const [editLaborItem, setEditLaborItem] = useState<LaborLineItem | null>(null)
+  const [editMaterialInvoice, setEditMaterialInvoice] = useState<MaterialInvoice | null>(null)
 
   useEffect(() => {
     loadPayroll()
@@ -59,6 +69,13 @@ export default function PayrollEditor() {
 
   const { period } = payroll
   const isDraft = period.status === 'draft'
+  // Opción A: en borrador edita quien tiene permiso de edición; en reportes ya
+  // comprometidos (enviado/aprobado/pagado) solo la mayor jerarquía (Director).
+  const canEditItems = canEditPayrollItems({
+    isDraft,
+    canEditDraft: roles.canEditPayrollDraft,
+    canEditCommitted: roles.canApprovePayroll,
+  })
 
   return (
     <div className="space-y-6 max-w-5xl pb-24 sm:pb-0">
@@ -81,15 +98,19 @@ export default function PayrollEditor() {
       <LaborItemsSection
         items={payroll.laborItems}
         isDraft={isDraft}
+        canEdit={canEditItems}
         total={period.total_labor || 0}
         onOpenAdd={() => setShowAddLabor(true)}
+        onEdit={setEditLaborItem}
         onDelete={payroll.deleteLaborItem}
       />
       <MaterialInvoicesSection
         invoices={payroll.materialInvoices}
         isDraft={isDraft}
+        canEdit={canEditItems}
         total={period.total_materials || 0}
         onOpenAdd={() => setShowAddMaterial(true)}
+        onEdit={setEditMaterialInvoice}
         onDelete={payroll.deleteMaterialInvoice}
         onAttach={payroll.attachInvoiceFile}
       />
@@ -118,6 +139,8 @@ export default function PayrollEditor() {
       <PayrollEditorModals
         showAddMaterial={showAddMaterial}
         showAddLabor={showAddLabor}
+        editLaborItem={editLaborItem}
+        editMaterialInvoice={editMaterialInvoice}
         periodId={period.id}
         projectId={period.project_id}
         suppliers={suppliers}
@@ -127,6 +150,8 @@ export default function PayrollEditor() {
         saving={payroll.saving}
         onCloseAddMaterial={() => setShowAddMaterial(false)}
         onCloseAddLabor={() => setShowAddLabor(false)}
+        onCloseEditLabor={() => setEditLaborItem(null)}
+        onCloseEditMaterial={() => setEditMaterialInvoice(null)}
         onAddMaterial={async (invoice) => {
           await payroll.addMaterialInvoice(invoice)
           setShowAddMaterial(false)
@@ -134,6 +159,18 @@ export default function PayrollEditor() {
         onAddLabor={async (item) => {
           await payroll.addLaborItem(item)
           setShowAddLabor(false)
+        }}
+        onUpdateLabor={async (item) => {
+          if (editLaborItem) {
+            await payroll.updateLaborItem(editLaborItem.id, item)
+            setEditLaborItem(null)
+          }
+        }}
+        onUpdateMaterial={async (invoice) => {
+          if (editMaterialInvoice) {
+            await payroll.updateMaterialInvoice(editMaterialInvoice.id, invoice)
+            setEditMaterialInvoice(null)
+          }
         }}
         onContractorCreated={(contractor) => setContractors((prev) => [contractor, ...prev])}
       />

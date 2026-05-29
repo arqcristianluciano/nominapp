@@ -304,12 +304,14 @@ export const payrollService = {
   async updateLaborItem(
     id: string,
     updates: {
+      contractor_id?: string
       description?: string
       quantity?: number
       unit?: string
       unit_price?: number
       is_advance?: boolean
       is_advance_deduction?: boolean
+      budget_category_id?: string | null
       notes?: string
     },
   ) {
@@ -386,21 +388,53 @@ export const payrollService = {
   async updateMaterialInvoice(
     id: string,
     updates: {
-      description?: string
       supplier_id?: string
-      invoice_reference?: string
-      amount?: number
-      notes?: string
+      invoice_reference?: string | null
+      attachment_path?: string | null
+      notes?: string | null
+      items?: { description: string; amount: number }[]
     },
   ) {
+    // Patch del encabezado. Si vienen items, recalcula total (amount) y resumen
+    // (description) denormalizados y reemplaza los items hijos.
+    const headerPatch: Record<string, unknown> = {}
+    if (updates.supplier_id !== undefined) headerPatch.supplier_id = updates.supplier_id
+    if (updates.invoice_reference !== undefined) headerPatch.invoice_reference = updates.invoice_reference || null
+    if (updates.attachment_path !== undefined) headerPatch.attachment_path = updates.attachment_path
+    if (updates.notes !== undefined) headerPatch.notes = updates.notes
+
+    let items: { description: string; amount: number }[] | null = null
+    if (updates.items) {
+      items = updates.items
+        .map((it) => ({ description: it.description.trim(), amount: round2(it.amount) }))
+        .filter((it) => it.description.length > 0 && Number.isFinite(it.amount))
+      if (items.length === 0) {
+        throw new Error('La factura debe tener al menos un ítem con descripción y monto.')
+      }
+      headerPatch.amount = sumInvoiceItems(items)
+      headerPatch.description = buildInvoiceSummary(items)
+    }
+
+    const { error: headerError } = await supabase.from('material_invoices').update(headerPatch).eq('id', id)
+    if (headerError) throw headerError
+
+    if (items) {
+      // Reemplaza los items: borra los actuales e inserta los nuevos.
+      const { error: delError } = await supabase.from('material_invoice_items').delete().eq('material_invoice_id', id)
+      if (delError) throw delError
+      const { error: insError } = await supabase
+        .from('material_invoice_items')
+        .insert(items.map((it, i) => ({ ...it, material_invoice_id: id, sort_order: i })))
+      if (insError) throw insError
+    }
+
     const { data, error } = await supabase
       .from('material_invoices')
-      .update(updates)
+      .select('*, supplier:suppliers(*), items:material_invoice_items(*)')
       .eq('id', id)
-      .select('*, supplier:suppliers(*)')
       .single()
     if (error) throw error
-    return data as MaterialInvoice
+    return sortInvoiceItems(data as MaterialInvoice)
   },
 
   async deleteMaterialInvoice(id: string) {

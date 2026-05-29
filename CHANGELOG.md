@@ -12,6 +12,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - Subpartidas del presupuesto numeradas automáticamente (1.1, 1.2, …) en la lista y en el modal de creación (#40).
 - Facturas de materiales con varios ítems: una factura agrupa proveedor, referencia y varios ítems (descripción + monto), con total calculado automáticamente (nueva tabla `material_invoice_items`, migración 051).
 - Comprobante de factura (imagen o PDF): botón para adjuntar el comprobante al crear la factura o después desde la lista, almacenado en el bucket privado `invoice-attachments`. Las facturas sin comprobante muestran una advertencia "Falta comprobante" que desaparece al adjuntarlo.
+- Edición de partidas de mano de obra y facturas de materiales en el reporte de nómina: cada fila tiene un botón "Editar" con el formulario pre-cargado, evitando tener que borrar y rehacer ante un error. En borrador puede editar quien tiene permiso de edición (quien introduce los datos); en reportes ya enviados/aprobados/pagados solo la mayor jerarquía (Director/quien aprueba), y esas correcciones quedan registradas en la bitácora de aprobaciones.
 
 ### Changed
 

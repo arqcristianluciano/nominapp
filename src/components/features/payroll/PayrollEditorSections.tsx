@@ -3,7 +3,15 @@ import { Link } from 'react-router-dom'
 import { Modal } from '@/components/ui/Modal'
 import { AddLaborItemForm } from '@/components/features/payroll/AddLaborItemForm'
 import { AddMaterialForm } from '@/components/features/payroll/AddMaterialForm'
-import type { BudgetCategory, Contractor, PayrollPeriod, PriceListItem, Supplier } from '@/types/database'
+import type {
+  BudgetCategory,
+  Contractor,
+  LaborLineItem,
+  MaterialInvoice,
+  PayrollPeriod,
+  PriceListItem,
+  Supplier,
+} from '@/types/database'
 
 const NEXT_STATUS: Record<string, { label: string; status: 'submitted' | 'approved' | 'paid'; icon: typeof Send }> = {
   draft: { label: 'Enviar para aprobación', status: 'submitted', icon: Send },
@@ -136,9 +144,29 @@ export function PayrollEditorMobileActionBar({
   )
 }
 
+type MaterialFormPayload = {
+  supplier_id: string
+  invoice_reference?: string
+  attachment_path?: string | null
+  items: { description: string; amount: number }[]
+}
+
+type LaborFormPayload = {
+  contractor_id: string
+  description: string
+  quantity: number
+  unit: string
+  unit_price: number
+  is_advance: boolean
+  is_advance_deduction: boolean
+  budget_category_id?: string | null
+}
+
 export function PayrollEditorModals({
   showAddMaterial,
   showAddLabor,
+  editLaborItem,
+  editMaterialInvoice,
   periodId,
   projectId,
   suppliers,
@@ -148,12 +176,18 @@ export function PayrollEditorModals({
   saving,
   onCloseAddMaterial,
   onCloseAddLabor,
+  onCloseEditLabor,
+  onCloseEditMaterial,
   onAddMaterial,
   onAddLabor,
+  onUpdateLabor,
+  onUpdateMaterial,
   onContractorCreated,
 }: {
   showAddMaterial: boolean
   showAddLabor: boolean
+  editLaborItem: LaborLineItem | null
+  editMaterialInvoice: MaterialInvoice | null
   periodId: string
   projectId: string
   suppliers: Supplier[]
@@ -163,22 +197,12 @@ export function PayrollEditorModals({
   saving: boolean
   onCloseAddMaterial: () => void
   onCloseAddLabor: () => void
-  onAddMaterial: (inv: {
-    supplier_id: string
-    invoice_reference?: string
-    attachment_path?: string | null
-    items: { description: string; amount: number }[]
-  }) => Promise<void>
-  onAddLabor: (item: {
-    contractor_id: string
-    description: string
-    quantity: number
-    unit: string
-    unit_price: number
-    is_advance: boolean
-    is_advance_deduction: boolean
-    budget_category_id?: string | null
-  }) => Promise<void>
+  onCloseEditLabor: () => void
+  onCloseEditMaterial: () => void
+  onAddMaterial: (inv: MaterialFormPayload) => Promise<void>
+  onAddLabor: (item: LaborFormPayload) => Promise<void>
+  onUpdateLabor: (item: LaborFormPayload) => Promise<void>
+  onUpdateMaterial: (inv: MaterialFormPayload) => Promise<void>
   onContractorCreated: (contractor: Contractor) => void
 }) {
   return (
@@ -203,6 +227,37 @@ export function PayrollEditorModals({
           saving={saving}
           onContractorCreated={onContractorCreated}
         />
+      </Modal>
+      <Modal open={!!editMaterialInvoice} onClose={onCloseEditMaterial} title="Editar factura de materiales">
+        {editMaterialInvoice && (
+          <AddMaterialForm
+            key={editMaterialInvoice.id}
+            suppliers={suppliers}
+            periodId={periodId}
+            projectId={projectId}
+            onSubmit={onUpdateMaterial}
+            onCancel={onCloseEditMaterial}
+            saving={saving}
+            initialInvoice={editMaterialInvoice}
+            submitLabel="Guardar cambios"
+          />
+        )}
+      </Modal>
+      <Modal open={!!editLaborItem} onClose={onCloseEditLabor} title="Editar partida de mano de obra">
+        {editLaborItem && (
+          <AddLaborItemForm
+            key={editLaborItem.id}
+            contractors={contractors}
+            laborTasks={laborTasks}
+            budgetCategories={budgetCategories}
+            onSubmit={onUpdateLabor}
+            onCancel={onCloseEditLabor}
+            saving={saving}
+            onContractorCreated={onContractorCreated}
+            initialItem={editLaborItem}
+            submitLabel="Guardar cambios"
+          />
+        )}
       </Modal>
     </>
   )

@@ -1,5 +1,5 @@
 import { memo, useRef, useState } from 'react'
-import { AlertTriangle, ExternalLink, Loader2, Paperclip, Plus, Trash2 } from 'lucide-react'
+import { AlertTriangle, ExternalLink, Loader2, Paperclip, Pencil, Plus, Trash2 } from 'lucide-react'
 import { formatRD } from '@/utils/currency'
 import { payrollService } from '@/services/payrollService'
 import type { MaterialInvoice } from '@/types/database'
@@ -7,8 +7,10 @@ import type { MaterialInvoice } from '@/types/database'
 interface Props {
   invoices: MaterialInvoice[]
   isDraft: boolean
+  canEdit: boolean
   total: number
   onOpenAdd: () => void
+  onEdit: (invoice: MaterialInvoice) => void
   onDelete: (invoiceId: string) => void
   onAttach: (invoiceId: string, file: File) => Promise<void>
 }
@@ -16,6 +18,8 @@ interface Props {
 interface InvoiceCardProps {
   invoice: MaterialInvoice
   isDraft: boolean
+  canEdit: boolean
+  onEdit: (invoice: MaterialInvoice) => void
   onDelete: (invoiceId: string) => void
   onAttach: (invoiceId: string, file: File) => Promise<void>
 }
@@ -26,7 +30,7 @@ function isAllowedFile(file: File): boolean {
   return file.type.startsWith('image/') || file.type === 'application/pdf'
 }
 
-function InvoiceCardComponent({ invoice, isDraft, onDelete, onAttach }: InvoiceCardProps) {
+function InvoiceCardComponent({ invoice, isDraft, canEdit, onEdit, onDelete, onAttach }: InvoiceCardProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const [uploading, setUploading] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
@@ -82,6 +86,15 @@ function InvoiceCardComponent({ invoice, isDraft, onDelete, onAttach }: InvoiceC
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <span className="text-sm font-semibold text-app-text">{formatRD(invoice.amount)}</span>
+          {canEdit && (
+            <button
+              onClick={() => onEdit(invoice)}
+              aria-label="Editar factura"
+              className="inline-flex items-center justify-center w-9 h-9 text-app-subtle hover:text-blue-500 rounded-lg"
+            >
+              <Pencil className="w-4 h-4" />
+            </button>
+          )}
           {isDraft && (
             <button
               onClick={() => onDelete(invoice.id)}
@@ -128,7 +141,7 @@ function InvoiceCardComponent({ invoice, isDraft, onDelete, onAttach }: InvoiceC
             <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 rounded-full px-2.5 py-1">
               <AlertTriangle className="w-3.5 h-3.5" /> Falta comprobante
             </span>
-            {isDraft && (
+            {(isDraft || canEdit) && (
               <>
                 <input
                   ref={fileInputRef}
@@ -158,7 +171,16 @@ function InvoiceCardComponent({ invoice, isDraft, onDelete, onAttach }: InvoiceC
 InvoiceCardComponent.displayName = 'InvoiceCard'
 const InvoiceCard = memo(InvoiceCardComponent)
 
-export function MaterialInvoicesSection({ invoices, isDraft, total, onOpenAdd, onDelete, onAttach }: Props) {
+export function MaterialInvoicesSection({
+  invoices,
+  isDraft,
+  canEdit,
+  total,
+  onOpenAdd,
+  onEdit,
+  onDelete,
+  onAttach,
+}: Props) {
   return (
     <section>
       <div className="flex items-center justify-between gap-2 mb-3">
@@ -181,7 +203,15 @@ export function MaterialInvoicesSection({ invoices, isDraft, total, onOpenAdd, o
       ) : (
         <ul className="space-y-2">
           {invoices.map((invoice) => (
-            <InvoiceCard key={invoice.id} invoice={invoice} isDraft={isDraft} onDelete={onDelete} onAttach={onAttach} />
+            <InvoiceCard
+              key={invoice.id}
+              invoice={invoice}
+              isDraft={isDraft}
+              canEdit={canEdit}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              onAttach={onAttach}
+            />
           ))}
         </ul>
       )}

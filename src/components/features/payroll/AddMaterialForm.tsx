@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { AlertTriangle, FileText, Loader2, Paperclip, Plus, Trash2, X } from 'lucide-react'
-import type { Supplier } from '@/types/database'
+import type { MaterialInvoice, Supplier } from '@/types/database'
 import { payrollService } from '@/services/payrollService'
 import { parseDecimalInput } from '@/utils/decimalInput'
 import { sumInvoiceItems } from '@/utils/materialInvoice'
@@ -23,6 +23,10 @@ interface Props {
   }) => Promise<void>
   onCancel: () => void
   saving: boolean
+  /** Si se pasa, el formulario opera en modo edición (campos pre-cargados). */
+  initialInvoice?: MaterialInvoice
+  /** Texto del botón de envío (por defecto "Guardar factura"). */
+  submitLabel?: string
 }
 
 const inputCls =
@@ -34,13 +38,34 @@ function isAllowedFile(file: File): boolean {
   return file.type.startsWith('image/') || file.type === 'application/pdf'
 }
 
-export function AddMaterialForm({ suppliers, periodId, projectId, onSubmit, onCancel, saving }: Props) {
-  const [supplierId, setSupplierId] = useState('')
-  const [reference, setReference] = useState('')
-  const [items, setItems] = useState<ItemDraft[]>([{ description: '', amount: '' }])
+// Items iniciales: desde los ítems de la factura, o (factura legacy sin ítems)
+// desde su descripción/monto, o una fila vacía para una factura nueva.
+function initialItems(invoice?: MaterialInvoice): ItemDraft[] {
+  if (invoice?.items?.length) {
+    return invoice.items.map((it) => ({ description: it.description, amount: String(it.amount) }))
+  }
+  if (invoice) return [{ description: invoice.description, amount: String(invoice.amount) }]
+  return [{ description: '', amount: '' }]
+}
 
-  const [attachmentPath, setAttachmentPath] = useState<string | null>(null)
-  const [attachmentName, setAttachmentName] = useState('')
+export function AddMaterialForm({
+  suppliers,
+  periodId,
+  projectId,
+  onSubmit,
+  onCancel,
+  saving,
+  initialInvoice,
+  submitLabel,
+}: Props) {
+  const [supplierId, setSupplierId] = useState(initialInvoice?.supplier_id ?? '')
+  const [reference, setReference] = useState(initialInvoice?.invoice_reference ?? '')
+  const [items, setItems] = useState<ItemDraft[]>(() => initialItems(initialInvoice))
+
+  const [attachmentPath, setAttachmentPath] = useState<string | null>(initialInvoice?.attachment_path ?? null)
+  const [attachmentName, setAttachmentName] = useState(
+    initialInvoice?.attachment_path ? (initialInvoice.attachment_path.split('/').pop() ?? 'comprobante') : '',
+  )
   const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
@@ -258,7 +283,7 @@ export function AddMaterialForm({ suppliers, periodId, projectId, onSubmit, onCa
           disabled={!canSubmit}
           className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {saving ? 'Guardando...' : 'Guardar factura'}
+          {saving ? 'Guardando...' : (submitLabel ?? 'Guardar factura')}
         </button>
       </div>
     </form>
