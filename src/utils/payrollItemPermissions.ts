@@ -41,3 +41,20 @@ export function canEditPayrollItems({
   if (canEditCommitted) return true
   return isDraft && canEditDraft
 }
+
+/**
+ * Determina si el usuario puede devolver un reporte a BORRADOR para que el
+ * autor original lo corrija. Solo la mayor jerarquía (capability
+ * `approve_payroll`) y solo desde `submitted`/`approved`. Un reporte `paid`
+ * NO se devuelve (los pagos ya se distribuyeron); revertirlo está fuera de
+ * alcance y requeriría deshacer la distribución.
+ */
+export function canReturnPayrollToDraft({
+  status,
+  canApprove,
+}: {
+  status: 'draft' | 'submitted' | 'approved' | 'paid'
+  canApprove: boolean
+}): boolean {
+  return canApprove && (status === 'submitted' || status === 'approved')
+}

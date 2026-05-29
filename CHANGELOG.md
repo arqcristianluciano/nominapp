@@ -11,6 +11,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 
 - Subpartidas del presupuesto numeradas automáticamente (1.1, 1.2, …) en la lista y en el modal de creación (#40).
 - Edición de partidas de mano de obra y facturas de materiales en el reporte de nómina: cada fila tiene un botón "Editar" con el formulario pre-cargado, evitando tener que borrar y rehacer ante un error. En borrador puede editar quien tiene permiso de edición (quien introduce los datos); en reportes ya enviados/aprobados/pagados solo la mayor jerarquía (Director/quien aprueba), y esas correcciones quedan registradas en la bitácora de aprobaciones.
+- Botón "Devolver a borrador" en el reporte de nómina: la mayor jerarquía (quien aprueba) puede regresar un reporte enviado o aprobado a borrador para que el autor lo corrija. Pide confirmación, quita la aprobación y registra la acción (`return_for_revision`) en la bitácora. Un reporte pagado no se puede devolver.
 
 ### Changed
 

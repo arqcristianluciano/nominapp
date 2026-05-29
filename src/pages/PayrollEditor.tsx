@@ -18,7 +18,8 @@ import { PayrollTotalsCards } from '@/components/features/payroll/PayrollTotalsC
 import { LaborItemsSection } from '@/components/features/payroll/LaborItemsSection'
 import { MaterialInvoicesSection } from '@/components/features/payroll/MaterialInvoicesSection'
 import { IndirectCostsSection } from '@/components/features/payroll/IndirectCostsSection'
-import { canEditPayrollItems } from '@/utils/payrollItemPermissions'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
+import { canEditPayrollItems, canReturnPayrollToDraft } from '@/utils/payrollItemPermissions'
 import type {
   BudgetCategory,
   Contractor,
@@ -40,6 +41,7 @@ export default function PayrollEditor() {
   const [showAddMaterial, setShowAddMaterial] = useState(false)
   const [editLaborItem, setEditLaborItem] = useState<LaborLineItem | null>(null)
   const [editMaterialInvoice, setEditMaterialInvoice] = useState<MaterialInvoice | null>(null)
+  const [confirmReturnToDraft, setConfirmReturnToDraft] = useState(false)
 
   useEffect(() => {
     loadPayroll()
@@ -76,6 +78,11 @@ export default function PayrollEditor() {
     canEditDraft: roles.canEditPayrollDraft,
     canEditCommitted: roles.canApprovePayroll,
   })
+  // Devolver a borrador: solo mayor jerarquía y solo desde enviado/aprobado.
+  const canReturnToDraft = canReturnPayrollToDraft({
+    status: period.status,
+    canApprove: roles.canApprovePayroll,
+  })
 
   return (
     <div className="space-y-6 max-w-5xl pb-24 sm:pb-0">
@@ -83,6 +90,8 @@ export default function PayrollEditor() {
         period={period}
         saving={payroll.saving}
         canApprove={roles.canApprovePayroll}
+        canReturnToDraft={canReturnToDraft}
+        onReturnToDraft={() => setConfirmReturnToDraft(true)}
         onUpdateStatus={payroll.updateStatus}
       />
 
@@ -178,7 +187,21 @@ export default function PayrollEditor() {
         period={period}
         saving={payroll.saving}
         canApprove={roles.canApprovePayroll}
+        canReturnToDraft={canReturnToDraft}
+        onReturnToDraft={() => setConfirmReturnToDraft(true)}
         onUpdateStatus={payroll.updateStatus}
+      />
+
+      <ConfirmModal
+        open={confirmReturnToDraft}
+        variant="warning"
+        title={`Devolver el Reporte No. ${period.period_number} a borrador`}
+        message="Volverá a estado borrador para poder corregirlo. Se quitará la aprobación y la acción quedará registrada en la bitácora de aprobaciones."
+        confirmLabel="Devolver a borrador"
+        onConfirm={() => {
+          void payroll.returnToDraft()
+        }}
+        onCancel={() => setConfirmReturnToDraft(false)}
       />
     </div>
   )

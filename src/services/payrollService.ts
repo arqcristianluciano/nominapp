@@ -143,6 +143,38 @@ export const payrollService = {
     return data as PayrollPeriod
   },
 
+  // Devuelve un reporte comprometido a BORRADOR para que el autor lo corrija.
+  // Limpia la aprobación y registra la acción en la bitácora (return_for_revision).
+  async returnToDraft(id: string, actor?: { displayName?: string }) {
+    const { data: before } = await supabase
+      .from('payroll_periods')
+      .select('id, status, period_number, project_id')
+      .eq('id', id)
+      .single()
+
+    const { data, error } = await supabase
+      .from('payroll_periods')
+      .update({ status: 'draft', approved_at: null, approved_by: null })
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+
+    await approvalsService
+      .log({
+        entity_type: 'payroll_period',
+        entity_id: id,
+        action: 'return_for_revision',
+        actor_display_name: actor?.displayName,
+        payload_before: before ? { status: before.status } : null,
+        payload_after: { status: 'draft' },
+        metadata: before ? { period_number: before.period_number, project_id: before.project_id } : {},
+      })
+      .catch((err) => console.warn('[payrollService.returnToDraft] log de auditoría falló', err))
+
+    return data as PayrollPeriod
+  },
+
   async updatePeriodTotals(
     id: string,
     totals: {
