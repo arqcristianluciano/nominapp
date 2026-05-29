@@ -270,15 +270,16 @@ export const payrollService = {
   async updateLaborItem(
     id: string,
     updates: {
+      contractor_id?: string
       description?: string
       quantity?: number
       unit?: string
       unit_price?: number
       is_advance?: boolean
       is_advance_deduction?: boolean
-      notes?: string
       budget_category_id?: string | null
       budget_item_id?: string | null
+      notes?: string
     },
   ) {
     const { data, error } = await supabase

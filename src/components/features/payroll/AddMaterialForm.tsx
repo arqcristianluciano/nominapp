@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { BudgetCategory, Supplier } from '@/types/database'
+import type { BudgetCategory, MaterialInvoice, Supplier } from '@/types/database'
 
 interface Props {
   suppliers: Supplier[]
@@ -13,14 +13,26 @@ interface Props {
   }) => Promise<void>
   onCancel: () => void
   saving: boolean
+  /** Si se pasa, el formulario opera en modo edición (campos pre-cargados). */
+  initialInvoice?: MaterialInvoice
+  /** Texto del botón de envío (por defecto "Agregar factura"). */
+  submitLabel?: string
 }
 
-export function AddMaterialForm({ suppliers, budgetCategories = [], onSubmit, onCancel, saving }: Props) {
-  const [supplierId, setSupplierId] = useState('')
-  const [description, setDescription] = useState('')
-  const [reference, setReference] = useState('')
-  const [amount, setAmount] = useState('')
-  const [budgetCategoryId, setBudgetCategoryId] = useState('')
+export function AddMaterialForm({
+  suppliers,
+  budgetCategories = [],
+  onSubmit,
+  onCancel,
+  saving,
+  initialInvoice,
+  submitLabel,
+}: Props) {
+  const [supplierId, setSupplierId] = useState(initialInvoice?.supplier_id ?? '')
+  const [description, setDescription] = useState(initialInvoice?.description ?? '')
+  const [reference, setReference] = useState(initialInvoice?.invoice_reference ?? '')
+  const [amount, setAmount] = useState(initialInvoice ? String(initialInvoice.amount) : '')
+  const [budgetCategoryId, setBudgetCategoryId] = useState(initialInvoice?.budget_category_id ?? '')
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -118,7 +130,7 @@ export function AddMaterialForm({ suppliers, budgetCategories = [], onSubmit, on
           disabled={saving || !supplierId || !description || !amount}
           className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {saving ? 'Guardando...' : 'Agregar factura'}
+          {saving ? 'Guardando...' : (submitLabel ?? 'Agregar factura')}
         </button>
       </div>
     </form>

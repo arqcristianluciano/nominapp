@@ -14,6 +14,7 @@ function generateReqNumber(): string {
 const COMMITTING_STATUSES: RequisitionStatus[] = [
   'quoting',
   'pending_approval',
+  'pendiente_liberacion',
   'approved',
   'ordered',
   'received',
@@ -64,12 +65,9 @@ export const requisitionService = {
 
     const quotes: PurchaseQuote[] = await Promise.all(
       (quotesData || []).map(async (q: PurchaseQuote) => {
-        const { data: items } = await supabase
-          .from('purchase_quote_items')
-          .select('*')
-          .eq('quote_id', q.id)
+        const { data: items } = await supabase.from('purchase_quote_items').select('*').eq('quote_id', q.id)
         return { ...q, items: items || [] }
-      })
+      }),
     )
 
     return { ...reqData, quotes } as PurchaseRequisition
@@ -93,8 +91,7 @@ export const requisitionService = {
 
     const planned = Number(item?.quantity ?? 0)
     const committed = (requisitions ?? []).reduce(
-      (sum: number, r: { quantity_requested: number | null }) =>
-        sum + Number(r.quantity_requested ?? 0),
+      (sum: number, r: { quantity_requested: number | null }) => sum + Number(r.quantity_requested ?? 0),
       0,
     )
 
@@ -158,9 +155,10 @@ export const requisitionService = {
       action: 'status_change',
       actor_display_name: payload.requested_by,
       payload_after: { status: row.status, quantity_requested: payload.quantity_requested ?? null },
-      motivo: initialStatus === 'pendiente_validacion'
-        ? `Solicitud excede plan: solicitado ${payload.quantity_requested} vs disponible ${availableSnapshot}`
-        : null,
+      motivo:
+        initialStatus === 'pendiente_validacion'
+          ? `Solicitud excede plan: solicitado ${payload.quantity_requested} vs disponible ${availableSnapshot}`
+          : null,
       metadata: { req_number: row.req_number, project_id: row.project_id },
     })
 
@@ -240,6 +238,9 @@ export const requisitionService = {
     })
   },
 
+  // Aprobación del Director de Proyecto: selecciona la cotización y firma.
+  // NO emite la orden todavía: la deja en 'pendiente_liberacion' para que el
+  // Administrador (Director General) haga la liberación final (ver placeOrder).
   async approve(
     id: string,
     quoteId: string,
@@ -254,15 +255,13 @@ export const requisitionService = {
     }
     if (quotes.length === 1) {
       if (!options?.singleQuoteJustification?.trim()) {
-        throw new Error(
-          'Aprobación con 1 sola cotización requiere justificación escrita (regla 7.3).',
-        )
+        throw new Error('Aprobación con 1 sola cotización requiere justificación escrita (regla 7.3).')
       }
     }
 
     Sentry.addBreadcrumb({
       category: 'requisition',
-      message: 'approve requisition',
+      message: 'approve requisition (director)',
       level: 'info',
       data: {
         requisitionId: id,
@@ -275,7 +274,7 @@ export const requisitionService = {
     const { error } = await supabase
       .from('purchase_requisitions')
       .update({
-        status: 'approved',
+        status: 'pendiente_liberacion',
         approved_quote_id: quoteId,
         approved_by: approvedBy,
         approved_at: new Date().toISOString(),
@@ -292,42 +291,13 @@ export const requisitionService = {
       action: 'approve',
       actor_display_name: approvedBy,
       payload_before: { status: before.status, quotes_count: quotes.length },
-      payload_after: { status: 'approved', approved_quote_id: quoteId },
+      payload_after: { status: 'pendiente_liberacion', approved_quote_id: quoteId },
       motivo: options?.singleQuoteJustification?.trim() || null,
       metadata: {
         req_number: before.req_number,
         project_id: before.project_id,
         single_quote: quotes.length === 1,
       },
-    })
-  },
-
-  // Liberación del Director para OC con >=2 cotizaciones (regla 7.2).
-  // En la app actual approve() ya cumple este rol; release() queda como
-  // alias semántico explícito para futuras divisiones de responsabilidad
-  // (Comprador aprueba selección, Director libera para emisión).
-  async release(id: string, releasedBy: string) {
-    const before = await this.getById(id)
-    if (before.status !== 'approved') {
-      throw new Error('Solo se libera una OC ya aprobada')
-    }
-    const { error } = await supabase
-      .from('purchase_requisitions')
-      .update({
-        released_by: releasedBy,
-        released_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', id)
-    if (error) throw error
-    await approvalsService.log({
-      entity_type: 'purchase_requisition',
-      entity_id: id,
-      action: 'release',
-      actor_display_name: releasedBy,
-      payload_before: { status: before.status },
-      payload_after: { released: true },
-      metadata: { req_number: before.req_number, project_id: before.project_id },
     })
   },
 
@@ -373,25 +343,36 @@ export const requisitionService = {
     })
   },
 
+  // Liberación final del Administrador (Director General): es la ÚLTIMA
+  // autorización del flujo (regla 7.2). Tras la aprobación del Director
+  // (status 'pendiente_liberacion'), el Administrador libera la OC eligiendo la
+  // condición de pago y la emite ('ordered'). Acepta 'approved' por
+  // compatibilidad con OC creadas antes de introducir el paso de liberación.
   async placeOrder(id: string, paymentType: 'credit' | 'cash', actor?: string) {
     const before = await this.getById(id)
+    if (before.status !== 'pendiente_liberacion' && before.status !== 'approved') {
+      throw new Error('Solo se puede liberar una OC aprobada por el Director (pendiente de liberación).')
+    }
+    const now = new Date().toISOString()
     const { error } = await supabase
       .from('purchase_requisitions')
       .update({
         status: 'ordered',
         payment_type: paymentType,
-        ordered_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        released_by: actor ?? null,
+        released_at: now,
+        ordered_at: now,
+        updated_at: now,
       })
       .eq('id', id)
     if (error) throw error
     await approvalsService.log({
       entity_type: 'purchase_requisition',
       entity_id: id,
-      action: 'status_change',
+      action: 'release',
       actor_display_name: actor,
       payload_before: { status: before.status },
-      payload_after: { status: 'ordered', payment_type: paymentType },
+      payload_after: { status: 'ordered', payment_type: paymentType, released: true },
       metadata: { req_number: before.req_number, project_id: before.project_id },
     })
   },
@@ -420,10 +401,7 @@ export const requisitionService = {
   },
 
   async delete(id: string) {
-    const { data: quotes } = await supabase
-      .from('purchase_quotes')
-      .select('id')
-      .eq('requisition_id', id)
+    const { data: quotes } = await supabase.from('purchase_quotes').select('id').eq('requisition_id', id)
     for (const q of quotes || []) {
       await supabase.from('purchase_quote_items').delete().eq('quote_id', q.id)
     }

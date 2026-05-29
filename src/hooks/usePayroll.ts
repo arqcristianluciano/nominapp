@@ -1,5 +1,7 @@
 import { useState, useCallback } from 'react'
 import { payrollService } from '@/services/payrollService'
+import { approvalsService } from '@/services/approvalsService'
+import { useAuthStore } from '@/stores/authStore'
 import {
   calcLaborTotal,
   calcMaterialsTotal,
@@ -9,6 +11,37 @@ import {
 } from '@/utils/calculations'
 import { getErrorMessage } from '@/utils/errors'
 import type { PayrollPeriod, LaborLineItem, MaterialInvoice, IndirectCost, Project } from '@/types/database'
+
+// Registra en la bitácora de aprobaciones la edición de una partida/factura
+// cuando el reporte YA está comprometido (enviado/aprobado/pagado). En borrador
+// las ediciones son parte del flujo normal y no se auditan. Best-effort: nunca
+// debe romper la edición si el log falla.
+function auditCommittedItemEdit(
+  period: PayrollPeriod,
+  kind: 'labor_item' | 'material_invoice',
+  itemId: string,
+  before: unknown,
+  after: unknown,
+) {
+  if (period.status === 'draft') return
+  const actor = useAuthStore.getState().user
+  void approvalsService
+    .log({
+      entity_type: 'payroll_period',
+      entity_id: period.id,
+      action: 'update',
+      actor_display_name: actor?.displayName ?? null,
+      payload_before: before ?? null,
+      payload_after: after ?? null,
+      metadata: {
+        kind,
+        item_id: itemId,
+        period_number: period.period_number,
+        project_id: period.project_id,
+      },
+    })
+    .catch((err) => console.warn('[usePayroll] audit log de edición falló', err))
+}
 
 export function usePayroll(periodId: string | undefined) {
   const [period, setPeriod] = useState<PayrollPeriod | null>(null)
@@ -132,9 +165,11 @@ export function usePayroll(periodId: string | undefined) {
     async (id: string, updates: Record<string, unknown>) => {
       setSaving(true)
       try {
+        const before = laborItems.find((i) => i.id === id)
         const updated = await payrollService.updateLaborItem(id, updates)
         const items = laborItems.map((i) => (i.id === id ? updated : i))
         setLaborItems(items)
+        if (period) auditCommittedItemEdit(period, 'labor_item', id, before, updated)
         await recalcTotals(items, materialInvoices, period?.project as Project)
       } catch (e) {
         setError(getErrorMessage(e))
@@ -194,9 +229,11 @@ export function usePayroll(periodId: string | undefined) {
     async (id: string, updates: Record<string, unknown>) => {
       setSaving(true)
       try {
+        const before = materialInvoices.find((i) => i.id === id)
         const updated = await payrollService.updateMaterialInvoice(id, updates)
         const invoices = materialInvoices.map((i) => (i.id === id ? updated : i))
         setMaterialInvoices(invoices)
+        if (period) auditCommittedItemEdit(period, 'material_invoice', id, before, updated)
         await recalcTotals(laborItems, invoices, period?.project as Project)
       } catch (e) {
         setError(getErrorMessage(e))

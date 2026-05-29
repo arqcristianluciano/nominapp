@@ -30,10 +30,7 @@ export function usePurchaseOrderDetail() {
     if (!orderId) return
     setLoading(true)
     try {
-      const [data, sups] = await Promise.all([
-        requisitionService.getById(orderId),
-        supplierService.getAll(),
-      ])
+      const [data, sups] = await Promise.all([requisitionService.getById(orderId), supplierService.getAll()])
       setReq(data)
       setSuppliers(sups)
     } finally {
@@ -102,11 +99,11 @@ export function usePurchaseOrderDetail() {
     await load()
   }
 
-  async function handlePlaceOrder(paymentType: 'credit' | 'cash') {
+  async function handlePlaceOrder(paymentType: 'credit' | 'cash', actor?: string) {
     if (!orderId) return
     setPlacingOrder(true)
     try {
-      await requisitionService.placeOrder(orderId, paymentType)
+      await requisitionService.placeOrder(orderId, paymentType, actor)
       await load()
     } finally {
       setPlacingOrder(false)
