@@ -1,17 +1,73 @@
-import { ArrowLeft, CheckCircle, CreditCard, Printer, Send } from 'lucide-react'
+import { ArrowLeft, CheckCircle, CreditCard, Info, Lock, Pencil, Printer, Send } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Modal } from '@/components/ui/Modal'
 import { AddLaborItemForm } from '@/components/features/payroll/AddLaborItemForm'
 import { AddMaterialForm } from '@/components/features/payroll/AddMaterialForm'
-import type { BudgetCategory, Contractor, PayrollPeriod, PriceListItem, Supplier } from '@/types/database'
+import type {
+  BudgetCategory,
+  Contractor,
+  PayrollPeriod,
+  PayrollStatus,
+  PriceListItem,
+  Supplier,
+} from '@/types/database'
 
 const NEXT_STATUS: Record<string, { label: string; status: 'submitted' | 'approved' | 'paid'; icon: typeof Send }> = {
   draft: { label: 'Enviar para aprobación', status: 'submitted', icon: Send },
   submitted: { label: 'Aprobar reporte', status: 'approved', icon: CheckCircle },
   approved: { label: 'Marcar como pagado', status: 'paid', icon: CreditCard },
 }
-const STATUS_COLORS: Record<string, string> = { draft: 'bg-app-chip text-app-muted', submitted: 'bg-blue-50 text-blue-700', approved: 'bg-green-50 text-green-700', paid: 'bg-emerald-50 text-emerald-700' }
-const STATUS_LABELS: Record<string, string> = { draft: 'Borrador', submitted: 'Enviado', approved: 'Aprobado', paid: 'Pagado' }
+const STATUS_COLORS: Record<string, string> = {
+  draft: 'bg-app-chip text-app-muted',
+  submitted: 'bg-blue-50 text-blue-700',
+  approved: 'bg-green-50 text-green-700',
+  paid: 'bg-emerald-50 text-emerald-700',
+}
+const STATUS_LABELS: Record<string, string> = {
+  draft: 'Borrador',
+  submitted: 'Enviado',
+  approved: 'Aprobado',
+  paid: 'Pagado',
+}
+
+// Aviso contextual sobre quién puede editar el reporte según su etapa.
+// - Borrador: estado de edición obvio, sin aviso.
+// - Enviado (aún editable): recuerda que puede editarse hasta la aprobación.
+// - Aprobado/Pagado editable: advierte que se editan datos ya comprometidos.
+// - Sin permiso de edición: explica por qué está bloqueado.
+export function PayrollEditNotice({ status, canEdit }: { status: PayrollStatus; canEdit: boolean }) {
+  if (status === 'draft') return null
+  const beforeApproval = status === 'submitted'
+
+  if (!canEdit) {
+    return (
+      <div className="flex items-start gap-2 rounded-lg border border-app-border bg-app-chip px-4 py-3 text-sm text-app-muted">
+        <Lock className="w-4 h-4 mt-0.5 shrink-0" />
+        <span>
+          {beforeApproval
+            ? 'Este reporte fue enviado para aprobación. No tienes permiso para editarlo.'
+            : 'Este reporte ya fue aprobado. Solo los usuarios autorizados pueden editarlo.'}
+        </span>
+      </div>
+    )
+  }
+
+  if (beforeApproval) {
+    return (
+      <div className="flex items-start gap-2 rounded-lg border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/30 px-4 py-3 text-sm text-blue-800 dark:text-blue-300">
+        <Pencil className="w-4 h-4 mt-0.5 shrink-0" />
+        <span>Reporte enviado. Aún puedes editarlo mientras no sea aprobado.</span>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex items-start gap-2 rounded-lg border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/30 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
+      <Info className="w-4 h-4 mt-0.5 shrink-0" />
+      <span>Reporte aprobado. Editas como usuario autorizado; los cambios afectan datos ya comprometidos.</span>
+    </div>
+  )
+}
 
 export function PayrollEditorHeader({
   period,
@@ -32,18 +88,48 @@ export function PayrollEditorHeader({
   const showNextButton = next && (canApprove || !requiresDirector)
   return (
     <div className="sticky top-0 z-20 -mx-4 lg:mx-0 px-4 lg:px-0 pt-1 pb-3 bg-app-bg/95 backdrop-blur supports-[backdrop-filter]:bg-app-bg/80 border-b border-app-border lg:border-0 lg:static lg:bg-transparent lg:backdrop-blur-0 lg:p-0">
-      <Link to={project ? `/proyectos/${project.id}` : '/proyectos'} className="inline-flex items-center gap-1 text-sm text-app-muted hover:text-app-muted mb-2 min-h-[44px] sm:min-h-[32px] -ml-1 px-1"><ArrowLeft className="w-4 h-4" /> <span className="truncate max-w-[70vw] sm:max-w-none">{project?.name || 'Proyecto'}</span></Link>
+      <Link
+        to={project ? `/proyectos/${project.id}` : '/proyectos'}
+        className="inline-flex items-center gap-1 text-sm text-app-muted hover:text-app-muted mb-2 min-h-[44px] sm:min-h-[32px] -ml-1 px-1"
+      >
+        <ArrowLeft className="w-4 h-4" />{' '}
+        <span className="truncate max-w-[70vw] sm:max-w-none">{project?.name || 'Proyecto'}</span>
+      </Link>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-2">
         <div className="min-w-0 flex items-start sm:items-center justify-between sm:justify-start gap-2">
           <div className="min-w-0">
-            <h1 className="text-lg sm:text-2xl font-semibold text-app-text truncate">Reporte No. {period.period_number}</h1>
-            <p className="text-xs sm:text-sm text-app-muted mt-0.5 truncate">{new Date(period.report_date).toLocaleDateString('es-DO', { year: 'numeric', month: 'long', day: 'numeric' })}{period.reported_by && ` · ${period.reported_by}`}</p>
+            <h1 className="text-lg sm:text-2xl font-semibold text-app-text truncate">
+              Reporte No. {period.period_number}
+            </h1>
+            <p className="text-xs sm:text-sm text-app-muted mt-0.5 truncate">
+              {new Date(period.report_date).toLocaleDateString('es-DO', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}
+              {period.reported_by && ` · ${period.reported_by}`}
+            </p>
           </div>
-          <span className={`sm:hidden shrink-0 px-2.5 py-1 text-xs font-medium rounded-full ${STATUS_COLORS[period.status]}`}>{STATUS_LABELS[period.status]}</span>
+          <span
+            className={`sm:hidden shrink-0 px-2.5 py-1 text-xs font-medium rounded-full ${STATUS_COLORS[period.status]}`}
+          >
+            {STATUS_LABELS[period.status]}
+          </span>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <span className={`hidden sm:inline-flex px-3 py-1 text-xs sm:text-sm font-medium rounded-full ${STATUS_COLORS[period.status]}`}>{STATUS_LABELS[period.status]}</span>
-          <Link to={`/nominas/${period.id}/imprimir`} target="_blank" aria-label="Imprimir" className="flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 text-sm text-app-muted border border-app-border rounded-lg hover:bg-app-hover min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0"><Printer className="w-4 h-4" /> <span className="hidden sm:inline">Imprimir</span></Link>
+          <span
+            className={`hidden sm:inline-flex px-3 py-1 text-xs sm:text-sm font-medium rounded-full ${STATUS_COLORS[period.status]}`}
+          >
+            {STATUS_LABELS[period.status]}
+          </span>
+          <Link
+            to={`/nominas/${period.id}/imprimir`}
+            target="_blank"
+            aria-label="Imprimir"
+            className="flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 text-sm text-app-muted border border-app-border rounded-lg hover:bg-app-hover min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0"
+          >
+            <Printer className="w-4 h-4" /> <span className="hidden sm:inline">Imprimir</span>
+          </Link>
           {/* Next-status button is duplicated in the mobile sticky action bar to keep the header compact on small screens. */}
           {showNextButton && (
             <button
@@ -51,10 +137,13 @@ export function PayrollEditorHeader({
               disabled={saving}
               className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 min-h-[44px] sm:min-h-0"
             >
-              <next.icon className="w-4 h-4" />{next.label}
+              <next.icon className="w-4 h-4" />
+              {next.label}
             </button>
           )}
-          {next && !showNextButton && <span className="text-xs text-app-muted italic">{requiresDirector ? 'Pendiente del Director' : ''}</span>}
+          {next && !showNextButton && (
+            <span className="text-xs text-app-muted italic">{requiresDirector ? 'Pendiente del Director' : ''}</span>
+          )}
         </div>
       </div>
     </div>
@@ -86,7 +175,8 @@ export function PayrollEditorMobileActionBar({
         disabled={saving}
         className="w-full flex items-center justify-center gap-1.5 px-4 py-3 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 min-h-[44px]"
       >
-        <next.icon className="w-4 h-4" />{next.label}
+        <next.icon className="w-4 h-4" />
+        {next.label}
       </button>
     </div>
   )
@@ -135,8 +225,20 @@ export function PayrollEditorModals({
 }) {
   return (
     <>
-      <Modal open={showAddMaterial} onClose={onCloseAddMaterial} title="Agregar factura de materiales"><AddMaterialForm suppliers={suppliers} onSubmit={onAddMaterial} onCancel={onCloseAddMaterial} saving={saving} /></Modal>
-      <Modal open={showAddLabor} onClose={onCloseAddLabor} title="Agregar partida de mano de obra"><AddLaborItemForm contractors={contractors} laborTasks={laborTasks} budgetCategories={budgetCategories} onSubmit={onAddLabor} onCancel={onCloseAddLabor} saving={saving} onContractorCreated={onContractorCreated} /></Modal>
+      <Modal open={showAddMaterial} onClose={onCloseAddMaterial} title="Agregar factura de materiales">
+        <AddMaterialForm suppliers={suppliers} onSubmit={onAddMaterial} onCancel={onCloseAddMaterial} saving={saving} />
+      </Modal>
+      <Modal open={showAddLabor} onClose={onCloseAddLabor} title="Agregar partida de mano de obra">
+        <AddLaborItemForm
+          contractors={contractors}
+          laborTasks={laborTasks}
+          budgetCategories={budgetCategories}
+          onSubmit={onAddLabor}
+          onCancel={onCloseAddLabor}
+          saving={saving}
+          onContractorCreated={onContractorCreated}
+        />
+      </Modal>
     </>
   )
 }

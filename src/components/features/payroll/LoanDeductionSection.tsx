@@ -7,7 +7,7 @@ import type { ContractorLoan, LoanDeduction } from '@/types/database'
 
 interface Props {
   periodId: string
-  isDraft: boolean
+  canEdit: boolean
 }
 
 interface ActiveLoanOption {
@@ -16,7 +16,7 @@ interface ActiveLoanOption {
   balance: number
 }
 
-export function LoanDeductionSection({ periodId, isDraft }: Props) {
+export function LoanDeductionSection({ periodId, canEdit }: Props) {
   const [deductions, setDeductions] = useState<LoanDeduction[]>([])
   const [activeLoans, setActiveLoans] = useState<ActiveLoanOption[]>([])
   const [loading, setLoading] = useState(true)
@@ -34,13 +34,11 @@ export function LoanDeductionSection({ periodId, isDraft }: Props) {
     ])
     setDeductions(ded)
 
-    const contractorIds = linkedCortes.length > 0
-      ? new Set(linkedCortes.map((c) => c.contract?.contractor_id).filter(Boolean))
-      : null
+    const contractorIds =
+      linkedCortes.length > 0 ? new Set(linkedCortes.map((c) => c.contract?.contractor_id).filter(Boolean)) : null
 
-    const active = all.filter((l) =>
-      l.status === 'active' &&
-      (contractorIds === null || contractorIds.has(l.contractor_id))
+    const active = all.filter(
+      (l) => l.status === 'active' && (contractorIds === null || contractorIds.has(l.contractor_id)),
     )
     const totals = await loanService.getTotalPaidByLoans(active.map((l) => l.id))
     const withBalance: ActiveLoanOption[] = active.map((loan) => {
@@ -48,15 +46,17 @@ export function LoanDeductionSection({ periodId, isDraft }: Props) {
       const totalOwed = loan.installment_amount * loan.installments
       return { loan, totalPaid, balance: Math.max(0, totalOwed - totalPaid) }
     })
-    setActiveLoans(withBalance.filter(o => o.balance > 0))
+    setActiveLoans(withBalance.filter((o) => o.balance > 0))
     setLoading(false)
   }, [periodId])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    load()
+  }, [load])
 
   const handleAdd = async () => {
     if (!selectedLoanId || !amount) return
-    const loan = activeLoans.find(o => o.loan.id === selectedLoanId)?.loan
+    const loan = activeLoans.find((o) => o.loan.id === selectedLoanId)?.loan
     if (!loan) return
     setSaving(true)
     try {
@@ -82,26 +82,27 @@ export function LoanDeductionSection({ periodId, isDraft }: Props) {
 
   const onLoanSelect = (loanId: string) => {
     setSelectedLoanId(loanId)
-    const opt = activeLoans.find(o => o.loan.id === loanId)
+    const opt = activeLoans.find((o) => o.loan.id === loanId)
     if (opt) setAmount(opt.loan.installment_amount.toFixed(2))
   }
 
   const totalDeductions = deductions.reduce((s, d) => s + d.amount, 0)
 
   if (loading) return null
-  if (!isDraft && deductions.length === 0) return null
+  if (!canEdit && deductions.length === 0) return null
 
   return (
     <section>
       <div className="flex items-center justify-between gap-2 mb-3">
         <h2 className="text-lg font-medium text-app-text">Deducciones de préstamos</h2>
-        {isDraft && activeLoans.length > 0 && (
+        {canEdit && activeLoans.length > 0 && (
           <button
             onClick={() => setShowAdd(!showAdd)}
             aria-label="Agregar deducción"
             className="flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 bg-app-surface border border-app-border text-sm font-medium rounded-lg hover:bg-app-hover min-h-[44px] sm:min-h-0"
           >
-            <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Agregar deducción</span><span className="sm:hidden">Agregar</span>
+            <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Agregar deducción</span>
+            <span className="sm:hidden">Agregar</span>
           </button>
         )}
       </div>
@@ -114,7 +115,7 @@ export function LoanDeductionSection({ periodId, isDraft }: Props) {
               <select
                 className="w-full border border-app-border rounded-lg px-3 py-2 text-sm bg-app-bg text-app-text min-h-[44px] sm:min-h-0"
                 value={selectedLoanId}
-                onChange={e => onLoanSelect(e.target.value)}
+                onChange={(e) => onLoanSelect(e.target.value)}
               >
                 <option value="">Seleccionar préstamo...</option>
                 {activeLoans.map(({ loan, balance }) => (
@@ -127,16 +128,27 @@ export function LoanDeductionSection({ periodId, isDraft }: Props) {
             <div>
               <label className="block text-xs font-medium text-app-muted mb-1">Monto a descontar (RD$)</label>
               <input
-                type="number" min="0.01" step="0.01"
+                type="number"
+                min="0.01"
+                step="0.01"
                 className="w-full border border-app-border rounded-lg px-3 py-2 text-sm bg-app-bg text-app-text min-h-[44px] sm:min-h-0"
                 value={amount}
-                onChange={e => setAmount(e.target.value)}
+                onChange={(e) => setAmount(e.target.value)}
               />
             </div>
           </div>
           <div className="flex flex-col sm:flex-row justify-end gap-2">
-            <button onClick={() => setShowAdd(false)} className="px-3 py-2 sm:py-1.5 text-sm text-app-muted border border-app-border rounded-lg hover:bg-app-hover min-h-[44px] sm:min-h-0">Cancelar</button>
-            <button onClick={handleAdd} disabled={saving || !selectedLoanId || !amount} className="px-3 py-2 sm:py-1.5 text-sm bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 min-h-[44px] sm:min-h-0">
+            <button
+              onClick={() => setShowAdd(false)}
+              className="px-3 py-2 sm:py-1.5 text-sm text-app-muted border border-app-border rounded-lg hover:bg-app-hover min-h-[44px] sm:min-h-0"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleAdd}
+              disabled={saving || !selectedLoanId || !amount}
+              className="px-3 py-2 sm:py-1.5 text-sm bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 min-h-[44px] sm:min-h-0"
+            >
               {saving ? 'Guardando...' : 'Aplicar'}
             </button>
           </div>
@@ -158,7 +170,7 @@ export function LoanDeductionSection({ periodId, isDraft }: Props) {
                     <p className="text-sm font-medium text-app-text truncate">{d.loan?.contractor?.name ?? '—'}</p>
                     <p className="text-xs font-medium text-red-600 mt-1">−{formatRD(d.amount)}</p>
                   </div>
-                  {isDraft && (
+                  {canEdit && (
                     <button
                       onClick={() => handleDelete(d.id)}
                       aria-label="Eliminar deducción"
@@ -179,7 +191,7 @@ export function LoanDeductionSection({ periodId, isDraft }: Props) {
                   <tr className="bg-app-bg border-b border-app-border">
                     <th className="text-left px-4 py-2.5 font-medium text-app-muted">Contratista</th>
                     <th className="text-right px-4 py-2.5 font-medium text-app-muted w-36">Monto descontado</th>
-                    {isDraft && <th className="w-10" />}
+                    {canEdit && <th className="w-10" />}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-app-border">
@@ -187,7 +199,7 @@ export function LoanDeductionSection({ periodId, isDraft }: Props) {
                     <tr key={d.id} className="hover:bg-app-hover">
                       <td className="px-4 py-2.5 text-app-text">{d.loan?.contractor?.name ?? '—'}</td>
                       <td className="px-4 py-2.5 text-right font-medium text-red-600">−{formatRD(d.amount)}</td>
-                      {isDraft && (
+                      {canEdit && (
                         <td className="px-2 py-2.5">
                           <button
                             onClick={() => handleDelete(d.id)}

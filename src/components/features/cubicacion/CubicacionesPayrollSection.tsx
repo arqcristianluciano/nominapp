@@ -16,7 +16,7 @@ type LinkedCorte = ContractCorte & { contract: AdjustmentContract | null }
 interface Props {
   periodId: string
   projectId: string
-  isDraft: boolean
+  canEdit: boolean
   onCorteLinked: () => Promise<void>
   onRecalculateTotals: () => Promise<void>
 }
@@ -24,7 +24,7 @@ interface Props {
 export function CubicacionesPayrollSection({
   periodId,
   projectId,
-  isDraft,
+  canEdit,
   onCorteLinked,
   onRecalculateTotals,
 }: Props) {
@@ -40,14 +40,16 @@ export function CubicacionesPayrollSection({
   const load = useCallback(async () => {
     const [l, a] = await Promise.all([
       getCortesByPayroll(periodId),
-      isDraft ? getApprovedCortesByProject(projectId) : Promise.resolve([]),
+      canEdit ? getApprovedCortesByProject(projectId) : Promise.resolve([]),
     ])
     setLinked(l)
     setAvailable(a)
     setLoading(false)
-  }, [periodId, projectId, isDraft])
+  }, [periodId, projectId, canEdit])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    load()
+  }, [load])
 
   async function doLink(corte: LinkedCorte, deductAdelantos: boolean) {
     if (!corte.partida || !corte.contract) return
@@ -105,14 +107,16 @@ export function CubicacionesPayrollSection({
       await onCorteLinked()
       await onRecalculateTotals()
       await load()
-    } finally { setUnlinking(null) }
+    } finally {
+      setUnlinking(null)
+    }
   }
 
   const totalLinked = linked.reduce((s, c) => s + c.amount, 0)
   const totalRetenido = linked.reduce((s, c) => s + c.retention_amount, 0)
 
   if (loading) return null
-  if (linked.length === 0 && !isDraft) return null
+  if (linked.length === 0 && !canEdit) return null
 
   return (
     <section>
@@ -126,7 +130,7 @@ export function CubicacionesPayrollSection({
             </span>
           )}
         </div>
-        {isDraft && available.length > 0 && (
+        {canEdit && available.length > 0 && (
           <button
             onClick={() => setShowAvailable(!showAvailable)}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-app-surface border border-app-border text-sm font-medium rounded-lg hover:bg-app-hover"
@@ -147,7 +151,7 @@ export function CubicacionesPayrollSection({
                 <th className="text-right px-4 py-2.5 font-medium text-app-muted hidden sm:table-cell">Cant.</th>
                 <th className="text-right px-4 py-2.5 font-medium text-app-muted">Monto</th>
                 <th className="text-right px-4 py-2.5 font-medium text-app-muted hidden md:table-cell">Retención</th>
-                {isDraft && <th className="w-10" />}
+                {canEdit && <th className="w-10" />}
               </tr>
             </thead>
             <tbody className="divide-y divide-app-border">
@@ -155,17 +159,25 @@ export function CubicacionesPayrollSection({
                 <tr key={c.id} className="hover:bg-app-hover">
                   <td className="px-4 py-2.5">
                     <p className="text-app-text font-medium text-xs">{c.contract?.contractor?.name ?? '—'}</p>
-                    <p className="text-app-muted text-xs mt-0.5">Corte #{c.cut_number} · {c.partida?.description ?? '—'}</p>
+                    <p className="text-app-muted text-xs mt-0.5">
+                      Corte #{c.cut_number} · {c.partida?.description ?? '—'}
+                    </p>
                   </td>
                   <td className="px-4 py-2.5 text-right text-app-muted hidden sm:table-cell">
                     {formatNumber(c.measured_quantity)} {c.partida?.unit}
                   </td>
                   <td className="px-4 py-2.5 text-right font-medium text-app-text">{formatRD(c.amount)}</td>
-                  <td className="px-4 py-2.5 text-right text-amber-600 hidden md:table-cell">{formatRD(c.retention_amount)}</td>
-                  {isDraft && (
+                  <td className="px-4 py-2.5 text-right text-amber-600 hidden md:table-cell">
+                    {formatRD(c.retention_amount)}
+                  </td>
+                  {canEdit && (
                     <td className="px-2 py-2.5">
-                      <button onClick={() => handleUnlink(c)} disabled={unlinking === c.id} title="Desvincular corte"
-                        className="p-1 text-app-subtle hover:text-red-500 disabled:opacity-40">
+                      <button
+                        onClick={() => handleUnlink(c)}
+                        disabled={unlinking === c.id}
+                        title="Desvincular corte"
+                        className="p-1 text-app-subtle hover:text-red-500 disabled:opacity-40"
+                      >
                         <Link2Off className="w-3.5 h-3.5" />
                       </button>
                     </td>
@@ -177,7 +189,7 @@ export function CubicacionesPayrollSection({
         </div>
       )}
 
-      {linked.length === 0 && isDraft && (
+      {linked.length === 0 && canEdit && (
         <div className="bg-app-surface rounded-xl border border-dashed border-app-border p-6 text-center text-sm text-app-subtle mb-3">
           No hay cortes vinculados a este reporte
         </div>
@@ -185,7 +197,8 @@ export function CubicacionesPayrollSection({
 
       <div className="bg-teal-50 dark:bg-teal-950/20 rounded-lg px-4 py-3 flex justify-between items-center">
         <span className="text-sm font-medium text-teal-900 dark:text-teal-200">
-          Total cubicaciones{totalRetenido > 0 && <span className="font-normal text-xs ml-1">(ret. {formatRD(totalRetenido)})</span>}
+          Total cubicaciones
+          {totalRetenido > 0 && <span className="font-normal text-xs ml-1">(ret. {formatRD(totalRetenido)})</span>}
         </span>
         <span className="text-sm font-semibold text-teal-900 dark:text-teal-200">{formatRD(totalLinked)}</span>
       </div>
@@ -203,12 +216,15 @@ export function CubicacionesPayrollSection({
                     {c.contract?.contractor?.name ?? '—'} — Corte #{c.cut_number}
                   </p>
                   <p className="text-xs text-app-muted mt-0.5">
-                    {c.partida?.description} · {formatNumber(c.measured_quantity)} {c.partida?.unit}
-                    · Neto: {formatRD(c.amount - c.retention_amount)}
+                    {c.partida?.description} · {formatNumber(c.measured_quantity)} {c.partida?.unit}· Neto:{' '}
+                    {formatRD(c.amount - c.retention_amount)}
                   </p>
                 </div>
-                <button onClick={() => handleLink(c)} disabled={linking}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium rounded-lg disabled:opacity-50 shrink-0 ml-3">
+                <button
+                  onClick={() => handleLink(c)}
+                  disabled={linking}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium rounded-lg disabled:opacity-50 shrink-0 ml-3"
+                >
                   <Link2 className="w-3.5 h-3.5" />
                   {linking ? 'Vinculando...' : 'Vincular'}
                 </button>
@@ -221,7 +237,10 @@ export function CubicacionesPayrollSection({
       {pendingCorte && (
         <CorteAdelantoConfirm
           open={!!pendingCorte}
-          onClose={() => { setPendingCorte(null); setPendingAdelantoTotal(0) }}
+          onClose={() => {
+            setPendingCorte(null)
+            setPendingAdelantoTotal(0)
+          }}
           corte={pendingCorte}
           adelantoTotal={pendingAdelantoTotal}
           linking={linking}

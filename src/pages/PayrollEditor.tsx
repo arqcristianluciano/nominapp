@@ -9,11 +9,17 @@ import { useProjectRoles } from '@/hooks/useProjectRoles'
 import { PaymentDistributionsSection } from '@/components/features/payments/PaymentDistributionsSection'
 import { LoanDeductionSection } from '@/components/features/payroll/LoanDeductionSection'
 import { CubicacionesPayrollSection } from '@/components/features/cubicacion/CubicacionesPayrollSection'
-import { PayrollEditorHeader, PayrollEditorMobileActionBar, PayrollEditorModals } from '@/components/features/payroll/PayrollEditorSections'
+import {
+  PayrollEditNotice,
+  PayrollEditorHeader,
+  PayrollEditorMobileActionBar,
+  PayrollEditorModals,
+} from '@/components/features/payroll/PayrollEditorSections'
 import { PayrollTotalsCards } from '@/components/features/payroll/PayrollTotalsCards'
 import { LaborItemsSection } from '@/components/features/payroll/LaborItemsSection'
 import { MaterialInvoicesSection } from '@/components/features/payroll/MaterialInvoicesSection'
 import { IndirectCostsSection } from '@/components/features/payroll/IndirectCostsSection'
+import { canEditPayrollPeriod } from '@/utils/payrollEditing'
 import type { BudgetCategory, Contractor, PriceListItem, Supplier } from '@/types/database'
 
 export default function PayrollEditor() {
@@ -29,10 +35,7 @@ export default function PayrollEditor() {
 
   useEffect(() => {
     loadPayroll()
-    Promise.all([
-      supplierService.getAll(),
-      contractorService.getAll(),
-    ]).then(([nextSuppliers, nextContractors]) => {
+    Promise.all([supplierService.getAll(), contractorService.getAll()]).then(([nextSuppliers, nextContractors]) => {
       setSuppliers(nextSuppliers)
       setContractors(nextContractors)
     })
@@ -57,29 +60,65 @@ export default function PayrollEditor() {
   if (!payroll.period) return <div className="text-sm text-app-muted p-4">Nómina no encontrada</div>
 
   const { period } = payroll
-  const isDraft = period.status === 'draft'
+  // Mientras el reporte no sea aprobado puede editarlo quien introduce los datos
+  // (capability `edit_payroll`). Una vez aprobado, solo los usuarios autorizados
+  // (capability `approve_payroll`) pueden editarlo.
+  const canEdit = canEditPayrollPeriod(period.status, {
+    canEnterData: roles.canEditPayrollDraft,
+    isAuthorized: roles.canApprovePayroll,
+  })
 
   return (
     <div className="space-y-6 max-w-5xl pb-24 sm:pb-0">
-      <PayrollEditorHeader period={period} saving={payroll.saving} canApprove={roles.canApprovePayroll} onUpdateStatus={payroll.updateStatus} />
+      <PayrollEditorHeader
+        period={period}
+        saving={payroll.saving}
+        canApprove={roles.canApprovePayroll}
+        onUpdateStatus={payroll.updateStatus}
+      />
 
       {payroll.error && <div className="text-sm text-red-600 bg-red-50 rounded-lg px-4 py-3">{payroll.error}</div>}
 
-      <PayrollTotalsCards labor={period.total_labor || 0} materials={period.total_materials || 0} indirect={period.total_indirect || 0} grandTotal={period.grand_total || 0} />
+      <PayrollEditNotice status={period.status} canEdit={canEdit} />
 
-      <LaborItemsSection items={payroll.laborItems} isDraft={isDraft} total={period.total_labor || 0} onOpenAdd={() => setShowAddLabor(true)} onDelete={payroll.deleteLaborItem} />
-      <MaterialInvoicesSection invoices={payroll.materialInvoices} isDraft={isDraft} total={period.total_materials || 0} onOpenAdd={() => setShowAddMaterial(true)} onDelete={payroll.deleteMaterialInvoice} />
-      <IndirectCostsSection costs={payroll.indirectCosts} isDraft={isDraft} saving={payroll.saving} total={period.total_indirect || 0} onToggleActive={payroll.setIndirectActive} />
+      <PayrollTotalsCards
+        labor={period.total_labor || 0}
+        materials={period.total_materials || 0}
+        indirect={period.total_indirect || 0}
+        grandTotal={period.grand_total || 0}
+      />
+
+      <LaborItemsSection
+        items={payroll.laborItems}
+        canEdit={canEdit}
+        total={period.total_labor || 0}
+        onOpenAdd={() => setShowAddLabor(true)}
+        onDelete={payroll.deleteLaborItem}
+      />
+      <MaterialInvoicesSection
+        invoices={payroll.materialInvoices}
+        canEdit={canEdit}
+        total={period.total_materials || 0}
+        onOpenAdd={() => setShowAddMaterial(true)}
+        onDelete={payroll.deleteMaterialInvoice}
+      />
+      <IndirectCostsSection
+        costs={payroll.indirectCosts}
+        canEdit={canEdit}
+        saving={payroll.saving}
+        total={period.total_indirect || 0}
+        onToggleActive={payroll.setIndirectActive}
+      />
 
       <CubicacionesPayrollSection
         periodId={period.id}
         projectId={period.project_id}
-        isDraft={isDraft}
+        canEdit={canEdit}
         onCorteLinked={payroll.load}
         onRecalculateTotals={payroll.recalculateTotals}
       />
 
-      <LoanDeductionSection periodId={period.id} isDraft={isDraft} />
+      <LoanDeductionSection periodId={period.id} canEdit={canEdit} />
 
       {(period.status === 'approved' || period.status === 'paid') && (
         <PaymentDistributionsSection periodId={period.id} grandTotal={period.grand_total || 0} />
@@ -95,12 +134,23 @@ export default function PayrollEditor() {
         saving={payroll.saving}
         onCloseAddMaterial={() => setShowAddMaterial(false)}
         onCloseAddLabor={() => setShowAddLabor(false)}
-        onAddMaterial={async (invoice) => { await payroll.addMaterialInvoice(invoice); setShowAddMaterial(false) }}
-        onAddLabor={async (item) => { await payroll.addLaborItem(item); setShowAddLabor(false) }}
+        onAddMaterial={async (invoice) => {
+          await payroll.addMaterialInvoice(invoice)
+          setShowAddMaterial(false)
+        }}
+        onAddLabor={async (item) => {
+          await payroll.addLaborItem(item)
+          setShowAddLabor(false)
+        }}
         onContractorCreated={(contractor) => setContractors((prev) => [contractor, ...prev])}
       />
 
-      <PayrollEditorMobileActionBar period={period} saving={payroll.saving} canApprove={roles.canApprovePayroll} onUpdateStatus={payroll.updateStatus} />
+      <PayrollEditorMobileActionBar
+        period={period}
+        saving={payroll.saving}
+        canApprove={roles.canApprovePayroll}
+        onUpdateStatus={payroll.updateStatus}
+      />
     </div>
   )
 }
