@@ -24,10 +24,14 @@ const labor = (overrides: Partial<LaborLineItem>): LaborLineItem => ({
   notes: null,
   budget_category_id: null,
   budget_item_id: null,
+  created_by: null,
   ...overrides,
 })
 
-const project: Pick<Project, 'dt_percent' | 'admin_percent' | 'transport_percent' | 'planning_fee' | 'custom_indirects'> = {
+const project: Pick<
+  Project,
+  'dt_percent' | 'admin_percent' | 'transport_percent' | 'planning_fee' | 'custom_indirects'
+> = {
   dt_percent: 10,
   admin_percent: 1,
   transport_percent: 0.5,
@@ -66,11 +70,7 @@ describe('calculations', () => {
 
   describe('calcMaterialsTotal', () => {
     it('suma facturas', () => {
-      const invoices = [
-        { amount: 1234.56 },
-        { amount: 7891.23 },
-        { amount: 100.21 },
-      ] as MaterialInvoice[]
+      const invoices = [{ amount: 1234.56 }, { amount: 7891.23 }, { amount: 100.21 }] as MaterialInvoice[]
       expect(calcMaterialsTotal(invoices)).toBe(9226)
     })
   })
@@ -93,7 +93,14 @@ describe('calculations', () => {
     })
 
     it('porcentajes fraccionarios sin pérdida de precisión', () => {
-      const result = calcIndirectCosts(33333.33, 0, { ...project, dt_percent: 7.5, admin_percent: 0, transport_percent: 0, planning_fee: 0, custom_indirects: [] })
+      const result = calcIndirectCosts(33333.33, 0, {
+        ...project,
+        dt_percent: 7.5,
+        admin_percent: 0,
+        transport_percent: 0,
+        planning_fee: 0,
+        custom_indirects: [],
+      })
       expect(result.direction_technique.amount).toBe(2500)
     })
 

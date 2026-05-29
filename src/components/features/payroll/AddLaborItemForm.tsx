@@ -158,6 +158,9 @@ export function AddLaborItemForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {isEdit && initialItem?.creator_name && (
+        <p className="text-xs text-app-subtle">Agregado por {initialItem.creator_name}</p>
+      )}
       <div>
         <label className="block text-xs font-medium text-app-muted mb-1">Contratista *</label>
         <select
