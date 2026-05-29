@@ -4,20 +4,33 @@ import type { PurchaseRequisition, PurchaseQuote, RequisitionStatus } from '@/ty
 import { approvalsService } from '@/services/approvalsService'
 import { pushNotificationService } from '@/services/pushNotificationService'
 
-function generateReqNumber(): string {
+// Número de requisición consecutivo por año: REQ-2026-0001, REQ-2026-0002, …
+// Se calcula a partir del mayor consecutivo existente del año en curso, de modo
+// que la numeración sea siempre secuencial y sin colisiones. Si la consulta
+// falla por cualquier motivo, no se bloquea la creación: se usa un respaldo.
+async function nextReqNumber(): Promise<string> {
   const year = new Date().getFullYear()
-  const seq = Math.floor(Math.random() * 9000) + 1000
-  return `REQ-${year}-${seq}`
+  const prefix = `REQ-${year}-`
+  try {
+    const { data, error } = await supabase.from('purchase_requisitions').select('req_number')
+    if (error) throw error
+    let max = 0
+    for (const row of (data ?? []) as { req_number: string | null }[]) {
+      const value = row.req_number
+      if (value?.startsWith(prefix)) {
+        const seq = parseInt(value.slice(prefix.length), 10)
+        if (!isNaN(seq) && seq > max) max = seq
+      }
+    }
+    return `${prefix}${String(max + 1).padStart(4, '0')}`
+  } catch {
+    // Respaldo defensivo: marca de tiempo para no romper la creación.
+    return `${prefix}${String(Date.now()).slice(-4)}`
+  }
 }
 
 // Status que consumen presupuesto planificado (regla 7.1).
-const COMMITTING_STATUSES: RequisitionStatus[] = [
-  'quoting',
-  'pending_approval',
-  'approved',
-  'ordered',
-  'received',
-]
+const COMMITTING_STATUSES: RequisitionStatus[] = ['quoting', 'pending_approval', 'approved', 'ordered', 'received']
 
 export interface PartidaAvailability {
   budget_item_id: string
@@ -64,12 +77,9 @@ export const requisitionService = {
 
     const quotes: PurchaseQuote[] = await Promise.all(
       (quotesData || []).map(async (q: PurchaseQuote) => {
-        const { data: items } = await supabase
-          .from('purchase_quote_items')
-          .select('*')
-          .eq('quote_id', q.id)
+        const { data: items } = await supabase.from('purchase_quote_items').select('*').eq('quote_id', q.id)
         return { ...q, items: items || [] }
-      })
+      }),
     )
 
     return { ...reqData, quotes } as PurchaseRequisition
@@ -93,8 +103,7 @@ export const requisitionService = {
 
     const planned = Number(item?.quantity ?? 0)
     const committed = (requisitions ?? []).reduce(
-      (sum: number, r: { quantity_requested: number | null }) =>
-        sum + Number(r.quantity_requested ?? 0),
+      (sum: number, r: { quantity_requested: number | null }) => sum + Number(r.quantity_requested ?? 0),
       0,
     )
 
@@ -136,7 +145,7 @@ export const requisitionService = {
         resource_type: payload.resource_type ?? null,
         planned_quantity_at_request: plannedSnapshot,
         available_quantity_at_request: availableSnapshot,
-        req_number: generateReqNumber(),
+        req_number: await nextReqNumber(),
         status: initialStatus,
         approved_quote_id: null,
         approved_by: null,
@@ -158,9 +167,10 @@ export const requisitionService = {
       action: 'status_change',
       actor_display_name: payload.requested_by,
       payload_after: { status: row.status, quantity_requested: payload.quantity_requested ?? null },
-      motivo: initialStatus === 'pendiente_validacion'
-        ? `Solicitud excede plan: solicitado ${payload.quantity_requested} vs disponible ${availableSnapshot}`
-        : null,
+      motivo:
+        initialStatus === 'pendiente_validacion'
+          ? `Solicitud excede plan: solicitado ${payload.quantity_requested} vs disponible ${availableSnapshot}`
+          : null,
       metadata: { req_number: row.req_number, project_id: row.project_id },
     })
 
@@ -254,9 +264,7 @@ export const requisitionService = {
     }
     if (quotes.length === 1) {
       if (!options?.singleQuoteJustification?.trim()) {
-        throw new Error(
-          'Aprobación con 1 sola cotización requiere justificación escrita (regla 7.3).',
-        )
+        throw new Error('Aprobación con 1 sola cotización requiere justificación escrita (regla 7.3).')
       }
     }
 
@@ -420,10 +428,7 @@ export const requisitionService = {
   },
 
   async delete(id: string) {
-    const { data: quotes } = await supabase
-      .from('purchase_quotes')
-      .select('id')
-      .eq('requisition_id', id)
+    const { data: quotes } = await supabase.from('purchase_quotes').select('id').eq('requisition_id', id)
     for (const q of quotes || []) {
       await supabase.from('purchase_quote_items').delete().eq('quote_id', q.id)
     }
