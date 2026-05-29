@@ -1,10 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ChevronLeft, ChevronRight, Download, History, X } from 'lucide-react'
-import {
-  approvalsService,
-  type ApprovalAction,
-  type ApprovalRecord,
-} from '@/services/approvalsService'
+import { approvalsService, type ApprovalAction, type ApprovalRecord } from '@/services/approvalsService'
 import { exportToExcel } from '@/utils/excelExport'
 import { useAuthStore } from '@/stores/authStore'
 import { useToast } from '@/components/ui/Toast'
@@ -15,7 +11,7 @@ const ACTION_LABEL: Record<ApprovalAction, string> = {
   approve: 'Aprobada',
   reject: 'Rechazada',
   return_for_revision: 'Devuelta para revisión',
-  release: 'Liberada por Director',
+  release: 'Liberada por Administrador',
   validate_excess: 'Excedente validado',
   override_stock: 'Override de stock',
   budget_edit_post_approval: 'Edición de presupuesto',
@@ -25,6 +21,7 @@ const ACTION_LABEL: Record<ApprovalAction, string> = {
   delete: 'Eliminación',
   delete_cascade: 'Eliminación en cascada',
   update_indirects: 'Actualización de indirectos',
+  update: 'Edición de partida/factura',
 }
 
 const ENTITY_LABEL: Record<string, string> = {
@@ -194,11 +191,7 @@ export default function AprobacionesPage() {
               </button>
             </span>
           )}
-          <button
-            type="button"
-            onClick={clearFilters}
-            className="text-xs text-app-muted hover:text-app-text underline"
-          >
+          <button type="button" onClick={clearFilters} className="text-xs text-app-muted hover:text-app-text underline">
             Limpiar
           </button>
         </div>
@@ -209,12 +202,8 @@ export default function AprobacionesPage() {
       ) : filtered.length === 0 ? (
         hasActiveFilters ? (
           <div className="bg-app-surface rounded-xl border border-app-border p-12 text-center">
-            <p className="text-base font-semibold text-app-text mb-1">
-              No hay resultados con los filtros aplicados
-            </p>
-            <p className="text-sm text-app-muted mb-4">
-              Ajusta o quita los filtros para ver más registros.
-            </p>
+            <p className="text-base font-semibold text-app-text mb-1">No hay resultados con los filtros aplicados</p>
+            <p className="text-sm text-app-muted mb-4">Ajusta o quita los filtros para ver más registros.</p>
             <button
               type="button"
               onClick={clearFilters}
@@ -264,8 +253,8 @@ export default function AprobacionesPage() {
           {showPagination && (
             <div className="flex items-center justify-between px-4 py-2.5 border-t border-app-border">
               <span className="text-xs text-app-muted">
-                Mostrando {offset + 1}–{Math.min(offset + PAGE_SIZE, filtered.length)} de{' '}
-                {filtered.length} · Pág. {currentPage} de {totalPages}
+                Mostrando {offset + 1}–{Math.min(offset + PAGE_SIZE, filtered.length)} de {filtered.length} · Pág.{' '}
+                {currentPage} de {totalPages}
               </span>
               <div className="flex gap-1">
                 <button
@@ -279,9 +268,7 @@ export default function AprobacionesPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() =>
-                    setOffset(Math.min((totalPages - 1) * PAGE_SIZE, offset + PAGE_SIZE))
-                  }
+                  onClick={() => setOffset(Math.min((totalPages - 1) * PAGE_SIZE, offset + PAGE_SIZE))}
                   disabled={currentPage >= totalPages}
                   aria-label="Página siguiente"
                   className="p-1.5 rounded hover:bg-app-hover text-app-muted disabled:opacity-40 disabled:cursor-not-allowed"
