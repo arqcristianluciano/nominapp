@@ -340,9 +340,16 @@ export const mockSupabase = {
   channel(name: string): MockChannel {
     return createMockChannel(name)
   },
-  // Realtime no-op en demo: los componentes llaman removeChannel() al desmontar.
-  removeChannel(): Promise<'ok'> {
+  // En modo demo no hay realtime, pero los hooks llaman a removeChannel en su
+  // cleanup (p. ej. usePendingApprovals/usePendingCortes); devolvemos una
+  // promesa resuelta para no romper el desmontaje (incl. el doble efecto de
+  // React StrictMode en desarrollo).
+  removeChannel(channel?: MockChannel): Promise<'ok'> {
+    void channel
     return Promise.resolve('ok')
+  },
+  removeAllChannels(): Promise<'ok'[]> {
+    return Promise.resolve([])
   },
   // El bucket se ignora en demo: todos los archivos viven en el mismo store en memoria.
   storage: {

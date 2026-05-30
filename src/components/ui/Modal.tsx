@@ -79,8 +79,7 @@ export function Modal({ open, onClose, title, children, width = 'max-w-lg', aria
   // focusable element inside the modal, and restore focus on close.
   useEffect(() => {
     if (!open) return
-    previousActiveElementRef.current =
-      document.activeElement instanceof HTMLElement ? document.activeElement : null
+    previousActiveElementRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
 
     const dialog = dialogRef.current
     if (dialog) {
@@ -142,7 +141,9 @@ export function Modal({ open, onClose, title, children, width = 'max-w-lg', aria
     <div
       ref={overlayRef}
       className="fixed inset-0 z-[60] flex items-start justify-center bg-black/50 backdrop-blur-sm p-4 pt-[8vh] overflow-y-auto"
-      onClick={(e) => { if (e.target === overlayRef.current) onClose() }}
+      onClick={(e) => {
+        if (e.target === overlayRef.current) onClose()
+      }}
     >
       <div
         ref={dialogRef}
@@ -156,10 +157,12 @@ export function Modal({ open, onClose, title, children, width = 'max-w-lg', aria
       >
         {hasTitle && (
           <div className="flex items-center justify-between px-5 py-4 border-b border-app-border">
-            <h2 id={titleId} className="text-base font-semibold text-app-text">{title}</h2>
+            <h2 id={titleId} className="text-base font-semibold text-app-text">
+              {title}
+            </h2>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg text-app-subtle hover:text-app-text hover:bg-app-hover transition-colors"
+              className="p-1.5 -mr-1.5 rounded-lg text-app-subtle hover:text-app-text hover:bg-app-hover transition-colors flex items-center justify-center [@media(pointer:coarse)]:min-h-[44px] [@media(pointer:coarse)]:min-w-[44px]"
               title="Cerrar (Escape)"
               aria-label="Cerrar (Escape)"
             >

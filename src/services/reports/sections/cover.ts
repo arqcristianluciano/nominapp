@@ -39,11 +39,7 @@ interface FormatOptions {
   locale: string
 }
 
-function formatMonthLabel(
-  year: number,
-  month: number,
-  opts: FormatOptions,
-): string {
+function formatMonthLabel(year: number, month: number, opts: FormatOptions): string {
   // pdfmake/pdf rendering: build a label like "Mayo 2026" using Intl.
   const date = new Date(Date.UTC(year, month - 1, 1))
   const formatter = new Intl.DateTimeFormat(opts.locale, {
@@ -80,15 +76,8 @@ export function buildCoverPage(input: CoverInput): Content[] {
   const opts: FormatOptions = {
     locale: input.locale ?? 'es-CL',
   }
-  const monthLabel = formatMonthLabel(
-    input.month.year,
-    input.month.month,
-    opts,
-  )
-  const dateLabel = formatGenerationDate(
-    input.generatedAt ?? new Date(),
-    opts,
-  )
+  const monthLabel = formatMonthLabel(input.month.year, input.month.month, opts)
+  const dateLabel = formatGenerationDate(input.generatedAt ?? new Date(), opts)
 
   const content: Content[] = [
     {

@@ -34,11 +34,7 @@ function bufferToBase64(buffer: ArrayBuffer | null): string {
 
 export const pushSubscriptionService = {
   isSupported(): boolean {
-    return (
-      typeof window !== 'undefined' &&
-      'serviceWorker' in navigator &&
-      'PushManager' in window
-    )
+    return typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window
   },
 
   async getPermission(): Promise<NotificationPermission> {
@@ -60,9 +56,7 @@ export const pushSubscriptionService = {
     const sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
       // Cast por interop con tipos ArrayBuffer estrictos en TS 5.x.
-      applicationServerKey: urlBase64ToUint8Array(
-        input.vapid_public_key,
-      ) as unknown as BufferSource,
+      applicationServerKey: urlBase64ToUint8Array(input.vapid_public_key) as unknown as BufferSource,
     })
 
     const p256dh = bufferToBase64(sub.getKey('p256dh'))

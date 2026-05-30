@@ -9,8 +9,8 @@ type Tab = 'personas' | 'matriz' | 'roles'
 
 const TAB_DEFS: { value: Tab; labelKey: string; icon: typeof Users }[] = [
   { value: 'personas', labelKey: 'admin.tabs.personas', icon: Users },
-  { value: 'matriz',   labelKey: 'admin.tabs.matriz',   icon: ListChecks },
-  { value: 'roles',    labelKey: 'admin.tabs.roles',    icon: ShieldCheck },
+  { value: 'matriz', labelKey: 'admin.tabs.matriz', icon: ListChecks },
+  { value: 'roles', labelKey: 'admin.tabs.roles', icon: ShieldCheck },
 ]
 
 export default function AdminUsuarios() {

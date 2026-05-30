@@ -82,10 +82,7 @@ function buildHeaderRow(): TableCell[] {
   ]
 }
 
-function buildTransactionRow(
-  tx: AppendixTransaction,
-  opts: FormatOptions,
-): TableCell[] {
+function buildTransactionRow(tx: AppendixTransaction, opts: FormatOptions): TableCell[] {
   const amountColor = tx.amount < 0 ? '#c0392b' : '#202124'
   return [
     { text: formatDate(tx.date, opts) },

@@ -82,7 +82,10 @@ export default function Login() {
   }
 
   return (
-    <div className={`min-h-screen flex flex-col bg-app-bg${showQuickAccess ? '' : ' login--hide-quick-access'}`}>
+    <div
+      style={{ paddingTop: 'env(safe-area-inset-top)' }}
+      className={`min-h-screen flex flex-col bg-app-bg${showQuickAccess ? '' : ' login--hide-quick-access'}`}
+    >
       {/* En prod ocultamos el bloque de quick-access (renderizado dentro de LoginFormPanel)
           mediante una clase a nivel raíz, sin tocar LoginSections. Reemplaza el badge
           de "cuentas provisionales" del LoginQuickAccess por un hint visible solo en demo/dev. */}

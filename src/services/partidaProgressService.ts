@@ -46,6 +46,20 @@ export interface PartidaActualCostRow {
   desviacion: number // costo_real - presupuesto
 }
 
+// Cobertura: qué parte del costo real está imputado a una partida y qué parte
+// quedó sin partida (solo capítulo o sin imputar). Sirve para saber qué tan
+// completo/confiable es el reporte por partida.
+export interface PartidaCostCoverage {
+  attributed: number // costo real con partida asignada
+  unattributed: number // costo real sin partida
+  total: number // attributed + unattributed
+}
+
+export interface PartidaActualCostResult {
+  rows: PartidaActualCostRow[]
+  coverage: PartidaCostCoverage
+}
+
 function monthKey(dateStr: string | null | undefined): string | null {
   if (!dateStr) return null
   return dateStr.slice(0, 7)
@@ -257,8 +271,10 @@ export const partidaProgressService = {
   //  - salidas de almacén imputadas a la partida
   //  - mano de obra de nóminas aprobadas imputada a la partida
   //  - facturas de materiales de nóminas aprobadas imputadas a la partida
-  // El presupuesto sale de cantidad × precio unitario de la partida.
-  async getActualCostByPartida(projectId: string): Promise<PartidaActualCostRow[]> {
+  //  - transacciones (CxP / diario) imputadas a la partida
+  // El presupuesto sale de cantidad × precio unitario de la partida. Además
+  // devuelve la cobertura: cuánto costo real quedó con/sin partida.
+  async getActualCostByPartida(projectId: string): Promise<PartidaActualCostResult> {
     // 1) Capítulos del proyecto
     const { data: categories } = await supabase
       .from('budget_categories')
@@ -297,10 +313,19 @@ export const partidaProgressService = {
       })
     }
 
+    const coverage: PartidaCostCoverage = { attributed: 0, unattributed: 0, total: 0 }
+    // Suma un costo real. Si tiene partida válida lo acumula en la partida y en
+    // `attributed`; si no, va a `unattributed` (cobertura del reporte).
     function addCost(budgetItemId: string | null, value: number): void {
-      if (!budgetItemId) return
-      const row = rowById.get(budgetItemId)
-      if (row) row.costo_real += value
+      if (!value) return
+      coverage.total += value
+      const row = budgetItemId ? rowById.get(budgetItemId) : undefined
+      if (row) {
+        row.costo_real += value
+        coverage.attributed += value
+      } else {
+        coverage.unattributed += value
+      }
     }
 
     // 3) Salidas de almacén imputadas a partida
@@ -350,14 +375,28 @@ export const partidaProgressService = {
       }
     }
 
-    // 5) Desviación y orden
+    // 5) Transacciones (CxP / diario) imputadas a partida
+    const { data: transactions } = await supabase
+      .from('transactions')
+      .select('total, budget_item_id')
+      .eq('project_id', projectId)
+    for (const tx of (transactions ?? []) as Array<{
+      total: number | null
+      budget_item_id: string | null
+    }>) {
+      addCost(tx.budget_item_id, Number(tx.total ?? 0))
+    }
+
+    // 6) Desviación y orden
     for (const row of rowById.values()) {
       row.desviacion = row.costo_real - row.presupuesto
     }
 
-    return Array.from(rowById.values()).sort((a, b) => {
+    const rows = Array.from(rowById.values()).sort((a, b) => {
       const cat = (a.category_code ?? '').localeCompare(b.category_code ?? '')
       return cat !== 0 ? cat : (a.item_code ?? '').localeCompare(b.item_code ?? '')
     })
+
+    return { rows, coverage }
   },
 }

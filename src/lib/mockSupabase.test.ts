@@ -48,7 +48,10 @@ describe('mockSupabase filtros encadenados', () => {
 
   it('expone channel() con on/subscribe/unsubscribe encadenables', () => {
     expect(() => {
-      mockSupabase.channel('foo').on('x', {}, () => {}).subscribe()
+      mockSupabase
+        .channel('foo')
+        .on('x', {}, () => {})
+        .subscribe()
     }).not.toThrow()
 
     const ch = mockSupabase.channel('bar')

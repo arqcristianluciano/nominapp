@@ -25,37 +25,21 @@ export const budgetItemService = {
   },
 
   async create(item: Omit<BudgetItem, 'id'>): Promise<BudgetItem> {
-    const { data, error } = await supabase
-      .from('budget_items')
-      .insert(item)
-      .select()
-      .single()
+    const { data, error } = await supabase.from('budget_items').insert(item).select().single()
     if (error) throw error
     return data as BudgetItem
   },
 
   async update(id: string, changes: Partial<Omit<BudgetItem, 'id'>>): Promise<BudgetItem> {
-    const { data, error } = await supabase
-      .from('budget_items')
-      .update(changes)
-      .eq('id', id)
-      .select()
-      .single()
+    const { data, error } = await supabase.from('budget_items').update(changes).eq('id', id).select().single()
     if (error) throw error
     return data as BudgetItem
   },
 
   async delete(id: string): Promise<void> {
-    const { data: item } = await supabase
-      .from('budget_items')
-      .select('*')
-      .eq('id', id)
-      .single()
+    const { data: item } = await supabase.from('budget_items').select('*').eq('id', id).single()
 
-    const { error } = await supabase
-      .from('budget_items')
-      .delete()
-      .eq('id', id)
+    const { error } = await supabase.from('budget_items').delete().eq('id', id)
     if (error) throw error
 
     await approvalsService
@@ -70,24 +54,15 @@ export const budgetItemService = {
 
   async bulkCreate(items: Omit<BudgetItem, 'id'>[]): Promise<BudgetItem[]> {
     if (items.length === 0) return []
-    const { data, error } = await supabase
-      .from('budget_items')
-      .insert(items)
-      .select()
+    const { data, error } = await supabase.from('budget_items').insert(items).select()
     if (error) throw error
     return data as BudgetItem[]
   },
 
   async deleteByCategory(categoryId: string): Promise<void> {
-    const { data: items } = await supabase
-      .from('budget_items')
-      .select('*')
-      .eq('budget_category_id', categoryId)
+    const { data: items } = await supabase.from('budget_items').select('*').eq('budget_category_id', categoryId)
 
-    const { error } = await supabase
-      .from('budget_items')
-      .delete()
-      .eq('budget_category_id', categoryId)
+    const { error } = await supabase.from('budget_items').delete().eq('budget_category_id', categoryId)
     if (error) throw error
 
     await approvalsService
@@ -98,8 +73,6 @@ export const budgetItemService = {
         payload_before: items,
         metadata: { count: items?.length ?? 0, budget_category_id: categoryId },
       })
-      .catch((err) =>
-        console.warn('[budgetItemService.deleteByCategory] log de auditoria fallo', err),
-      )
+      .catch((err) => console.warn('[budgetItemService.deleteByCategory] log de auditoria fallo', err))
   },
 }

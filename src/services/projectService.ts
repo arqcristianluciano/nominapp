@@ -25,20 +25,13 @@ function pickIndirects(source: Partial<Project>): Partial<Pick<Project, Indirect
 
 export const projectService = {
   async getAll() {
-    const { data, error } = await supabase
-      .from('projects')
-      .select('*, company:companies(*)')
-      .order('name')
+    const { data, error } = await supabase.from('projects').select('*, company:companies(*)').order('name')
     if (error) throw error
     return data as Project[]
   },
 
   async getById(id: string) {
-    const { data, error } = await supabase
-      .from('projects')
-      .select('*, company:companies(*)')
-      .eq('id', id)
-      .single()
+    const { data, error } = await supabase.from('projects').select('*, company:companies(*)').eq('id', id).single()
     if (error) throw error
     return data as Project
   },
@@ -68,11 +61,7 @@ export const projectService = {
 
     let before: Partial<Pick<Project, IndirectField>> | null = null
     if (touchesIndirects) {
-      const { data: prev } = await supabase
-        .from('projects')
-        .select(INDIRECT_FIELDS.join(','))
-        .eq('id', id)
-        .single()
+      const { data: prev } = await supabase.from('projects').select(INDIRECT_FIELDS.join(',')).eq('id', id).single()
       before = prev ? pickIndirects(prev as unknown as Partial<Project>) : null
     }
 
@@ -95,9 +84,7 @@ export const projectService = {
           payload_before: before,
           payload_after: pickIndirects(updated),
         })
-        .catch((err) =>
-          console.warn('[projectService.update] log de auditoria fallo', err),
-        )
+        .catch((err) => console.warn('[projectService.update] log de auditoria fallo', err))
     }
 
     return updated

@@ -219,6 +219,7 @@ export function PayrollEditorModals({
   onUpdateLabor,
   onUpdateMaterial,
   onContractorCreated,
+  onSupplierCreated,
 }: {
   showAddMaterial: boolean
   showAddLabor: boolean
@@ -240,6 +241,7 @@ export function PayrollEditorModals({
   onUpdateLabor: (item: LaborFormPayload) => Promise<void>
   onUpdateMaterial: (inv: MaterialFormPayload) => Promise<void>
   onContractorCreated: (contractor: Contractor) => void
+  onSupplierCreated: (supplier: Supplier) => void
 }) {
   return (
     <>
@@ -252,6 +254,7 @@ export function PayrollEditorModals({
           onSubmit={onAddMaterial}
           onCancel={onCloseAddMaterial}
           saving={saving}
+          onSupplierCreated={onSupplierCreated}
         />
       </Modal>
       <Modal open={showAddLabor} onClose={onCloseAddLabor} title="Agregar partida de mano de obra">
@@ -278,6 +281,7 @@ export function PayrollEditorModals({
             saving={saving}
             initialInvoice={editMaterialInvoice}
             submitLabel="Guardar cambios"
+            onSupplierCreated={onSupplierCreated}
           />
         )}
       </Modal>

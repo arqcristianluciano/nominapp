@@ -8,10 +8,7 @@ export function usePendingCortes() {
     let cancelled = false
 
     async function fetchCount() {
-      const { data, error } = await supabase
-        .from('contract_cortes')
-        .select('id')
-        .eq('status', 'approved')
+      const { data, error } = await supabase.from('contract_cortes').select('id').eq('status', 'approved')
       if (cancelled) return
       if (error) {
         console.error('usePendingCortes fetch failed', error)

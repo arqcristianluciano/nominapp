@@ -4,7 +4,10 @@ import { Download } from 'lucide-react'
 import { useQualityControlPage } from '@/hooks/useQualityControlPage'
 import { QualityStatsCards } from '@/components/features/quality/QualityStatsCards'
 import { QualityRecordsTable } from '@/components/features/quality/QualityRecordsTable'
-import { QualityControlPageHeader, QualityControlPageModals } from '@/components/features/quality/QualityControlPageSections'
+import {
+  QualityControlPageHeader,
+  QualityControlPageModals,
+} from '@/components/features/quality/QualityControlPageSections'
 import type { QualityControl } from '@/types/database'
 
 type StatusFilter = 'all' | 'passed' | 'failed' | 'pending'
@@ -80,7 +83,7 @@ export default function QualityControlPage() {
     const passedCount = completed.filter((record) => record.status === 'passed').length
     const passedPercent = completed.length > 0 ? (passedCount / completed.length) * 100 : 0
     const withResistances = quality.records.filter(
-      (record) => record.actual_resistance !== null && record.expected_resistance !== null
+      (record) => record.actual_resistance !== null && record.expected_resistance !== null,
     )
     const avgActual =
       withResistances.length > 0
@@ -111,7 +114,11 @@ export default function QualityControlPage() {
 
   return (
     <div className="space-y-5">
-      <QualityControlPageHeader projectId={projectId} projectName={quality.projectName} onCreate={() => quality.setShowCreate(true)} />
+      <QualityControlPageHeader
+        projectId={projectId}
+        projectName={quality.projectName}
+        onCreate={() => quality.setShowCreate(true)}
+      />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="bg-app-surface border border-app-border rounded-xl p-3 sm:p-4">

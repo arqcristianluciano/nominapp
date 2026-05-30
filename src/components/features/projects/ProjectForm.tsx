@@ -87,13 +87,17 @@ export function ProjectForm({ initial, onSubmit, onCancel, saving }: Props) {
 
   useEffect(() => {
     if (isEditing) return
-    supabase.from('companies').select('*').order('name').then(({ data }: { data: Company[] | null }) => {
-      if (data && data.length > 0) {
-        setCompanies(data)
-        setCompanyId((prev) => prev || data[0].id)
-      }
-      setCompaniesLoaded(true)
-    })
+    supabase
+      .from('companies')
+      .select('*')
+      .order('name')
+      .then(({ data }: { data: Company[] | null }) => {
+        if (data && data.length > 0) {
+          setCompanies(data)
+          setCompanyId((prev) => prev || data[0].id)
+        }
+        setCompaniesLoaded(true)
+      })
   }, [isEditing])
 
   function handleSubmit(e: React.FormEvent) {
@@ -111,9 +115,10 @@ export function ProjectForm({ initial, onSubmit, onCancel, saving }: Props) {
       planning_fee: planningFeeParsed ?? 0,
       custom_indirects: customIndirects.filter((c) => c.name.trim() && c.value > 0),
       status,
-      new_company: needsNewCompany && trimmedNewCompanyName
-        ? { name: trimmedNewCompanyName, rnc: newCompanyRnc.trim() || null }
-        : undefined,
+      new_company:
+        needsNewCompany && trimmedNewCompanyName
+          ? { name: trimmedNewCompanyName, rnc: newCompanyRnc.trim() || null }
+          : undefined,
     })
   }
 
@@ -125,7 +130,8 @@ export function ProjectForm({ initial, onSubmit, onCancel, saving }: Props) {
     (needsNewCompany && !newCompanyName.trim()) ||
     (!isEditing && !needsNewCompany && !companyId)
 
-  const inputClass = 'w-full px-3 py-2 border border-app-border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+  const inputClass =
+    'w-full px-3 py-2 border border-app-border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
   const labelClass = 'text-xs font-medium text-app-muted mb-1 block'
 
   return (
@@ -153,7 +159,10 @@ export function ProjectForm({ initial, onSubmit, onCancel, saving }: Props) {
           <input
             type="text"
             value={code}
-            onChange={(e) => { setCode(e.target.value.toUpperCase()); setCodeTouched(true) }}
+            onChange={(e) => {
+              setCode(e.target.value.toUpperCase())
+              setCodeTouched(true)
+            }}
             className={inputClass}
             placeholder="Ej: RM-2026"
             required
@@ -161,13 +170,23 @@ export function ProjectForm({ initial, onSubmit, onCancel, saving }: Props) {
         </div>
         <div>
           <label className={labelClass}>Ubicación</label>
-          <input type="text" value={location} onChange={(e) => setLocation(e.target.value)} className={inputClass} placeholder="Ej: Santo Domingo" />
+          <input
+            type="text"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            className={inputClass}
+            placeholder="Ej: Santo Domingo"
+          />
         </div>
         {isEditing && (
           <div>
             <label className={labelClass}>Estado</label>
             <select value={status} onChange={(e) => setStatus(e.target.value as typeof status)} className={inputClass}>
-              {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              {STATUS_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
             </select>
           </div>
         )}
@@ -175,22 +194,41 @@ export function ProjectForm({ initial, onSubmit, onCancel, saving }: Props) {
           <div className="col-span-2">
             <label className={labelClass}>Empresa</label>
             <select value={companyId} onChange={(e) => setCompanyId(e.target.value)} className={inputClass}>
-              {companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              {companies.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
             </select>
           </div>
         )}
         {needsNewCompany && (
           <>
             <div className="col-span-2">
-              <p className="text-xs text-app-muted">No hay empresas registradas. Crea la primera empresa al registrar este proyecto.</p>
+              <p className="text-xs text-app-muted">
+                No hay empresas registradas. Crea la primera empresa al registrar este proyecto.
+              </p>
             </div>
             <div>
               <label className={labelClass}>Nombre de la empresa *</label>
-              <input type="text" value={newCompanyName} onChange={(e) => setNewCompanyName(e.target.value)} className={inputClass} placeholder="Ej: MI EMPRESA, S.R.L." required />
+              <input
+                type="text"
+                value={newCompanyName}
+                onChange={(e) => setNewCompanyName(e.target.value)}
+                className={inputClass}
+                placeholder="Ej: MI EMPRESA, S.R.L."
+                required
+              />
             </div>
             <div>
               <label className={labelClass}>RNC (opcional)</label>
-              <input type="text" value={newCompanyRnc} onChange={(e) => setNewCompanyRnc(e.target.value)} className={inputClass} placeholder="Ej: 1-32-66032-3" />
+              <input
+                type="text"
+                value={newCompanyRnc}
+                onChange={(e) => setNewCompanyRnc(e.target.value)}
+                className={inputClass}
+                placeholder="Ej: 1-32-66032-3"
+              />
             </div>
           </>
         )}
@@ -201,19 +239,50 @@ export function ProjectForm({ initial, onSubmit, onCancel, saving }: Props) {
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className={labelClass}>Dirección técnica %</label>
-            <input type="number" step="0.1" min="0" max="100" value={dtPercent} onChange={(e) => setDtPercent(Number(e.target.value))} className={inputClass} />
+            <input
+              type="number"
+              step="0.1"
+              min="0"
+              max="100"
+              value={dtPercent}
+              onChange={(e) => setDtPercent(Number(e.target.value))}
+              className={inputClass}
+            />
           </div>
           <div>
             <label className={labelClass}>Administración %</label>
-            <input type="number" step="0.1" min="0" max="100" value={adminPercent} onChange={(e) => setAdminPercent(Number(e.target.value))} className={inputClass} />
+            <input
+              type="number"
+              step="0.1"
+              min="0"
+              max="100"
+              value={adminPercent}
+              onChange={(e) => setAdminPercent(Number(e.target.value))}
+              className={inputClass}
+            />
           </div>
           <div>
             <label className={labelClass}>Transporte %</label>
-            <input type="number" step="0.1" min="0" max="100" value={transportPercent} onChange={(e) => setTransportPercent(Number(e.target.value))} className={inputClass} />
+            <input
+              type="number"
+              step="0.1"
+              min="0"
+              max="100"
+              value={transportPercent}
+              onChange={(e) => setTransportPercent(Number(e.target.value))}
+              className={inputClass}
+            />
           </div>
           <div>
             <label className={labelClass}>Planificación (RD$)</label>
-            <input type="text" inputMode="decimal" placeholder="0,00" value={planningFee} onChange={(e) => setPlanningFee(e.target.value)} className={inputClass} />
+            <input
+              type="text"
+              inputMode="decimal"
+              placeholder="0,00"
+              value={planningFee}
+              onChange={(e) => setPlanningFee(e.target.value)}
+              className={inputClass}
+            />
           </div>
         </div>
 
@@ -224,10 +293,18 @@ export function ProjectForm({ initial, onSubmit, onCancel, saving }: Props) {
       </div>
 
       <div className="flex justify-end gap-2 pt-2">
-        <button type="button" onClick={onCancel} className="px-4 py-2 text-sm text-app-muted border border-app-border rounded-lg hover:bg-app-hover">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-4 py-2 text-sm text-app-muted border border-app-border rounded-lg hover:bg-app-hover"
+        >
           Cancelar
         </button>
-        <button type="submit" disabled={submitDisabled} className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50">
+        <button
+          type="submit"
+          disabled={submitDisabled}
+          className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50"
+        >
           {saving ? 'Guardando...' : isEditing ? 'Guardar cambios' : 'Crear proyecto'}
         </button>
       </div>

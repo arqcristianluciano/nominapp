@@ -3,9 +3,7 @@ interface SkeletonProps {
 }
 
 export function Skeleton({ className = '' }: SkeletonProps) {
-  return (
-    <div className={`animate-pulse bg-app-chip rounded ${className}`} aria-hidden="true" />
-  )
+  return <div className={`animate-pulse bg-app-chip rounded ${className}`} aria-hidden="true" />
 }
 
 export function SkeletonTable({ rows = 5, cols = 4 }: { rows?: number; cols?: number }) {

@@ -52,9 +52,7 @@ export default function Dashboard() {
             <AlertCircle className="h-6 w-6" />
           </div>
           <div>
-            <h2 className="text-base font-semibold text-app-text">
-              {t('dashboard.error_title')}
-            </h2>
+            <h2 className="text-base font-semibold text-app-text">{t('dashboard.error_title')}</h2>
             <p className="mt-1 text-sm text-app-muted">{projectError}</p>
           </div>
           <button

@@ -12,9 +12,9 @@ Diagnostico:
 
    ```js
    // Consola del navegador
-   const { data } = await supabase.auth.getUser();
-   console.log('user.id:', data.user?.id);
-   console.log('app_metadata:', data.user?.app_metadata);
+   const { data } = await supabase.auth.getUser()
+   console.log('user.id:', data.user?.id)
+   console.log('app_metadata:', data.user?.app_metadata)
    ```
 
 2. Confirmar que el rol incluye la capability `projects.create`:
@@ -39,10 +39,10 @@ Diagnostico:
 1. Verificar VAPID keys en el cliente:
 
    ```js
-   console.log('VAPID public:', import.meta.env.VITE_VAPID_PUBLIC_KEY);
-   const reg = await navigator.serviceWorker.ready;
-   const sub = await reg.pushManager.getSubscription();
-   console.log('subscription:', sub?.toJSON());
+   console.log('VAPID public:', import.meta.env.VITE_VAPID_PUBLIC_KEY)
+   const reg = await navigator.serviceWorker.ready
+   const sub = await reg.pushManager.getSubscription()
+   console.log('subscription:', sub?.toJSON())
    ```
 
 2. Confirmar que la subscription esta persistida en la tabla `push_subscriptions`:
@@ -67,9 +67,9 @@ Diagnostico:
    ```js
    const { data, error } = await supabase.auth.signInWithPassword({
      email: 'user@example.com',
-     password: '...'
-   });
-   console.log({ data, error });
+     password: '...',
+   })
+   console.log({ data, error })
    ```
 
 2. Validar el estado del usuario en Supabase Auth:
@@ -91,16 +91,16 @@ Diagnostico:
 1. Inspeccionar la cola offline en IndexedDB:
 
    ```js
-   const db = await indexedDB.open('nominapp-offline');
+   const db = await indexedDB.open('nominapp-offline')
    // En DevTools: Application -> IndexedDB -> nominapp-offline -> mutations
    ```
 
 2. Confirmar que el service worker esta sincronizando:
 
    ```js
-   const reg = await navigator.serviceWorker.ready;
-   const tags = await reg.sync.getTags();
-   console.log('pending sync tags:', tags);
+   const reg = await navigator.serviceWorker.ready
+   const tags = await reg.sync.getTags()
+   console.log('pending sync tags:', tags)
    ```
 
 3. Si hay mutations atascadas: revisar la columna `error` de cada entrada. Errores 4xx requieren resolucion manual; 5xx se reintentan automaticamente.
@@ -143,10 +143,10 @@ Diagnostico:
 2. Confirmar que las fuentes estan cargadas:
 
    ```js
-   import pdfMake from 'pdfmake/build/pdfmake';
-   import pdfFonts from 'pdfmake/build/vfs_fonts';
-   pdfMake.vfs = pdfFonts.pdfMake.vfs;
-   console.log(Object.keys(pdfMake.vfs).filter(k => k.includes('Roboto')));
+   import pdfMake from 'pdfmake/build/pdfmake'
+   import pdfFonts from 'pdfmake/build/vfs_fonts'
+   pdfMake.vfs = pdfFonts.pdfMake.vfs
+   console.log(Object.keys(pdfMake.vfs).filter((k) => k.includes('Roboto')))
    ```
 
 3. Si el array esta vacio: el import de `vfs_fonts` se rompio (suele pasar con tree-shaking agresivo). Forzar el import en el bundle.
@@ -182,14 +182,14 @@ Diagnostico:
 1. Verificar la DSN en el bundle:
 
    ```js
-   console.log('SENTRY DSN:', import.meta.env.VITE_SENTRY_DSN);
+   console.log('SENTRY DSN:', import.meta.env.VITE_SENTRY_DSN)
    ```
 
 2. Forzar un evento de prueba:
 
    ```js
-   import * as Sentry from '@sentry/react';
-   Sentry.captureMessage('debug ping', 'info');
+   import * as Sentry from '@sentry/react'
+   Sentry.captureMessage('debug ping', 'info')
    ```
 
 3. Revisar `tracesSampleRate` y `replaysSessionSampleRate` en `sentry.client.ts`. En produccion con `sampleRate: 0` no se enviara nada. Confirmar tambien que el ad-blocker no este bloqueando `sentry.io`.

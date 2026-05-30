@@ -178,9 +178,7 @@ describe('adminService.grantCapability', () => {
       data: null,
       error: { code: '23505', message: 'duplicate key' },
     }
-    await expect(
-      adminService.grantCapability('role-1', 'cap-1'),
-    ).resolves.toBeUndefined()
+    await expect(adminService.grantCapability('role-1', 'cap-1')).resolves.toBeUndefined()
 
     expect(from).toHaveBeenCalledWith('role_capabilities')
     expect(chain.insert).toHaveBeenCalledWith({
@@ -194,9 +192,7 @@ describe('adminService.grantCapability', () => {
       data: null,
       error: { code: '42501', message: 'permission denied' },
     }
-    await expect(
-      adminService.grantCapability('role-1', 'cap-1'),
-    ).rejects.toMatchObject({ code: '42501' })
+    await expect(adminService.grantCapability('role-1', 'cap-1')).rejects.toMatchObject({ code: '42501' })
   })
 })
 

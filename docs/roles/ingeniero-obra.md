@@ -9,6 +9,7 @@ El rol **Ingeniero de Obra** es el responsable operativo en campo. Gestiona la n
 ## Que puede hacer
 
 ### Nomina
+
 - Dar de alta personal de obra (operarios, ayudantes, oficiales).
 - Capturar jornadas trabajadas y tiempos extra.
 - Aplicar bonos de productividad y descuentos autorizados.
@@ -16,30 +17,35 @@ El rol **Ingeniero de Obra** es el responsable operativo en campo. Gestiona la n
 - Consultar historico de pagos por trabajador.
 
 ### Bitacora
+
 - Registrar eventos diarios de obra (clima, incidentes, visitas).
 - Adjuntar fotografias geolocalizadas.
 - Firmar digitalmente las entradas para validez legal.
 - Consultar bitacora historica filtrada por fecha o partida.
 
 ### Asistencia
+
 - Marcar entrada y salida del personal por cuadrilla.
 - Validar checadas biometricas o por geocerca.
 - Justificar faltas con motivo y soporte.
 - Generar reporte de asistencia semanal y mensual.
 
 ### Calidad
+
 - Levantar listas de verificacion (checklists) por partida.
 - Reportar no conformidades con foto y descripcion.
 - Asignar responsable de cierre por hallazgo.
 - Validar liberacion de actividades antes de continuar.
 
 ### Requisiciones
+
 - Solicitar insumos desde el catalogo Mercado.
 - Indicar cantidad, fecha requerida y partida asociada.
 - Dar seguimiento al estatus de la requisicion.
 - Recibir parcial o totalmente lo solicitado.
 
 ### Cortes
+
 - Generar cortes de obra quincenales o mensuales.
 - Adjuntar memoria de calculo y soporte fotografico.
 - Enviar corte a Planificacion para validacion.
@@ -69,21 +75,21 @@ El rol **Ingeniero de Obra** es el responsable operativo en campo. Gestiona la n
 
 ## Atajos UI
 
-| Atajo | Accion |
-|-------|--------|
-| `G` luego `N` | Ir a Nomina |
-| `G` luego `B` | Ir a Bitacora |
-| `G` luego `A` | Ir a Asistencia |
-| `G` luego `Q` | Ir a Calidad |
-| `G` luego `R` | Ir a Requisiciones |
-| `G` luego `O` | Ir a Cortes de obra |
-| `Ctrl + N` | Nuevo registro en pantalla actual |
-| `Ctrl + Shift + B` | Nueva entrada de bitacora |
-| `Ctrl + Shift + R` | Nueva requisicion rapida |
-| `F` | Adjuntar foto desde camara |
-| `Space` | Marcar/desmarcar checklist |
-| `Enter` | Confirmar checada de asistencia |
-| `?` | Mostrar ayuda contextual |
+| Atajo              | Accion                            |
+| ------------------ | --------------------------------- |
+| `G` luego `N`      | Ir a Nomina                       |
+| `G` luego `B`      | Ir a Bitacora                     |
+| `G` luego `A`      | Ir a Asistencia                   |
+| `G` luego `Q`      | Ir a Calidad                      |
+| `G` luego `R`      | Ir a Requisiciones                |
+| `G` luego `O`      | Ir a Cortes de obra               |
+| `Ctrl + N`         | Nuevo registro en pantalla actual |
+| `Ctrl + Shift + B` | Nueva entrada de bitacora         |
+| `Ctrl + Shift + R` | Nueva requisicion rapida          |
+| `F`                | Adjuntar foto desde camara        |
+| `Space`            | Marcar/desmarcar checklist        |
+| `Enter`            | Confirmar checada de asistencia   |
+| `?`                | Mostrar ayuda contextual          |
 
 ### Tips de productividad
 

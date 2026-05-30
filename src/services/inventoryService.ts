@@ -257,6 +257,13 @@ export const inventoryService = {
       .eq('id', movement.item_id)
     if (updateErr) throw updateErr
 
+    // Consumo FIFO de lotes en las salidas: descuenta de los lotes con stock,
+    // del más antiguo al más nuevo. Solo aplica a materiales que tengan lotes
+    // (los registrados al recibir); el stock sin lote no se ve afectado.
+    if (movement.type === 'out') {
+      await consumeLotsFifo(movement.item_id, movement.quantity)
+    }
+
     if (movement.override) {
       await approvalsService.log({
         entity_type: 'inventory_movement',
@@ -274,6 +281,9 @@ export const inventoryService = {
   getLowStockItems(items: InventoryItem[]): InventoryItem[] {
     return items.filter((i) => i.current_stock <= i.min_stock)
   },
+
+  // Expuesto para pruebas/reuso: consumo FIFO de lotes de un material.
+  consumeLotsFifo,
 
   // === CONDUCE / NOTA DE ENTREGA (bucket privado receipt-attachments) ===
 
@@ -296,4 +306,28 @@ export const inventoryService = {
     if (!data?.signedUrl) throw new Error('No signed URL returned')
     return data.signedUrl
   },
+}
+
+// Descuenta `quantity` de los lotes del material, del más antiguo al más nuevo
+// (FIFO por received_date). No falla si los lotes no alcanzan a cubrir la
+// cantidad: el stock puede provenir de entradas sin lote (legacy / sin lote).
+async function consumeLotsFifo(itemId: string, quantity: number): Promise<void> {
+  let remaining = Number(quantity)
+  if (!(remaining > 0)) return
+  const { data: lots } = await supabase
+    .from('inventory_lots')
+    .select('id, quantity')
+    .eq('item_id', itemId)
+    .gt('quantity', 0)
+    .order('received_date', { ascending: true })
+  for (const lot of (lots ?? []) as { id: string; quantity: number }[]) {
+    if (remaining <= 0) break
+    const available = Number(lot.quantity)
+    const take = Math.min(available, remaining)
+    await supabase
+      .from('inventory_lots')
+      .update({ quantity: available - take })
+      .eq('id', lot.id)
+    remaining -= take
+  }
 }

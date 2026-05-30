@@ -187,6 +187,7 @@ export default function PayrollEditor() {
           }
         }}
         onContractorCreated={(contractor) => setContractors((prev) => [contractor, ...prev])}
+        onSupplierCreated={(supplier) => setSuppliers((prev) => [supplier, ...prev])}
       />
 
       <PayrollEditorMobileActionBar

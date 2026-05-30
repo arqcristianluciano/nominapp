@@ -133,10 +133,7 @@ export function useDashboardData() {
     }
   }, [fetchProjects])
 
-  const activeProjects = useMemo(
-    () => projects.filter((project) => project.status === 'active'),
-    [projects],
-  )
+  const activeProjects = useMemo(() => projects.filter((project) => project.status === 'active'), [projects])
 
   return {
     loading,

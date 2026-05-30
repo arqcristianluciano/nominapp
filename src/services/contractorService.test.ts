@@ -136,9 +136,7 @@ describe('contractorService.create', () => {
 
   it('propaga error de supabase si insert falla', async () => {
     defaultResult = { data: null, error: { message: 'insert failed' } }
-    await expect(
-      contractorService.create({ name: 'X' }),
-    ).rejects.toMatchObject({ message: 'insert failed' })
+    await expect(contractorService.create({ name: 'X' })).rejects.toMatchObject({ message: 'insert failed' })
   })
 })
 
@@ -169,9 +167,7 @@ describe('contractorService.update', () => {
 
   it('propaga error de supabase si update falla', async () => {
     defaultResult = { data: null, error: { message: 'update failed' } }
-    await expect(
-      contractorService.update('c1', { name: 'X' }),
-    ).rejects.toMatchObject({ message: 'update failed' })
+    await expect(contractorService.update('c1', { name: 'X' })).rejects.toMatchObject({ message: 'update failed' })
   })
 })
 
@@ -197,9 +193,7 @@ describe('contractorService.getHistory', () => {
         error: null,
       },
     ]
-    tableResults.contract_cubications = [
-      { data: [{ id: 'cub1', contractor_id: 'c1' }], error: null },
-    ]
+    tableResults.contract_cubications = [{ data: [{ id: 'cub1', contractor_id: 'c1' }], error: null }]
 
     const result = await contractorService.getHistory('c1')
 
@@ -232,9 +226,7 @@ describe('contractorService.getHistory', () => {
   })
 
   it('si la query de labor_line_items falla, propaga el error', async () => {
-    tableResults.labor_line_items = [
-      { data: null, error: { message: 'items boom' } },
-    ]
+    tableResults.labor_line_items = [{ data: null, error: { message: 'items boom' } }]
     tableResults.projects = [{ data: [], error: null }]
     tableResults.contract_cubications = [{ data: [], error: null }]
 
@@ -247,9 +239,7 @@ describe('contractorService.getHistory', () => {
 
   it('si la query de projects falla, propaga el error', async () => {
     tableResults.labor_line_items = [{ data: [], error: null }]
-    tableResults.projects = [
-      { data: null, error: { message: 'projects boom' } },
-    ]
+    tableResults.projects = [{ data: null, error: { message: 'projects boom' } }]
     tableResults.contract_cubications = [{ data: [], error: null }]
 
     await expect(contractorService.getHistory('c1')).rejects.toMatchObject({
@@ -261,9 +251,7 @@ describe('contractorService.getHistory', () => {
   it('si la query de contract_cubications falla, propaga el error', async () => {
     tableResults.labor_line_items = [{ data: [], error: null }]
     tableResults.projects = [{ data: [], error: null }]
-    tableResults.contract_cubications = [
-      { data: null, error: { message: 'cubications boom' } },
-    ]
+    tableResults.contract_cubications = [{ data: null, error: { message: 'cubications boom' } }]
 
     await expect(contractorService.getHistory('c1')).rejects.toMatchObject({
       message: 'cubications boom',

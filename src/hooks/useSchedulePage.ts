@@ -88,7 +88,7 @@ function useScheduleFormState() {
 function useScheduleEditor(
   projectId: string | undefined,
   load: () => Promise<void>,
-  onError: (message: string) => void
+  onError: (message: string) => void,
 ) {
   const state = useScheduleFormState()
   const { form, editId, deleteId, setForm, setDeleteId, setSaving, closeForm } = state

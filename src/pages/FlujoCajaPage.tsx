@@ -124,9 +124,7 @@ export default function FlujoCajaPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <TrendingUp className="w-5 h-5 text-blue-600" />
-          <h1 className="text-xl font-bold text-app-text">
-            Flujo de caja {project?.name && `— ${project.name}`}
-          </h1>
+          <h1 className="text-xl font-bold text-app-text">Flujo de caja {project?.name && `— ${project.name}`}</h1>
         </div>
         <div className="flex gap-2">
           <button

@@ -6,10 +6,29 @@ import { pushNotificationService } from '@/services/pushNotificationService'
 import { inventoryService } from '@/services/inventoryService'
 import { lotService } from '@/services/lotService'
 
-function generateReqNumber(): string {
+// Número de requisición consecutivo por año: REQ-2026-0001, REQ-2026-0002, …
+// Se calcula a partir del mayor consecutivo existente del año en curso, de modo
+// que la numeración sea siempre secuencial y sin colisiones. Si la consulta
+// falla por cualquier motivo, no se bloquea la creación: se usa un respaldo.
+async function nextReqNumber(): Promise<string> {
   const year = new Date().getFullYear()
-  const seq = Math.floor(Math.random() * 9000) + 1000
-  return `REQ-${year}-${seq}`
+  const prefix = `REQ-${year}-`
+  try {
+    const { data, error } = await supabase.from('purchase_requisitions').select('req_number')
+    if (error) throw error
+    let max = 0
+    for (const row of (data ?? []) as { req_number: string | null }[]) {
+      const value = row.req_number
+      if (value?.startsWith(prefix)) {
+        const seq = parseInt(value.slice(prefix.length), 10)
+        if (!isNaN(seq) && seq > max) max = seq
+      }
+    }
+    return `${prefix}${String(max + 1).padStart(4, '0')}`
+  } catch {
+    // Respaldo defensivo: marca de tiempo para no romper la creación.
+    return `${prefix}${String(Date.now()).slice(-4)}`
+  }
 }
 
 // Status que consumen presupuesto planificado (regla 7.1).
@@ -163,7 +182,7 @@ export const requisitionService = {
         resource_type: payload.resource_type ?? null,
         planned_quantity_at_request: plannedSnapshot,
         available_quantity_at_request: availableSnapshot,
-        req_number: generateReqNumber(),
+        req_number: await nextReqNumber(),
         status: initialStatus,
         approved_quote_id: null,
         approved_by: null,
@@ -640,11 +659,9 @@ export const requisitionService = {
 
     const movements = await inventoryService.getMovementsByPurchaseOrder(id)
     const netByItem = new Map<string, number>()
-    const lotIds = new Set<string>()
     for (const m of movements) {
       const delta = m.type === 'in' ? Number(m.quantity) : -Number(m.quantity)
       netByItem.set(m.item_id, (netByItem.get(m.item_id) ?? 0) + delta)
-      if (m.type === 'in' && m.lot_id) lotIds.add(m.lot_id)
     }
 
     const today = new Date().toISOString().slice(0, 10)
@@ -665,11 +682,9 @@ export const requisitionService = {
       })
       reversed += 1
     }
-
-    // Anula los lotes creados por esta recepción (su mercancía sale del stock).
-    for (const lotId of lotIds) {
-      await lotService.update(lotId, { quantity: 0 })
-    }
+    // Los lotes se descuentan automáticamente por FIFO al registrar las salidas
+    // de reversa (inventoryService.addMovement), así que no hace falta anularlos
+    // aquí manualmente.
 
     // Reinicia la cantidad recibida por línea de la cotización aprobada.
     const approvedQuote = (before.quotes ?? []).find((q) => q.id === before.approved_quote_id)

@@ -70,11 +70,7 @@ function DigitalSignatureBlock({
     <div className="space-y-1 text-center">
       {signature ? (
         <div className="flex flex-col items-center">
-          <img
-            src={signature}
-            alt={`Firma de ${label}`}
-            className="h-14 sm:h-16 object-contain max-w-full"
-          />
+          <img src={signature} alt={`Firma de ${label}`} className="h-14 sm:h-16 object-contain max-w-full" />
           <div className="w-full border-t-2 border-gray-700 pt-2">
             <p className="text-xs font-semibold text-gray-700 break-words">{label}</p>
             <p className="text-[10px] text-gray-500 mt-0.5">{subtitle}</p>
@@ -147,9 +143,7 @@ export function ContratoFirmaDocument({
         <h1 className="text-base sm:text-xl md:text-2xl font-bold uppercase tracking-wide sm:tracking-widest leading-tight">
           Contrato de Precios Acordados
         </h1>
-        <p className="text-gray-500 text-[11px] sm:text-xs mt-1">
-          Obra por destajo — NominaAPP
-        </p>
+        <p className="text-gray-500 text-[11px] sm:text-xs mt-1">Obra por destajo — NominaAPP</p>
       </div>
 
       {/* Parties: stack on mobile */}
@@ -162,7 +156,9 @@ export function ContratoFirmaDocument({
         <div className="border border-gray-300 rounded p-3 space-y-1">
           <p className="font-semibold text-gray-500 uppercase text-[10px] tracking-wide">Contratista / Trabajador</p>
           <p className="font-bold text-sm sm:text-base text-gray-800 break-words">{contrato.contractor?.name}</p>
-          {contrato.contractor?.specialty && <p className="text-gray-500 break-words">{contrato.contractor.specialty}</p>}
+          {contrato.contractor?.specialty && (
+            <p className="text-gray-500 break-words">{contrato.contractor.specialty}</p>
+          )}
           {contrato.contractor?.cedula && <p className="text-gray-500">Cédula: {contrato.contractor.cedula}</p>}
         </div>
       </div>
@@ -208,7 +204,9 @@ export function ContratoFirmaDocument({
                 </div>
                 <div className="min-w-0">
                   <p className="text-[10px] text-gray-500 uppercase">Cant.</p>
-                  <p className="text-gray-700 text-[11px] truncate">{partida.agreed_quantity.toLocaleString('es-DO')}</p>
+                  <p className="text-gray-700 text-[11px] truncate">
+                    {partida.agreed_quantity.toLocaleString('es-DO')}
+                  </p>
                 </div>
                 <div className="text-right min-w-0">
                   <p className="text-[10px] text-gray-500 uppercase">Total</p>
@@ -270,27 +268,43 @@ export function ContratoFirmaDocument({
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 text-center text-xs print:grid-cols-3">
         <div className="border border-gray-300 rounded p-3 flex flex-row sm:flex-col items-center sm:items-stretch justify-between sm:justify-start gap-2 sm:gap-0 text-left sm:text-center">
           <p className="text-gray-500 uppercase text-[10px] tracking-wide">Total acordado</p>
-          <p className="text-base sm:text-xl font-bold text-gray-800 sm:mt-1 whitespace-nowrap">{formatRD(totalAcordado)}</p>
+          <p className="text-base sm:text-xl font-bold text-gray-800 sm:mt-1 whitespace-nowrap">
+            {formatRD(totalAcordado)}
+          </p>
         </div>
         <div className="border border-gray-300 rounded p-3 flex flex-row sm:flex-col items-center sm:items-stretch justify-between sm:justify-start gap-2 sm:gap-0 text-left sm:text-center">
-          <p className="text-gray-500 uppercase text-[10px] tracking-wide">
-            Retención ({contrato.retention_percent}%)
+          <p className="text-gray-500 uppercase text-[10px] tracking-wide">Retención ({contrato.retention_percent}%)</p>
+          <p className="text-base sm:text-xl font-bold text-amber-700 sm:mt-1 whitespace-nowrap">
+            {formatRD(retencionMonto)}
           </p>
-          <p className="text-base sm:text-xl font-bold text-amber-700 sm:mt-1 whitespace-nowrap">{formatRD(retencionMonto)}</p>
         </div>
         <div className="border border-gray-300 rounded p-3 bg-gray-50 flex flex-row sm:flex-col items-center sm:items-stretch justify-between sm:justify-start gap-2 sm:gap-0 text-left sm:text-center">
           <p className="text-gray-500 uppercase text-[10px] tracking-wide">Neto a pagar (estimado)</p>
-          <p className="text-base sm:text-xl font-bold text-green-700 sm:mt-1 whitespace-nowrap">{formatRD(netoEstimado)}</p>
+          <p className="text-base sm:text-xl font-bold text-green-700 sm:mt-1 whitespace-nowrap">
+            {formatRD(netoEstimado)}
+          </p>
         </div>
       </div>
 
       {/* Conditions */}
       <div className="text-[11px] sm:text-xs text-gray-600 space-y-1.5 sm:space-y-2 border-t border-gray-200 pt-4 leading-relaxed">
-        <p><strong>1.</strong> Los pagos se realizarán por cubicaciones (mediciones verificadas) aprobadas por la supervisión.</p>
-        <p><strong>2.</strong> La retención indicada se liberará al completar y aceptar la totalidad de los trabajos.</p>
-        <p><strong>3.</strong> Cualquier trabajo adicional no listado requiere acuerdo escrito previo.</p>
-        <p><strong>4.</strong> El contratista garantiza la calidad de los trabajos según especificaciones técnicas del proyecto.</p>
-        <p><strong>5.</strong> Fecha de emisión: <strong>{printDate}</strong>.</p>
+        <p>
+          <strong>1.</strong> Los pagos se realizarán por cubicaciones (mediciones verificadas) aprobadas por la
+          supervisión.
+        </p>
+        <p>
+          <strong>2.</strong> La retención indicada se liberará al completar y aceptar la totalidad de los trabajos.
+        </p>
+        <p>
+          <strong>3.</strong> Cualquier trabajo adicional no listado requiere acuerdo escrito previo.
+        </p>
+        <p>
+          <strong>4.</strong> El contratista garantiza la calidad de los trabajos según especificaciones técnicas del
+          proyecto.
+        </p>
+        <p>
+          <strong>5.</strong> Fecha de emisión: <strong>{printDate}</strong>.
+        </p>
       </div>
 
       {/* Signatures: stack on mobile (with breathing room), side-by-side tablet+ */}

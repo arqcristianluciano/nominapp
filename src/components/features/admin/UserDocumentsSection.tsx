@@ -113,16 +113,17 @@ export function UserDocumentsSection({ userId }: Props) {
   return (
     <div className="space-y-4">
       <div>
-        <div className="text-xs font-bold uppercase tracking-wide text-app-subtle mb-2">
-          Subir documento
-        </div>
+        <div className="text-xs font-bold uppercase tracking-wide text-app-subtle mb-2">Subir documento</div>
         <div className="grid grid-cols-1 md:grid-cols-[1fr_180px_auto] gap-2">
           <input
             ref={inputRef}
             type="file"
             disabled={uploading}
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            className={inputCls + ' file:mr-3 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-app-hover file:text-app-muted file:font-medium'}
+            className={
+              inputCls +
+              ' file:mr-3 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-app-hover file:text-app-muted file:font-medium'
+            }
           />
           <select
             value={docType}
@@ -131,7 +132,9 @@ export function UserDocumentsSection({ userId }: Props) {
             className={inputCls}
           >
             {DOC_TYPES.map((t) => (
-              <option key={t.value} value={t.value}>{t.label}</option>
+              <option key={t.value} value={t.value}>
+                {t.label}
+              </option>
             ))}
           </select>
           <button
@@ -149,9 +152,7 @@ export function UserDocumentsSection({ userId }: Props) {
 
       <div className="bg-app-surface border border-app-border rounded-xl overflow-hidden">
         <div className="flex items-center justify-between px-4 py-2.5 border-b border-app-border bg-app-bg">
-          <div className="text-xs font-bold uppercase tracking-wide text-app-subtle">
-            Documentos ({docs.length})
-          </div>
+          <div className="text-xs font-bold uppercase tracking-wide text-app-subtle">Documentos ({docs.length})</div>
           <button
             type="button"
             onClick={() => void loadDocs()}

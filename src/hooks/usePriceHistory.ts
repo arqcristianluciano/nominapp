@@ -28,7 +28,11 @@ export function usePriceHistory() {
       setLoading(true)
       try {
         const [txnRes, projectRes] = await Promise.all([
-          supabase.from('transactions').select('description, unit_price, quantity, date, project_id, supplier:suppliers(name)').order('date', { ascending: true }).limit(500),
+          supabase
+            .from('transactions')
+            .select('description, unit_price, quantity, date, project_id, supplier:suppliers(name)')
+            .order('date', { ascending: true })
+            .limit(500),
           supabase.from('projects').select('id, name'),
         ])
         if (cancelled) return
@@ -44,7 +48,9 @@ export function usePriceHistory() {
           setHistory([])
           return
         }
-        const projectMap: Record<string, string> = Object.fromEntries(((projectRes.data ?? []) as ProjectLite[]).map((project) => [project.id, project.name]))
+        const projectMap: Record<string, string> = Object.fromEntries(
+          ((projectRes.data ?? []) as ProjectLite[]).map((project) => [project.id, project.name]),
+        )
         const grouped: Record<string, PriceEntry[]> = {}
         for (const txn of (txnRes.data ?? []) as TxnLite[]) {
           if (!txn.unit_price || txn.unit_price <= 0) continue
@@ -59,25 +65,27 @@ export function usePriceHistory() {
             project: projectMap[txn.project_id] ?? 'Proyecto',
           })
         }
-        const result: MaterialHistory[] = Object.entries(grouped).map(([key, entries]) => {
-          const sorted = [...entries].sort((a, b) => a.date.localeCompare(b.date))
-          const prices = sorted.map((entry) => entry.unit_price)
-          const latestPrice = prices[prices.length - 1]
-          const prevPrice = prices.length > 1 ? prices[prices.length - 2] : latestPrice
-          const trendPct = prevPrice > 0 ? ((latestPrice - prevPrice) / prevPrice) * 100 : 0
-          const trend: 'up' | 'down' | 'stable' = trendPct > 1 ? 'up' : trendPct < -1 ? 'down' : 'stable'
-          return {
-            key,
-            supplier: sorted[sorted.length - 1].supplier,
-            entries: sorted,
-            latestPrice,
-            avgPrice: prices.reduce((sum, price) => sum + price, 0) / prices.length,
-            minPrice: Math.min(...prices),
-            maxPrice: Math.max(...prices),
-            trend,
-            trendPct,
-          }
-        }).sort((a, b) => b.entries.length - a.entries.length)
+        const result: MaterialHistory[] = Object.entries(grouped)
+          .map(([key, entries]) => {
+            const sorted = [...entries].sort((a, b) => a.date.localeCompare(b.date))
+            const prices = sorted.map((entry) => entry.unit_price)
+            const latestPrice = prices[prices.length - 1]
+            const prevPrice = prices.length > 1 ? prices[prices.length - 2] : latestPrice
+            const trendPct = prevPrice > 0 ? ((latestPrice - prevPrice) / prevPrice) * 100 : 0
+            const trend: 'up' | 'down' | 'stable' = trendPct > 1 ? 'up' : trendPct < -1 ? 'down' : 'stable'
+            return {
+              key,
+              supplier: sorted[sorted.length - 1].supplier,
+              entries: sorted,
+              latestPrice,
+              avgPrice: prices.reduce((sum, price) => sum + price, 0) / prices.length,
+              minPrice: Math.min(...prices),
+              maxPrice: Math.max(...prices),
+              trend,
+              trendPct,
+            }
+          })
+          .sort((a, b) => b.entries.length - a.entries.length)
         if (!cancelled) setHistory(result)
       } finally {
         if (!cancelled) setLoading(false)

@@ -20,12 +20,7 @@ const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024 // 10 MB
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
 
 export const userDocumentsService = {
-  async upload(
-    userId: string,
-    file: File,
-    docType: UserDocumentType,
-    displayName?: string,
-  ): Promise<UserDocument> {
+  async upload(userId: string, file: File, docType: UserDocumentType, displayName?: string): Promise<UserDocument> {
     if (file.size > MAX_FILE_SIZE_BYTES) {
       throw new Error('El archivo supera el límite de 10 MB')
     }
@@ -71,22 +66,15 @@ export const userDocumentsService = {
     return (data ?? []) as UserDocument[]
   },
 
-  async getDownloadUrl(
-    filePath: string,
-    expiresInSec: number = DEFAULT_EXPIRY_SEC,
-  ): Promise<string> {
-    const { data, error } = await supabase.storage
-      .from(BUCKET)
-      .createSignedUrl(filePath, expiresInSec)
+  async getDownloadUrl(filePath: string, expiresInSec: number = DEFAULT_EXPIRY_SEC): Promise<string> {
+    const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(filePath, expiresInSec)
     if (error) throw error
     if (!data?.signedUrl) throw new Error('No signed URL returned')
     return data.signedUrl
   },
 
   async delete(id: string, filePath: string): Promise<void> {
-    const { error: storageError } = await supabase.storage
-      .from(BUCKET)
-      .remove([filePath])
+    const { error: storageError } = await supabase.storage.from(BUCKET).remove([filePath])
     if (storageError) throw storageError
 
     const { error } = await supabase.from(TABLE).delete().eq('id', id)

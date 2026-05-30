@@ -13,7 +13,9 @@ export default function HistorialPrecios() {
 
   const filtered = useMemo(() => {
     if (!normalizedSearch) return history
-    return history.filter((h) => h.key.includes(normalizedSearch) || h.supplier?.toLowerCase().includes(normalizedSearch))
+    return history.filter(
+      (h) => h.key.includes(normalizedSearch) || h.supplier?.toLowerCase().includes(normalizedSearch),
+    )
   }, [history, normalizedSearch])
 
   const trendCounts = useMemo(() => {
@@ -35,7 +37,9 @@ export default function HistorialPrecios() {
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-bold text-app-text">Historial de Precios</h1>
-          <p className="text-sm text-app-muted mt-0.5">Evolución de precios de materiales y servicios basado en transacciones</p>
+          <p className="text-sm text-app-muted mt-0.5">
+            Evolución de precios de materiales y servicios basado en transacciones
+          </p>
         </div>
       </div>
 

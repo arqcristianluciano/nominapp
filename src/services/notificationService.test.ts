@@ -59,10 +59,7 @@ function makeChain(): unknown {
     chain[m] = vi.fn(() => chain)
   }
   // Thenable: resuelve (o rechaza) según el índice global de query.
-  chain.then = (
-    resolve: (value: QueryResult) => unknown,
-    reject?: (reason: unknown) => unknown,
-  ) => {
+  chain.then = (resolve: (value: QueryResult) => unknown, reject?: (reason: unknown) => unknown) => {
     const idx = callIndex++
     if (rejectAtIndex === idx) {
       const err = new Error(`mock supabase rejection at index ${idx}`)
@@ -180,8 +177,6 @@ describe('notificationService.getAll', () => {
     setQueryResults({})
     rejectAtIndex = 3
 
-    await expect(notificationService.getAll()).rejects.toThrow(
-      /mock supabase rejection at index 3/,
-    )
+    await expect(notificationService.getAll()).rejects.toThrow(/mock supabase rejection at index 3/)
   })
 })

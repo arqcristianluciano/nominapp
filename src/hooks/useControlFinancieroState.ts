@@ -30,10 +30,7 @@ export function useControlFinancieroState({
     return transactions.slice(start, start + PAGE_SIZE)
   }, [transactions, page])
 
-  const totalPages = useMemo(
-    () => Math.max(1, Math.ceil(transactions.length / PAGE_SIZE)),
-    [transactions.length],
-  )
+  const totalPages = useMemo(() => Math.max(1, Math.ceil(transactions.length / PAGE_SIZE)), [transactions.length])
 
   const isCurrentMonth = useCallback((dateStr: string) => {
     const currentDate = new Date()

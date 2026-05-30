@@ -8,10 +8,8 @@ import { notificationsInbox, type InboxEntry } from '@/utils/notificationsInbox'
 
 // Fallback: el mismo VAPID public que tiene embebido la Edge Function send-push.
 // Para rotar: cambiar aquí y en los defaults / secrets de la Edge Function.
-const DEFAULT_VAPID_PUBLIC =
-  'BI1Ml-CtYJEDRgkA7MI2BGZoae6cHiWAd9Z3PFswqvebYWQAVeEOkU8tJgO73O9q7cy5Nk7QwI48sf7olZn5zHk'
-const VAPID_PUBLIC_KEY =
-  (import.meta.env.VITE_PUSH_VAPID_PUBLIC_KEY as string | undefined) || DEFAULT_VAPID_PUBLIC
+const DEFAULT_VAPID_PUBLIC = 'BI1Ml-CtYJEDRgkA7MI2BGZoae6cHiWAd9Z3PFswqvebYWQAVeEOkU8tJgO73O9q7cy5Nk7QwI48sf7olZn5zHk'
+const VAPID_PUBLIC_KEY = (import.meta.env.VITE_PUSH_VAPID_PUBLIC_KEY as string | undefined) || DEFAULT_VAPID_PUBLIC
 
 const MAX_INBOX_PREVIEW = 8
 
@@ -162,8 +160,8 @@ export function PushNotificationsSection() {
 
       {!supported && (
         <p className="text-sm text-app-muted">
-          Este navegador no soporta notificaciones push. Prueba en Chrome, Edge o Firefox en
-          escritorio, o instala la PWA en tu celular.
+          Este navegador no soporta notificaciones push. Prueba en Chrome, Edge o Firefox en escritorio, o instala la
+          PWA en tu celular.
         </p>
       )}
 
@@ -176,16 +174,16 @@ export function PushNotificationsSection() {
 
       {supported && VAPID_PUBLIC_KEY && permission === 'denied' && (
         <p className="text-sm text-red-700 dark:text-red-400">
-          Permiso bloqueado por el navegador. Cambia el ajuste de notificaciones del sitio en la
-          configuración del browser y recarga.
+          Permiso bloqueado por el navegador. Cambia el ajuste de notificaciones del sitio en la configuración del
+          browser y recarga.
         </p>
       )}
 
       {supported && VAPID_PUBLIC_KEY && permission !== 'denied' && (
         <div className="space-y-3">
           <p className="text-sm text-app-muted">
-            Recibirás alertas en este dispositivo cuando ocurran eventos críticos: solicitudes que
-            exceden plan, nóminas pendientes de aprobar, stock bajo, etc.
+            Recibirás alertas en este dispositivo cuando ocurran eventos críticos: solicitudes que exceden plan, nóminas
+            pendientes de aprobar, stock bajo, etc.
           </p>
           <div className="flex flex-wrap gap-2">
             {!subscribed ? (
@@ -248,11 +246,7 @@ export function PushNotificationsSection() {
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
-                    <p
-                      className={`text-sm truncate ${
-                        entry.read ? 'text-app-muted' : 'text-app-text font-medium'
-                      }`}
-                    >
+                    <p className={`text-sm truncate ${entry.read ? 'text-app-muted' : 'text-app-text font-medium'}`}>
                       {entry.title}
                     </p>
                     <span className="text-[11px] text-app-subtle flex-shrink-0">
@@ -267,8 +261,8 @@ export function PushNotificationsSection() {
         )}
         {inbox.length > MAX_INBOX_PREVIEW && (
           <p className="text-[11px] text-app-subtle">
-            Mostrando {MAX_INBOX_PREVIEW} de {inbox.length}. Las demás siguen disponibles en la
-            bandeja de notificaciones.
+            Mostrando {MAX_INBOX_PREVIEW} de {inbox.length}. Las demás siguen disponibles en la bandeja de
+            notificaciones.
           </p>
         )}
       </div>

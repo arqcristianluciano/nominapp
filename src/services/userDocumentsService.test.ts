@@ -43,10 +43,7 @@ function mockStorageRemove(error: unknown = null) {
 /**
  * Helper: cadena supabase.storage.from(BUCKET).createSignedUrl(path, expiresIn) → {data, error}.
  */
-function mockCreateSignedUrl(
-  data: { signedUrl: string } | null,
-  error: unknown = null,
-) {
+function mockCreateSignedUrl(data: { signedUrl: string } | null, error: unknown = null) {
   const createSignedUrlMock = vi.fn().mockResolvedValue({ data, error })
   storageFromMock.mockReturnValueOnce({ createSignedUrl: createSignedUrlMock })
   return { createSignedUrlMock }
@@ -101,9 +98,7 @@ function makeFile(name = 'cedula.pdf', content = 'pdf-bytes'): File {
  * Stub mínimo de File con `size`, `type` y `name` controlables, casteado a File.
  * Útil para probar la validación (tamaño/MIME) sin construir Blobs reales gigantes.
  */
-function stubFile(
-  opts: { name?: string; size?: number; type?: string } = {},
-): File {
+function stubFile(opts: { name?: string; size?: number; type?: string } = {}): File {
   const { name = 'archivo.bin', size = 10, type = 'application/octet-stream' } = opts
   return { name, size, type } as unknown as File
 }
@@ -186,9 +181,7 @@ describe('userDocumentsService.upload', () => {
     // No registramos mockInsertChain: si el service intentara llamar from(), fromMock
     // devolvería undefined y reventaría con TypeError. Verificamos abajo que no se llamó.
 
-    await expect(
-      userDocumentsService.upload(userId, file, 'cedula'),
-    ).rejects.toEqual(storageErr)
+    await expect(userDocumentsService.upload(userId, file, 'cedula')).rejects.toEqual(storageErr)
 
     expect(fromMock).not.toHaveBeenCalled()
   })
@@ -202,9 +195,7 @@ describe('userDocumentsService.upload', () => {
     mockInsertChain(null, dbErr)
     const { removeMock } = mockStorageRemove() // rollback esperado
 
-    await expect(
-      userDocumentsService.upload(userId, file, 'contract'),
-    ).rejects.toEqual(dbErr)
+    await expect(userDocumentsService.upload(userId, file, 'contract')).rejects.toEqual(dbErr)
 
     // Capturamos el path que efectivamente se subió y verificamos que rollback usa el mismo.
     const uploadedPath = uploadMock.mock.calls[0][0]
@@ -226,9 +217,9 @@ describe('userDocumentsService.upload', () => {
       type: 'application/pdf',
     })
 
-    await expect(
-      userDocumentsService.upload('user-1', tooBig, 'cedula'),
-    ).rejects.toThrow('El archivo supera el límite de 10 MB')
+    await expect(userDocumentsService.upload('user-1', tooBig, 'cedula')).rejects.toThrow(
+      'El archivo supera el límite de 10 MB',
+    )
 
     // Falla antes de tocar Storage o DB.
     expect(storageFromMock).not.toHaveBeenCalled()
@@ -242,9 +233,7 @@ describe('userDocumentsService.upload', () => {
       type: 'application/x-msdownload',
     })
 
-    await expect(
-      userDocumentsService.upload('user-1', evil, 'other'),
-    ).rejects.toThrow('Tipo de archivo no permitido')
+    await expect(userDocumentsService.upload('user-1', evil, 'other')).rejects.toThrow('Tipo de archivo no permitido')
 
     expect(storageFromMock).not.toHaveBeenCalled()
     expect(fromMock).not.toHaveBeenCalled()
@@ -380,9 +369,7 @@ describe('userDocumentsService.getDownloadUrl', () => {
   it('lanza error si no viene signedUrl en la respuesta', async () => {
     // data presente pero sin signedUrl (caso defensivo del service).
     mockCreateSignedUrl({ signedUrl: '' })
-    await expect(userDocumentsService.getDownloadUrl('u1/x.pdf')).rejects.toThrow(
-      /No signed URL/i,
-    )
+    await expect(userDocumentsService.getDownloadUrl('u1/x.pdf')).rejects.toThrow(/No signed URL/i)
   })
 })
 

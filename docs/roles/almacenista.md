@@ -53,22 +53,26 @@ Cada ajuste requiere motivo y queda en bitacora con usuario + timestamp. Directo
 ## Ejemplos concretos
 
 **Ejemplo 1 — Recepcion completa:**
+
 - Llega OC `OC-2026-0089` con 200 sacos de cemento Domicem.
 - Almacenista cuenta: 200 sacos OK, sin danos.
 - Registra recepcion total, conduce `CD-44521`. Stock de cemento sube de 15 a 215 sacos.
 - OC pasa a `recibida_total`, Contabilidad recibe aviso para registrar la factura.
 
 **Ejemplo 2 — Recepcion parcial con merma:**
+
 - OC de 1000 bloques, llegan 950 (50 rotos en transporte).
 - Almacenista recibe 950, anota en observaciones "50 bloques rotos, devueltos al suplidor".
 - OC queda `recibida_parcial`. Comprador decide si reclama al suplidor o ajusta la OC.
 
 **Ejemplo 3 — Salida al frente:**
+
 - El maestro de estructura pide 30 sacos de cemento y 5 quintales de varilla #4 para vaciado.
 - Almacenista registra salida: 30 sacos cemento + 5 qq varilla, destino "Losa nivel 3".
 - Stock cemento baja de 215 a 185, varilla de 80 a 75.
 
 **Ejemplo 4 — Ajuste por conteo fisico:**
+
 - Conteo fisico de fin de mes: cemento tiene 182 sacos, el sistema dice 185.
 - Almacenista hace ajuste `-3` con motivo "Conteo fisico noviembre — diferencia no identificada".
 - Director recibe notificacion si la merma supera 5%.

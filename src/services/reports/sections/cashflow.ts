@@ -70,12 +70,7 @@ function buildBar(value: number, maxAbs: number): string {
   return '█'.repeat(blocks)
 }
 
-function buildChartRow(
-  concept: string,
-  expected: number,
-  actual: number,
-  maxAbs: number,
-): TableCell[] {
+function buildChartRow(concept: string, expected: number, actual: number, maxAbs: number): TableCell[] {
   return [
     { text: concept },
     {
@@ -131,14 +126,7 @@ export function buildCashflowSection(input: CashflowInput): Content {
     isTotal: true,
   }
 
-  const dataRows: CashflowRow[] = [
-    collectionsRow,
-    contractorRow,
-    supplierRow,
-    purchaseOrderRow,
-    indirectsRow,
-    netRow,
-  ]
+  const dataRows: CashflowRow[] = [collectionsRow, contractorRow, supplierRow, purchaseOrderRow, indirectsRow, netRow]
 
   const headerRow: TableCell[] = [
     { text: 'Concepto', bold: true, fillColor: '#34495e', color: '#ffffff' },
@@ -167,17 +155,8 @@ export function buildCashflowSection(input: CashflowInput): Content {
 
   const body: TableCell[][] = [headerRow, ...dataRows.map(buildBodyRow)]
 
-  const chartRows: CashflowRow[] = [
-    collectionsRow,
-    contractorRow,
-    supplierRow,
-    purchaseOrderRow,
-    indirectsRow,
-  ]
-  const maxAbs = chartRows.reduce(
-    (acc, r) => Math.max(acc, Math.abs(r.expected), Math.abs(r.actual)),
-    0,
-  )
+  const chartRows: CashflowRow[] = [collectionsRow, contractorRow, supplierRow, purchaseOrderRow, indirectsRow]
+  const maxAbs = chartRows.reduce((acc, r) => Math.max(acc, Math.abs(r.expected), Math.abs(r.actual)), 0)
 
   const chartHeader: TableCell[] = [
     { text: 'Concepto', bold: true, fillColor: '#ecf0f1' },

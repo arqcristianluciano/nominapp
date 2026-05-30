@@ -65,11 +65,7 @@ function mockUpdateChain(data: unknown, error: unknown = null) {
  *   1) from('budget_items').select('*').eq('id', id).single()  -> { data: item }
  *   2) from('budget_items').delete().eq('id', id)               -> { error }
  */
-function mockDeleteByIdChains(
-  itemRow: unknown,
-  deleteError: unknown = null,
-  selectError: unknown = null,
-) {
+function mockDeleteByIdChains(itemRow: unknown, deleteError: unknown = null, selectError: unknown = null) {
   // Cadena 1: select del item antes de borrar.
   const singleMock = vi.fn().mockResolvedValue({ data: itemRow, error: selectError })
   const eqSelectMock = vi.fn().mockReturnValue({ single: singleMock })
@@ -89,11 +85,7 @@ function mockDeleteByIdChains(
  *   1) from('budget_items').select('*').eq('budget_category_id', categoryId) -> { data: items }
  *   2) from('budget_items').delete().eq('budget_category_id', categoryId)    -> { error }
  */
-function mockDeleteByCategoryChains(
-  items: unknown,
-  deleteError: unknown = null,
-  selectError: unknown = null,
-) {
+function mockDeleteByCategoryChains(items: unknown, deleteError: unknown = null, selectError: unknown = null) {
   // Cadena 1: select de los items (resuelve como thenable en el eslabón .eq).
   const eqSelectMock = vi.fn().mockResolvedValue({ data: items, error: selectError })
   const selectMock = vi.fn().mockReturnValue({ eq: eqSelectMock })
@@ -275,13 +267,7 @@ describe('budgetItemService.delete', () => {
       unit_price: 1000,
       sort_order: 0,
     }
-    const {
-      selectMock,
-      eqSelectMock,
-      singleMock,
-      deleteMock,
-      eqDeleteMock,
-    } = mockDeleteByIdChains(item)
+    const { selectMock, eqSelectMock, singleMock, deleteMock, eqDeleteMock } = mockDeleteByIdChains(item)
 
     await budgetItemService.delete('it-del')
 
@@ -342,12 +328,7 @@ describe('budgetItemService.deleteByCategory', () => {
       { id: 'it2', budget_category_id: 'cat-9' },
       { id: 'it3', budget_category_id: 'cat-9' },
     ]
-    const {
-      selectMock,
-      eqSelectMock,
-      deleteMock,
-      eqDeleteMock,
-    } = mockDeleteByCategoryChains(items)
+    const { selectMock, eqSelectMock, deleteMock, eqDeleteMock } = mockDeleteByCategoryChains(items)
 
     await budgetItemService.deleteByCategory('cat-9')
 

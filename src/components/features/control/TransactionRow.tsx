@@ -114,49 +114,133 @@ function TransactionRowComponent({
     setEditing(false)
   }
 
-  const inputClass = 'w-full px-1.5 py-1 border border-app-border rounded text-xs bg-app-input-bg text-app-text [color-scheme:light] dark:[color-scheme:dark] focus:ring-1 focus:ring-blue-500 focus:border-blue-500'
-  const selectClass = 'w-full px-1 py-1 border border-app-border rounded text-xs bg-app-input-bg text-app-text [color-scheme:light] dark:[color-scheme:dark] focus:ring-1 focus:ring-blue-500 focus:border-blue-500'
+  const inputClass =
+    'w-full px-1.5 py-1 border border-app-border rounded text-xs bg-app-input-bg text-app-text [color-scheme:light] dark:[color-scheme:dark] focus:ring-1 focus:ring-blue-500 focus:border-blue-500'
+  const selectClass =
+    'w-full px-1 py-1 border border-app-border rounded text-xs bg-app-input-bg text-app-text [color-scheme:light] dark:[color-scheme:dark] focus:ring-1 focus:ring-blue-500 focus:border-blue-500'
   const rowBg = isCurrentMonth ? 'bg-amber-50 dark:bg-amber-950/20' : 'bg-app-surface'
 
   if (editing) {
     return (
       <tr className="bg-app-bg">
-        <td className="px-2 py-1.5"><input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputClass} /></td>
         <td className="px-2 py-1.5">
-          <select value={budgetCategoryId} onChange={(e) => setBudgetCategoryId(e.target.value)} className={selectClass}>
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputClass} />
+        </td>
+        <td className="px-2 py-1.5">
+          <select
+            value={budgetCategoryId}
+            onChange={(e) => setBudgetCategoryId(e.target.value)}
+            className={selectClass}
+          >
             <option value="">—</option>
-            {budgetCategories.map((c) => <option key={c.id} value={c.id}>{c.code}</option>)}
+            {budgetCategories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.code}
+              </option>
+            ))}
           </select>
         </td>
-        <td className="px-2 py-1.5"><input type="text" value={description} onChange={(e) => setDescription(e.target.value)} className={inputClass} /></td>
+        <td className="px-2 py-1.5">
+          <input
+            type="text"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className={inputClass}
+          />
+        </td>
         <td className="px-2 py-1.5">
           <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)} className={selectClass}>
             <option value="">—</option>
-            {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            {suppliers.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
           </select>
         </td>
-        <td className="px-2 py-1.5"><input type="number" step="any" value={quantity} onChange={(e) => setQuantity(e.target.value ? Number(e.target.value) : '')} className={inputClass} /></td>
-        <td className="px-2 py-1.5"><input type="number" step="any" value={unitPrice} onChange={(e) => setUnitPrice(e.target.value ? Number(e.target.value) : '')} className={inputClass} /></td>
+        <td className="px-2 py-1.5">
+          <input
+            type="number"
+            step="any"
+            value={quantity}
+            onChange={(e) => setQuantity(e.target.value ? Number(e.target.value) : '')}
+            className={inputClass}
+          />
+        </td>
+        <td className="px-2 py-1.5">
+          <input
+            type="number"
+            step="any"
+            value={unitPrice}
+            onChange={(e) => setUnitPrice(e.target.value ? Number(e.target.value) : '')}
+            className={inputClass}
+          />
+        </td>
         <td className="px-2 py-1.5 text-xs font-medium text-right">{formatRD(total)}</td>
         <td className="px-2 py-1.5">
-          <select value={paymentCondition} onChange={(e) => setPaymentCondition(e.target.value)} className={selectClass}>
+          <select
+            value={paymentCondition}
+            onChange={(e) => setPaymentCondition(e.target.value)}
+            className={selectClass}
+          >
             <option value="">—</option>
-            {PAYMENT_CONDITIONS.map((pc) => <option key={pc.value} value={pc.value}>{pc.label}</option>)}
+            {PAYMENT_CONDITIONS.map((pc) => (
+              <option key={pc.value} value={pc.value}>
+                {pc.label}
+              </option>
+            ))}
           </select>
         </td>
-        <td className="px-2 py-1.5"><input type="text" value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} className={inputClass} /></td>
-        <td className="px-2 py-1.5"><input type="text" value={checkNumber} onChange={(e) => setCheckNumber(e.target.value)} className={inputClass} /></td>
+        <td className="px-2 py-1.5">
+          <input
+            type="text"
+            value={invoiceNumber}
+            onChange={(e) => setInvoiceNumber(e.target.value)}
+            className={inputClass}
+          />
+        </td>
+        <td className="px-2 py-1.5">
+          <input
+            type="text"
+            value={checkNumber}
+            onChange={(e) => setCheckNumber(e.target.value)}
+            className={inputClass}
+          />
+        </td>
         <td className="px-2 py-1.5">
           <select value={bank} onChange={(e) => setBank(e.target.value)} className={selectClass}>
             <option value="">—</option>
-            {DOMINICAN_BANKS.map((b) => <option key={b} value={b}>{b}</option>)}
+            {DOMINICAN_BANKS.map((b) => (
+              <option key={b} value={b}>
+                {b}
+              </option>
+            ))}
           </select>
         </td>
-        <td className="px-2 py-1.5"><input type="date" value={cashedDate} onChange={(e) => setCashedDate(e.target.value)} className={inputClass} /></td>
+        <td className="px-2 py-1.5">
+          <input
+            type="date"
+            value={cashedDate}
+            onChange={(e) => setCashedDate(e.target.value)}
+            className={inputClass}
+          />
+        </td>
         <td className="px-2 py-1.5">
           <div className="flex items-center gap-1">
-            <button onClick={handleSave} aria-label="Guardar cambios" className="p-1 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-950/30 rounded"><Check className="w-3.5 h-3.5" /></button>
-            <button onClick={handleCancel} aria-label="Cancelar edición" className="p-1 text-app-subtle hover:bg-app-hover-strong rounded"><X className="w-3.5 h-3.5" /></button>
+            <button
+              onClick={handleSave}
+              aria-label="Guardar cambios"
+              className="p-1 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-950/30 rounded"
+            >
+              <Check className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={handleCancel}
+              aria-label="Cancelar edición"
+              className="p-1 text-app-subtle hover:bg-app-hover-strong rounded"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
           </div>
         </td>
       </tr>
@@ -166,22 +250,42 @@ function TransactionRowComponent({
   return (
     <>
       <tr className={`${rowBg} hover:bg-app-hover border-b border-app-border`}>
-        <td className="px-2 py-2 text-xs text-app-muted whitespace-nowrap">{new Date(transaction.date).toLocaleDateString('es-DO')}</td>
-        <td className="px-2 py-2 text-xs text-app-muted whitespace-nowrap">{transaction.budget_category?.code?.split(' - ')[0] || ''}</td>
+        <td className="px-2 py-2 text-xs text-app-muted whitespace-nowrap">
+          {new Date(transaction.date).toLocaleDateString('es-DO')}
+        </td>
+        <td className="px-2 py-2 text-xs text-app-muted whitespace-nowrap">
+          {transaction.budget_category?.code?.split(' - ')[0] || ''}
+        </td>
         <td className="px-2 py-2 text-xs text-app-text font-medium">{transaction.description}</td>
         <td className="px-2 py-2 text-xs text-app-muted">{transaction.supplier?.name || ''}</td>
         <td className="px-2 py-2 text-xs text-app-muted text-right">{transaction.quantity ?? ''}</td>
-        <td className="px-2 py-2 text-xs text-app-muted text-right">{transaction.unit_price != null ? formatRD(transaction.unit_price) : ''}</td>
+        <td className="px-2 py-2 text-xs text-app-muted text-right">
+          {transaction.unit_price != null ? formatRD(transaction.unit_price) : ''}
+        </td>
         <td className="px-2 py-2 text-xs text-app-text font-medium text-right">{formatRD(transaction.total)}</td>
         <td className="px-2 py-2 text-xs text-app-muted">{transaction.payment_condition || ''}</td>
         <td className="px-2 py-2 text-xs text-app-muted">{transaction.invoice_number || ''}</td>
         <td className="px-2 py-2 text-xs text-app-muted">{transaction.check_number || ''}</td>
         <td className="px-2 py-2 text-xs text-app-muted hidden lg:table-cell">{transaction.bank || ''}</td>
-        <td className="px-2 py-2 text-xs text-app-muted hidden lg:table-cell">{transaction.cashed_date ? new Date(transaction.cashed_date).toLocaleDateString('es-DO') : ''}</td>
+        <td className="px-2 py-2 text-xs text-app-muted hidden lg:table-cell">
+          {transaction.cashed_date ? new Date(transaction.cashed_date).toLocaleDateString('es-DO') : ''}
+        </td>
         <td className="px-2 py-2">
           <div className="flex items-center gap-1">
-            <button onClick={() => setEditing(true)} aria-label="Editar transacción" className="p-1 text-app-subtle hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded"><Pencil className="w-3.5 h-3.5" /></button>
-            <button onClick={() => setConfirmDelete(true)} aria-label="Eliminar transacción" className="p-1 text-app-subtle hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded"><Trash2 className="w-3.5 h-3.5" /></button>
+            <button
+              onClick={() => setEditing(true)}
+              aria-label="Editar transacción"
+              className="p-1 text-app-subtle hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => setConfirmDelete(true)}
+              aria-label="Eliminar transacción"
+              className="p-1 text-app-subtle hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
           </div>
         </td>
       </tr>

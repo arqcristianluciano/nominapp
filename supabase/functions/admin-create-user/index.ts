@@ -38,13 +38,7 @@ const corsHeaders = {
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 function isStrongPassword(pw: string): boolean {
-  return (
-    typeof pw === 'string' &&
-    pw.length >= 8 &&
-    /[A-Z]/.test(pw) &&
-    /[a-z]/.test(pw) &&
-    /[0-9]/.test(pw)
-  )
+  return typeof pw === 'string' && pw.length >= 8 && /[A-Z]/.test(pw) && /[a-z]/.test(pw) && /[0-9]/.test(pw)
 }
 
 interface CreateUserInput {
@@ -80,7 +74,9 @@ Deno.serve(async (req) => {
   const callerClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     global: { headers: { Authorization: authHeader } },
   })
-  const { data: { user: caller } } = await callerClient.auth.getUser()
+  const {
+    data: { user: caller },
+  } = await callerClient.auth.getUser()
   if (!caller) return jsonResponse({ error: 'unauthorized' }, 401)
 
   const { data: callerProfile } = await callerClient
@@ -95,7 +91,7 @@ Deno.serve(async (req) => {
   // 2) Validar payload
   let body: CreateUserInput
   try {
-    body = await req.json() as CreateUserInput
+    body = (await req.json()) as CreateUserInput
   } catch {
     return jsonResponse({ error: 'invalid_json' }, 400)
   }
@@ -143,9 +139,7 @@ Deno.serve(async (req) => {
     payment_terms: body.payment_terms ?? null,
     is_active: true,
   }
-  const { error: profileError } = await adminClient
-    .from('user_profiles')
-    .insert(profilePayload)
+  const { error: profileError } = await adminClient.from('user_profiles').insert(profilePayload)
   if (profileError) {
     // best-effort rollback: borrar el usuario creado
     await adminClient.auth.admin.deleteUser(created.user.id).catch(() => undefined)
@@ -153,13 +147,15 @@ Deno.serve(async (req) => {
   }
 
   // 5) Audit log (queda en los logs de Supabase via console.log)
-  console.log(JSON.stringify({
-    action: 'admin-create-user',
-    actor: caller.id,
-    target: created.user.id,
-    target_email: created.user.email,
-    ts: new Date().toISOString(),
-  }))
+  console.log(
+    JSON.stringify({
+      action: 'admin-create-user',
+      actor: caller.id,
+      target: created.user.id,
+      target_email: created.user.email,
+      ts: new Date().toISOString(),
+    }),
+  )
 
   return jsonResponse({ id: created.user.id, email: created.user.email })
 })

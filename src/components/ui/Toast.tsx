@@ -28,9 +28,9 @@ const ICONS: Record<ToastType, React.ElementType> = {
 
 const STYLES: Record<ToastType, string> = {
   success: 'bg-emerald-600 text-white',
-  error:   'bg-red-600 text-white',
+  error: 'bg-red-600 text-white',
   warning: 'bg-amber-500 text-white',
-  info:    'bg-blue-600 text-white',
+  info: 'bg-blue-600 text-white',
 }
 
 let nextId = 1
@@ -42,20 +42,26 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const dismiss = useCallback((id: number) => {
     setToasts((prev) => prev.filter((t) => t.id !== id))
     const timer = timers.current.get(id)
-    if (timer) { clearTimeout(timer); timers.current.delete(id) }
+    if (timer) {
+      clearTimeout(timer)
+      timers.current.delete(id)
+    }
   }, [])
 
-  const addToast = useCallback((message: string, type: ToastType = 'info') => {
-    const id = nextId++
-    setToasts((prev) => [...prev.slice(-4), { id, type, message }])
-    const timer = setTimeout(() => dismiss(id), 3500)
-    timers.current.set(id, timer)
-  }, [dismiss])
+  const addToast = useCallback(
+    (message: string, type: ToastType = 'info') => {
+      const id = nextId++
+      setToasts((prev) => [...prev.slice(-4), { id, type, message }])
+      const timer = setTimeout(() => dismiss(id), 3500)
+      timers.current.set(id, timer)
+    },
+    [dismiss],
+  )
 
   const success = useCallback((msg: string) => addToast(msg, 'success'), [addToast])
-  const error   = useCallback((msg: string) => addToast(msg, 'error'), [addToast])
+  const error = useCallback((msg: string) => addToast(msg, 'error'), [addToast])
   const warning = useCallback((msg: string) => addToast(msg, 'warning'), [addToast])
-  const info    = useCallback((msg: string) => addToast(msg, 'info'), [addToast])
+  const info = useCallback((msg: string) => addToast(msg, 'info'), [addToast])
 
   const ctx = useMemo<ToastContextValue>(
     () => ({

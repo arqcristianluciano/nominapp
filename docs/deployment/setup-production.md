@@ -5,6 +5,7 @@ Guía paso a paso para desplegar NominApp en producción (Supabase + Vercel).
 ## 1. Crear proyecto Supabase
 
 ### Opción A: Proyecto nuevo
+
 1. Ir a https://supabase.com/dashboard y crear un nuevo proyecto.
 2. Elegir región (recomendado: `us-east-1` o la más cercana a México).
 3. Generar y guardar la contraseña de la base de datos en un gestor seguro.
@@ -15,6 +16,7 @@ Guía paso a paso para desplegar NominApp en producción (Supabase + Vercel).
    - `service_role` key → solo para backend/CI (nunca exponer al cliente)
 
 ### Opción B: Conectar a proyecto existente
+
 1. Vincular CLI: `npx supabase login` y luego `npx supabase link --project-ref <REF>`.
 2. Confirmar conexión: `npx supabase projects list`.
 
@@ -23,34 +25,40 @@ Guía paso a paso para desplegar NominApp en producción (Supabase + Vercel).
 Las migraciones viven en `supabase/migrations/` (001 a 020+).
 
 ### Opción A: Supabase CLI (recomendado)
+
 ```bash
 npx supabase db push
 ```
+
 Esto aplica todas las migraciones pendientes en orden. Para verificar:
+
 ```bash
 npx supabase migration list
 ```
 
 ### Opción B: MCP Supabase
+
 Usar `apply_migration` por cada archivo en orden numérico (001 → 020+). Validar con `list_migrations` y `list_tables` que existan: `user_profiles`, `companies`, `projects`, `project_members`, `purchase_orders`, `push_subscriptions`, `approvals`, etc.
 
 ### Validación post-migración
+
 ```bash
 npx supabase db diff   # debe estar vacío
 ```
+
 Revisar `get_advisors` (MCP) para asegurar que no haya warnings de RLS o seguridad.
 
 ## 3. Variables de entorno en Vercel
 
 En `Project Settings > Environment Variables` (scope: Production, Preview, Development):
 
-| Variable | Valor | Ejemplo |
-|---|---|---|
-| `VITE_SUPABASE_URL` | URL del proyecto Supabase | `https://xxxxx.supabase.co` |
-| `VITE_SUPABASE_ANON_KEY` | Clave anon (pública) | `eyJhbGciOi...` |
-| `VITE_PUSH_VAPID_PUBLIC_KEY` | VAPID public key (paso 8) | `BNxxx...` |
-| `VITE_SENTRY_DSN` | DSN de Sentry (proyecto frontend) | `https://xxx@o0.ingest.sentry.io/0` |
-| `VITE_SENTRY_RELEASE` | Tag de release (commit SHA) | `nominapp@1.0.0` |
+| Variable                     | Valor                             | Ejemplo                             |
+| ---------------------------- | --------------------------------- | ----------------------------------- |
+| `VITE_SUPABASE_URL`          | URL del proyecto Supabase         | `https://xxxxx.supabase.co`         |
+| `VITE_SUPABASE_ANON_KEY`     | Clave anon (pública)              | `eyJhbGciOi...`                     |
+| `VITE_PUSH_VAPID_PUBLIC_KEY` | VAPID public key (paso 8)         | `BNxxx...`                          |
+| `VITE_SENTRY_DSN`            | DSN de Sentry (proyecto frontend) | `https://xxx@o0.ingest.sentry.io/0` |
+| `VITE_SENTRY_RELEASE`        | Tag de release (commit SHA)       | `nominapp@1.0.0`                    |
 
 Tras agregarlas, redeploy para que apliquen. El prefijo `VITE_` es obligatorio para que Vite las exponga al cliente.
 
@@ -68,6 +76,7 @@ npx supabase secrets set VAPID_SUBJECT=mailto:admin@nominapp.com
 Verificar: `npx supabase secrets list`.
 
 Deploy de las functions:
+
 ```bash
 npx supabase functions deploy admin-create-user
 npx supabase functions deploy send-push
@@ -113,6 +122,7 @@ INSERT INTO public.user_profiles (
 ```
 
 Validar:
+
 ```sql
 SELECT id, email, role, is_active FROM user_profiles WHERE role = 'director_general';
 ```
@@ -125,6 +135,7 @@ Login con el Director General desde la app, luego desde la UI:
 2. **Proyecto**: ir a `Proyectos > Nuevo proyecto`. Asignar empresa, fechas, presupuesto inicial.
 
 Alternativamente vía SQL:
+
 ```sql
 INSERT INTO public.companies (name, rfc, created_by)
 VALUES ('Mi Empresa SA de CV', 'XAXX010101000', '<UUID_DG>')
@@ -143,6 +154,7 @@ npx web-push generate-vapid-keys
 ```
 
 Salida ejemplo:
+
 ```
 Public Key:  BNxxxxxxxxxx...
 Private Key: yyyyyyyy...

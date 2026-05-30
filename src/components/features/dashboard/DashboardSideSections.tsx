@@ -10,14 +10,12 @@ function formatTimeAgo(nowMs: number, dateStr: string, t: TFunction): string {
   if (minutes < 60) return t('dashboard.recent_activity.time_minutes', { count: minutes })
   if (minutes < 1440) return t('dashboard.recent_activity.time_hours', { count: Math.floor(minutes / 60) })
   const days = Math.floor(minutes / 1440)
-  return days === 1 ? t('dashboard.recent_activity.time_yesterday') : t('dashboard.recent_activity.time_days', { count: days })
+  return days === 1
+    ? t('dashboard.recent_activity.time_yesterday')
+    : t('dashboard.recent_activity.time_days', { count: days })
 }
 
-export function DashboardPendingCortesSection({
-  pendingCortes,
-}: {
-  pendingCortes: PendingCorteItem[]
-}) {
+export function DashboardPendingCortesSection({ pendingCortes }: { pendingCortes: PendingCorteItem[] }) {
   const { t } = useTranslation()
   if (pendingCortes.length === 0) return null
 
@@ -39,7 +37,10 @@ export function DashboardPendingCortesSection({
           >
             <div className="min-w-0">
               <p className="text-xs font-medium text-app-text">
-                {t('dashboard.pending_cortes.item_label', { number: corte.cut_number, contractor: corte.contract?.contractor?.name ?? '' })}
+                {t('dashboard.pending_cortes.item_label', {
+                  number: corte.cut_number,
+                  contractor: corte.contract?.contractor?.name ?? '',
+                })}
               </p>
               <p className="mt-0.5 text-[11px] text-app-muted">
                 {new Date(corte.cut_date).toLocaleDateString('es-DO')}
@@ -79,8 +80,12 @@ export function DashboardRecentActivitySection({
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-xs font-medium text-app-text">{activity.description}</p>
                   <div className="mt-1 flex items-center gap-2">
-                    <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${activity.type === 'payroll' ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300' : 'bg-app-chip text-app-muted'}`}>
-                      {activity.type === 'payroll' ? t('dashboard.recent_activity.type_payroll') : t('dashboard.recent_activity.type_transaction')}
+                    <span
+                      className={`rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${activity.type === 'payroll' ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300' : 'bg-app-chip text-app-muted'}`}
+                    >
+                      {activity.type === 'payroll'
+                        ? t('dashboard.recent_activity.type_payroll')
+                        : t('dashboard.recent_activity.type_transaction')}
                     </span>
                     <span className="text-[11px] text-app-subtle">{formatTimeAgo(nowMs, activity.date, t)}</span>
                   </div>

@@ -12,12 +12,7 @@
  *
  * Real section rendering is delegated to other agents/modules.
  */
-import type {
-  Content,
-  TCreatedPdf,
-  TDocumentDefinitions,
-  TFontDictionary,
-} from 'pdfmake/interfaces'
+import type { Content, TCreatedPdf, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces'
 
 import { buildAppendixSection } from './sections/appendix'
 import type { AppendixInput, AppendixTransaction } from './sections/appendix'
@@ -61,8 +56,9 @@ async function loadPdfMake(): Promise<PdfMakeModule> {
         import('pdfmake/build/vfs_fonts'),
       ])
 
-      const pdfMake = (pdfMakeModule as unknown as { default?: PdfMakeModule } & PdfMakeModule)
-        .default ?? (pdfMakeModule as unknown as PdfMakeModule)
+      const pdfMake =
+        (pdfMakeModule as unknown as { default?: PdfMakeModule } & PdfMakeModule).default ??
+        (pdfMakeModule as unknown as PdfMakeModule)
 
       ensureFontsRegistered(pdfMake, pdfFontsModule)
       return pdfMake
@@ -395,8 +391,7 @@ export function generateMonthlyReport(input: MonthlyReportInput): TCreatedPdf {
       sectionTitle: { fontSize: 14, bold: true, margin: [0, 0, 0, 8] },
     },
     header: buildHeader(chrome),
-    footer: (currentPage, pageCount) =>
-      buildPageFooter(currentPage, pageCount, input.project?.name ?? ''),
+    footer: (currentPage, pageCount) => buildPageFooter(currentPage, pageCount, input.project?.name ?? ''),
     content: [
       // Cover page first (ends with pageBreak:'after').
       ...buildCoverPage(coverInput),

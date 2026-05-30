@@ -14,7 +14,12 @@ export function ProjectRecentTransactions({ projectId, transactions }: Props) {
     <div>
       <div className="flex items-center justify-between mb-3 gap-2">
         <h2 className="text-lg font-medium text-app-text truncate">Últimas transacciones</h2>
-        <Link to={`/proyectos/${projectId}/control`} className="text-xs text-blue-600 hover:text-blue-800 shrink-0 inline-flex items-center min-h-[44px] sm:min-h-0">Ver todas</Link>
+        <Link
+          to={`/proyectos/${projectId}/control`}
+          className="text-xs text-blue-600 hover:text-blue-800 shrink-0 inline-flex items-center min-h-[44px] sm:min-h-0"
+        >
+          Ver todas
+        </Link>
       </div>
 
       {/* Desktop / tablet: tabla */}
@@ -23,10 +28,14 @@ export function ProjectRecentTransactions({ projectId, transactions }: Props) {
           <tbody>
             {transactions.map((item) => (
               <tr key={item.id} className="border-b border-app-border last:border-0 hover:bg-app-hover">
-                <td className="px-4 py-2.5 text-xs text-app-muted w-24 whitespace-nowrap">{new Date(item.date).toLocaleDateString('es-DO')}</td>
+                <td className="px-4 py-2.5 text-xs text-app-muted w-24 whitespace-nowrap">
+                  {new Date(item.date).toLocaleDateString('es-DO')}
+                </td>
                 <td className="px-4 py-2.5 text-xs text-app-text font-medium">{item.description}</td>
                 <td className="px-4 py-2.5 text-xs text-app-muted">{item.supplier?.name || ''}</td>
-                <td className="px-4 py-2.5 text-xs text-app-text font-medium text-right whitespace-nowrap">{formatRD(item.total)}</td>
+                <td className="px-4 py-2.5 text-xs text-app-text font-medium text-right whitespace-nowrap">
+                  {formatRD(item.total)}
+                </td>
               </tr>
             ))}
           </tbody>

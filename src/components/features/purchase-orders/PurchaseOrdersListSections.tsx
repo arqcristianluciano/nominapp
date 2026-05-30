@@ -78,7 +78,7 @@ export function PurchaseOrdersFilters({
 export function PurchaseOrdersTable({ requisitions }: { requisitions: PurchaseRequisition[] }) {
   return (
     <div className="bg-app-surface rounded-xl border border-app-border overflow-hidden shadow-xs">
-      <table className="w-full text-sm">
+      <table className="w-full text-sm hidden sm:table">
         <thead>
           <tr className="bg-app-bg border-b border-app-border">
             <th className="text-left px-4 py-3 text-xs font-semibold text-app-subtle uppercase tracking-wide">
@@ -143,6 +143,39 @@ export function PurchaseOrdersTable({ requisitions }: { requisitions: PurchaseRe
           ))}
         </tbody>
       </table>
+      <div className="sm:hidden divide-y divide-app-border">
+        {requisitions.map((requisition) => (
+          <div key={requisition.id} className="flex items-start justify-between gap-3 p-4">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-mono text-xs font-semibold text-app-muted bg-app-chip px-1.5 py-0.5 rounded">
+                  {requisition.req_number}
+                </span>
+                <span
+                  className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold ${REQ_STATUS_COLOR[requisition.status]}`}
+                >
+                  {REQ_STATUS_LABEL[requisition.status]}
+                </span>
+              </div>
+              <div className="font-semibold text-app-text text-sm mt-1.5 break-words">{requisition.description}</div>
+              {requisition.project?.name && (
+                <div className="text-xs text-app-subtle mt-0.5">{requisition.project.name}</div>
+              )}
+              <div className="text-xs text-app-subtle mt-0.5">Solicitado por: {requisition.requested_by}</div>
+              {requisition.required_date && (
+                <div className="text-xs text-app-subtle mt-0.5">Fecha req.: {requisition.required_date}</div>
+              )}
+            </div>
+            <Link
+              to={`/ordenes-compra/${requisition.id}`}
+              className="p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-app-subtle hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors shrink-0"
+              title="Ver detalle"
+            >
+              <Eye className="w-4 h-4" />
+            </Link>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
