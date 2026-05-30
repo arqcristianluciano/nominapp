@@ -90,13 +90,36 @@ describe('partidaProgressService', () => {
       budget_item_id: itemId,
     })
 
-    const rows = await partidaProgressService.getActualCostByPartida(projectId)
+    // Transacción (CxP) imputada a la partida (RD$ 2000)
+    await supabase.from('transactions').insert({
+      id: `tx_${Date.now()}`,
+      project_id: projectId,
+      date: '2026-05-21',
+      description: 'FERRETERÍA',
+      total: 2000,
+      budget_item_id: itemId,
+    })
+    // Transacción sin partida (RD$ 500) — cuenta como costo no imputado
+    await supabase.from('transactions').insert({
+      id: `txn_${Date.now()}`,
+      project_id: projectId,
+      date: '2026-05-21',
+      description: 'VARIOS',
+      total: 500,
+      budget_item_id: null,
+    })
+
+    const { rows, coverage } = await partidaProgressService.getActualCostByPartida(projectId)
     const row = rows.find((r) => r.budget_item_id === itemId)
     expect(row).toBeDefined()
     // presupuesto = 100 × 1000
     expect(row!.presupuesto).toBe(100000)
-    // costo_real = 4000 (factura) + 3000 (salida)
-    expect(row!.costo_real).toBe(7000)
-    expect(row!.desviacion).toBe(7000 - 100000)
+    // costo_real = 4000 (factura) + 3000 (salida) + 2000 (transacción)
+    expect(row!.costo_real).toBe(9000)
+    expect(row!.desviacion).toBe(9000 - 100000)
+    // cobertura: 9000 imputado, 500 sin partida
+    expect(coverage.attributed).toBe(9000)
+    expect(coverage.unattributed).toBe(500)
+    expect(coverage.total).toBe(9500)
   })
 })

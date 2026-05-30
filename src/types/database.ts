@@ -222,6 +222,7 @@ export interface Transaction {
   project_id: string
   date: string
   budget_category_id: string | null
+  budget_item_id: string | null
   description: string
   supplier_id: string | null
   quantity: number | null
