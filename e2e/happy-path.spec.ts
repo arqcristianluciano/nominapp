@@ -7,9 +7,9 @@ import { loginDemo } from './helpers'
 
 const NEW_USER_PASSWORD = 'Test2026!Strong'
 
-// El alta de usuarios (auth.users + user_profiles vía adminService) no es
-// funcional en modo demo: el modal "Nuevo usuario" no abre y el CRUD depende de
-// un backend real. Se omite hasta poder correrlo contra Supabase real.
+// El alta de usuarios usa adminService.create (auth.users + user_profiles), que
+// requiere backend real: en modo demo el modal "Nuevo usuario" abre pero no
+// cierra (la creación falla contra el mock). Se omite hasta correr contra Supabase.
 test.skip('happy-path: login admin, crear usuario, editarlo y cerrar sesión', async ({ page }) => {
   await loginDemo(page)
 
