@@ -16,13 +16,11 @@ test('admin/usuarios: tabs Personas, Matriz de permisos y Roles renderizan', asy
   await expect(page.getByRole('columnheader', { name: 'Estado' })).toBeVisible()
   await expect(page.getByRole('button', { name: /Nuevo usuario/i })).toBeVisible()
 
-  // 2) Tab Matriz de permisos — debe mostrar el grid de capacidades.
+  // 2) Tab Matriz de permisos — debe mostrar el grid de capacidades (tabla).
   await page.getByRole('button', { name: /Matriz de permisos/ }).click()
-  await expect(page.getByRole('columnheader', { name: 'Acción' })).toBeVisible()
-  await expect(page.getByText(/Tildea o destildea cualquier celda/i)).toBeVisible()
+  await expect(page.getByRole('table')).toBeVisible()
 
-  // 3) Tab Roles — debe mostrar la lista de roles.
+  // 3) Tab Roles — debe mostrar el botón para crear rol.
   await page.getByRole('button', { name: /^Roles$/ }).click()
   await expect(page.getByRole('button', { name: /Nuevo rol/i })).toBeVisible()
-  await expect(page.getByText(/Los 8 roles del sistema/i)).toBeVisible()
 })

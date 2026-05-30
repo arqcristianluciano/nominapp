@@ -17,3 +17,8 @@ export async function loginDemo(page: Page): Promise<void> {
   await page.locator('form button[type="submit"]').click()
   await expect(page).toHaveURL(/\/$/)
 }
+
+// Proyecto sembrado en el mock (RESIDENCIAL CAPULLO, seedCapullo). Útil para
+// navegar directo a subrutas sin depender de clics en el listado, que rinde
+// filas/tarjetas clickeables (no enlaces <a>).
+export const DEMO_PROJECT_ID = 'p0000000-0000-0000-0000-000000000001'

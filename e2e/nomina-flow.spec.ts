@@ -27,10 +27,12 @@ test('flujo de nómina: crear, agregar partida, enviar y aprobar', async ({ page
   // 3) Crear la nómina (draft). El formulario precarga número y fecha.
   await page.getByRole('button', { name: /Crear reporte/i }).click()
 
-  // Tras crear, la app navega a /nominas/:id; verificar editor con estado Borrador.
+  // Tras crear, la app navega a /nominas/:id; verificar editor.
   await expect(page).toHaveURL(/\/nominas\/[^/]+$/, { timeout: 10000 })
   await expect(page.getByRole('heading', { name: /Reporte No\. \d+/ })).toBeVisible()
-  await expect(page.getByText('Borrador').first()).toBeVisible()
+  // Afordancia de borrador (el badge "Borrador" se duplica por responsive, así
+  // que verificamos el botón "Agregar partida", que solo aparece en borrador).
+  await expect(page.getByRole('button', { name: /Agregar partida/ }).first()).toBeVisible()
 
   // 4) Agregar una partida de mano de obra.
   await page
@@ -51,7 +53,8 @@ test('flujo de nómina: crear, agregar partida, enviar y aprobar', async ({ page
   await page.locator('input[inputmode="decimal"]').first().fill('5')
   await page.locator('input[inputmode="decimal"]').nth(1).fill('1000')
 
-  await page.getByRole('button', { name: /Agregar partida/ }).click()
+  // Botón de envío DENTRO del modal (hay otro "Agregar partida" en la sección).
+  await page.getByRole('dialog').getByRole('button', { name: 'Agregar partida' }).click()
 
   // 5) Verificar que la partida aparece en la lista de mano de obra.
   // El modal cierra y la sección "Mano de obra" muestra al menos una fila/tarjeta.
@@ -59,17 +62,19 @@ test('flujo de nómina: crear, agregar partida, enviar y aprobar', async ({ page
   // El mensaje "No hay partidas..." debe haber desaparecido.
   await expect(page.getByText('No hay partidas de mano de obra registradas')).toHaveCount(0)
 
-  // 6) Enviar la nómina (draft -> submitted).
+  // 6) Enviar la nómina (draft -> submitted). Al enviar, el aprobador ve el
+  // botón "Aprobar reporte" (confirma el estado enviado sin depender del badge).
   await page
     .getByRole('button', { name: /Enviar para aprobación/i })
     .first()
     .click()
-  await expect(page.getByText('Enviado').first()).toBeVisible({ timeout: 5000 })
+  await expect(page.getByRole('button', { name: /Aprobar reporte/i }).first()).toBeVisible({ timeout: 5000 })
 
-  // 7) Aprobar la nómina (submitted -> approved).
+  // 7) Aprobar la nómina (submitted -> approved). Tras aprobar aparece
+  // "Marcar como pagado".
   await page
     .getByRole('button', { name: /Aprobar reporte/i })
     .first()
     .click()
-  await expect(page.getByText('Aprobado').first()).toBeVisible({ timeout: 5000 })
+  await expect(page.getByRole('button', { name: /Marcar como pagado/i }).first()).toBeVisible({ timeout: 5000 })
 })
