@@ -27,9 +27,15 @@ export default function PresupuestoDetalle() {
     handleAddItem,
     handleUpdateItem,
     handleDeleteItem,
+    handleDeleteCategory,
     handleAddPrice,
     handleUpdatePrice,
     handleDeletePrice,
+    handleImport,
+    emptyCategories,
+    removingEmpty,
+    confirmRemoveEmpty,
+    cancelRemoveEmpty,
     grandBudgeted,
   } = useBudgetDetailPage(projectId)
 
@@ -54,6 +60,7 @@ export default function PresupuestoDetalle() {
         onUpdateItem={handleUpdateItem}
         onDeleteItem={handleDeleteItem}
         onEditBudgetAmount={startEdit}
+        onDeleteCategory={handleDeleteCategory}
         onAddPrice={handleAddPrice}
         onUpdatePrice={handleUpdatePrice}
         onDeletePrice={handleDeletePrice}
@@ -79,14 +86,13 @@ export default function PresupuestoDetalle() {
         }}
         onCloseImport={() => setShowImport(false)}
         onImport={async (payload) => {
-          const result = await budgetItems.bulkImport(
-            payload,
-            budget.rows.map((r) => r.category),
-          )
-          if (result.createdCategories.length > 0) {
-            await budget.load()
-          }
+          await handleImport(payload)
+          setShowImport(false)
         }}
+        emptyCategories={emptyCategories}
+        removingEmpty={removingEmpty}
+        onConfirmRemoveEmpty={confirmRemoveEmpty}
+        onCancelRemoveEmpty={cancelRemoveEmpty}
       />
 
       {budget.error && (

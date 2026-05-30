@@ -23,8 +23,11 @@ export function useBudgetDetail(projectId: string | undefined) {
   const [error, setError] = useState<string | null>(null)
 
   const load = useCallback(
-    async (filters?: { dateFrom?: string; dateTo?: string }) => {
-      if (!projectId) return
+    async (filters?: {
+      dateFrom?: string
+      dateTo?: string
+    }): Promise<{ categories: BudgetCategory[]; transactions: TransactionWithRelations[] }> => {
+      if (!projectId) return { categories: [], transactions: [] }
       setLoading(true)
       setError(null)
       try {
@@ -36,14 +39,32 @@ export function useBudgetDetail(projectId: string | undefined) {
         setCategories(cats)
         setTransactions(txns)
         setImputedByCategory(imputed)
+        return { categories: cats, transactions: txns }
       } catch (e) {
         setError(getErrorMessage(e))
+        return { categories: [], transactions: [] }
       } finally {
         setLoading(false)
       }
     },
     [projectId],
   )
+
+  const removeCategories = useCallback(async (categoryIds: string[]) => {
+    if (categoryIds.length === 0) return
+    setSaving(true)
+    setError(null)
+    try {
+      await budgetCategoryService.deleteMany(categoryIds)
+      const removed = new Set(categoryIds)
+      setCategories((prev) => prev.filter((c) => !removed.has(c.id)))
+    } catch (e) {
+      setError(getErrorMessage(e))
+      throw e
+    } finally {
+      setSaving(false)
+    }
+  }, [])
 
   const updateBudget = useCallback(async (categoryId: string, amount: number) => {
     setSaving(true)
@@ -97,5 +118,6 @@ export function useBudgetDetail(projectId: string | undefined) {
     error,
     load,
     updateBudget,
+    removeCategories,
   }
 }

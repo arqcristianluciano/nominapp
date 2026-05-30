@@ -10,6 +10,8 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ### Added
 
 - Subpartidas del presupuesto numeradas automáticamente (1.1, 1.2, …) en la lista y en el modal de creación (#40).
+- Al importar un presupuesto desde Excel, las partidas que quedan vacías (sin subpartidas, sin monto y sin gasto) se detectan automáticamente y se ofrece eliminarlas en un solo paso, pidiendo confirmación antes de borrar.
+- Botón para eliminar manualmente una partida vacía desde la tabla de presupuesto, con confirmación.
 - Facturas de materiales con varios ítems: una factura agrupa proveedor, referencia y varios ítems (descripción + monto), con total calculado automáticamente (nueva tabla `material_invoice_items`, migración 051).
 - Comprobante de factura (imagen o PDF): botón para adjuntar el comprobante al crear la factura o después desde la lista, almacenado en el bucket privado `invoice-attachments`. Las facturas sin comprobante muestran una advertencia "Falta comprobante" que desaparece al adjuntarlo.
 - Las facturas de materiales y las partidas de mano de obra ahora se pueden imputar a un capítulo y a una partida del presupuesto.
