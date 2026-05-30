@@ -16,7 +16,7 @@ export async function authenticate(username: string, password: string): Promise<
     const key = username.trim().toLowerCase()
     const row = DEMO_USERS.find((d) => d.username === key && d.password === password)
     if (!row) return null
-    return { id: row.username, displayName: row.displayName, username: row.username }
+    return { id: row.username, displayName: row.displayName, username: row.username, isDirector: row.isDirector }
   }
 
   // Supabase Auth real: el "username" se trata como email.
