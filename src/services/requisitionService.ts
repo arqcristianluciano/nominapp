@@ -659,11 +659,9 @@ export const requisitionService = {
 
     const movements = await inventoryService.getMovementsByPurchaseOrder(id)
     const netByItem = new Map<string, number>()
-    const lotIds = new Set<string>()
     for (const m of movements) {
       const delta = m.type === 'in' ? Number(m.quantity) : -Number(m.quantity)
       netByItem.set(m.item_id, (netByItem.get(m.item_id) ?? 0) + delta)
-      if (m.type === 'in' && m.lot_id) lotIds.add(m.lot_id)
     }
 
     const today = new Date().toISOString().slice(0, 10)
@@ -684,11 +682,9 @@ export const requisitionService = {
       })
       reversed += 1
     }
-
-    // Anula los lotes creados por esta recepción (su mercancía sale del stock).
-    for (const lotId of lotIds) {
-      await lotService.update(lotId, { quantity: 0 })
-    }
+    // Los lotes se descuentan automáticamente por FIFO al registrar las salidas
+    // de reversa (inventoryService.addMovement), así que no hace falta anularlos
+    // aquí manualmente.
 
     // Reinicia la cantidad recibida por línea de la cotización aprobada.
     const approvedQuote = (before.quotes ?? []).find((q) => q.id === before.approved_quote_id)
