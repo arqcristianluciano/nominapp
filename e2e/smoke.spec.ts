@@ -1,11 +1,5 @@
 import { expect, test } from '@playwright/test'
-
-async function loginDemo(page: import('@playwright/test').Page) {
-  await page.goto('/login', { waitUntil: 'domcontentloaded' })
-  await page.getByRole('button', { name: 'Cristian' }).click()
-  await page.getByRole('button', { name: 'Iniciar sesión' }).click()
-  await expect(page).toHaveURL(/\/$/)
-}
+import { loginDemo } from './helpers'
 
 async function openFirstProjectBudget(page: import('@playwright/test').Page) {
   await page.goto('/presupuesto')
