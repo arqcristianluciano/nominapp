@@ -147,9 +147,12 @@ export interface LaborLineItem {
   notes: string | null
   budget_category_id: string | null
   budget_item_id: string | null
+  created_by: string | null
   contractor?: Contractor
   budget_category?: { code: string; name: string } | null
   budget_item?: { code: string | null; description: string } | null
+  /** Derivado (no es columna): nombre del autor resuelto desde user_profiles. */
+  creator_name?: string | null
 }
 
 export interface MaterialInvoice {
@@ -163,10 +166,13 @@ export interface MaterialInvoice {
   budget_item_id: string | null
   attachment_path: string | null
   notes: string | null
+  created_by: string | null
   supplier?: Supplier
   items?: MaterialInvoiceItem[]
   budget_category?: { code: string; name: string } | null
   budget_item?: { code: string | null; description: string } | null
+  /** Derivado (no es columna): nombre del autor resuelto desde user_profiles. */
+  creator_name?: string | null
 }
 
 export interface MaterialInvoiceItem {
@@ -194,15 +200,21 @@ export interface IndirectCost {
 export interface PaymentDistribution {
   id: string
   payroll_period_id: string
-  bank_account_id: string
+  /** Cuenta bancaria interna (flujo legacy). Opcional: hoy el pago se asigna a un beneficiario. */
+  bank_account_id: string | null
   amount: number
   payment_method: 'deposit' | 'transfer' | 'check' | 'cash'
+  /** Nombre del beneficiario (contratista o proveedor). */
   beneficiary: string | null
+  beneficiary_type: 'contractor' | 'supplier' | null
+  beneficiary_id: string | null
+  /** Snapshot de los datos bancarios del beneficiario al momento del pago. */
+  bank_name: string | null
+  bank_account: string | null
   check_number: string | null
   status: 'pending' | 'completed' | 'cancelled'
   instructions: string | null
   completed_at: string | null
-  bank_account?: BankAccount
 }
 
 export interface Transaction {
@@ -346,10 +358,14 @@ export interface Database {
       }
       labor_line_items: {
         Row: LaborLineItem
-        Insert: Omit<LaborLineItem, 'id' | 'subtotal'>
+        Insert: Omit<LaborLineItem, 'id' | 'subtotal' | 'created_by' | 'creator_name'>
         Update: Partial<LaborLineItem>
       }
-      material_invoices: { Row: MaterialInvoice; Insert: Omit<MaterialInvoice, 'id'>; Update: Partial<MaterialInvoice> }
+      material_invoices: {
+        Row: MaterialInvoice
+        Insert: Omit<MaterialInvoice, 'id' | 'created_by' | 'creator_name'>
+        Update: Partial<MaterialInvoice>
+      }
       material_invoice_items: {
         Row: MaterialInvoiceItem
         Insert: Omit<MaterialInvoiceItem, 'id' | 'created_at'>

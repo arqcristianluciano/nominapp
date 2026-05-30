@@ -41,6 +41,21 @@ function actionForStatus(status: PayrollStatus): ApprovalAction {
   return 'status_change'
 }
 
+// Resuelve nombres de autor (created_by → display_name) en un solo query.
+// En modo demo no hay autores (created_by null) y se evita la consulta.
+async function buildCreatorNameMap(ids: (string | null)[]): Promise<Map<string, string>> {
+  const unique = [...new Set(ids.filter((x): x is string => !!x))]
+  if (unique.length === 0) return new Map()
+  try {
+    const { data } = await supabase.from('user_profiles').select('id, display_name').in('id', unique)
+    return new Map(
+      ((data ?? []) as { id: string; display_name: string | null }[]).map((p) => [p.id, p.display_name ?? '']),
+    )
+  } catch {
+    return new Map()
+  }
+}
+
 export const payrollService = {
   // === PAYROLL PERIODS ===
 
@@ -86,10 +101,22 @@ export const payrollService = {
       supabase.from('indirect_costs').select('*').eq('payroll_period_id', periodId),
     ])
     if (periodRes.error) throw periodRes.error
+
+    const laborItems = (laborRes.data || []) as LaborLineItem[]
+    const materialInvoices = (materialsRes.data || []) as MaterialInvoice[]
+    const nameById = await buildCreatorNameMap([
+      ...laborItems.map((i) => i.created_by),
+      ...materialInvoices.map((i) => i.created_by),
+    ])
+    const withCreator = <T extends { created_by: string | null; creator_name?: string | null }>(i: T): T => ({
+      ...i,
+      creator_name: i.created_by ? (nameById.get(i.created_by) ?? null) : null,
+    })
+
     return {
       period: periodRes.data as PayrollPeriod,
-      laborItems: (laborRes.data || []) as LaborLineItem[],
-      materialInvoices: ((materialsRes.data || []) as MaterialInvoice[]).map(sortInvoiceItems),
+      laborItems: laborItems.map(withCreator),
+      materialInvoices: materialInvoices.map(sortInvoiceItems).map(withCreator),
       indirectCosts: (indirectRes.data || []) as IndirectCost[],
     }
   },
@@ -160,6 +187,38 @@ export const payrollService = {
       payload_after: { status },
       metadata: before ? { period_number: before.period_number, project_id: before.project_id } : {},
     })
+
+    return data as PayrollPeriod
+  },
+
+  // Devuelve un reporte comprometido a BORRADOR para que el autor lo corrija.
+  // Limpia la aprobación y registra la acción en la bitácora (return_for_revision).
+  async returnToDraft(id: string, actor?: { displayName?: string }) {
+    const { data: before } = await supabase
+      .from('payroll_periods')
+      .select('id, status, period_number, project_id')
+      .eq('id', id)
+      .single()
+
+    const { data, error } = await supabase
+      .from('payroll_periods')
+      .update({ status: 'draft', approved_at: null, approved_by: null })
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+
+    await approvalsService
+      .log({
+        entity_type: 'payroll_period',
+        entity_id: id,
+        action: 'return_for_revision',
+        actor_display_name: actor?.displayName,
+        payload_before: before ? { status: before.status } : null,
+        payload_after: { status: 'draft' },
+        metadata: before ? { period_number: before.period_number, project_id: before.project_id } : {},
+      })
+      .catch((err) => console.warn('[payrollService.returnToDraft] log de auditoría falló', err))
 
     return data as PayrollPeriod
   },

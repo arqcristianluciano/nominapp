@@ -319,6 +319,23 @@ export function usePayroll(periodId: string | undefined) {
     await load()
   }, [periodId, load])
 
+  const returnToDraft = useCallback(async () => {
+    if (!periodId) return
+    setSaving(true)
+    try {
+      const actor = useAuthStore.getState().user
+      const updated = await payrollService.returnToDraft(periodId, {
+        displayName: actor?.displayName,
+      })
+      setPeriod((prev) => (prev ? { ...prev, ...updated } : null))
+      setError(null)
+    } catch (e) {
+      setError(getErrorMessage(e))
+    } finally {
+      setSaving(false)
+    }
+  }, [periodId])
+
   return {
     period,
     laborItems,
@@ -336,6 +353,7 @@ export function usePayroll(periodId: string | undefined) {
     attachInvoiceFile,
     deleteMaterialInvoice,
     updateStatus,
+    returnToDraft,
     setIndirectActive,
     recalculateTotals,
   }

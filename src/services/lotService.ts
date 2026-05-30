@@ -3,12 +3,11 @@ import { supabase } from '@/lib/supabase'
 export interface InventoryLot {
   id: string
   item_id: string
-  lot_number: string
+  lot_number: string | null
   quantity: number
   unit_cost: number | null
   received_date: string | null
-  expiration_date: string | null
-  supplier_id: string | null
+  expiry_date: string | null
   notes: string | null
   created_at: string
 }
@@ -37,12 +36,7 @@ export const lotService = {
   },
 
   async update(id: string, updates: Partial<InventoryLot>): Promise<InventoryLot> {
-    const { data, error } = await supabase
-      .from('inventory_lots')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single()
+    const { data, error } = await supabase.from('inventory_lots').update(updates).eq('id', id).select().single()
     if (error) throw error
     return data as InventoryLot
   },
