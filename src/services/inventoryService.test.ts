@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { inventoryService, InventoryError } from './inventoryService'
+import { lotService } from './lotService'
 import { supabase } from '@/lib/supabase'
 
 const projectId = 'p1000000-0000-0000-0000-000000000001'
@@ -113,5 +114,44 @@ describe('inventoryService - costo promedio ponderado', () => {
     const updated = items.find((i) => i.id === item.id)
     // (10*100 + 10*200) / 20 = 150
     expect(updated?.unit_cost).toBe(150)
+  })
+})
+
+describe('inventoryService - consumo FIFO de lotes en salidas', () => {
+  it('descuenta del lote más antiguo primero', async () => {
+    const item = await createItem(`fifo-${Date.now()}`, 0)
+    await lotService.create({
+      item_id: item.id,
+      lot_number: 'A',
+      quantity: 5,
+      unit_cost: 1,
+      received_date: '2026-01-01',
+      expiry_date: null,
+      notes: null,
+    })
+    await lotService.create({
+      item_id: item.id,
+      lot_number: 'B',
+      quantity: 5,
+      unit_cost: 1,
+      received_date: '2026-02-01',
+      expiry_date: null,
+      notes: null,
+    })
+    await inventoryService.updateItem(item.id, { current_stock: 10 })
+
+    // Salida de 7 → consume el lote A completo (5) y 2 del lote B.
+    await inventoryService.addMovement({
+      item_id: item.id,
+      project_id: projectId,
+      type: 'out',
+      quantity: 7,
+      date: '2026-03-01',
+      budget_item_id: budgetItemId,
+    })
+
+    const lots = await lotService.list(item.id)
+    expect(lots.find((l) => l.lot_number === 'A')?.quantity).toBe(0)
+    expect(lots.find((l) => l.lot_number === 'B')?.quantity).toBe(3)
   })
 })

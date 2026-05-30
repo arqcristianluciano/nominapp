@@ -5,12 +5,13 @@
 //   2. Quitar este archivo / el componente LoginQuickAccess del bundle.
 
 // ⚠️ TEMPORAL — acceso rápido de pruebas en la pantalla de login.
-// Mientras esté en `true`, los botones de "entrar como <rol>" se muestran y
-// funcionan TAMBIÉN en producción: cualquiera con la URL puede entrar como
-// cualquier rol (incluido Director General). Es solo para la fase de pruebas.
-// Para desactivarlo: pon `false` (sin redeploy de código si lo mueves a env),
-// o borra este archivo + el componente LoginQuickAccess antes de salir a real.
-export const ENABLE_TEST_QUICK_LOGIN = true
+// Controlado por la variable de entorno `VITE_ENABLE_TEST_LOGIN`: solo cuando
+// vale exactamente 'true' se muestran los botones de "entrar como <rol>" en una
+// build de producción real. Por defecto (sin la variable) queda DESACTIVADO en
+// producción, de modo que nadie con la URL pueda entrar como cualquier rol
+// (incluido Director General). En modo demo (mockSupabase) y en build de
+// desarrollo el acceso rápido sigue disponible aunque la variable no esté.
+export const ENABLE_TEST_QUICK_LOGIN = import.meta.env.VITE_ENABLE_TEST_LOGIN === 'true'
 
 export interface TestUser {
   email: string
