@@ -10,16 +10,31 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ### Added
 
 - Subpartidas del presupuesto numeradas automáticamente (1.1, 1.2, …) en la lista y en el modal de creación (#40).
+- Facturas de materiales con varios ítems: una factura agrupa proveedor, referencia y varios ítems (descripción + monto), con total calculado automáticamente (nueva tabla `material_invoice_items`, migración 051).
+- Comprobante de factura (imagen o PDF): botón para adjuntar el comprobante al crear la factura o después desde la lista, almacenado en el bucket privado `invoice-attachments`. Las facturas sin comprobante muestran una advertencia "Falta comprobante" que desaparece al adjuntarlo.
+- Las facturas de materiales y las partidas de mano de obra ahora se pueden imputar a un capítulo y a una partida del presupuesto.
+- Las listas de mano de obra y materiales del editor de nómina muestran el capítulo/partida imputado de cada renglón.
+- Nueva vista "Por partida (acumulado)" en Cubicación: costo real imputado por partida (salidas de almacén, mano de obra y facturas) frente al presupuesto, con exportación a Excel.
+- Edición de partidas de mano de obra y facturas de materiales en el reporte de nómina: cada fila tiene un botón "Editar" con el formulario pre-cargado, evitando tener que borrar y rehacer ante un error. En borrador puede editar quien tiene permiso de edición (quien introduce los datos); en reportes ya enviados/aprobados/pagados solo la mayor jerarquía (Director/quien aprueba), y esas correcciones quedan registradas en la bitácora de aprobaciones.
+- Botón "Devolver a borrador" en el reporte de nómina: la mayor jerarquía (quien aprueba) puede regresar un reporte enviado o aprobado a borrador para que el autor lo corrija. Pide confirmación, quita la aprobación y registra la acción (`return_for_revision`) en la bitácora. Un reporte pagado no se puede devolver.
+- Sección "Historial de cambios" en el reporte de nómina: lista quién y cuándo realizó cada acción auditada (creación, envío, aprobación, devolución a borrador, edición de partidas/facturas en reportes comprometidos), leída de la bitácora de aprobaciones.
+- Autor de cada partida/factura (`created_by`): las partidas de mano de obra y facturas de materiales registran quién las introdujo (migración 052, aditiva, con `DEFAULT auth.uid()` + trigger). El editor muestra "Agregado por …" al corregir una línea. No cambia el modelo de permisos actual; endurecer la RLS a "solo autor o Director" queda como follow-up.
 
 ### Changed
 
 - Números de requisición ahora consecutivos por año (REQ-2026-0001, 0002, …) en lugar de un número aleatorio.
 - `sort_order` de partidas de cubicación se calcula como máximo + 1 para no colisionar al borrar filas.
+- El editor y la impresión de nómina ahora muestran las facturas de materiales detalladas por ítem.
+- Distribución de pagos: ahora se selecciona un beneficiario (contratista o proveedor) y los datos bancarios se copian automáticamente desde su ficha, en lugar de exigir una cuenta bancaria interna (migración 052).
 
 ### Fixed
 
 - La numeración automática de subpartidas ahora respeta el código de la partida (p. ej. `T2.5`, no `2.5`) y continúa desde el mayor número existente, evitando defaults erróneos como `3.1` y colisiones tras borrar filas (#40).
 - La importación de presupuesto desde Excel asigna y persiste códigos consecutivos por partida a las subpartidas que no traen código, continuando desde el mayor existente y respetando los códigos que sí vengan en el archivo.
+- Modo demo: el cliente mock ahora implementa `removeChannel` y un stub de `storage`, evitando el crash al navegar y permitiendo adjuntar/ver comprobantes en demo.
+- La lista de precios ya permite guardar ítems de tipo "Ajuste". El constraint `category` de `price_list_items` omitía `adjustment`, por lo que esos precios fallaban en silencio al guardarse (migración 050).
+- `PriceListInlineForm` ahora muestra un toast de error cuando un precio no se puede guardar, en lugar de fallar en silencio.
+- El selector de la distribución de pagos ya no aparece vacío: antes dependía de la tabla `bank_accounts` (sin registros) en vez de los beneficiarios.
 
 ## [0.6.0] - 2026-05-26
 

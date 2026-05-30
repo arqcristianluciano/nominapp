@@ -29,10 +29,7 @@ import type {
   PayrollPeriod,
 } from '@/types/database'
 import type { MonthlyReportInput } from '@/services/reports/pdfReportService'
-import type {
-  BudgetBreakdownCategory,
-  BudgetBreakdownItem,
-} from '@/services/reports/sections/budgetBreakdown'
+import type { BudgetBreakdownCategory, BudgetBreakdownItem } from '@/services/reports/sections/budgetBreakdown'
 
 /* -------------------------------------------------------------------------- */
 /* Date helpers                                                               */
@@ -82,10 +79,7 @@ function withinRange(dateValue: string | null | undefined, range: MonthRange): b
 /* Internal data fetchers                                                     */
 /* -------------------------------------------------------------------------- */
 
-async function loadPayrollPeriodsInRange(
-  projectId: string,
-  range: MonthRange,
-): Promise<PayrollPeriod[]> {
+async function loadPayrollPeriodsInRange(projectId: string, range: MonthRange): Promise<PayrollPeriod[]> {
   const periods = await payrollService.getPeriods(projectId)
   return periods.filter((p) => withinRange(p.report_date, range))
 }
@@ -102,14 +96,8 @@ async function loadPayrollDetails(periodIds: string[]): Promise<PayrollDetails> 
   }
 
   const [laborRes, materialsRes, indirectRes] = await Promise.all([
-    supabase
-      .from('labor_line_items')
-      .select('*, contractor:contractors(*)')
-      .in('payroll_period_id', periodIds),
-    supabase
-      .from('material_invoices')
-      .select('*, supplier:suppliers(*)')
-      .in('payroll_period_id', periodIds),
+    supabase.from('labor_line_items').select('*, contractor:contractors(*)').in('payroll_period_id', periodIds),
+    supabase.from('material_invoices').select('*, supplier:suppliers(*)').in('payroll_period_id', periodIds),
     supabase.from('indirect_costs').select('*').in('payroll_period_id', periodIds),
   ])
 
@@ -120,18 +108,39 @@ async function loadPayrollDetails(periodIds: string[]): Promise<PayrollDetails> 
   }
 }
 
-async function loadAllCommittedPayrollsInRange(
-  projectId: string,
-  range: MonthRange,
-): Promise<PayrollPeriod[]> {
+async function loadAllCommittedPayrollsInRange(projectId: string, range: MonthRange): Promise<PayrollPeriod[]> {
   // Para variance vs presupuesto y total invertido a la fecha, queremos
   // sólo nóminas comprometidas (approved/paid). Esto coincide con el
   // criterio usado en `cashFlowService` y `dashboardService`.
   const periods = await payrollService.getPeriods(projectId)
-  return periods.filter(
-    (p) =>
-      COMMITTED_PAYROLL_STATUSES.includes(p.status) && withinRange(p.report_date, range),
-  )
+  return periods.filter((p) => COMMITTED_PAYROLL_STATUSES.includes(p.status) && withinRange(p.report_date, range))
+}
+
+interface InventoryOutMovement {
+  quantity: number | null
+  unit_cost: number | null
+  budget_category_id: string | null
+  budget_item_id: string | null
+}
+
+/**
+ * Salidas de almacén (type='out') del proyecto dentro del rango, imputadas a
+ * una partida/capítulo. Representan costo real consumido y deben sumarse al
+ * desglose por capítulo igual que en `budgetSpentService`.
+ */
+async function loadInventoryOutMovements(projectId: string, range: MonthRange): Promise<InventoryOutMovement[]> {
+  const { data, error } = await supabase
+    .from('inventory_movements')
+    .select('quantity, unit_cost, budget_category_id, budget_item_id')
+    .eq('project_id', projectId)
+    .eq('type', 'out')
+    .gte('date', range.start)
+    .lte('date', range.end)
+  if (error) {
+    console.warn('[monthlyReportData] loadInventoryOutMovements failed:', error.message)
+    return []
+  }
+  return (data ?? []) as InventoryOutMovement[]
 }
 
 /* -------------------------------------------------------------------------- */
@@ -179,11 +188,7 @@ async function countPartidasInProgress(projectId: string): Promise<number> {
     console.warn('[monthlyReportData] countPartidasInProgress failed:', error.message)
     return 0
   }
-  const itemIds = new Set(
-    (data ?? [])
-      .map((row) => row.budget_item_id)
-      .filter((id): id is string => Boolean(id)),
-  )
+  const itemIds = new Set((data ?? []).map((row) => row.budget_item_id).filter((id): id is string => Boolean(id)))
   return itemIds.size
 }
 
@@ -235,6 +240,7 @@ function buildBudgetBreakdown(
   laborItems: LaborLineItem[],
   materialInvoices: MaterialInvoice[],
   monthlyTransactions: { total: number; budget_category_id: string | null }[],
+  inventoryMovements: InventoryOutMovement[] = [],
 ): BudgetBreakdownCategory[] {
   // actual real cost grouped by budget_item_id and budget_category_id.
   const actualByItem = new Map<string, number>()
@@ -261,6 +267,13 @@ function buildBudgetBreakdown(
   }
   for (const tx of monthlyTransactions) {
     addToCategory(tx.budget_category_id, Number(tx.total ?? 0))
+  }
+  for (const mv of inventoryMovements) {
+    const value = Number(mv.quantity ?? 0) * Number(mv.unit_cost ?? 0)
+    // Imputación a partida específica; si no, a nivel de capítulo. Se cuenta
+    // una sola vez para no duplicar (igual criterio que budgetSpentService).
+    if (mv.budget_item_id) addToItem(mv.budget_item_id, value)
+    else addToCategory(mv.budget_category_id, value)
   }
 
   // Build categories with their items, derive budgeted/actual at each level.
@@ -311,10 +324,7 @@ function buildCashflow(
     (acc, ll) => acc + Number(ll.quantity ?? 0) * Number(ll.unit_price ?? 0),
     0,
   )
-  const materialActualFromInvoices = materialInvoices.reduce(
-    (acc, inv) => acc + Number(inv.amount ?? 0),
-    0,
-  )
+  const materialActualFromInvoices = materialInvoices.reduce((acc, inv) => acc + Number(inv.amount ?? 0), 0)
   const indirectActual = indirectCosts
     .filter((c) => c.is_active)
     .reduce((acc, c) => acc + Number(c.calculated_amount ?? 0), 0)
@@ -357,9 +367,7 @@ function buildCashflow(
   }
 }
 
-function buildPayrollSummary(
-  laborItems: LaborLineItem[],
-): MonthlyReportInput['payroll'] {
+function buildPayrollSummary(laborItems: LaborLineItem[]): MonthlyReportInput['payroll'] {
   // Agrupa por contratista para conseguir un resumen util a nivel de reporte.
   const byContractor = new Map<
     string,
@@ -374,18 +382,16 @@ function buildPayrollSummary(
 
   for (const ll of laborItems) {
     const contractorId = ll.contractor_id
-    const contractorName =
-      (ll.contractor as Contractor | undefined)?.name ?? 'Contratista sin nombre'
+    const contractorName = (ll.contractor as Contractor | undefined)?.name ?? 'Contratista sin nombre'
     const subtotal = Number(ll.quantity ?? 0) * Number(ll.unit_price ?? 0)
 
-    const bucket =
-      byContractor.get(contractorId) ?? {
-        contractorName,
-        partidasCount: 0,
-        laborSubtotal: 0,
-        deductions: 0,
-        net: 0,
-      }
+    const bucket = byContractor.get(contractorId) ?? {
+      contractorName,
+      partidasCount: 0,
+      laborSubtotal: 0,
+      deductions: 0,
+      net: 0,
+    }
 
     bucket.contractorName = contractorName
     bucket.partidasCount += 1
@@ -428,17 +434,11 @@ function buildPayrollSummary(
  * construction) is delegated to {@link generateMonthlyReport} and the section
  * builders under `./sections`.
  */
-export async function loadMonthlyReportData(
-  projectId: string,
-  yearMonth: string,
-): Promise<MonthlyReportInput> {
+export async function loadMonthlyReportData(projectId: string, yearMonth: string): Promise<MonthlyReportInput> {
   const range = parseYearMonth(yearMonth)
 
   // 1) Datos del proyecto y andamiaje de presupuesto.
-  const [project, scaffold] = await Promise.all([
-    projectService.getById(projectId),
-    loadBudgetScaffold(projectId),
-  ])
+  const [project, scaffold] = await Promise.all([projectService.getById(projectId), loadBudgetScaffold(projectId)])
 
   // 2) Transacciones del mes (libro diario filtrado por fecha).
   const monthlyTransactions = await transactionService.getByProject(projectId, {
@@ -452,8 +452,10 @@ export async function loadMonthlyReportData(
     loadAllCommittedPayrollsInRange(projectId, range),
   ])
   const periodIds = periodsInRange.map((p) => p.id)
-  const { laborItems, materialInvoices, indirectCosts } =
-    await loadPayrollDetails(periodIds)
+  const [{ laborItems, materialInvoices, indirectCosts }, inventoryOutMovements] = await Promise.all([
+    loadPayrollDetails(periodIds),
+    loadInventoryOutMovements(projectId, range),
+  ])
 
   // 4) Cash flow planificado y proyecciones (ingresos esperados, egresos).
   const [monthlyProjection, expectedInflows] = await Promise.all([
@@ -467,31 +469,21 @@ export async function loadMonthlyReportData(
     .reduce((acc, inf) => acc + Number(inf.amount ?? 0), 0)
 
   // 5) KPIs ejecutivos.
-  const totalBudget = scaffold.categories.reduce(
-    (acc, cat) => {
-      const fromItems = (scaffold.itemsByCategory.get(cat.id) ?? []).reduce(
-        (s, it) => s + Number(it.quantity ?? 0) * Number(it.unit_price ?? 0),
-        0,
-      )
-      return acc + (fromItems > 0 ? fromItems : Number(cat.budgeted_amount ?? 0))
-    },
-    0,
-  )
+  const totalBudget = scaffold.categories.reduce((acc, cat) => {
+    const fromItems = (scaffold.itemsByCategory.get(cat.id) ?? []).reduce(
+      (s, it) => s + Number(it.quantity ?? 0) * Number(it.unit_price ?? 0),
+      0,
+    )
+    return acc + (fromItems > 0 ? fromItems : Number(cat.budgeted_amount ?? 0))
+  }, 0)
 
-  const totalInvested = committedPayrolls.reduce(
-    (acc, p) => acc + Number(p.grand_total ?? 0),
-    0,
-  )
+  const totalInvested = committedPayrolls.reduce((acc, p) => acc + Number(p.grand_total ?? 0), 0)
 
-  const monthlyTransactionsTotal = monthlyTransactions.reduce(
-    (acc, t) => acc + Number(t.total ?? 0),
-    0,
-  )
+  const monthlyTransactionsTotal = monthlyTransactions.reduce((acc, t) => acc + Number(t.total ?? 0), 0)
   const projectGrandTotal = totalInvested + monthlyTransactionsTotal
 
   const variance = totalBudget - totalInvested
-  const progressPercent =
-    totalBudget > 0 ? Math.min(100, (totalInvested / totalBudget) * 100) : 0
+  const progressPercent = totalBudget > 0 ? Math.min(100, (totalInvested / totalBudget) * 100) : 0
 
   const activeContractors = new Set(laborItems.map((ll) => ll.contractor_id)).size
 
@@ -510,6 +502,7 @@ export async function loadMonthlyReportData(
       total: Number(t.total ?? 0),
       budget_category_id: t.budget_category_id ?? null,
     })),
+    inventoryOutMovements,
   )
 
   const cashflow = buildCashflow(

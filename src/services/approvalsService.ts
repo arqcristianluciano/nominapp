@@ -17,16 +17,18 @@ export type ApprovalAction =
   | 'approve'
   | 'reject'
   | 'return_for_revision'
-  | 'release'                    // OC pendiente_liberacion → liberada (regla 7.2)
-  | 'validate_excess'            // solicitud que excede plan (regla 7.1)
-  | 'override_stock'             // override de stock negativo (regla 7.5)
-  | 'budget_edit_post_approval'  // versionado de presupuesto (regla 7.7)
+  | 'release' // Administrador libera la OC: pendiente_liberacion → ordered (regla 7.2)
+  | 'validate_excess' // solicitud que excede plan (regla 7.1)
+  | 'override_stock' // override de stock negativo (regla 7.5)
+  | 'budget_edit_post_approval' // versionado de presupuesto (regla 7.7)
   | 'status_change'
-  | 'receive'                    // OC recibida en almacén
+  | 'receive' // OC recibida en almacén
+  | 'reverse_receipt' // reversa de recepción: vuelve la OC a 'ordered' y deshace el stock
   | 'create'
   | 'delete'
   | 'delete_cascade'
   | 'update_indirects'
+  | 'update' // edición de una partida/factura en un reporte ya comprometido
 
 export interface LogApprovalInput {
   entity_type: ApprovalEntity

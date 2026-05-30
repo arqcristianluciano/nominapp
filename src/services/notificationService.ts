@@ -57,8 +57,8 @@ const DAYS_APPROACHING = 15
 const DAYS_OVERDUE = 28
 const CXP_WARNING_DAYS = 30
 const CXP_DANGER_DAYS = 60
-const BUDGET_WARNING_THRESHOLD = 0.80
-const BUDGET_DANGER_THRESHOLD = 1.00
+const BUDGET_WARNING_THRESHOLD = 0.8
+const BUDGET_DANGER_THRESHOLD = 1.0
 const DOC_EXPIRY_WARNING_DAYS = 30
 
 function isCreditCondition(value: string | null | undefined): boolean {
@@ -82,12 +82,21 @@ export const notificationService = {
     const dangerDateStr = new Date(today.getTime() - CXP_DANGER_DAYS * 86400000).toISOString().split('T')[0]
     const docExpiryWarning = new Date(today.getTime() + DOC_EXPIRY_WARNING_DAYS * 86400000).toISOString().split('T')[0]
 
-    const [poRes, qcOverdueRes, qcFailedRes, txnDangerRes, txnWarningRes,
-           budgetCatRes, transactionsRes, projectsRes, docsRes] = await Promise.all([
+    const [
+      poRes,
+      qcOverdueRes,
+      qcFailedRes,
+      txnDangerRes,
+      txnWarningRes,
+      budgetCatRes,
+      transactionsRes,
+      projectsRes,
+      docsRes,
+    ] = await Promise.all([
       supabase
         .from('purchase_requisitions')
-        .select('id, req_number, project:projects(name)')
-        .eq('status', 'pending_approval'),
+        .select('id, req_number, status, project:projects(name)')
+        .in('status', ['pending_approval', 'pendiente_liberacion']),
       supabase
         .from('quality_control')
         .select('id, element, pour_date, project_id')
@@ -111,10 +120,7 @@ export const notificationService = {
         .gt('date', dangerDateStr)
         .limit(100),
       supabase.from('budget_categories').select('id, project_id, name, budgeted_amount'),
-      supabase
-        .from('transactions')
-        .select('project_id, total, budget_category:budget_categories(code)')
-        .limit(500),
+      supabase.from('transactions').select('project_id, total, budget_category:budget_categories(code)').limit(500),
       supabase.from('projects').select('id, name, code'),
       supabase.from('contractor_documents').select('*, contractor:contractors(name)'),
     ])
@@ -131,20 +137,24 @@ export const notificationService = {
 
     const notifications: AppNotification[] = []
 
-    for (const po of (poRes.data || []) as { id: string; req_number: string; project?: { name?: string } | null }[]) {
+    for (const po of (poRes.data || []) as {
+      id: string
+      req_number: string
+      status: string
+      project?: { name?: string } | null
+    }[]) {
+      const awaitingRelease = po.status === 'pendiente_liberacion'
       notifications.push({
         id: `po-${po.id}`,
         level: 'warning',
-        title: 'OC pendiente de aprobación',
+        title: awaitingRelease ? 'OC pendiente de liberación' : 'OC pendiente de aprobación',
         description: `${po.req_number}${po.project ? ` — ${po.project.name}` : ''}`,
         link: `/ordenes-compra/${po.id}`,
       })
     }
 
     for (const qc of (qcOverdueRes.data || []) as OverdueQualityControlLite[]) {
-      const daysSince = Math.floor(
-        (today.getTime() - new Date(qc.pour_date).getTime()) / 86_400_000
-      )
+      const daysSince = Math.floor((today.getTime() - new Date(qc.pour_date).getTime()) / 86_400_000)
       const isOverdue = daysSince >= DAYS_OVERDUE
       notifications.push({
         id: `qc-overdue-${qc.id}`,
@@ -167,7 +177,9 @@ export const notificationService = {
       })
     }
 
-    const dangerCreditTxns = ((txnDangerRes.data || []) as Array<TransactionLite & { payment_condition?: string | null }>)
+    const dangerCreditTxns = (
+      (txnDangerRes.data || []) as Array<TransactionLite & { payment_condition?: string | null }>
+    )
       .filter((txn) => isCreditCondition(txn.payment_condition))
       .slice(0, 10)
     for (const txn of dangerCreditTxns) {
@@ -181,7 +193,9 @@ export const notificationService = {
       })
     }
 
-    const warningCreditTxns = ((txnWarningRes.data || []) as Array<TransactionLite & { payment_condition?: string | null }>)
+    const warningCreditTxns = (
+      (txnWarningRes.data || []) as Array<TransactionLite & { payment_condition?: string | null }>
+    )
       .filter((txn) => isCreditCondition(txn.payment_condition))
       .slice(0, 10)
     for (const txn of warningCreditTxns) {
