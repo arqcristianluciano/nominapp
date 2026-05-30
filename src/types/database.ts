@@ -147,7 +147,12 @@ export interface LaborLineItem {
   notes: string | null
   budget_category_id: string | null
   budget_item_id: string | null
+  created_by: string | null
   contractor?: Contractor
+  budget_category?: { code: string; name: string } | null
+  budget_item?: { code: string | null; description: string } | null
+  /** Derivado (no es columna): nombre del autor resuelto desde user_profiles. */
+  creator_name?: string | null
 }
 
 export interface MaterialInvoice {
@@ -161,7 +166,22 @@ export interface MaterialInvoice {
   budget_item_id: string | null
   attachment_path: string | null
   notes: string | null
+  created_by: string | null
   supplier?: Supplier
+  items?: MaterialInvoiceItem[]
+  budget_category?: { code: string; name: string } | null
+  budget_item?: { code: string | null; description: string } | null
+  /** Derivado (no es columna): nombre del autor resuelto desde user_profiles. */
+  creator_name?: string | null
+}
+
+export interface MaterialInvoiceItem {
+  id: string
+  material_invoice_id: string
+  description: string
+  amount: number
+  sort_order: number
+  created_at?: string
 }
 
 export interface IndirectCost {
@@ -180,15 +200,21 @@ export interface IndirectCost {
 export interface PaymentDistribution {
   id: string
   payroll_period_id: string
-  bank_account_id: string
+  /** Cuenta bancaria interna (flujo legacy). Opcional: hoy el pago se asigna a un beneficiario. */
+  bank_account_id: string | null
   amount: number
   payment_method: 'deposit' | 'transfer' | 'check' | 'cash'
+  /** Nombre del beneficiario (contratista o proveedor). */
   beneficiary: string | null
+  beneficiary_type: 'contractor' | 'supplier' | null
+  beneficiary_id: string | null
+  /** Snapshot de los datos bancarios del beneficiario al momento del pago. */
+  bank_name: string | null
+  bank_account: string | null
   check_number: string | null
   status: 'pending' | 'completed' | 'cancelled'
   instructions: string | null
   completed_at: string | null
-  bank_account?: BankAccount
 }
 
 export interface Transaction {
@@ -310,23 +336,68 @@ export interface Database {
     Tables: {
       companies: { Row: Company; Insert: Omit<Company, 'id' | 'created_at' | 'updated_at'>; Update: Partial<Company> }
       projects: { Row: Project; Insert: Omit<Project, 'id' | 'created_at' | 'updated_at'>; Update: Partial<Project> }
-      contractors: { Row: Contractor; Insert: Omit<Contractor, 'id' | 'created_at' | 'updated_at'>; Update: Partial<Contractor> }
-      suppliers: { Row: Supplier; Insert: Omit<Supplier, 'id' | 'created_at' | 'updated_at'>; Update: Partial<Supplier> }
+      contractors: {
+        Row: Contractor
+        Insert: Omit<Contractor, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Contractor>
+      }
+      suppliers: {
+        Row: Supplier
+        Insert: Omit<Supplier, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Supplier>
+      }
       bank_accounts: { Row: BankAccount; Insert: Omit<BankAccount, 'id'>; Update: Partial<BankAccount> }
       budget_categories: { Row: BudgetCategory; Insert: Omit<BudgetCategory, 'id'>; Update: Partial<BudgetCategory> }
       budget_items: { Row: BudgetItem; Insert: Omit<BudgetItem, 'id'>; Update: Partial<BudgetItem> }
       price_list_items: { Row: PriceListItem; Insert: Omit<PriceListItem, 'id'>; Update: Partial<PriceListItem> }
-      payroll_periods: { Row: PayrollPeriod; Insert: Omit<PayrollPeriod, 'id' | 'created_at'>; Update: Partial<PayrollPeriod> }
-      labor_line_items: { Row: LaborLineItem; Insert: Omit<LaborLineItem, 'id' | 'subtotal'>; Update: Partial<LaborLineItem> }
-      material_invoices: { Row: MaterialInvoice; Insert: Omit<MaterialInvoice, 'id'>; Update: Partial<MaterialInvoice> }
+      payroll_periods: {
+        Row: PayrollPeriod
+        Insert: Omit<PayrollPeriod, 'id' | 'created_at'>
+        Update: Partial<PayrollPeriod>
+      }
+      labor_line_items: {
+        Row: LaborLineItem
+        Insert: Omit<LaborLineItem, 'id' | 'subtotal' | 'created_by' | 'creator_name'>
+        Update: Partial<LaborLineItem>
+      }
+      material_invoices: {
+        Row: MaterialInvoice
+        Insert: Omit<MaterialInvoice, 'id' | 'created_by' | 'creator_name'>
+        Update: Partial<MaterialInvoice>
+      }
+      material_invoice_items: {
+        Row: MaterialInvoiceItem
+        Insert: Omit<MaterialInvoiceItem, 'id' | 'created_at'>
+        Update: Partial<MaterialInvoiceItem>
+      }
       indirect_costs: { Row: IndirectCost; Insert: Omit<IndirectCost, 'id'>; Update: Partial<IndirectCost> }
-      payment_distributions: { Row: PaymentDistribution; Insert: Omit<PaymentDistribution, 'id'>; Update: Partial<PaymentDistribution> }
+      payment_distributions: {
+        Row: PaymentDistribution
+        Insert: Omit<PaymentDistribution, 'id'>
+        Update: Partial<PaymentDistribution>
+      }
       transactions: { Row: Transaction; Insert: Omit<Transaction, 'id' | 'created_at'>; Update: Partial<Transaction> }
-      quality_control: { Row: QualityControl; Insert: Omit<QualityControl, 'id' | 'status'>; Update: Partial<QualityControl> }
-      adjustment_contracts: { Row: AdjustmentContract; Insert: Omit<AdjustmentContract, 'id' | 'created_at'>; Update: Partial<AdjustmentContract> }
+      quality_control: {
+        Row: QualityControl
+        Insert: Omit<QualityControl, 'id' | 'status'>
+        Update: Partial<QualityControl>
+      }
+      adjustment_contracts: {
+        Row: AdjustmentContract
+        Insert: Omit<AdjustmentContract, 'id' | 'created_at'>
+        Update: Partial<AdjustmentContract>
+      }
       contract_partidas: { Row: ContractPartida; Insert: Omit<ContractPartida, 'id'>; Update: Partial<ContractPartida> }
-      contract_cortes: { Row: ContractCorte; Insert: Omit<ContractCorte, 'id' | 'created_at'>; Update: Partial<ContractCorte> }
-      contract_adelantos: { Row: ContractAdelanto; Insert: Omit<ContractAdelanto, 'id' | 'created_at'>; Update: Partial<ContractAdelanto> }
+      contract_cortes: {
+        Row: ContractCorte
+        Insert: Omit<ContractCorte, 'id' | 'created_at'>
+        Update: Partial<ContractCorte>
+      }
+      contract_adelantos: {
+        Row: ContractAdelanto
+        Insert: Omit<ContractAdelanto, 'id' | 'created_at'>
+        Update: Partial<ContractAdelanto>
+      }
     }
   }
 }

@@ -1,10 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import {
-  calcLaborTotal,
-  calcMaterialsTotal,
-  calcIndirectCosts,
-  calcGrandTotal,
-} from '@/utils/calculations'
+import { calcLaborTotal, calcMaterialsTotal, calcIndirectCosts, calcGrandTotal } from '@/utils/calculations'
 import type { LaborLineItem, MaterialInvoice, Project } from '@/types/database'
 
 // Helpers de fabricación de payload para mantener los casos legibles.
@@ -24,6 +19,7 @@ function makeLabor(overrides: Partial<LaborLineItem> = {}): LaborLineItem {
     notes: null,
     budget_category_id: null,
     budget_item_id: null,
+    created_by: null,
     ...overrides,
   }
 }
@@ -40,6 +36,7 @@ function makeInvoice(overrides: Partial<MaterialInvoice> = {}): MaterialInvoice 
     budget_item_id: null,
     attachment_path: null,
     notes: null,
+    created_by: null,
     ...overrides,
   }
 }
@@ -94,10 +91,7 @@ describe('payrollService calculations', () => {
     })
 
     it('calcLaborTotal evita el error clásico de float (0.1 + 0.2)', () => {
-      const items = [
-        makeLabor({ quantity: 1, unit_price: 0.1 }),
-        makeLabor({ quantity: 1, unit_price: 0.2 }),
-      ]
+      const items = [makeLabor({ quantity: 1, unit_price: 0.1 }), makeLabor({ quantity: 1, unit_price: 0.2 })]
       expect(calcLaborTotal(items)).toBe(0.3)
     })
 
@@ -116,8 +110,8 @@ describe('payrollService calculations', () => {
   describe('deducciones negativas', () => {
     it('calcLaborTotal resta cuando quantity es negativa (deducción de adelanto)', () => {
       const items = [
-        makeLabor({ quantity: 10, unit_price: 500 }),         // +5000
-        makeLabor({ quantity: 5, unit_price: 200 }),          // +1000
+        makeLabor({ quantity: 10, unit_price: 500 }), // +5000
+        makeLabor({ quantity: 5, unit_price: 200 }), // +1000
         makeLabor({ quantity: -2, unit_price: 500, is_advance_deduction: true }), // -1000
       ]
       // 5000 + 1000 - 1000 = 5000
@@ -147,8 +141,8 @@ describe('payrollService calculations', () => {
       const result = calcIndirectCosts(80000, 20000, baseProject)
       expect(result.base).toBe(100000)
       expect(result.direction_technique.amount).toBe(10000) // 10% de 100000
-      expect(result.administration.amount).toBe(1000)       // 1% de 100000
-      expect(result.transport.amount).toBe(500)             // 0.5% de 100000
+      expect(result.administration.amount).toBe(1000) // 1% de 100000
+      expect(result.transport.amount).toBe(500) // 0.5% de 100000
     })
 
     it('custom indirect tipo percent se calcula sobre la misma base', () => {
@@ -157,9 +151,7 @@ describe('payrollService calculations', () => {
         dt_percent: 0,
         admin_percent: 0,
         transport_percent: 0,
-        custom_indirects: [
-          { id: 'sup', name: 'Supervisión', type: 'percent', value: 3 },
-        ],
+        custom_indirects: [{ id: 'sup', name: 'Supervisión', type: 'percent', value: 3 }],
       })
       expect(result.base).toBe(100000)
       expect(result.customs).toHaveLength(1)
@@ -212,8 +204,8 @@ describe('payrollService calculations', () => {
         ...baseProject,
         planning_fee: 5000,
         custom_indirects: [
-          { id: 'a', name: 'Supervisión', type: 'percent', value: 2 },     // 2000
-          { id: 'b', name: 'Seguridad',  type: 'fixed',   value: 3000 },   // 3000
+          { id: 'a', name: 'Supervisión', type: 'percent', value: 2 }, // 2000
+          { id: 'b', name: 'Seguridad', type: 'fixed', value: 3000 }, // 3000
         ],
       })
       // dt 10000 + admin 1000 + transport 500 + planning 5000 + sup 2000 + seg 3000 = 21500
@@ -229,16 +221,13 @@ describe('payrollService calculations', () => {
 
     it('simula el cálculo encadenado de recalculateTotals', () => {
       const laborItems = [
-        makeLabor({ quantity: 5, unit_price: 12000 }),                   // 60000
+        makeLabor({ quantity: 5, unit_price: 12000 }), // 60000
         makeLabor({ quantity: -1, unit_price: 5000, is_advance_deduction: true }), // -5000
       ]
-      const invoices = [
-        makeInvoice({ amount: 15000 }),
-        makeInvoice({ amount: 5000 }),
-      ]
+      const invoices = [makeInvoice({ amount: 15000 }), makeInvoice({ amount: 5000 })]
 
-      const laborTotal = calcLaborTotal(laborItems)             // 55000
-      const materialsTotal = calcMaterialsTotal(invoices)       // 20000
+      const laborTotal = calcLaborTotal(laborItems) // 55000
+      const materialsTotal = calcMaterialsTotal(invoices) // 20000
       const indirect = calcIndirectCosts(laborTotal, materialsTotal, {
         ...baseProject,
         planning_fee: 1000,
@@ -261,10 +250,7 @@ describe('payrollService calculations', () => {
   // === 7. Redondeo a 2 decimales consistente ===
   describe('redondeo a 2 decimales', () => {
     it('calcLaborTotal redondea a 2 decimales', () => {
-      const items = [
-        makeLabor({ quantity: 1, unit_price: 33.333 }),
-        makeLabor({ quantity: 1, unit_price: 66.666 }),
-      ]
+      const items = [makeLabor({ quantity: 1, unit_price: 33.333 }), makeLabor({ quantity: 1, unit_price: 66.666 })]
       // 33.333 + 66.666 = 99.999 → 100.00
       const result = calcLaborTotal(items)
       expect(result).toBe(100)
@@ -273,10 +259,7 @@ describe('payrollService calculations', () => {
     })
 
     it('calcMaterialsTotal redondea a 2 decimales', () => {
-      const invoices = [
-        makeInvoice({ amount: 10.005 }),
-        makeInvoice({ amount: 20.004 }),
-      ]
+      const invoices = [makeInvoice({ amount: 10.005 }), makeInvoice({ amount: 20.004 })]
       // 10.005 + 20.004 = 30.009 → 30.01 (half-even)
       const result = calcMaterialsTotal(invoices)
       expect(Number.isInteger(result * 100)).toBe(true)

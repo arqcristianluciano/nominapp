@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { requisitionService } from '@/services/requisitionService'
 import { quoteService } from '@/services/quoteService'
 import { supplierService } from '@/services/supplierService'
+import { inventoryService } from '@/services/inventoryService'
 import type { Supplier } from '@/types/database'
 import type { PurchaseRequisition } from '@/types/purchaseOrder'
 
@@ -25,17 +26,28 @@ export function usePurchaseOrderDetail() {
   const [deleteQuoteId, setDeleteQuoteId] = useState<string | null>(null)
   const [confirmDeleteReq, setConfirmDeleteReq] = useState(false)
   const [excessModal, setExcessModal] = useState(false)
+  const [confirmReceive, setConfirmReceive] = useState(false)
+  const [receivingOrder, setReceivingOrder] = useState(false)
+  const [confirmReverse, setConfirmReverse] = useState(false)
+  const [reversingOrder, setReversingOrder] = useState(false)
+  const [conduces, setConduces] = useState<string[]>([])
 
   const load = useCallback(async () => {
     if (!orderId) return
     setLoading(true)
     try {
-      const [data, sups] = await Promise.all([
+      const [data, sups, movs] = await Promise.all([
         requisitionService.getById(orderId),
         supplierService.getAll(),
+        inventoryService.getMovementsByPurchaseOrder(orderId).catch(() => []),
       ])
       setReq(data)
       setSuppliers(sups)
+      setConduces(
+        Array.from(
+          new Set(movs.filter((m) => m.type === 'in' && m.attachment_path).map((m) => m.attachment_path as string)),
+        ),
+      )
     } finally {
       setLoading(false)
     }
@@ -102,14 +114,52 @@ export function usePurchaseOrderDetail() {
     await load()
   }
 
-  async function handlePlaceOrder(paymentType: 'credit' | 'cash') {
+  async function handlePlaceOrder(paymentType: 'credit' | 'cash', actor?: string) {
     if (!orderId) return
     setPlacingOrder(true)
     try {
-      await requisitionService.placeOrder(orderId, paymentType)
+      await requisitionService.placeOrder(orderId, paymentType, actor)
       await load()
     } finally {
       setPlacingOrder(false)
+    }
+  }
+
+  async function handleReceiveItems(
+    receipts: { quote_item_id: string; quantity: number; lot_number?: string | null; expiry_date?: string | null }[],
+    actor?: string,
+    conduceFile?: File | null,
+  ) {
+    if (!orderId) return
+    setReceivingOrder(true)
+    try {
+      // El conduce es opcional y best-effort: si la subida falla, la recepción
+      // continúa sin adjunto.
+      let attachmentPath: string | null = null
+      if (conduceFile && req) {
+        try {
+          attachmentPath = await inventoryService.uploadReceiptAttachment(conduceFile, req.project_id, orderId)
+        } catch (err) {
+          console.warn('[usePurchaseOrderDetail] subida de conduce falló (no-bloqueante)', err)
+        }
+      }
+      await requisitionService.receiveItems(orderId, actor ?? 'Almacenista', receipts, attachmentPath)
+      setConfirmReceive(false)
+      await load()
+    } finally {
+      setReceivingOrder(false)
+    }
+  }
+
+  async function handleReverseReceipt(actor?: string) {
+    if (!orderId) return
+    setReversingOrder(true)
+    try {
+      await requisitionService.reverseReceipt(orderId, actor ?? 'Almacenista')
+      setConfirmReverse(false)
+      await load()
+    } finally {
+      setReversingOrder(false)
     }
   }
 
@@ -127,6 +177,7 @@ export function usePurchaseOrderDetail() {
   }
 
   const quotes = req?.quotes || []
+  const pendingReceiptLines = req ? requisitionService.getPendingReceiptLines(req) : []
   const canEdit = ['draft', 'quoting', 'needs_revision'].includes(req?.status ?? '')
   const canNegotiate = ['quoting', 'needs_revision', 'pending_approval'].includes(req?.status ?? '')
   const missingQuotes = Math.max(0, MIN_QUOTES - quotes.length)
@@ -144,7 +195,13 @@ export function usePurchaseOrderDetail() {
     deleteQuoteId,
     confirmDeleteReq,
     excessModal,
+    confirmReceive,
+    receivingOrder,
+    confirmReverse,
+    reversingOrder,
     quotes,
+    pendingReceiptLines,
+    conduces,
     canEdit,
     canNegotiate,
     missingQuotes,
@@ -154,6 +211,8 @@ export function usePurchaseOrderDetail() {
     setDeleteQuoteId,
     setConfirmDeleteReq,
     setExcessModal,
+    setConfirmReceive,
+    setConfirmReverse,
     handleAddQuote,
     handleNegotiate,
     handleDeleteQuote,
@@ -162,6 +221,8 @@ export function usePurchaseOrderDetail() {
     handleReject,
     handleSubmitForApproval,
     handlePlaceOrder,
+    handleReceiveItems,
+    handleReverseReceipt,
     handleValidateExcess,
     handleDelete,
   }

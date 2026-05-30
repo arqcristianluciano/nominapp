@@ -1,9 +1,17 @@
-import { ArrowLeft, CheckCircle, CreditCard, Printer, Send } from 'lucide-react'
+import { ArrowLeft, CheckCircle, CreditCard, Printer, RotateCcw, Send } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Modal } from '@/components/ui/Modal'
 import { AddLaborItemForm } from '@/components/features/payroll/AddLaborItemForm'
 import { AddMaterialForm } from '@/components/features/payroll/AddMaterialForm'
-import type { BudgetCategory, Contractor, PayrollPeriod, PriceListItem, Supplier } from '@/types/database'
+import type {
+  BudgetCategory,
+  Contractor,
+  LaborLineItem,
+  MaterialInvoice,
+  PayrollPeriod,
+  PriceListItem,
+  Supplier,
+} from '@/types/database'
 
 const NEXT_STATUS: Record<string, { label: string; status: 'submitted' | 'approved' | 'paid'; icon: typeof Send }> = {
   draft: { label: 'Enviar para aprobación', status: 'submitted', icon: Send },
@@ -27,11 +35,15 @@ export function PayrollEditorHeader({
   period,
   saving,
   canApprove = true,
+  canReturnToDraft = false,
+  onReturnToDraft,
   onUpdateStatus,
 }: {
   period: PayrollPeriod
   saving: boolean
   canApprove?: boolean
+  canReturnToDraft?: boolean
+  onReturnToDraft?: () => void
   onUpdateStatus: (status: 'submitted' | 'approved' | 'paid') => Promise<void>
 }) {
   const project = period.project
@@ -84,6 +96,18 @@ export function PayrollEditorHeader({
           >
             <Printer className="w-4 h-4" /> <span className="hidden sm:inline">Imprimir</span>
           </Link>
+          {/* Devolver a borrador: solo mayor jerarquía y solo desde enviado/aprobado.
+              Duplicado en la barra móvil. */}
+          {canReturnToDraft && onReturnToDraft && (
+            <button
+              onClick={onReturnToDraft}
+              disabled={saving}
+              aria-label="Devolver a borrador"
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-sm text-app-muted border border-app-border rounded-lg hover:bg-app-hover disabled:opacity-50 min-h-[44px] sm:min-h-0"
+            >
+              <RotateCcw className="w-4 h-4" /> Devolver a borrador
+            </button>
+          )}
           {/* Next-status button is duplicated in the mobile sticky action bar to keep the header compact on small screens. */}
           {showNextButton && (
             <button
@@ -108,37 +132,79 @@ export function PayrollEditorMobileActionBar({
   period,
   saving,
   canApprove = true,
+  canReturnToDraft = false,
+  onReturnToDraft,
   onUpdateStatus,
 }: {
   period: PayrollPeriod
   saving: boolean
   canApprove?: boolean
+  canReturnToDraft?: boolean
+  onReturnToDraft?: () => void
   onUpdateStatus: (status: 'submitted' | 'approved' | 'paid') => Promise<void>
 }) {
   const next = NEXT_STATUS[period.status]
   const requiresDirector = next?.status === 'approved' || next?.status === 'paid'
   const showNextButton = next && (canApprove || !requiresDirector)
-  if (!showNextButton) return null
+  const showReturn = canReturnToDraft && !!onReturnToDraft
+  if (!showNextButton && !showReturn) return null
   return (
     <div
-      className="sm:hidden sticky bottom-0 -mx-4 px-4 py-3 bg-app-surface/95 backdrop-blur supports-[backdrop-filter]:bg-app-surface/80 border-t border-app-border z-20"
+      className="sm:hidden sticky bottom-0 -mx-4 px-4 py-3 bg-app-surface/95 backdrop-blur supports-[backdrop-filter]:bg-app-surface/80 border-t border-app-border z-20 flex flex-col gap-2"
       style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}
     >
-      <button
-        onClick={() => onUpdateStatus(next.status)}
-        disabled={saving}
-        className="w-full flex items-center justify-center gap-1.5 px-4 py-3 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 min-h-[44px]"
-      >
-        <next.icon className="w-4 h-4" />
-        {next.label}
-      </button>
+      {showReturn && (
+        <button
+          onClick={onReturnToDraft}
+          disabled={saving}
+          aria-label="Devolver a borrador"
+          className="w-full flex items-center justify-center gap-1.5 px-4 py-3 text-app-muted border border-app-border rounded-lg hover:bg-app-hover disabled:opacity-50 min-h-[44px]"
+        >
+          <RotateCcw className="w-4 h-4" /> Devolver a borrador
+        </button>
+      )}
+      {showNextButton && (
+        <button
+          onClick={() => onUpdateStatus(next.status)}
+          disabled={saving}
+          className="w-full flex items-center justify-center gap-1.5 px-4 py-3 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 min-h-[44px]"
+        >
+          <next.icon className="w-4 h-4" />
+          {next.label}
+        </button>
+      )}
     </div>
   )
+}
+
+type MaterialFormPayload = {
+  supplier_id: string
+  invoice_reference?: string
+  attachment_path?: string | null
+  budget_category_id?: string | null
+  budget_item_id?: string | null
+  items: { description: string; amount: number }[]
+}
+
+type LaborFormPayload = {
+  contractor_id: string
+  description: string
+  quantity: number
+  unit: string
+  unit_price: number
+  is_advance: boolean
+  is_advance_deduction: boolean
+  budget_category_id?: string | null
+  budget_item_id?: string | null
 }
 
 export function PayrollEditorModals({
   showAddMaterial,
   showAddLabor,
+  editLaborItem,
+  editMaterialInvoice,
+  periodId,
+  projectId,
   suppliers,
   contractors,
   laborTasks,
@@ -146,13 +212,21 @@ export function PayrollEditorModals({
   saving,
   onCloseAddMaterial,
   onCloseAddLabor,
+  onCloseEditLabor,
+  onCloseEditMaterial,
   onAddMaterial,
   onAddLabor,
+  onUpdateLabor,
+  onUpdateMaterial,
   onContractorCreated,
   onSupplierCreated,
 }: {
   showAddMaterial: boolean
   showAddLabor: boolean
+  editLaborItem: LaborLineItem | null
+  editMaterialInvoice: MaterialInvoice | null
+  periodId: string
+  projectId: string
   suppliers: Supplier[]
   contractors: Contractor[]
   laborTasks: PriceListItem[]
@@ -160,22 +234,12 @@ export function PayrollEditorModals({
   saving: boolean
   onCloseAddMaterial: () => void
   onCloseAddLabor: () => void
-  onAddMaterial: (inv: {
-    supplier_id: string
-    description: string
-    invoice_reference?: string
-    amount: number
-  }) => Promise<void>
-  onAddLabor: (item: {
-    contractor_id: string
-    description: string
-    quantity: number
-    unit: string
-    unit_price: number
-    is_advance: boolean
-    is_advance_deduction: boolean
-    budget_category_id?: string | null
-  }) => Promise<void>
+  onCloseEditLabor: () => void
+  onCloseEditMaterial: () => void
+  onAddMaterial: (inv: MaterialFormPayload) => Promise<void>
+  onAddLabor: (item: LaborFormPayload) => Promise<void>
+  onUpdateLabor: (item: LaborFormPayload) => Promise<void>
+  onUpdateMaterial: (inv: MaterialFormPayload) => Promise<void>
   onContractorCreated: (contractor: Contractor) => void
   onSupplierCreated: (supplier: Supplier) => void
 }) {
@@ -184,6 +248,9 @@ export function PayrollEditorModals({
       <Modal open={showAddMaterial} onClose={onCloseAddMaterial} title="Agregar factura de materiales">
         <AddMaterialForm
           suppliers={suppliers}
+          budgetCategories={budgetCategories}
+          periodId={periodId}
+          projectId={projectId}
           onSubmit={onAddMaterial}
           onCancel={onCloseAddMaterial}
           saving={saving}
@@ -200,6 +267,39 @@ export function PayrollEditorModals({
           saving={saving}
           onContractorCreated={onContractorCreated}
         />
+      </Modal>
+      <Modal open={!!editMaterialInvoice} onClose={onCloseEditMaterial} title="Editar factura de materiales">
+        {editMaterialInvoice && (
+          <AddMaterialForm
+            key={editMaterialInvoice.id}
+            suppliers={suppliers}
+            budgetCategories={budgetCategories}
+            periodId={periodId}
+            projectId={projectId}
+            onSubmit={onUpdateMaterial}
+            onCancel={onCloseEditMaterial}
+            saving={saving}
+            initialInvoice={editMaterialInvoice}
+            submitLabel="Guardar cambios"
+            onSupplierCreated={onSupplierCreated}
+          />
+        )}
+      </Modal>
+      <Modal open={!!editLaborItem} onClose={onCloseEditLabor} title="Editar partida de mano de obra">
+        {editLaborItem && (
+          <AddLaborItemForm
+            key={editLaborItem.id}
+            contractors={contractors}
+            laborTasks={laborTasks}
+            budgetCategories={budgetCategories}
+            onSubmit={onUpdateLabor}
+            onCancel={onCloseEditLabor}
+            saving={saving}
+            onContractorCreated={onContractorCreated}
+            initialItem={editLaborItem}
+            submitLabel="Guardar cambios"
+          />
+        )}
       </Modal>
     </>
   )

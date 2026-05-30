@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { UserPlus, X, AlertTriangle } from 'lucide-react'
-import type { BudgetCategory, Contractor, PriceListItem } from '@/types/database'
+import type { BudgetCategory, BudgetItem, Contractor, LaborLineItem, PriceListItem } from '@/types/database'
 import { MEASURE_UNITS } from '@/constants/measureUnits'
 import { contractorService } from '@/services/contractorService'
+import { budgetItemService } from '@/services/budgetItemService'
 import { parseDecimalInput } from '@/utils/decimalInput'
 import { mul, round2 } from '@/utils/money'
 
@@ -21,28 +22,66 @@ interface Props {
     is_advance: boolean
     is_advance_deduction: boolean
     budget_category_id?: string | null
+    budget_item_id?: string | null
   }) => Promise<void>
   onCancel: () => void
   saving: boolean
   onContractorCreated?: (contractor: Contractor) => void
+  /** Si se pasa, el formulario opera en modo edición (campos pre-cargados). */
+  initialItem?: LaborLineItem
+  /** Texto del botón de envío (por defecto "Agregar partida"). */
+  submitLabel?: string
 }
 
-export function AddLaborItemForm({ contractors, laborTasks, budgetCategories = [], onSubmit, onCancel, saving, onContractorCreated }: Props) {
-  const [contractorId, setContractorId] = useState('')
+export function AddLaborItemForm({
+  contractors,
+  laborTasks,
+  budgetCategories = [],
+  onSubmit,
+  onCancel,
+  saving,
+  onContractorCreated,
+  initialItem,
+  submitLabel,
+}: Props) {
+  const isEdit = !!initialItem
+  const [contractorId, setContractorId] = useState(initialItem?.contractor_id ?? '')
   const [selectedTaskId, setSelectedTaskId] = useState('')
-  const [quantity, setQuantity] = useState('')
-  const [unit, setUnit] = useState('M2')
-  const [unitPrice, setUnitPrice] = useState('')
-  const [budgetCategoryId, setBudgetCategoryId] = useState('')
-  const [isAdvance, setIsAdvance] = useState(false)
-  const [isDeduction, setIsDeduction] = useState(false)
+  // En edición la descripción se conserva del ítem (puede no existir como tarea
+  // en la lista de precios); seleccionar una tarea la sobreescribe.
+  const [description, setDescription] = useState(initialItem?.description ?? '')
+  const [quantity, setQuantity] = useState(initialItem ? String(Math.abs(initialItem.quantity)) : '')
+  const [unit, setUnit] = useState(initialItem?.unit ?? 'M2')
+  const [unitPrice, setUnitPrice] = useState(initialItem ? String(initialItem.unit_price) : '')
+  const [budgetCategoryId, setBudgetCategoryId] = useState(initialItem?.budget_category_id ?? '')
+  const [budgetItemId, setBudgetItemId] = useState(initialItem?.budget_item_id ?? '')
+  const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([])
+  const [isAdvance, setIsAdvance] = useState(initialItem?.is_advance ?? false)
+  const [isDeduction, setIsDeduction] = useState(initialItem?.is_advance_deduction ?? false)
+
+  // Cargar las partidas del capítulo seleccionado para imputar la mano de
+  // obra a una partida concreta del presupuesto.
+  useEffect(() => {
+    let cancelled = false
+    const promise = budgetCategoryId
+      ? budgetItemService.getByCategoryId(budgetCategoryId)
+      : Promise.resolve([] as BudgetItem[])
+    promise
+      .then((data) => {
+        if (!cancelled) setBudgetItems(data)
+      })
+      .catch(() => {
+        if (!cancelled) setBudgetItems([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [budgetCategoryId])
 
   const [showNewForm, setShowNewForm] = useState(false)
   const [newName, setNewName] = useState('')
   const [newSpecialty, setNewSpecialty] = useState('')
   const [savingNew, setSavingNew] = useState(false)
-
-  const selectedTask = laborTasks.find(t => t.id === selectedTaskId)
 
   function handleSelectChange(value: string) {
     if (value === NEW_CONTRACTOR_VALUE) {
@@ -56,10 +95,11 @@ export function AddLaborItemForm({ contractors, laborTasks, budgetCategories = [
 
   function handleTaskSelect(taskId: string) {
     setSelectedTaskId(taskId)
-    const task = laborTasks.find(t => t.id === taskId)
+    const task = laborTasks.find((t) => t.id === taskId)
     if (task) {
       setUnit(task.unit)
       setUnitPrice(String(task.unit_price))
+      setDescription(task.description.toUpperCase())
     }
   }
 
@@ -90,31 +130,37 @@ export function AddLaborItemForm({ contractors, laborTasks, budgetCategories = [
     setNewSpecialty('')
   }
 
-  const subtotal = round2(
-    mul(parseDecimalInput(quantity) ?? 0, parseDecimalInput(unitPrice) ?? 0),
-  )
+  const subtotal = round2(mul(parseDecimalInput(quantity) ?? 0, parseDecimalInput(unitPrice) ?? 0))
+
+  // En alta se exige elegir una tarea de la lista; en edición basta con tener
+  // una descripción (la tarea es opcional, solo para rellenar precio/unidad).
+  const missingRequired =
+    showNewForm || !contractorId || !quantity || !unitPrice || (isEdit ? !description.trim() : !selectedTaskId)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (saving) return
-    if (showNewForm || !contractorId || !selectedTask || !quantity || !unitPrice) return
+    if (saving || missingRequired) return
     const qtyNum = parseDecimalInput(quantity)
     const priceNum = parseDecimalInput(unitPrice)
     if (qtyNum === null || priceNum === null) return
     await onSubmit({
       contractor_id: contractorId,
-      description: selectedTask.description.toUpperCase(),
+      description: description.trim().toUpperCase(),
       quantity: isDeduction ? -Math.abs(qtyNum) : qtyNum,
       unit,
       unit_price: priceNum,
       is_advance: isAdvance,
       is_advance_deduction: isDeduction,
       budget_category_id: budgetCategoryId || null,
+      budget_item_id: budgetItemId || null,
     })
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {isEdit && initialItem?.creator_name && (
+        <p className="text-xs text-app-subtle">Agregado por {initialItem.creator_name}</p>
+      )}
       <div>
         <label className="block text-xs font-medium text-app-muted mb-1">Contratista *</label>
         <select
@@ -124,9 +170,13 @@ export function AddLaborItemForm({ contractors, laborTasks, budgetCategories = [
           className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] sm:min-h-0"
         >
           <option value="">Seleccionar contratista...</option>
-          {contractors.filter(c => c.is_active).map(c => (
-            <option key={c.id} value={c.id}>{c.name} — {c.specialty}</option>
-          ))}
+          {contractors
+            .filter((c) => c.is_active)
+            .map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name} — {c.specialty}
+              </option>
+            ))}
           <option value={NEW_CONTRACTOR_VALUE}>＋ Crear nuevo contratista</option>
         </select>
 
@@ -168,31 +218,49 @@ export function AddLaborItemForm({ contractors, laborTasks, budgetCategories = [
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-app-muted mb-1">Tarea / Descripción *</label>
+        <label className="block text-xs font-medium text-app-muted mb-1">
+          {isEdit ? 'Tarea (opcional — rellena desde la lista de precios)' : 'Tarea / Descripción *'}
+        </label>
         {laborTasks.length === 0 ? (
-          <div className="flex items-start gap-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-xs text-amber-700 dark:text-amber-400">
-            <AlertTriangle size={14} className="mt-0.5 shrink-0" />
-            <span>
-              No hay tareas de mano de obra en la lista de precios de este proyecto.
-              Agrégalas desde <strong>Presupuesto → Lista de precios</strong>.
-            </span>
-          </div>
+          !isEdit && (
+            <div className="flex items-start gap-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-xs text-amber-700 dark:text-amber-400">
+              <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+              <span>
+                No hay tareas de mano de obra en la lista de precios de este proyecto. Agrégalas desde{' '}
+                <strong>Presupuesto → Lista de precios</strong>.
+              </span>
+            </div>
+          )
         ) : (
           <select
             value={selectedTaskId}
             onChange={(e) => handleTaskSelect(e.target.value)}
-            required
+            required={!isEdit}
             className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] sm:min-h-0"
           >
-            <option value="">Seleccionar tarea...</option>
-            {laborTasks.map(t => (
+            <option value="">{isEdit ? 'Mantener descripción actual…' : 'Seleccionar tarea...'}</option>
+            {laborTasks.map((t) => (
               <option key={t.id} value={t.id}>
-                {t.code ? `[${t.code}] ` : ''}{t.description}
+                {t.code ? `[${t.code}] ` : ''}
+                {t.description}
               </option>
             ))}
           </select>
         )}
       </div>
+
+      {isEdit && (
+        <div>
+          <label className="block text-xs font-medium text-app-muted mb-1">Descripción *</label>
+          <input
+            type="text"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            required
+            className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] sm:min-h-0"
+          />
+        </div>
+      )}
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         <div>
@@ -213,8 +281,10 @@ export function AddLaborItemForm({ contractors, laborTasks, budgetCategories = [
             onChange={(e) => setUnit(e.target.value)}
             className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] sm:min-h-0"
           >
-            {MEASURE_UNITS.map(u => (
-              <option key={u.value} value={u.value}>{u.label}</option>
+            {MEASURE_UNITS.map((u) => (
+              <option key={u.value} value={u.value}>
+                {u.label}
+              </option>
             ))}
           </select>
         </div>
@@ -232,30 +302,68 @@ export function AddLaborItemForm({ contractors, laborTasks, budgetCategories = [
       </div>
 
       {budgetCategories.length > 0 && (
-        <div>
-          <label className="block text-xs font-medium text-app-muted mb-1">Capítulo imputado (opcional)</label>
-          <select
-            value={budgetCategoryId}
-            onChange={(e) => setBudgetCategoryId(e.target.value)}
-            className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] sm:min-h-0"
-          >
-            <option value="">— Sin imputación específica —</option>
-            {budgetCategories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.code} {c.name}
-              </option>
-            ))}
-          </select>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-app-muted mb-1">Capítulo imputado (opcional)</label>
+            <select
+              value={budgetCategoryId}
+              onChange={(e) => {
+                setBudgetCategoryId(e.target.value)
+                setBudgetItemId('')
+              }}
+              className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] sm:min-h-0"
+            >
+              <option value="">— Sin imputación específica —</option>
+              {budgetCategories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.code} {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-app-muted mb-1">Partida (opcional)</label>
+            <select
+              value={budgetItemId}
+              onChange={(e) => setBudgetItemId(e.target.value)}
+              disabled={!budgetCategoryId}
+              className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] sm:min-h-0 disabled:opacity-50"
+            >
+              <option value="">— Sin partida específica —</option>
+              {budgetItems.map((it) => (
+                <option key={it.id} value={it.id}>
+                  {it.code ? `[${it.code}] ` : ''}
+                  {it.description}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       )}
 
       <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
         <label className="flex items-center gap-2 text-sm min-h-[44px] sm:min-h-0 cursor-pointer">
-          <input type="checkbox" checked={isAdvance} onChange={() => { setIsAdvance(!isAdvance); setIsDeduction(false) }} className="w-4 h-4 rounded" />
+          <input
+            type="checkbox"
+            checked={isAdvance}
+            onChange={() => {
+              setIsAdvance(!isAdvance)
+              setIsDeduction(false)
+            }}
+            className="w-4 h-4 rounded"
+          />
           Avance a cuenta
         </label>
         <label className="flex items-center gap-2 text-sm min-h-[44px] sm:min-h-0 cursor-pointer">
-          <input type="checkbox" checked={isDeduction} onChange={() => { setIsDeduction(!isDeduction); setIsAdvance(false) }} className="w-4 h-4 rounded" />
+          <input
+            type="checkbox"
+            checked={isDeduction}
+            onChange={() => {
+              setIsDeduction(!isDeduction)
+              setIsAdvance(false)
+            }}
+            className="w-4 h-4 rounded"
+          />
           Deducción de avance anterior
         </label>
       </div>
@@ -270,16 +378,20 @@ export function AddLaborItemForm({ contractors, laborTasks, budgetCategories = [
       )}
 
       <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
-        <button type="button" onClick={onCancel} className="px-4 py-2 text-sm text-app-muted hover:text-app-text min-h-[44px] sm:min-h-0">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-4 py-2 text-sm text-app-muted hover:text-app-text min-h-[44px] sm:min-h-0"
+        >
           Cancelar
         </button>
         <button
           type="submit"
-          disabled={saving || showNewForm || !contractorId || !selectedTaskId || !quantity || !unitPrice}
+          disabled={saving || missingRequired}
           aria-busy={saving}
           className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] sm:min-h-0"
         >
-          {saving ? 'Guardando...' : 'Agregar partida'}
+          {saving ? 'Guardando...' : (submitLabel ?? 'Agregar partida')}
         </button>
       </div>
     </form>
