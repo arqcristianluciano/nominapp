@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ThemeToggle } from '@/components/layout/ThemeToggle'
 import { ENABLE_TEST_QUICK_LOGIN, TEST_USERS } from '@/constants/testUsers'
+import { isDemoMode } from '@/lib/supabase'
 
 export function LoginBrandPanel() {
   const { t } = useTranslation()
@@ -46,7 +47,9 @@ export function LoginQuickAccess({
   onQuickLogin: (username: string, password: string) => Promise<void>
 }) {
   const { t } = useTranslation()
-  if (!ENABLE_TEST_QUICK_LOGIN && import.meta.env.MODE === 'production') return null
+  // En producción real (build production y backend real), el acceso rápido solo
+  // aparece si está habilitado por env. En demo (mockSupabase) y dev sigue visible.
+  if (!ENABLE_TEST_QUICK_LOGIN && !isDemoMode && import.meta.env.MODE === 'production') return null
   return (
     <div className="rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/40 p-4 space-y-3">
       <div className="flex items-start gap-2">
