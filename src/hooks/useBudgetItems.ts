@@ -3,6 +3,7 @@ import { budgetItemService } from '@/services/budgetItemService'
 import { budgetCategoryService } from '@/services/budgetCategoryService'
 import { priceListService } from '@/services/priceListService'
 import { getErrorMessage } from '@/utils/errors'
+import { assignImportCodes } from '@/utils/budgetItemCode'
 import type { BudgetItem, BudgetCategory, PriceListItem } from '@/types/database'
 
 export interface BudgetPartida {
@@ -88,7 +89,7 @@ export function useBudgetItems(projectId: string | undefined) {
   }, [])
 
   const bulkImport = useCallback(
-    async (payload: BulkImportPayload) => {
+    async (payload: BulkImportPayload, existingCategories: BudgetCategory[] = []) => {
       if (!projectId) throw new Error('Proyecto no seleccionado')
 
       const createdCategories = payload.newCategories.length
@@ -106,6 +107,12 @@ export function useBudgetItems(projectId: string | undefined) {
         if (created) categoryByKey.set(draft.key, created)
       }
 
+      // Mapa categoría → datos para derivar el prefijo del código (partidas
+      // existentes + recién creadas en este import).
+      const categoryById = new Map<string, BudgetCategory>()
+      for (const cat of existingCategories) categoryById.set(cat.id, cat)
+      for (const cat of createdCategories) categoryById.set(cat.id, cat)
+
       const itemsToInsert: Omit<BudgetItem, 'id'>[] = []
       for (const item of payload.items) {
         let categoryId = item.budget_category_id
@@ -118,7 +125,11 @@ export function useBudgetItems(projectId: string | undefined) {
         itemsToInsert.push({ ...rest, budget_category_id: categoryId })
       }
 
-      const created = await budgetItemService.bulkCreate(itemsToInsert)
+      // Numerar consecutivamente las subpartidas que no traen código, continuando
+      // desde el mayor código existente de cada partida.
+      const coded = assignImportCodes(itemsToInsert, categoryById, itemsByCategory)
+
+      const created = await budgetItemService.bulkCreate(coded)
       setItemsByCategory((prev) => {
         const next = { ...prev }
         for (const cat of createdCategories) {
@@ -132,7 +143,7 @@ export function useBudgetItems(projectId: string | undefined) {
       })
       return { createdCategories, createdItems: created }
     },
-    [projectId],
+    [projectId, itemsByCategory],
   )
 
   const addPriceListItem = useCallback(async (item: Omit<PriceListItem, 'id'>) => {

@@ -24,8 +24,15 @@ interface FormState {
   budget_unit_price: number | null
 }
 
-const EMPTY_FORM: FormState = { description: '', unit: 'm²', unit_price: '', agreed_quantity: '', budget_unit_price: null }
-const inputCls = 'px-2 py-1.5 border border-app-border rounded-md text-xs bg-app-input-bg text-app-text focus:ring-1 focus:ring-blue-500'
+const EMPTY_FORM: FormState = {
+  description: '',
+  unit: 'm²',
+  unit_price: '',
+  agreed_quantity: '',
+  budget_unit_price: null,
+}
+const inputCls =
+  'px-2 py-1.5 border border-app-border rounded-md text-xs bg-app-input-bg text-app-text focus:ring-1 focus:ring-blue-500'
 
 interface PartidaDropdownProps {
   search: string
@@ -39,7 +46,17 @@ interface PartidaDropdownProps {
   dropdownRef: React.RefObject<HTMLDivElement | null>
 }
 
-function PartidaDropdown({ search, filteredList, priceList, priceListError, showDropdown, onSearchChange, onFocus, onSelect, dropdownRef }: PartidaDropdownProps) {
+function PartidaDropdown({
+  search,
+  filteredList,
+  priceList,
+  priceListError,
+  showDropdown,
+  onSearchChange,
+  onFocus,
+  onSelect,
+  dropdownRef,
+}: PartidaDropdownProps) {
   return (
     <div className="sm:col-span-4 relative" ref={dropdownRef}>
       <p className="text-[10px] text-app-muted mb-1">
@@ -77,12 +94,20 @@ function PartidaDropdown({ search, filteredList, priceList, priceListError, show
               type="button"
               role="option"
               aria-selected={false}
-              onMouseDown={(e) => { e.preventDefault(); onSelect(item) }}
-              onTouchEnd={(e) => { e.preventDefault(); onSelect(item) }}
+              onMouseDown={(e) => {
+                e.preventDefault()
+                onSelect(item)
+              }}
+              onTouchEnd={(e) => {
+                e.preventDefault()
+                onSelect(item)
+              }}
               className="w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 sm:gap-2 px-3 py-2.5 sm:py-1.5 text-sm sm:text-xs hover:bg-app-hover active:bg-app-hover text-left min-h-[44px] sm:min-h-0 touch-manipulation"
             >
               <span className="text-app-text font-medium truncate">{item.description}</span>
-              <span className="shrink-0 text-app-muted text-xs">{item.unit} · {formatRD(item.unit_price)}</span>
+              <span className="shrink-0 text-app-muted text-xs">
+                {item.unit} · {formatRD(item.unit_price)}
+              </span>
             </button>
           ))}
           {priceList.length === 0 && (
@@ -114,8 +139,22 @@ interface PartidaFormFieldsProps {
 }
 
 function PartidaFormFields({
-  form, saving, editing, priceDiff, search, filteredList, priceList, priceListError, showDropdown, dropdownRef,
-  onSearchChange, onFocus, onSelectPriceItem, onFormChange, onCancel, onSave,
+  form,
+  saving,
+  editing,
+  priceDiff,
+  search,
+  filteredList,
+  priceList,
+  priceListError,
+  showDropdown,
+  dropdownRef,
+  onSearchChange,
+  onFocus,
+  onSelectPriceItem,
+  onFormChange,
+  onCancel,
+  onSave,
 }: PartidaFormFieldsProps) {
   return (
     <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 space-y-2">
@@ -205,9 +244,12 @@ function PartidaFormFields({
       </div>
 
       {priceDiff !== null && Math.abs(priceDiff) > 0 && (
-        <div className={`flex items-center gap-1.5 text-[11px] px-2 py-1 rounded-md ${priceDiff > 0 ? 'bg-red-50 text-red-700 dark:bg-red-950/30' : 'bg-green-50 text-green-700 dark:bg-green-950/30'}`}>
+        <div
+          className={`flex items-center gap-1.5 text-[11px] px-2 py-1 rounded-md ${priceDiff > 0 ? 'bg-red-50 text-red-700 dark:bg-red-950/30' : 'bg-green-50 text-green-700 dark:bg-green-950/30'}`}
+        >
           <AlertCircle className="w-3 h-3 shrink-0" />
-          Precio acordado {priceDiff > 0 ? 'superior' : 'inferior'} al presupuesto en {formatRD(Math.abs(priceDiff))} por {form.unit || 'unidad'}.
+          Precio acordado {priceDiff > 0 ? 'superior' : 'inferior'} al presupuesto en {formatRD(Math.abs(priceDiff))}{' '}
+          por {form.unit || 'unidad'}.
         </div>
       )}
     </div>
@@ -236,7 +278,9 @@ function PartidasTable({ partidas, acumuladoForPartida, onEdit, onDelete }: Part
               <div className="flex items-start justify-between gap-2 mb-2">
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-app-text break-words">{p.description}</p>
-                  <p className="text-xs text-app-muted mt-0.5">{p.unit} · {formatRD(p.unit_price)}</p>
+                  <p className="text-xs text-app-muted mt-0.5">
+                    {p.unit} · {formatRD(p.unit_price)}
+                  </p>
                 </div>
                 <div className="flex gap-1 shrink-0">
                   <button
@@ -244,13 +288,17 @@ function PartidasTable({ partidas, acumuladoForPartida, onEdit, onDelete }: Part
                     aria-label="Editar partida"
                     title="Editar partida"
                     className="min-w-[44px] min-h-[44px] flex items-center justify-center text-app-subtle hover:text-blue-500 active:bg-app-hover rounded-md touch-manipulation"
-                  ><Pencil className="w-4 h-4" /></button>
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
                   <button
                     onClick={() => onDelete(p.id)}
                     aria-label="Eliminar partida"
                     title="Eliminar partida"
                     className="min-w-[44px] min-h-[44px] flex items-center justify-center text-app-subtle hover:text-red-500 active:bg-app-hover rounded-md touch-manipulation"
-                  ><Trash2 className="w-4 h-4" /></button>
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2 text-xs">
@@ -264,12 +312,17 @@ function PartidasTable({ partidas, acumuladoForPartida, onEdit, onDelete }: Part
                 </div>
                 <div className="col-span-2">
                   <p className="text-[10px] uppercase text-app-muted">Pendiente</p>
-                  <p className={`font-semibold ${pendiente >= 0 ? 'text-green-700' : 'text-red-600'}`}>{formatRD(pendiente)}</p>
+                  <p className={`font-semibold ${pendiente >= 0 ? 'text-green-700' : 'text-red-600'}`}>
+                    {formatRD(pendiente)}
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-2 mt-2">
                 <div className="flex-1 h-1.5 bg-app-chip rounded-full overflow-hidden">
-                  <div className={`h-full rounded-full ${pct > 90 ? 'bg-red-500' : pct > 60 ? 'bg-amber-500' : 'bg-green-500'}`} style={{ width: `${pct}%` }} />
+                  <div
+                    className={`h-full rounded-full ${pct > 90 ? 'bg-red-500' : pct > 60 ? 'bg-amber-500' : 'bg-green-500'}`}
+                    style={{ width: `${pct}%` }}
+                  />
                 </div>
                 <span className="text-[11px] text-app-muted w-10 text-right">{pct.toFixed(0)}%</span>
               </div>
@@ -306,11 +359,18 @@ function PartidasTable({ partidas, acumuladoForPartida, onEdit, onDelete }: Part
                   <td className="py-2.5 text-right text-app-muted">{formatRD(p.unit_price)}</td>
                   <td className="py-2.5 text-right text-app-text font-medium">{formatRD(acordado)}</td>
                   <td className="py-2.5 text-right text-blue-700">{formatRD(acumulado)}</td>
-                  <td className={`py-2.5 text-right font-semibold ${pendiente >= 0 ? 'text-green-700' : 'text-red-600'}`}>{formatRD(pendiente)}</td>
+                  <td
+                    className={`py-2.5 text-right font-semibold ${pendiente >= 0 ? 'text-green-700' : 'text-red-600'}`}
+                  >
+                    {formatRD(pendiente)}
+                  </td>
                   <td className="py-2.5 text-center">
                     <div className="flex items-center gap-1.5 justify-center">
                       <div className="w-10 h-1.5 bg-app-chip rounded-full overflow-hidden">
-                        <div className={`h-full rounded-full ${pct > 90 ? 'bg-red-500' : pct > 60 ? 'bg-amber-500' : 'bg-green-500'}`} style={{ width: `${pct}%` }} />
+                        <div
+                          className={`h-full rounded-full ${pct > 90 ? 'bg-red-500' : pct > 60 ? 'bg-amber-500' : 'bg-green-500'}`}
+                          style={{ width: `${pct}%` }}
+                        />
                       </div>
                       <span className="text-[10px] text-app-muted w-8">{pct.toFixed(0)}%</span>
                     </div>
@@ -322,13 +382,17 @@ function PartidasTable({ partidas, acumuladoForPartida, onEdit, onDelete }: Part
                         aria-label="Editar partida"
                         title="Editar partida"
                         className="p-1 text-app-subtle hover:text-blue-500"
-                      ><Pencil className="w-3 h-3" /></button>
+                      >
+                        <Pencil className="w-3 h-3" />
+                      </button>
                       <button
                         onClick={() => onDelete(p.id)}
                         aria-label="Eliminar partida"
                         title="Eliminar partida"
                         className="p-1 text-app-subtle hover:text-red-500"
-                      ><Trash2 className="w-3 h-3" /></button>
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -355,8 +419,12 @@ export function PartidaSection({ contractId, projectId, partidas, cortes, onRefr
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    priceListService.getByProject(projectId)
-      .then((items) => { setPriceList(items); setPriceListError(false) })
+    priceListService
+      .getByProject(projectId)
+      .then((items) => {
+        setPriceList(items)
+        setPriceListError(false)
+      })
       .catch((err) => {
         console.warn('[PartidaSection] price list load failed', err)
         setPriceListError(true)
@@ -377,13 +445,22 @@ export function PartidaSection({ contractId, projectId, partidas, cortes, onRefr
     }
   }, [])
 
-  const filteredList = priceList.filter((item) =>
-    item.description.toLowerCase().includes(search.toLowerCase()) ||
-    (item.code ?? '').toLowerCase().includes(search.toLowerCase())
-  ).slice(0, 8)
+  const filteredList = priceList
+    .filter(
+      (item) =>
+        item.description.toLowerCase().includes(search.toLowerCase()) ||
+        (item.code ?? '').toLowerCase().includes(search.toLowerCase()),
+    )
+    .slice(0, 8)
 
   function selectFromPriceList(item: PriceListItem) {
-    setForm((f) => ({ ...f, description: item.description, unit: item.unit, unit_price: String(item.unit_price), budget_unit_price: item.unit_price }))
+    setForm((f) => ({
+      ...f,
+      description: item.description,
+      unit: item.unit,
+      unit_price: String(item.unit_price),
+      budget_unit_price: item.unit_price,
+    }))
     setSearch(item.description)
     setShowDropdown(false)
   }
@@ -394,7 +471,13 @@ export function PartidaSection({ contractId, projectId, partidas, cortes, onRefr
 
   function startEdit(p: ContractPartida) {
     setEditing(p)
-    setForm({ description: p.description, unit: p.unit, unit_price: String(p.unit_price), agreed_quantity: String(p.agreed_quantity), budget_unit_price: null })
+    setForm({
+      description: p.description,
+      unit: p.unit,
+      unit_price: String(p.unit_price),
+      agreed_quantity: String(p.agreed_quantity),
+      budget_unit_price: null,
+    })
     setSearch(p.description)
     setShowAdd(false)
   }
@@ -423,7 +506,7 @@ export function PartidaSection({ contractId, projectId, partidas, cortes, onRefr
         unit: form.unit,
         unit_price: unitPrice,
         agreed_quantity: agreedQty,
-        sort_order: editing ? editing.sort_order : partidas.length + 1,
+        sort_order: editing ? editing.sort_order : partidas.reduce((max, p) => Math.max(max, p.sort_order), 0) + 1,
       }
       if (editing) {
         await partidaService.update(editing.id, data)
@@ -437,7 +520,9 @@ export function PartidaSection({ contractId, projectId, partidas, cortes, onRefr
       onRefresh()
     } catch (err) {
       console.warn('[PartidaSection] handleSave failed', err)
-    } finally { setSaving(false) }
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function handleDelete(id: string) {
@@ -447,16 +532,22 @@ export function PartidaSection({ contractId, projectId, partidas, cortes, onRefr
   }
 
   const parsedUnitPriceForDiff = form.unit_price ? parseDecimalInput(form.unit_price) : null
-  const priceDiff = form.budget_unit_price !== null && parsedUnitPriceForDiff !== null
-    ? parsedUnitPriceForDiff - form.budget_unit_price
-    : null
+  const priceDiff =
+    form.budget_unit_price !== null && parsedUnitPriceForDiff !== null
+      ? parsedUnitPriceForDiff - form.budget_unit_price
+      : null
 
   return (
     <div className="space-y-3">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-        <p className="text-xs text-app-muted">Las partidas y precios se toman del listado de precios del presupuesto.</p>
+        <p className="text-xs text-app-muted">
+          Las partidas y precios se toman del listado de precios del presupuesto.
+        </p>
         <button
-          onClick={() => { setShowAdd(true); setEditing(null) }}
+          onClick={() => {
+            setShowAdd(true)
+            setEditing(null)
+          }}
           className="flex items-center justify-center gap-1 px-3 py-2 sm:py-1.5 bg-blue-600 text-white text-sm sm:text-xs font-medium rounded-lg hover:bg-blue-700 min-h-[44px] sm:min-h-0 w-full sm:w-auto touch-manipulation"
         >
           <Plus className="w-4 h-4 sm:w-3.5 sm:h-3.5" /> Partida
@@ -475,7 +566,11 @@ export function PartidaSection({ contractId, projectId, partidas, cortes, onRefr
           priceListError={priceListError}
           showDropdown={showDropdown}
           dropdownRef={dropdownRef}
-          onSearchChange={(value) => { setSearch(value); setForm((f) => ({ ...f, description: value, budget_unit_price: null })); setShowDropdown(true) }}
+          onSearchChange={(value) => {
+            setSearch(value)
+            setForm((f) => ({ ...f, description: value, budget_unit_price: null }))
+            setShowDropdown(true)
+          }}
           onFocus={() => setShowDropdown(true)}
           onSelectPriceItem={selectFromPriceList}
           onFormChange={setForm}

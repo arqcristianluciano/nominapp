@@ -1495,8 +1495,12 @@ export type Database = {
       payment_distributions: {
         Row: {
           amount: number
-          bank_account_id: string
+          bank_account: string | null
+          bank_account_id: string | null
+          bank_name: string | null
           beneficiary: string | null
+          beneficiary_id: string | null
+          beneficiary_type: string | null
           check_number: string | null
           completed_at: string | null
           id: string
@@ -1507,8 +1511,12 @@ export type Database = {
         }
         Insert: {
           amount?: number
-          bank_account_id: string
+          bank_account?: string | null
+          bank_account_id?: string | null
+          bank_name?: string | null
           beneficiary?: string | null
+          beneficiary_id?: string | null
+          beneficiary_type?: string | null
           check_number?: string | null
           completed_at?: string | null
           id?: string
@@ -1519,8 +1527,12 @@ export type Database = {
         }
         Update: {
           amount?: number
-          bank_account_id?: string
+          bank_account?: string | null
+          bank_account_id?: string | null
+          bank_name?: string | null
           beneficiary?: string | null
+          beneficiary_id?: string | null
+          beneficiary_type?: string | null
           check_number?: string | null
           completed_at?: string | null
           id?: string

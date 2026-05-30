@@ -260,7 +260,12 @@ export function useBudgetDetailPage(projectId: string | undefined) {
   const { detectAfterImport } = cleanup
   const handleImport = useCallback(
     async (payload: BulkImportPayload) => {
-      await context.budgetItems.bulkImport(payload)
+      // Pasamos las partidas actuales para que las subpartidas importadas sin
+      // código reciban su código consecutivo (p. ej. 1.5) de la partida correcta.
+      await context.budgetItems.bulkImport(
+        payload,
+        context.budget.rows.map((r) => r.category),
+      )
       // Recargamos con datos frescos para evaluar qué partidas quedaron vacías
       // sin depender del estado asíncrono de React.
       const { categories, transactions } = await context.budget.load()

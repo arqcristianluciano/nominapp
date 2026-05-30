@@ -6,8 +6,10 @@ export type RequisitionStatus =
   | 'quoting'
   | 'pending_approval'
   | 'needs_revision'
+  | 'pendiente_liberacion'
   | 'approved'
   | 'ordered'
+  | 'partially_received'
   | 'received'
   | 'rejected'
 
@@ -51,6 +53,14 @@ export interface PurchaseRequisition {
   received_by: string | null
   project?: Project
   quotes?: PurchaseQuote[]
+  // Progreso de recepción (cantidad pedida vs recibida sumando las líneas de la
+  // cotización aprobada). Lo calcula requisitionService para listas/detalle.
+  receipt_progress?: ReceiptProgress
+}
+
+export interface ReceiptProgress {
+  ordered: number
+  received: number
 }
 
 export interface PurchaseQuote {
@@ -78,6 +88,8 @@ export interface PurchaseQuoteItem {
   unit: string
   unit_price: number
   subtotal: number
+  received_quantity?: number
+  material_catalog_id?: string | null
 }
 
 export const REQ_STATUS_LABEL: Record<RequisitionStatus, string> = {
@@ -86,8 +98,10 @@ export const REQ_STATUS_LABEL: Record<RequisitionStatus, string> = {
   quoting: 'En cotización',
   pending_approval: 'Pendiente aprobación',
   needs_revision: 'Requiere revisión',
+  pendiente_liberacion: 'Pendiente liberación',
   approved: 'Aprobada',
   ordered: 'Orden colocada',
+  partially_received: 'Recibida parcial',
   received: 'Recibida',
   rejected: 'Rechazada',
 }
@@ -98,8 +112,10 @@ export const REQ_STATUS_COLOR: Record<RequisitionStatus, string> = {
   quoting: 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300',
   pending_approval: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950/40 dark:text-yellow-300',
   needs_revision: 'bg-orange-100 text-orange-800 dark:bg-orange-950/40 dark:text-orange-300',
+  pendiente_liberacion: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-300',
   approved: 'bg-green-100 text-green-800 dark:bg-green-950/40 dark:text-green-300',
   ordered: 'bg-purple-100 text-purple-800 dark:bg-purple-950/40 dark:text-purple-300',
+  partially_received: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-950/40 dark:text-cyan-300',
   received: 'bg-teal-100 text-teal-800 dark:bg-teal-950/40 dark:text-teal-300',
   rejected: 'bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-300',
 }

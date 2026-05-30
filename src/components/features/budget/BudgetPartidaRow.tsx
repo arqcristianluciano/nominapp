@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ChevronDown, ChevronRight, Plus, Pencil, Trash2 } from 'lucide-react'
 import type { BudgetCategory, BudgetItem, PriceListItem } from '@/types/database'
 import { formatRD } from '@/utils/currency'
+import { budgetItemDisplayCode, nextBudgetItemCode } from '@/utils/budgetItemCode'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import BudgetItemForm from './BudgetItemForm'
 
@@ -154,7 +155,7 @@ export default function BudgetPartidaRow({
       {expanded &&
         items.map((item, idx) => {
           const itemTotal = item.quantity * item.unit_price
-          const displayCode = item.code || `${category.sort_order}.${idx + 1}`
+          const displayCode = budgetItemDisplayCode(category, item, idx)
           return (
             <tr key={item.id} className="border-b border-app-border bg-app-bg/50 hover:bg-blue-50/20">
               <td className="px-3 py-2" />
@@ -201,7 +202,7 @@ export default function BudgetPartidaRow({
           category={category}
           priceList={priceList}
           editItem={editItem}
-          defaultCode={`${category.sort_order}.${items.length + 1}`}
+          defaultCode={nextBudgetItemCode(category, items)}
           onSave={handleSave}
           onClose={() => {
             setShowForm(false)
