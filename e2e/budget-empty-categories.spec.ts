@@ -25,15 +25,20 @@ test.describe('Limpieza de partidas vacías', () => {
     await page.locator('a[href^="/proyectos/"][href$="/presupuesto"]').first().click()
     await expect(page).toHaveURL(/\/proyectos\/[^/]+\/presupuesto$/)
 
-    // Aviso automático al abrir la página: 23 partidas vacías.
+    // Un proyecto nuevo trae 23 partidas predeterminadas vacías: la cabecera
+    // ofrece limpiarlas (sin abrir el modal de golpe).
+    const cleanBtn = page.getByRole('button', { name: /Limpiar partidas vacías \(23\)/ })
+    await expect(cleanBtn).toBeVisible()
+
+    // Abrir el diálogo desde el botón.
     const dialog = page.getByRole('dialog', { name: 'Eliminar partidas vacías' })
+    await cleanBtn.click()
     await expect(dialog).toBeVisible()
     await expect(dialog.getByText('23 partidas vacías')).toBeVisible()
 
     // Conservar: el modal se cierra y queda el botón en la cabecera.
     await dialog.getByRole('button', { name: 'Conservar' }).click()
     await expect(dialog).toBeHidden()
-    const cleanBtn = page.getByRole('button', { name: /Limpiar partidas vacías \(23\)/ })
     await expect(cleanBtn).toBeVisible()
 
     // Reabrir desde la cabecera y comprobar la selección con checkboxes.

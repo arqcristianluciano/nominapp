@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useProjectStore } from '@/stores/projectStore'
 import { useBudgetDetail } from '@/hooks/useBudgetDetail'
 import { useBudgetItems, type BulkImportPayload } from '@/hooks/useBudgetItems'
@@ -135,8 +135,9 @@ function usePriceHandlers(budgetItems: ReturnType<typeof useBudgetItems>) {
  * Limpieza de partidas vacías (sin subpartidas, sin monto y sin gasto).
  *
  * - Calcula en vivo qué partidas están vacías a partir del estado ya cargado.
- * - Avisa automáticamente, una sola vez por proyecto, al abrir la página o tras
- *   importar, mostrando un modal donde el usuario elige cuáles eliminar.
+ * - Tras importar abre el aviso automáticamente; en la carga normal de la página
+ *   se ofrece de forma no intrusiva con el botón "Limpiar partidas vacías" de la
+ *   cabecera (el modal nunca salta solo al abrir el presupuesto).
  * - Nunca borra sin confirmación; también permite el borrado puntual desde la tabla.
  */
 function useEmptyCategoryCleanup(
@@ -146,7 +147,6 @@ function useEmptyCategoryCleanup(
 ) {
   const [showEmptyModal, setShowEmptyModal] = useState(false)
   const [removingEmpty, setRemovingEmpty] = useState(false)
-  const autoPrompted = useRef(false)
 
   const spentByCategory = useMemo(() => {
     const map = new Map<string, number>()
@@ -164,25 +164,10 @@ function useEmptyCategoryCleanup(
     [budget.rows, budgetItems.itemsByCategory, spentByCategory],
   )
 
-  // Guarda: sin esto, antes de que carguen los items todas las partidas
-  // parecerían vacías (itemsByCategory aún no tiene sus claves).
-  const itemsLoaded =
-    budget.rows.length > 0 && budget.rows.every((row) => row.category.id in budgetItems.itemsByCategory)
-
-  // Reinicia el aviso automático al cambiar de proyecto.
+  // Al cambiar de proyecto cerramos cualquier aviso abierto.
   useEffect(() => {
-    autoPrompted.current = false
     setShowEmptyModal(false)
   }, [projectId])
-
-  // Aviso automático (una sola vez por proyecto) cuando hay partidas vacías.
-  useEffect(() => {
-    if (autoPrompted.current) return
-    if (budget.loading || budgetItems.loading) return
-    if (!itemsLoaded) return
-    autoPrompted.current = true
-    if (emptyCategories.length > 0) setShowEmptyModal(true)
-  }, [budget.loading, budgetItems.loading, itemsLoaded, emptyCategories])
 
   const openEmptyModal = useCallback(() => setShowEmptyModal(true), [])
   const closeEmptyModal = useCallback(() => setShowEmptyModal(false), [])
