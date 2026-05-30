@@ -2,6 +2,8 @@ import * as Sentry from '@sentry/react'
 import { supabase } from '@/lib/supabase'
 import { approvalsService } from '@/services/approvalsService'
 
+const RECEIPT_BUCKET = 'receipt-attachments'
+
 export interface InventoryItem {
   id: string
   project_id: string
@@ -10,6 +12,7 @@ export interface InventoryItem {
   current_stock: number
   min_stock: number
   unit_cost: number
+  material_catalog_id?: string | null
   created_at: string
 }
 
@@ -28,6 +31,8 @@ export interface InventoryMovement {
   unit_cost: number | null
   created_by: string | null
   override_motivo: string | null
+  lot_id: string | null
+  attachment_path: string | null
   created_at: string
   item?: { id: string; name: string; unit: string }
 }
@@ -45,6 +50,8 @@ export interface AddMovementInput {
   purchase_order_id?: string | null
   unit_cost?: number | null
   created_by?: string | null
+  lot_id?: string | null
+  attachment_path?: string | null
   override?: { motivo: string; actor: string } | null
 }
 
@@ -81,6 +88,70 @@ export const inventoryService = {
   async updateItem(id: string, item: Partial<InventoryItem>): Promise<void> {
     const { error } = await supabase.from('inventory_items').update(item).eq('id', id)
     if (error) throw error
+  },
+
+  // Busca un material del proyecto y, si no existe, lo crea. Usado por la
+  // recepción de órdenes de compra para dar entrada a stock sin obligar al
+  // almacenista a pre-registrar el material. Reusa por catálogo (si la línea lo
+  // trae) o por nombre. Al crear, hereda unidad y stock mínimo del catálogo y lo
+  // enlaza para alimentar el histórico de precios (migración 011).
+  async findOrCreateItem(input: {
+    project_id: string
+    name: string
+    unit?: string | null
+    unit_cost?: number | null
+    material_catalog_id?: string | null
+  }): Promise<InventoryItem> {
+    const name = input.name.trim()
+
+    // 1. Si la línea trae catálogo, reusa el material del proyecto enlazado a él.
+    if (input.material_catalog_id) {
+      const { data: byCatalog } = await supabase
+        .from('inventory_items')
+        .select('*')
+        .eq('project_id', input.project_id)
+        .eq('material_catalog_id', input.material_catalog_id)
+        .limit(1)
+      if (byCatalog && byCatalog.length > 0) return byCatalog[0] as InventoryItem
+    }
+
+    // 2. Reusa por nombre (sin distinguir mayúsculas).
+    const { data: existing } = await supabase
+      .from('inventory_items')
+      .select('*')
+      .eq('project_id', input.project_id)
+      .ilike('name', name)
+      .limit(1)
+    if (existing && existing.length > 0) return existing[0] as InventoryItem
+
+    // 3. Resuelve el catálogo: por id (si vino) o por descripción.
+    const catalogQuery = supabase.from('materials_catalog').select('id, unit, default_min_stock')
+    const { data: catalogMatch } = input.material_catalog_id
+      ? await catalogQuery.eq('id', input.material_catalog_id).limit(1)
+      : await catalogQuery.ilike('description', name).eq('is_active', true).limit(1)
+    const catalog = catalogMatch && catalogMatch.length > 0 ? catalogMatch[0] : null
+
+    return this.createItem({
+      project_id: input.project_id,
+      name,
+      unit: input.unit?.trim() || catalog?.unit || 'UD',
+      current_stock: 0,
+      min_stock: Number(catalog?.default_min_stock ?? 0),
+      unit_cost: input.unit_cost ?? 0,
+      material_catalog_id: input.material_catalog_id ?? catalog?.id ?? null,
+    })
+  },
+
+  // Movimientos de inventario generados por una orden de compra (entradas de
+  // recepción y, si las hubo, reversas). Usado para revertir una recepción.
+  async getMovementsByPurchaseOrder(purchaseOrderId: string): Promise<InventoryMovement[]> {
+    const { data, error } = await supabase
+      .from('inventory_movements')
+      .select('*, item:inventory_items(id,name,unit)')
+      .eq('purchase_order_id', purchaseOrderId)
+      .order('date', { ascending: true })
+    if (error) throw error
+    return data ?? []
   },
 
   async deleteItem(id: string): Promise<void> {
@@ -162,6 +233,8 @@ export const inventoryService = {
         purchase_order_id: movement.purchase_order_id ?? null,
         unit_cost: movement.unit_cost ?? null,
         created_by: movement.created_by ?? null,
+        lot_id: movement.lot_id ?? null,
+        attachment_path: movement.attachment_path ?? null,
         override_motivo: movement.override?.motivo ?? null,
         created_at: now,
       })
@@ -200,5 +273,27 @@ export const inventoryService = {
 
   getLowStockItems(items: InventoryItem[]): InventoryItem[] {
     return items.filter((i) => i.current_stock <= i.min_stock)
+  },
+
+  // === CONDUCE / NOTA DE ENTREGA (bucket privado receipt-attachments) ===
+
+  // Sube el conduce de una recepción. El path va prefijado por <projectId> para
+  // que la RLS verifique el permiso al proyecto. Devuelve el path almacenado.
+  async uploadReceiptAttachment(file: File, projectId: string, purchaseOrderId: string): Promise<string> {
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+    const path = `${projectId}/${purchaseOrderId}/${Date.now()}-${safeName}`
+    const { error } = await supabase.storage
+      .from(RECEIPT_BUCKET)
+      .upload(path, file, { contentType: file.type || 'application/octet-stream', upsert: false })
+    if (error) throw error
+    return path
+  },
+
+  // URL firmada (privada) para ver/descargar el conduce.
+  async getReceiptAttachmentUrl(path: string, expiresInSec = 60 * 60): Promise<string> {
+    const { data, error } = await supabase.storage.from(RECEIPT_BUCKET).createSignedUrl(path, expiresInSec)
+    if (error) throw error
+    if (!data?.signedUrl) throw new Error('No signed URL returned')
+    return data.signedUrl
   },
 }

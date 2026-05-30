@@ -26,13 +26,38 @@ export interface AddProgressInput {
 }
 
 export interface MonthlyCubicationRow {
-  month: string                // YYYY-MM
+  month: string // YYYY-MM
   budget_category_id: string | null
   category_code: string | null
   category_name: string | null
-  cubicado: number             // Σ avance × precio presupuestado
-  costo_real: number           // Σ (salidas almacén + nómina aprobada + facturas) del mes imputadas al capítulo
-  desviacion: number           // costo_real - cubicado
+  cubicado: number // Σ avance × precio presupuestado
+  costo_real: number // Σ (salidas almacén + nómina aprobada + facturas) del mes imputadas al capítulo
+  desviacion: number // costo_real - cubicado
+}
+
+export interface PartidaActualCostRow {
+  budget_item_id: string
+  category_code: string | null
+  category_name: string | null
+  item_code: string | null
+  item_description: string
+  presupuesto: number // cantidad presupuestada × precio unitario
+  costo_real: number // Σ costos imputados directamente a la partida
+  desviacion: number // costo_real - presupuesto
+}
+
+// Cobertura: qué parte del costo real está imputado a una partida y qué parte
+// quedó sin partida (solo capítulo o sin imputar). Sirve para saber qué tan
+// completo/confiable es el reporte por partida.
+export interface PartidaCostCoverage {
+  attributed: number // costo real con partida asignada
+  unattributed: number // costo real sin partida
+  total: number // attributed + unattributed
+}
+
+export interface PartidaActualCostResult {
+  rows: PartidaActualCostRow[]
+  coverage: PartidaCostCoverage
 }
 
 function monthKey(dateStr: string | null | undefined): string | null {
@@ -180,7 +205,7 @@ export const partidaProgressService = {
       const month = monthKey(mv.date)
       if (!month) continue
       const value = Number(mv.quantity ?? 0) * Number(mv.unit_cost ?? 0)
-      const itemCat = mv.budget_item_id ? itemById.get(mv.budget_item_id)?.budget_category_id ?? null : null
+      const itemCat = mv.budget_item_id ? (itemById.get(mv.budget_item_id)?.budget_category_id ?? null) : null
       const categoryId = mv.budget_category_id ?? itemCat
       getRow(month, categoryId).costo_real += value
     }
@@ -238,5 +263,140 @@ export const partidaProgressService = {
         ? (a.category_code ?? '').localeCompare(b.category_code ?? '')
         : a.month.localeCompare(b.month),
     )
+  },
+
+  // Costo real acumulado por partida (sección 6.6, vista de detalle).
+  // A diferencia de getMonthlyCubication (que agrega por capítulo), aquí solo
+  // se suman los costos imputados DIRECTAMENTE a una partida (budget_item_id):
+  //  - salidas de almacén imputadas a la partida
+  //  - mano de obra de nóminas aprobadas imputada a la partida
+  //  - facturas de materiales de nóminas aprobadas imputadas a la partida
+  //  - transacciones (CxP / diario) imputadas a la partida
+  // El presupuesto sale de cantidad × precio unitario de la partida. Además
+  // devuelve la cobertura: cuánto costo real quedó con/sin partida.
+  async getActualCostByPartida(projectId: string): Promise<PartidaActualCostResult> {
+    // 1) Capítulos del proyecto
+    const { data: categories } = await supabase
+      .from('budget_categories')
+      .select('id, code, name')
+      .eq('project_id', projectId)
+    const catById = new Map<string, { code: string; name: string }>(
+      (categories ?? []).map((c: { id: string; code: string; name: string }) => [c.id, { code: c.code, name: c.name }]),
+    )
+    const categoryIds = (categories ?? []).map((c: { id: string }) => c.id)
+
+    // 2) Partidas del proyecto, con su presupuesto
+    const { data: items } = await supabase
+      .from('budget_items')
+      .select('id, budget_category_id, code, description, quantity, unit_price')
+      .in('budget_category_id', categoryIds.length > 0 ? categoryIds : ['__none__'])
+
+    const rowById = new Map<string, PartidaActualCostRow>()
+    for (const it of (items ?? []) as Array<{
+      id: string
+      budget_category_id: string
+      code: string | null
+      description: string | null
+      quantity: number | null
+      unit_price: number | null
+    }>) {
+      const cat = catById.get(it.budget_category_id)
+      rowById.set(it.id, {
+        budget_item_id: it.id,
+        category_code: cat?.code ?? null,
+        category_name: cat?.name ?? null,
+        item_code: it.code ?? null,
+        item_description: it.description ?? '—',
+        presupuesto: Number(it.quantity ?? 0) * Number(it.unit_price ?? 0),
+        costo_real: 0,
+        desviacion: 0,
+      })
+    }
+
+    const coverage: PartidaCostCoverage = { attributed: 0, unattributed: 0, total: 0 }
+    // Suma un costo real. Si tiene partida válida lo acumula en la partida y en
+    // `attributed`; si no, va a `unattributed` (cobertura del reporte).
+    function addCost(budgetItemId: string | null, value: number): void {
+      if (!value) return
+      coverage.total += value
+      const row = budgetItemId ? rowById.get(budgetItemId) : undefined
+      if (row) {
+        row.costo_real += value
+        coverage.attributed += value
+      } else {
+        coverage.unattributed += value
+      }
+    }
+
+    // 3) Salidas de almacén imputadas a partida
+    const { data: movements } = await supabase
+      .from('inventory_movements')
+      .select('quantity, unit_cost, budget_item_id, type')
+      .eq('project_id', projectId)
+      .eq('type', 'out')
+    for (const mv of (movements ?? []) as Array<{
+      quantity: number | null
+      unit_cost: number | null
+      budget_item_id: string | null
+    }>) {
+      addCost(mv.budget_item_id, Number(mv.quantity ?? 0) * Number(mv.unit_cost ?? 0))
+    }
+
+    // 4) Mano de obra y facturas de nóminas comprometidas (aprobadas/pagadas)
+    const { data: payrolls } = await supabase
+      .from('payroll_periods')
+      .select('id, status')
+      .eq('project_id', projectId)
+      .in('status', COMMITTED_PAYROLL_STATUSES)
+    const payrollIds = (payrolls ?? []).map((p: { id: string }) => p.id)
+
+    if (payrollIds.length > 0) {
+      const { data: laborItems } = await supabase
+        .from('labor_line_items')
+        .select('quantity, unit_price, budget_item_id')
+        .in('payroll_period_id', payrollIds)
+      for (const ll of (laborItems ?? []) as Array<{
+        quantity: number | null
+        unit_price: number | null
+        budget_item_id: string | null
+      }>) {
+        addCost(ll.budget_item_id, Number(ll.quantity ?? 0) * Number(ll.unit_price ?? 0))
+      }
+
+      const { data: invoices } = await supabase
+        .from('material_invoices')
+        .select('amount, budget_item_id')
+        .in('payroll_period_id', payrollIds)
+      for (const inv of (invoices ?? []) as Array<{
+        amount: number | null
+        budget_item_id: string | null
+      }>) {
+        addCost(inv.budget_item_id, Number(inv.amount ?? 0))
+      }
+    }
+
+    // 5) Transacciones (CxP / diario) imputadas a partida
+    const { data: transactions } = await supabase
+      .from('transactions')
+      .select('total, budget_item_id')
+      .eq('project_id', projectId)
+    for (const tx of (transactions ?? []) as Array<{
+      total: number | null
+      budget_item_id: string | null
+    }>) {
+      addCost(tx.budget_item_id, Number(tx.total ?? 0))
+    }
+
+    // 6) Desviación y orden
+    for (const row of rowById.values()) {
+      row.desviacion = row.costo_real - row.presupuesto
+    }
+
+    const rows = Array.from(rowById.values()).sort((a, b) => {
+      const cat = (a.category_code ?? '').localeCompare(b.category_code ?? '')
+      return cat !== 0 ? cat : (a.item_code ?? '').localeCompare(b.item_code ?? '')
+    })
+
+    return { rows, coverage }
   },
 }

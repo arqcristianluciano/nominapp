@@ -20,6 +20,7 @@ export function BudgetHierarchyTable({
   onUpdateItem,
   onDeleteItem,
   onEditBudgetAmount,
+  onDeleteCategory,
 }: {
   loading: boolean
   rows: BudgetRow[]
@@ -31,6 +32,7 @@ export function BudgetHierarchyTable({
   onUpdateItem: (id: string, categoryId: string, changes: Partial<Omit<BudgetItem, 'id'>>) => Promise<void>
   onDeleteItem: (id: string, categoryId: string) => Promise<void>
   onEditBudgetAmount: (categoryId: string, amount: number) => void
+  onDeleteCategory?: (categoryId: string) => Promise<void>
 }) {
   if (loading) return <div className="text-sm text-app-muted">Cargando presupuesto...</div>
   const diff = budgetedTotal - spentTotal
@@ -67,6 +69,7 @@ export function BudgetHierarchyTable({
                 onUpdateItem={(id, changes) => onUpdateItem(id, row.category.id, changes)}
                 onDeleteItem={(id) => onDeleteItem(id, row.category.id)}
                 onEditBudgetAmount={() => onEditBudgetAmount(row.category.id, row.budgeted)}
+                onDeleteCategory={onDeleteCategory ? () => onDeleteCategory(row.category.id) : undefined}
               />
             ))}
           </tbody>

@@ -1,6 +1,7 @@
 import { BudgetAmountEditModal } from '@/components/features/budget/BudgetAmountEditModal'
 import CopyPriceListModal from '@/components/features/budget/CopyPriceListModal'
 import ExcelImportModal, { type ImportPayload } from '@/components/features/budget/ExcelImportModal'
+import { DeleteEmptyCategoriesModal } from '@/components/features/budget/DeleteEmptyCategoriesModal'
 import type { BudgetCategory, PriceListItem, Project } from '@/types/database'
 
 export function BudgetDetailModals({
@@ -20,6 +21,10 @@ export function BudgetDetailModals({
   onCopyPriceList,
   onCloseImport,
   onImport,
+  emptyCategories,
+  removingEmpty,
+  onConfirmRemoveEmpty,
+  onCancelRemoveEmpty,
 }: {
   showCopyModal: boolean
   showImport: boolean
@@ -37,6 +42,10 @@ export function BudgetDetailModals({
   onCopyPriceList: (targetProjectId: string) => Promise<void>
   onCloseImport: () => void
   onImport: (payload: ImportPayload) => Promise<void>
+  emptyCategories: BudgetCategory[]
+  removingEmpty: boolean
+  onConfirmRemoveEmpty: () => void
+  onCancelRemoveEmpty: () => void
 }) {
   return (
     <>
@@ -59,13 +68,14 @@ export function BudgetDetailModals({
         onClose={onCloseEdit}
       />
 
-      {showImport && (
-        <ExcelImportModal
-          categories={categories}
-          onImport={onImport}
-          onClose={onCloseImport}
-        />
-      )}
+      {showImport && <ExcelImportModal categories={categories} onImport={onImport} onClose={onCloseImport} />}
+
+      <DeleteEmptyCategoriesModal
+        categories={emptyCategories}
+        loading={removingEmpty}
+        onConfirm={onConfirmRemoveEmpty}
+        onCancel={onCancelRemoveEmpty}
+      />
     </>
   )
 }

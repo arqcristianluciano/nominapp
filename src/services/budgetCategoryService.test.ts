@@ -13,6 +13,15 @@ vi.mock('@/lib/supabase', () => ({
   },
 }))
 
+// delete y deleteMany registran auditoría vía approvalsService.log(...).catch(...).
+// Lo mockeamos para no depender de su implementación real ni de su tabla.
+const approvalsLogMock = vi.fn().mockResolvedValue(undefined)
+vi.mock('@/services/approvalsService', () => ({
+  approvalsService: {
+    log: (...args: unknown[]) => approvalsLogMock(...args),
+  },
+}))
+
 import { budgetCategoryService } from './budgetCategoryService'
 
 /**
@@ -61,8 +70,45 @@ function mockInsertChain(data: unknown, error: unknown = null) {
   return { insertMock, selectMock }
 }
 
+/**
+ * Helper: dos cadenas seguidas para delete(id):
+ *   1) from('budget_categories').select('*').eq('id', id).single()  -> { data: category }
+ *   2) from('budget_categories').delete().eq('id', id)              -> { error }
+ */
+function mockDeleteByIdChains(categoryRow: unknown, deleteError: unknown = null, selectError: unknown = null) {
+  const singleMock = vi.fn().mockResolvedValue({ data: categoryRow, error: selectError })
+  const eqSelectMock = vi.fn().mockReturnValue({ single: singleMock })
+  const selectMock = vi.fn().mockReturnValue({ eq: eqSelectMock })
+  fromMock.mockReturnValueOnce({ select: selectMock })
+
+  const eqDeleteMock = vi.fn().mockResolvedValue({ error: deleteError })
+  const deleteMock = vi.fn().mockReturnValue({ eq: eqDeleteMock })
+  fromMock.mockReturnValueOnce({ delete: deleteMock })
+
+  return { selectMock, eqSelectMock, singleMock, deleteMock, eqDeleteMock }
+}
+
+/**
+ * Helper: dos cadenas seguidas para deleteMany(ids):
+ *   1) from('budget_categories').select('*').in('id', ids) -> { data: categories }
+ *   2) from('budget_categories').delete().in('id', ids)    -> { error }
+ */
+function mockDeleteManyChains(categories: unknown, deleteError: unknown = null, selectError: unknown = null) {
+  const inSelectMock = vi.fn().mockResolvedValue({ data: categories, error: selectError })
+  const selectMock = vi.fn().mockReturnValue({ in: inSelectMock })
+  fromMock.mockReturnValueOnce({ select: selectMock })
+
+  const inDeleteMock = vi.fn().mockResolvedValue({ error: deleteError })
+  const deleteMock = vi.fn().mockReturnValue({ in: inDeleteMock })
+  fromMock.mockReturnValueOnce({ delete: deleteMock })
+
+  return { selectMock, inSelectMock, deleteMock, inDeleteMock }
+}
+
 beforeEach(() => {
   fromMock.mockReset()
+  approvalsLogMock.mockReset()
+  approvalsLogMock.mockResolvedValue(undefined)
 })
 
 describe('budgetCategoryService.getByProject', () => {
@@ -185,9 +231,7 @@ describe('budgetCategoryService.bulkCreate (create)', () => {
     ]
     const { insertMock, selectMock } = mockInsertChain(created)
 
-    const result = await budgetCategoryService.bulkCreate('pA', [
-      { code: '10', name: 'Acabados', sort_order: 10 },
-    ])
+    const result = await budgetCategoryService.bulkCreate('pA', [{ code: '10', name: 'Acabados', sort_order: 10 }])
 
     expect(fromMock).toHaveBeenCalledWith('budget_categories')
     expect(insertMock).toHaveBeenCalledWith([
@@ -205,9 +249,9 @@ describe('budgetCategoryService.bulkCreate (create)', () => {
 
   it('propaga error de supabase', async () => {
     mockInsertChain(null, { message: 'fail-insert' })
-    await expect(
-      budgetCategoryService.bulkCreate('pA', [{ code: '10', name: 'x', sort_order: 1 }]),
-    ).rejects.toEqual({ message: 'fail-insert' })
+    await expect(budgetCategoryService.bulkCreate('pA', [{ code: '10', name: 'x', sort_order: 1 }])).rejects.toEqual({
+      message: 'fail-insert',
+    })
   })
 })
 
@@ -242,5 +286,119 @@ describe('budgetCategoryService.updateBudgetAmount (update)', () => {
     await expect(budgetCategoryService.updateBudgetAmount('bc1', 99)).rejects.toEqual({
       message: 'fail-update',
     })
+  })
+})
+
+describe('budgetCategoryService.delete', () => {
+  it('lee la partida previa, la borra por id y loguea auditoría', async () => {
+    const category = {
+      id: 'bc-del',
+      project_id: 'pA',
+      code: '02',
+      name: 'Demoliciones',
+      sort_order: 2,
+      budgeted_amount: 0,
+    }
+    const { selectMock, eqSelectMock, singleMock, deleteMock, eqDeleteMock } = mockDeleteByIdChains(category)
+
+    await budgetCategoryService.delete('bc-del')
+
+    expect(fromMock).toHaveBeenCalledTimes(2)
+    expect(fromMock).toHaveBeenNthCalledWith(1, 'budget_categories')
+    expect(fromMock).toHaveBeenNthCalledWith(2, 'budget_categories')
+
+    expect(selectMock).toHaveBeenCalledWith('*')
+    expect(eqSelectMock).toHaveBeenCalledWith('id', 'bc-del')
+    expect(singleMock).toHaveBeenCalledTimes(1)
+
+    expect(deleteMock).toHaveBeenCalledTimes(1)
+    expect(eqDeleteMock).toHaveBeenCalledWith('id', 'bc-del')
+
+    expect(approvalsLogMock).toHaveBeenCalledTimes(1)
+    expect(approvalsLogMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entity_type: 'budget_category',
+        entity_id: 'bc-del',
+        action: 'delete',
+        payload_before: category,
+      }),
+    )
+  })
+
+  it('propaga error si el delete falla y NO loguea', async () => {
+    mockDeleteByIdChains({ id: 'bc-del' }, { message: 'delete fail' })
+    await expect(budgetCategoryService.delete('bc-del')).rejects.toEqual({
+      message: 'delete fail',
+    })
+    expect(approvalsLogMock).not.toHaveBeenCalled()
+  })
+
+  it('si el log de auditoría falla, NO propaga (sólo console.warn)', async () => {
+    approvalsLogMock.mockRejectedValueOnce(new Error('audit down'))
+    mockDeleteByIdChains({ id: 'bc-del' })
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    await expect(budgetCategoryService.delete('bc-del')).resolves.toBeUndefined()
+    expect(warnSpy).toHaveBeenCalled()
+
+    warnSpy.mockRestore()
+  })
+})
+
+describe('budgetCategoryService.deleteMany', () => {
+  it('con ids vacío retorna sin tocar supabase ni loguear', async () => {
+    await budgetCategoryService.deleteMany([])
+    expect(fromMock).not.toHaveBeenCalled()
+    expect(approvalsLogMock).not.toHaveBeenCalled()
+  })
+
+  it('borra el set por id con .in(...) y loguea una auditoría por partida', async () => {
+    const categories = [
+      { id: 'bc1', name: 'Demoliciones' },
+      { id: 'bc2', name: 'Estructura' },
+    ]
+    const { selectMock, inSelectMock, deleteMock, inDeleteMock } = mockDeleteManyChains(categories)
+
+    await budgetCategoryService.deleteMany(['bc1', 'bc2'])
+
+    expect(fromMock).toHaveBeenCalledTimes(2)
+    expect(selectMock).toHaveBeenCalledWith('*')
+    expect(inSelectMock).toHaveBeenCalledWith('id', ['bc1', 'bc2'])
+
+    expect(deleteMock).toHaveBeenCalledTimes(1)
+    expect(inDeleteMock).toHaveBeenCalledWith('id', ['bc1', 'bc2'])
+
+    // Una entrada de auditoría por cada partida borrada.
+    expect(approvalsLogMock).toHaveBeenCalledTimes(2)
+    expect(approvalsLogMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entity_type: 'budget_category',
+        entity_id: 'bc1',
+        action: 'delete',
+        payload_before: categories[0],
+      }),
+    )
+    expect(approvalsLogMock).toHaveBeenCalledWith(
+      expect.objectContaining({ entity_id: 'bc2', payload_before: categories[1] }),
+    )
+  })
+
+  it('propaga error si el delete falla y NO loguea', async () => {
+    mockDeleteManyChains([{ id: 'bc1' }], { message: 'bulk delete fail' })
+    await expect(budgetCategoryService.deleteMany(['bc1'])).rejects.toEqual({
+      message: 'bulk delete fail',
+    })
+    expect(approvalsLogMock).not.toHaveBeenCalled()
+  })
+
+  it('si el log de auditoría falla, NO propaga (sólo console.warn)', async () => {
+    approvalsLogMock.mockRejectedValue(new Error('audit down'))
+    mockDeleteManyChains([{ id: 'bc1' }])
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    await expect(budgetCategoryService.deleteMany(['bc1'])).resolves.toBeUndefined()
+    expect(warnSpy).toHaveBeenCalled()
+
+    warnSpy.mockRestore()
   })
 })

@@ -15,6 +15,7 @@ const txn = (overrides: Partial<TransactionWithRelations>): TransactionWithRelat
   project_id: 'p1',
   date: '2026-01-15',
   budget_category_id: null,
+  budget_item_id: null,
   description: 'test',
   supplier_id: null,
   quantity: null,
@@ -32,10 +33,27 @@ const txn = (overrides: Partial<TransactionWithRelations>): TransactionWithRelat
 })
 
 const deposit = (total: number) =>
-  txn({ total, budget_category_id: 'dep', budget_category: { id: 'dep', code: '19 - DEPOSITOS', name: 'Depósitos' } as TransactionWithRelations['budget_category'] })
+  txn({
+    total,
+    budget_category_id: 'dep',
+    budget_category: {
+      id: 'dep',
+      code: '19 - DEPOSITOS',
+      name: 'Depósitos',
+    } as TransactionWithRelations['budget_category'],
+  })
 
 const expense = (total: number, opts: Partial<TransactionWithRelations> = {}) =>
-  txn({ total, budget_category_id: 'mat', budget_category: { id: 'mat', code: '01 - MATERIALES', name: 'Materiales' } as TransactionWithRelations['budget_category'], ...opts })
+  txn({
+    total,
+    budget_category_id: 'mat',
+    budget_category: {
+      id: 'mat',
+      code: '01 - MATERIALES',
+      name: 'Materiales',
+    } as TransactionWithRelations['budget_category'],
+    ...opts,
+  })
 
 describe('financialCalculations', () => {
   describe('calcTransitos', () => {

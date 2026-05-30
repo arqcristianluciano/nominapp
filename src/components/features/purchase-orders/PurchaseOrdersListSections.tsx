@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import type { PurchaseRequisition } from '@/types/purchaseOrder'
 import { REQ_STATUS_COLOR, REQ_STATUS_LABEL } from '@/types/purchaseOrder'
 import { useAppRoles } from '@/hooks/useAppRoles'
+import { ReceiptProgressBadge } from './ReceiptProgressBadge'
 
 export function PurchaseOrdersHeader({
   filteredCount,
@@ -120,11 +121,14 @@ export function PurchaseOrdersTable({ requisitions }: { requisitions: PurchaseRe
                 {requisition.required_date ?? <span className="text-app-subtle">—</span>}
               </td>
               <td className="px-4 py-3.5 text-center">
-                <span
-                  className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold ${REQ_STATUS_COLOR[requisition.status]}`}
-                >
-                  {REQ_STATUS_LABEL[requisition.status]}
-                </span>
+                <div className="inline-flex flex-col items-center gap-1">
+                  <span
+                    className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold ${REQ_STATUS_COLOR[requisition.status]}`}
+                  >
+                    {REQ_STATUS_LABEL[requisition.status]}
+                  </span>
+                  {requisition.receipt_progress && <ReceiptProgressBadge progress={requisition.receipt_progress} />}
+                </div>
               </td>
               <td className="px-2 py-3.5 text-right">
                 <Link

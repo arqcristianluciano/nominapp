@@ -297,6 +297,42 @@ function createMockChannel(name: string): MockChannel {
   return channel
 }
 
+// Stub mínimo de Storage para modo demo. Mantiene los archivos subidos en
+// memoria (object URLs) durante la sesión para que adjuntar y "ver" funcionen
+// sin un backend real. No persiste entre recargas.
+const storageObjects = new Map<string, string>()
+
+function createObjectUrlSafe(blob: Blob): string | null {
+  if (typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
+    return URL.createObjectURL(blob)
+  }
+  return null
+}
+
+function mockStorageBucket() {
+  return {
+    async upload(path: string, file: Blob): Promise<MockResult<{ path: string }>> {
+      const url = createObjectUrlSafe(file)
+      if (url) storageObjects.set(path, url)
+      return { data: { path }, error: null }
+    },
+    async createSignedUrl(path: string): Promise<MockResult<{ signedUrl: string } | null>> {
+      const signedUrl = storageObjects.get(path)
+      return { data: signedUrl ? { signedUrl } : null, error: null }
+    },
+    async remove(paths: string[]): Promise<MockResult<null>> {
+      for (const p of paths) {
+        const url = storageObjects.get(p)
+        if (url && typeof URL !== 'undefined' && typeof URL.revokeObjectURL === 'function') {
+          URL.revokeObjectURL(url)
+        }
+        storageObjects.delete(p)
+      }
+      return { data: null, error: null }
+    },
+  }
+}
+
 export const mockSupabase = {
   from(table: string) {
     return new MockQueryBuilder(table)
@@ -314,5 +350,11 @@ export const mockSupabase = {
   },
   removeAllChannels(): Promise<'ok'[]> {
     return Promise.resolve([])
+  },
+  // El bucket se ignora en demo: todos los archivos viven en el mismo store en memoria.
+  storage: {
+    from() {
+      return mockStorageBucket()
+    },
   },
 }

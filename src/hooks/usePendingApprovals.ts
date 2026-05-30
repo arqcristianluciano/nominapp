@@ -11,7 +11,7 @@ export function usePendingApprovals() {
       const { data, error } = await supabase
         .from('purchase_requisitions')
         .select('id')
-        .or('status.eq.pending_approval,status.eq.needs_revision')
+        .or('status.eq.pending_approval,status.eq.needs_revision,status.eq.pendiente_liberacion')
       if (cancelled) return
       if (error) {
         console.error('usePendingApprovals fetch failed', error)
@@ -30,7 +30,7 @@ export function usePendingApprovals() {
           event: '*',
           schema: 'public',
           table: 'purchase_requisitions',
-          filter: 'status=in.(pending_approval,needs_revision)',
+          filter: 'status=in.(pending_approval,needs_revision,pendiente_liberacion)',
         },
         () => void fetchCount(),
       )

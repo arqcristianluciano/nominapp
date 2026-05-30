@@ -7,6 +7,9 @@ export default defineConfig({
   reporter: [['list'], ['html', { outputFolder: 'playwright-report', open: 'never' }]],
   use: {
     baseURL: 'http://127.0.0.1:4173',
+    // Fija el idioma para que i18n (detección por navigator.language) rinda en
+    // español, coincidiendo con el contenido hardcodeado en español de la app.
+    locale: 'es-DO',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
