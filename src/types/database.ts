@@ -208,6 +208,8 @@ export interface PaymentDistribution {
   beneficiary: string | null
   beneficiary_type: 'contractor' | 'supplier' | null
   beneficiary_id: string | null
+  /** Documento del beneficiario (cédula del contratista o RNC del proveedor). */
+  beneficiary_doc: string | null
   /** Snapshot de los datos bancarios del beneficiario al momento del pago. */
   bank_name: string | null
   bank_account: string | null

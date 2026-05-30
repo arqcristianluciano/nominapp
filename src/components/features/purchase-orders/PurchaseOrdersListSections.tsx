@@ -156,6 +156,7 @@ export function PurchaseOrdersTable({ requisitions }: { requisitions: PurchaseRe
                 >
                   {REQ_STATUS_LABEL[requisition.status]}
                 </span>
+                {requisition.receipt_progress && <ReceiptProgressBadge progress={requisition.receipt_progress} />}
               </div>
               <div className="font-semibold text-app-text text-sm mt-1.5 break-words">{requisition.description}</div>
               {requisition.project?.name && (
