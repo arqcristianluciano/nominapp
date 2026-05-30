@@ -1499,7 +1499,6 @@ export type Database = {
           bank_account_id: string | null
           bank_name: string | null
           beneficiary: string | null
-          beneficiary_doc: string | null
           beneficiary_id: string | null
           beneficiary_type: string | null
           check_number: string | null
@@ -1516,7 +1515,6 @@ export type Database = {
           bank_account_id?: string | null
           bank_name?: string | null
           beneficiary?: string | null
-          beneficiary_doc?: string | null
           beneficiary_id?: string | null
           beneficiary_type?: string | null
           check_number?: string | null
@@ -1533,7 +1531,6 @@ export type Database = {
           bank_account_id?: string | null
           bank_name?: string | null
           beneficiary?: string | null
-          beneficiary_doc?: string | null
           beneficiary_id?: string | null
           beneficiary_type?: string | null
           check_number?: string | null

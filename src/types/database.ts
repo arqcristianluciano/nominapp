@@ -211,8 +211,6 @@ export interface PaymentDistribution {
   /** Snapshot de los datos bancarios del beneficiario al momento del pago. */
   bank_name: string | null
   bank_account: string | null
-  /** Snapshot del documento del beneficiario: cédula (contratista) o RNC (proveedor). */
-  beneficiary_doc: string | null
   check_number: string | null
   status: 'pending' | 'completed' | 'cancelled'
   instructions: string | null
