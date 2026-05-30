@@ -19,6 +19,7 @@ export const EMPTY_BITACORA_FORM: BitacoraFormData = {
   visitors: '',
   incidents: '',
   notes: '',
+  photo_url: null,
   created_by: 'Admin',
 }
 
@@ -38,6 +39,7 @@ export function buildBitacoraFormFromEntry(entry: BitacoraEntry): BitacoraFormDa
     visitors: entry.visitors ?? '',
     incidents: entry.incidents ?? '',
     notes: entry.notes ?? '',
+    photo_url: entry.photo_url,
     created_by: entry.created_by,
   }
 }

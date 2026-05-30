@@ -1,6 +1,7 @@
 # NominaAPP — Estado del Proyecto
 
 ## Stack
+
 - React 19 + TypeScript + Vite (rutas con `lazy()` + Suspense)
 - Tailwind CSS v4 (tema claro/oscuro: clase `dark` en `<html>`, tokens `app-*` en `index.css`)
 - Zustand (estado global)
@@ -10,6 +11,7 @@
 - Testing: Vitest (unit, 51 tests) + Playwright (E2E smoke)
 
 ## Modo Demo
+
 Sin `.env`, el sistema corre en **mockSupabase** (datos en memoria).
 Para conectar Supabase real: copiar `.env.example` → `.env` con credenciales.
 
@@ -91,6 +93,8 @@ src/
   lib/              ← supabase, mockSupabase (+ mockSupabase.types), mockData,
                        seedCapullo, seedTorreMirador, router
 e2e/                ← smoke.spec.ts (flujos críticos UI)
+scripts/            ← postDeployHealthcheck.mjs (validación HTTP de producción)
+.github/workflows/  ← post-deploy-healthcheck.yml (health-check automático)
 ```
 
 ---
@@ -99,52 +103,52 @@ e2e/                ← smoke.spec.ts (flujos críticos UI)
 
 Todas las rutas (excepto `/login`) protegidas con `RequireAuth` y cargadas con `lazy()`.
 
-| Ruta | Página |
-|---|---|
-| `/login` | Login (usuarios demo en `constants/demoUsers`) |
-| `/` | Dashboard |
-| `/proyectos` `/proyectos/:id` | Projects, ProjectDetail |
-| `/proyectos/:id/nominas` `/nominas` `/nominas/:id` `/nominas/:id/imprimir` | PayrollList, ReportesObra, PayrollEditor, PayrollPrint |
-| `/proyectos/:id/control` `/proyectos/:id/presupuesto` | ControlFinanciero, PresupuestoDetalle |
-| `/proyectos/:id/calidad` `/proyectos/:id/insumos` | QualityControlPage, InsumosPage |
-| `/proyectos/:id/bitacora` `/proyectos/:id/asistencia` `/proyectos/:id/inventario` `/proyectos/:id/cronograma` | BitacoraPage, AsistenciaPage, InventarioPage, CronogramaPage |
-| `/cubicaciones` `/proyectos/:id/cubicaciones` `…/:contratoId` `…/imprimir` `…/contrato` | CubicacionesHub, CubicacionesPage, CubicacionContratoPage, CubicacionImprimirPage, ContratoFirmaPage |
-| `/finanzas` `/presupuesto` `/reportes` | FinanzasHub, PresupuestoHub, Reportes |
-| `/cxp` `/cxp/:projectId` `/cxp/consolidado` | CxPHub, CxPDetalle, CxPConsolidadoTodos |
-| `/contratistas` `/contratistas/:id` `/suplidores` | Contractors, ContractorDetail, Suppliers |
-| `/prestamos` `/configuracion` `/calendario` `/historial-precios` | Loans, Settings, Calendario, HistorialPrecios |
-| `/ordenes-compra` `/ordenes-compra/:id` | PurchaseOrders, PurchaseOrderDetail |
+| Ruta                                                                                                          | Página                                                                                               |
+| ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `/login`                                                                                                      | Login (usuarios demo en `constants/demoUsers`)                                                       |
+| `/`                                                                                                           | Dashboard                                                                                            |
+| `/proyectos` `/proyectos/:id`                                                                                 | Projects, ProjectDetail                                                                              |
+| `/proyectos/:id/nominas` `/nominas` `/nominas/:id` `/nominas/:id/imprimir`                                    | PayrollList, ReportesObra, PayrollEditor, PayrollPrint                                               |
+| `/proyectos/:id/control` `/proyectos/:id/presupuesto`                                                         | ControlFinanciero, PresupuestoDetalle                                                                |
+| `/proyectos/:id/calidad` `/proyectos/:id/insumos`                                                             | QualityControlPage, InsumosPage                                                                      |
+| `/proyectos/:id/bitacora` `/proyectos/:id/asistencia` `/proyectos/:id/inventario` `/proyectos/:id/cronograma` | BitacoraPage, AsistenciaPage, InventarioPage, CronogramaPage                                         |
+| `/cubicaciones` `/proyectos/:id/cubicaciones` `…/:contratoId` `…/imprimir` `…/contrato`                       | CubicacionesHub, CubicacionesPage, CubicacionContratoPage, CubicacionImprimirPage, ContratoFirmaPage |
+| `/finanzas` `/presupuesto` `/reportes`                                                                        | FinanzasHub, PresupuestoHub, Reportes                                                                |
+| `/cxp` `/cxp/:projectId` `/cxp/consolidado`                                                                   | CxPHub, CxPDetalle, CxPConsolidadoTodos                                                              |
+| `/contratistas` `/contratistas/:id` `/suplidores`                                                             | Contractors, ContractorDetail, Suppliers                                                             |
+| `/prestamos` `/configuracion` `/calendario` `/historial-precios`                                              | Loans, Settings, Calendario, HistorialPrecios                                                        |
+| `/ordenes-compra` `/ordenes-compra/:id`                                                                       | PurchaseOrders, PurchaseOrderDetail                                                                  |
 
 ---
 
 ## Servicios
 
-| Archivo | Responsabilidad |
-|---|---|
-| `authService` | Validación de credenciales demo (cliente) |
-| `projectService` | CRUD proyectos y empresas |
-| `contractorService` | CRUD contratistas |
-| `supplierService` | CRUD proveedores |
-| `payrollService` | Períodos, partidas labor, facturas, indirectos |
-| `transactionService` | Libro diario (transacciones) |
-| `budgetCategoryService` | Categorías presupuestarias |
-| `bankAccountService` | Cuentas bancarias |
-| `dashboardService` | KPIs y actividad reciente |
-| `qualityControlService` | Ensayos de resistencia de hormigón |
-| `cubicationService` | Contratos de ajuste, partidas, cortes (con retención y estado), adelantos |
-| `paymentDistributionService` | Distribución de pagos por nómina |
-| `budgetItemService` | CRUD de subpartidas (líneas de presupuesto) |
-| `priceListService` | CRUD de lista de precios por proyecto |
-| `requisitionService` | CRUD requisiciones, aprobación, colocar orden |
-| `mercadoBudgetService` | Presupuesto Mercado por proyecto + líneas + vínculo con contratos |
-| `quoteService` | CRUD cotizaciones e ítems por requisición |
-| `loanService` | CRUD préstamos a contratistas y deducciones por nómina |
-| `notificationService` | Notificaciones in-app (badge en header) |
-| `bitacoraService` | Bitácora de obra (clima, mano de obra, incidentes) |
-| `attendanceService` | Asistencia diaria por proyecto |
-| `scheduleService` | Cronograma / Gantt de tareas por proyecto |
-| `inventoryService` | Inventario de materiales (stock + movimientos in/out) |
-| `contractorDocService` | Documentos de contratista (cédula, ARS, AFP, etc.) con vencimiento |
+| Archivo                      | Responsabilidad                                                           |
+| ---------------------------- | ------------------------------------------------------------------------- |
+| `authService`                | Validación de credenciales demo (cliente)                                 |
+| `projectService`             | CRUD proyectos y empresas                                                 |
+| `contractorService`          | CRUD contratistas                                                         |
+| `supplierService`            | CRUD proveedores                                                          |
+| `payrollService`             | Períodos, partidas labor, facturas, indirectos                            |
+| `transactionService`         | Libro diario (transacciones)                                              |
+| `budgetCategoryService`      | Categorías presupuestarias                                                |
+| `bankAccountService`         | Cuentas bancarias                                                         |
+| `dashboardService`           | KPIs y actividad reciente                                                 |
+| `qualityControlService`      | Ensayos de resistencia de hormigón                                        |
+| `cubicationService`          | Contratos de ajuste, partidas, cortes (con retención y estado), adelantos |
+| `paymentDistributionService` | Distribución de pagos por nómina                                          |
+| `budgetItemService`          | CRUD de subpartidas (líneas de presupuesto)                               |
+| `priceListService`           | CRUD de lista de precios por proyecto                                     |
+| `requisitionService`         | CRUD requisiciones, aprobación, colocar orden                             |
+| `mercadoBudgetService`       | Presupuesto Mercado por proyecto + líneas + vínculo con contratos         |
+| `quoteService`               | CRUD cotizaciones e ítems por requisición                                 |
+| `loanService`                | CRUD préstamos a contratistas y deducciones por nómina                    |
+| `notificationService`        | Notificaciones in-app (badge en header)                                   |
+| `bitacoraService`            | Bitácora de obra (clima, mano de obra, incidentes)                        |
+| `attendanceService`          | Asistencia diaria por proyecto                                            |
+| `scheduleService`            | Cronograma / Gantt de tareas por proyecto                                 |
+| `inventoryService`           | Inventario de materiales (stock + movimientos in/out)                     |
+| `contractorDocService`       | Documentos de contratista (cédula, ARS, AFP, etc.) con vencimiento        |
 
 ---
 
@@ -231,3 +235,4 @@ Canvases oficiales en `canvases/`:
 
 - Unit: `npm test`
 - E2E smoke: `npm run test:e2e`
+- Health-check prod (manual): `node scripts/postDeployHealthcheck.mjs`

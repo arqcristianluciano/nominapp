@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { supplierService } from '@/services/supplierService'
 import { Modal } from '@/components/ui/Modal'
 import { SupplierForm } from '@/components/features/suppliers/SupplierForm'
@@ -13,6 +14,7 @@ import {
 } from '@/components/features/suppliers/SuppliersSections'
 
 export default function Suppliers() {
+  const { t } = useTranslation()
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -21,62 +23,95 @@ export default function Suppliers() {
   const [saving, setSaving] = useState(false)
   const { success, error } = useToast()
 
-  useEffect(() => { load() }, [])
-
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true)
-    try { setSuppliers(await supplierService.getAll()) }
-    finally { setLoading(false) }
-  }
-
-  async function handleCreate(data: Parameters<typeof supplierService.create>[0]) {
-    setSaving(true)
     try {
-      await supplierService.create(data)
-      setShowForm(false)
-      await load()
-      success('Suplidor creado correctamente')
-    } catch { error('No se pudo crear el suplidor') }
-    finally { setSaving(false) }
-  }
+      setSuppliers(await supplierService.getAll())
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
-  async function handleUpdate(data: Parameters<typeof supplierService.create>[0]) {
-    if (!editing) return
-    setSaving(true)
-    try {
-      await supplierService.update(editing.id, data)
-      setEditing(undefined)
-      await load()
-      success('Suplidor actualizado')
-    } catch { error('No se pudo actualizar el suplidor') }
-    finally { setSaving(false) }
-  }
+  useEffect(() => {
+    void load()
+  }, [load])
 
-  const filtered = suppliers.filter((s) =>
-    s.name.toLowerCase().includes(search.toLowerCase()) ||
-    s.rnc?.toLowerCase().includes(search.toLowerCase())
+  const handleCreate = useCallback(
+    async (data: Parameters<typeof supplierService.create>[0]) => {
+      setSaving(true)
+      try {
+        await supplierService.create(data)
+        setShowForm(false)
+        await load()
+        success(t('suppliers.toast.created'))
+      } catch {
+        error(t('suppliers.toast.create_failed'))
+      } finally {
+        setSaving(false)
+      }
+    },
+    [error, load, success, t],
   )
 
-  const activeCount = suppliers.filter((s) => s.is_active).length
+  const handleUpdate = useCallback(
+    async (data: Parameters<typeof supplierService.create>[0]) => {
+      if (!editing) return
+      setSaving(true)
+      try {
+        await supplierService.update(editing.id, data)
+        setEditing(undefined)
+        await load()
+        success(t('suppliers.toast.updated'))
+      } catch {
+        error(t('suppliers.toast.update_failed'))
+      } finally {
+        setSaving(false)
+      }
+    },
+    [editing, error, load, success, t],
+  )
+
+  const normalizedSearch = useMemo(() => search.toLowerCase(), [search])
+
+  const filtered = useMemo(
+    () =>
+      suppliers.filter(
+        (supplier) =>
+          supplier.name.toLowerCase().includes(normalizedSearch) ||
+          supplier.rnc?.toLowerCase().includes(normalizedSearch),
+      ),
+    [normalizedSearch, suppliers],
+  )
+
+  const activeCount = useMemo(
+    () => suppliers.reduce((count, supplier) => count + (supplier.is_active ? 1 : 0), 0),
+    [suppliers],
+  )
+
+  const openCreateModal = useCallback(() => setShowForm(true), [])
+  const closeCreateModal = useCallback(() => setShowForm(false), [])
+  const closeEditModal = useCallback(() => setEditing(undefined), [])
 
   return (
     <div className="space-y-6">
-      <SuppliersHeader total={suppliers.length} active={activeCount} onNew={() => setShowForm(true)} />
+      <SuppliersHeader total={suppliers.length} active={activeCount} onNew={openCreateModal} />
       <SuppliersSearch value={search} onChange={setSearch} />
 
       {loading ? (
         <SkeletonTable rows={5} cols={4} />
       ) : filtered.length === 0 ? (
-        <EmptySuppliersState hasSearch={!!search} onNew={() => setShowForm(true)} />
+        <EmptySuppliersState hasSearch={!!search} onNew={openCreateModal} />
       ) : (
         <SuppliersTable suppliers={filtered} onEdit={setEditing} />
       )}
 
-      <Modal open={showForm} onClose={() => setShowForm(false)} title="Nuevo proveedor">
-        <SupplierForm onSubmit={handleCreate} onCancel={() => setShowForm(false)} saving={saving} />
+      <Modal open={showForm} onClose={closeCreateModal} title={t('suppliers.new_supplier')}>
+        <SupplierForm onSubmit={handleCreate} onCancel={closeCreateModal} saving={saving} />
       </Modal>
-      <Modal open={!!editing} onClose={() => setEditing(undefined)} title="Editar proveedor">
-        {editing && <SupplierForm initial={editing} onSubmit={handleUpdate} onCancel={() => setEditing(undefined)} saving={saving} />}
+      <Modal open={!!editing} onClose={closeEditModal} title={t('suppliers.edit_supplier')}>
+        {editing && (
+          <SupplierForm initial={editing} onSubmit={handleUpdate} onCancel={closeEditModal} saving={saving} />
+        )}
       </Modal>
     </div>
   )

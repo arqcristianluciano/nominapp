@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import * as Sentry from '@sentry/react'
 import { useProjectStore } from '@/stores/projectStore'
 import { dashboardService } from '@/services/dashboardService'
 import { corteService, getProjectsProgress } from '@/services/cubicationService'
@@ -29,6 +30,27 @@ interface KpiTrend {
   cxpPrev: number
 }
 
+interface ProjectProgressSnapshot {
+  avg_completion: number
+  acordado: number
+  acumulado: number
+  contractor_count: number
+}
+
+function mapProjectProgress(data: Record<string, ProjectProgressSnapshot>) {
+  const mapped: Record<string, ProjectProgress> = {}
+  for (const [projectId, progress] of Object.entries(data)) {
+    mapped[projectId] = {
+      project_id: projectId,
+      avg_completion: progress.avg_completion,
+      acordado: progress.acordado,
+      acumulado: progress.acumulado,
+      contractor_count: progress.contractor_count,
+    }
+  }
+  return mapped
+}
+
 export function useDashboardData() {
   const { projects, loading, fetchProjects } = useProjectStore()
   const [totalInvested, setTotalInvested] = useState(0)
@@ -39,29 +61,29 @@ export function useDashboardData() {
   const [progressMap, setProgressMap] = useState<Record<string, ProjectProgress>>({})
   const [pendingCortes, setPendingCortes] = useState<PendingCorteItem[]>([])
 
-  const loadProgress = useCallback(async () => {
-    const data = await getProjectsProgress()
-    const mapped: Record<string, ProjectProgress> = {}
-    for (const [pid, progress] of Object.entries(data)) {
-      mapped[pid] = {
-        project_id: pid,
-        avg_completion: progress.avg_completion,
-        acordado: progress.acordado,
-        acumulado: progress.acumulado,
-        contractor_count: progress.contractor_count,
-      }
-    }
-    setProgressMap(mapped)
-  }, [])
-
   useEffect(() => {
     let cancelled = false
 
     async function run() {
-      fetchProjects()
-      try {
-        const kpis = await dashboardService.getKPIs()
-        if (cancelled) return
+      const [projectsResult, kpisResult, activityResult, progressResult, cortesResult] = await Promise.allSettled([
+        fetchProjects(),
+        dashboardService.getKPIs(),
+        dashboardService.getRecentActivity(),
+        getProjectsProgress(),
+        corteService.getPendingApproved(),
+      ])
+
+      if (cancelled) return
+
+      if (projectsResult.status === 'rejected') {
+        console.error('[useDashboardData] fetchProjects fallo', projectsResult.reason)
+        Sentry.captureException(projectsResult.reason, {
+          tags: { area: 'useDashboardData', sub: 'fetchProjects' },
+        })
+      }
+
+      if (kpisResult.status === 'fulfilled') {
+        const kpis = kpisResult.value
         setTotalInvested(kpis.totalInvested)
         setPayrollsThisMonth(kpis.payrollsThisMonth)
         setCxpTotal(kpis.cxpTotal)
@@ -70,28 +92,38 @@ export function useDashboardData() {
           payrollsPrev: kpis.prevPayrolls,
           cxpPrev: kpis.prevCxp,
         })
-      } catch (err) {
-        console.error('Dashboard getKPIs failed', err)
+      } else {
+        console.error('[useDashboardData] getKPIs fallo', kpisResult.reason)
+        Sentry.captureException(kpisResult.reason, {
+          tags: { area: 'useDashboardData', sub: 'getKPIs' },
+        })
       }
 
-      try {
-        const activity = await dashboardService.getRecentActivity()
-        if (!cancelled) setActivities(activity)
-      } catch (err) {
-        console.error('Dashboard getRecentActivity failed', err)
+      if (activityResult.status === 'fulfilled') {
+        setActivities(activityResult.value)
+      } else {
+        console.error('[useDashboardData] getRecentActivity fallo', activityResult.reason)
+        Sentry.captureException(activityResult.reason, {
+          tags: { area: 'useDashboardData', sub: 'getRecentActivity' },
+        })
       }
 
-      try {
-        if (!cancelled) await loadProgress()
-      } catch (err) {
-        console.error('Dashboard loadProgress failed', err)
+      if (progressResult.status === 'fulfilled') {
+        setProgressMap(mapProjectProgress(progressResult.value))
+      } else {
+        console.error('[useDashboardData] getProjectsProgress fallo', progressResult.reason)
+        Sentry.captureException(progressResult.reason, {
+          tags: { area: 'useDashboardData', sub: 'getProjectsProgress' },
+        })
       }
 
-      try {
-        const cortes = await corteService.getPendingApproved()
-        if (!cancelled) setPendingCortes(cortes)
-      } catch (err) {
-        console.error('Dashboard getPendingApproved failed', err)
+      if (cortesResult.status === 'fulfilled') {
+        setPendingCortes(cortesResult.value)
+      } else {
+        console.error('[useDashboardData] getPendingApproved fallo', cortesResult.reason)
+        Sentry.captureException(cortesResult.reason, {
+          tags: { area: 'useDashboardData', sub: 'getPendingApproved' },
+        })
       }
     }
 
@@ -99,12 +131,9 @@ export function useDashboardData() {
     return () => {
       cancelled = true
     }
-  }, [fetchProjects, loadProgress])
+  }, [fetchProjects])
 
-  const activeProjects = useMemo(
-    () => projects.filter((project) => project.status === 'active'),
-    [projects],
-  )
+  const activeProjects = useMemo(() => projects.filter((project) => project.status === 'active'), [projects])
 
   return {
     loading,

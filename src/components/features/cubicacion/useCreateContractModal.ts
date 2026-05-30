@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { contractService } from '@/services/cubicationService'
+import { parseDecimalInput } from '@/utils/decimalInput'
 import { getErrorMessage } from '@/utils/errors'
 
 export interface CreateContractFormState {
@@ -17,7 +18,8 @@ const INITIAL_FORM: CreateContractFormState = {
   notes: '',
 }
 
-const CREATE_ERROR_FALLBACK = 'Error al crear el contrato. Verifica que las tablas del módulo de cubicación existan en Supabase.'
+const CREATE_ERROR_FALLBACK =
+  'Error al crear el contrato. Verifica que las tablas del módulo de cubicación existan en Supabase.'
 
 interface SubmitCreateContractParams {
   event: React.FormEvent
@@ -45,13 +47,18 @@ async function submitCreateContract({
     setFormError('Proyecto inválido para crear contrato.')
     return
   }
+  const retentionPercent = parseDecimalInput(form.retention_percent) ?? 0
+  if (retentionPercent < 0 || retentionPercent > 100) {
+    setFormError('La retención debe estar entre 0 y 100%.')
+    return
+  }
   setSaving(true)
   setFormError(null)
   try {
     const created = await contractService.create({
       project_id: projectId,
       contractor_id: form.contractor_id,
-      retention_percent: Number(form.retention_percent),
+      retention_percent: retentionPercent,
       signed_date: form.signed_date || null,
       notes: form.notes || null,
     })
@@ -85,7 +92,7 @@ export function useCreateContractModal(projectId: string | undefined) {
         setFormError,
       })
     },
-    [form, navigate, projectId]
+    [form, navigate, projectId],
   )
 
   return {

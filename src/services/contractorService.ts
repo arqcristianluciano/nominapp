@@ -13,10 +13,7 @@ interface CubicationRow {
 
 export const contractorService = {
   async getAll() {
-    const { data, error } = await supabase
-      .from('contractors')
-      .select('*')
-      .order('name')
+    const { data, error } = await supabase.from('contractors').select('*').order('name')
     if (error) throw error
     return data as Contractor[]
   },
@@ -31,11 +28,7 @@ export const contractorService = {
     payment_method?: 'cash' | 'check' | 'transfer'
     notes?: string
   }) {
-    const { data, error } = await supabase
-      .from('contractors')
-      .insert(contractor)
-      .select()
-      .single()
+    const { data, error } = await supabase.from('contractors').insert(contractor).select().single()
     if (error) throw error
     return data as Contractor
   },
@@ -65,6 +58,10 @@ export const contractorService = {
       supabase.from('contract_cubications').select('*').eq('contractor_id', contractorId),
     ])
 
+    if (itemsRes.error) throw itemsRes.error
+    if (projectsRes.error) throw projectsRes.error
+    if (cubicationsRes.error) throw cubicationsRes.error
+
     const items = (itemsRes.data || []) as LaborItemWithPeriod[]
     const projects = (projectsRes.data || []) as Project[]
     const cubications = (cubicationsRes.data || []) as CubicationRow[]
@@ -73,7 +70,7 @@ export const contractorService = {
 
     const enrichedItems = items.map((item) => ({
       ...item,
-      project: item.payroll_period ? projectMap[item.payroll_period.project_id] ?? null : null,
+      project: item.payroll_period ? (projectMap[item.payroll_period.project_id] ?? null) : null,
     }))
 
     return { items: enrichedItems, cubications, projectMap }

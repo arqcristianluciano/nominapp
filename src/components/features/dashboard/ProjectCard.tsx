@@ -1,5 +1,6 @@
 import { Building2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import type { Project } from '@/types/database'
 import type { ProjectProgress } from '@/hooks/useDashboardData'
 
@@ -15,6 +16,7 @@ function progressColor(percent: number) {
 }
 
 export function ProjectCard({ project, progress }: Props) {
+  const { t } = useTranslation()
   const percent = progress?.avg_completion ?? null
 
   return (
@@ -36,11 +38,16 @@ export function ProjectCard({ project, progress }: Props) {
           {percent !== null ? (
             <span className="text-sm font-bold text-app-text">{Math.round(percent)}%</span>
           ) : (
-            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">Activo</span>
+            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
+              {t('dashboard.projects.active_badge')}
+            </span>
           )}
           {progress && (
             <p className="mt-0.5 text-[11px] text-app-subtle">
-              {progress.contractor_count} {progress.contractor_count === 1 ? 'contrato' : 'contratos'}
+              {progress.contractor_count}{' '}
+              {progress.contractor_count === 1
+                ? t('dashboard.projects.contract_one')
+                : t('dashboard.projects.contract_other')}
             </p>
           )}
         </div>
@@ -52,7 +59,7 @@ export function ProjectCard({ project, progress }: Props) {
             <div className={`h-full rounded-full ${progressColor(percent)}`} style={{ width: `${percent}%` }} />
           </div>
           <div className="mt-1 flex items-center justify-between">
-            <span className="text-[11px] text-app-subtle">Avance de obra</span>
+            <span className="text-[11px] text-app-subtle">{t('dashboard.projects.progress_label')}</span>
             <span className="text-[11px] font-semibold text-app-muted">{Math.round(percent)}%</span>
           </div>
         </div>

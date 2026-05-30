@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Project, Company, CustomIndirect } from '@/types/database'
+import { parseDecimalInput } from '@/utils/decimalInput'
 import { CustomIndirectsSection } from './CustomIndirectsSection'
 
 type ProjectFormData = {
@@ -14,6 +15,7 @@ type ProjectFormData = {
   planning_fee: number
   custom_indirects: CustomIndirect[]
   status?: 'active' | 'completed' | 'paused'
+  new_company?: { name: string; rnc: string | null }
 }
 
 interface Props {
@@ -50,26 +52,58 @@ export function ProjectForm({ initial, onSubmit, onCancel, saving }: Props) {
   const [dtPercent, setDtPercent] = useState(initial?.dt_percent ?? 10)
   const [adminPercent, setAdminPercent] = useState(initial?.admin_percent ?? 1)
   const [transportPercent, setTransportPercent] = useState(initial?.transport_percent ?? 0.5)
-  const [planningFee, setPlanningFee] = useState(initial?.planning_fee ?? 0)
+  const [planningFee, setPlanningFee] = useState<string>(
+    initial?.planning_fee != null ? String(initial.planning_fee) : '0',
+  )
   const [customIndirects, setCustomIndirects] = useState<CustomIndirect[]>(initial?.custom_indirects ?? [])
   const [status, setStatus] = useState<'active' | 'completed' | 'paused'>(initial?.status || 'active')
   const [companies, setCompanies] = useState<Company[]>([])
+  const [companiesLoaded, setCompaniesLoaded] = useState(false)
   const [companyId, setCompanyId] = useState(initial?.company_id || '')
+  const [newCompanyName, setNewCompanyName] = useState('')
+  const [newCompanyRnc, setNewCompanyRnc] = useState('')
+
+  // Reset all form fields when the edited entity changes (or switches to create
+  // mode), so a reused mounted form does not keep the previous project's values.
+  useEffect(() => {
+    setName(initial?.name || '')
+    setCode(initial?.code || '')
+    setCodeTouched(!!initial?.code)
+    setLocation(initial?.location || '')
+    setDtPercent(initial?.dt_percent ?? 10)
+    setAdminPercent(initial?.admin_percent ?? 1)
+    setTransportPercent(initial?.transport_percent ?? 0.5)
+    setPlanningFee(initial?.planning_fee != null ? String(initial.planning_fee) : '0')
+    setCustomIndirects(initial?.custom_indirects ?? [])
+    setStatus(initial?.status || 'active')
+    setCompanyId(initial?.company_id || '')
+    setNewCompanyName('')
+    setNewCompanyRnc('')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initial?.id])
 
   const isEditing = !!initial
+  const needsNewCompany = !isEditing && companiesLoaded && companies.length === 0
 
   useEffect(() => {
     if (isEditing) return
-    supabase.from('companies').select('*').order('name').then(({ data }: { data: Company[] | null }) => {
-      if (data && data.length > 0) {
-        setCompanies(data)
-        setCompanyId((prev) => prev || data[0].id)
-      }
-    })
+    supabase
+      .from('companies')
+      .select('*')
+      .order('name')
+      .then(({ data }: { data: Company[] | null }) => {
+        if (data && data.length > 0) {
+          setCompanies(data)
+          setCompanyId((prev) => prev || data[0].id)
+        }
+        setCompaniesLoaded(true)
+      })
   }, [isEditing])
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    const trimmedNewCompanyName = newCompanyName.trim()
+    const planningFeeParsed = planningFee.trim() ? parseDecimalInput(planningFee) : 0
     onSubmit({
       name: name.toUpperCase(),
       code: code.toUpperCase(),
@@ -78,13 +112,26 @@ export function ProjectForm({ initial, onSubmit, onCancel, saving }: Props) {
       dt_percent: dtPercent,
       admin_percent: adminPercent,
       transport_percent: transportPercent,
-      planning_fee: planningFee,
+      planning_fee: planningFeeParsed ?? 0,
       custom_indirects: customIndirects.filter((c) => c.name.trim() && c.value > 0),
       status,
+      new_company:
+        needsNewCompany && trimmedNewCompanyName
+          ? { name: trimmedNewCompanyName, rnc: newCompanyRnc.trim() || null }
+          : undefined,
     })
   }
 
-  const inputClass = 'w-full px-3 py-2 border border-app-border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+  const submitDisabled =
+    saving ||
+    !name ||
+    !code ||
+    (!isEditing && !companiesLoaded) ||
+    (needsNewCompany && !newCompanyName.trim()) ||
+    (!isEditing && !needsNewCompany && !companyId)
+
+  const inputClass =
+    'w-full px-3 py-2 border border-app-border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
   const labelClass = 'text-xs font-medium text-app-muted mb-1 block'
 
   return (
@@ -112,7 +159,10 @@ export function ProjectForm({ initial, onSubmit, onCancel, saving }: Props) {
           <input
             type="text"
             value={code}
-            onChange={(e) => { setCode(e.target.value.toUpperCase()); setCodeTouched(true) }}
+            onChange={(e) => {
+              setCode(e.target.value.toUpperCase())
+              setCodeTouched(true)
+            }}
             className={inputClass}
             placeholder="Ej: RM-2026"
             required
@@ -120,23 +170,67 @@ export function ProjectForm({ initial, onSubmit, onCancel, saving }: Props) {
         </div>
         <div>
           <label className={labelClass}>Ubicación</label>
-          <input type="text" value={location} onChange={(e) => setLocation(e.target.value)} className={inputClass} placeholder="Ej: Santo Domingo" />
+          <input
+            type="text"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            className={inputClass}
+            placeholder="Ej: Santo Domingo"
+          />
         </div>
         {isEditing && (
           <div>
             <label className={labelClass}>Estado</label>
             <select value={status} onChange={(e) => setStatus(e.target.value as typeof status)} className={inputClass}>
-              {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              {STATUS_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
             </select>
           </div>
         )}
-        {!isEditing && companies.length > 1 && (
+        {!isEditing && companies.length > 0 && (
           <div className="col-span-2">
             <label className={labelClass}>Empresa</label>
             <select value={companyId} onChange={(e) => setCompanyId(e.target.value)} className={inputClass}>
-              {companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              {companies.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
             </select>
           </div>
+        )}
+        {needsNewCompany && (
+          <>
+            <div className="col-span-2">
+              <p className="text-xs text-app-muted">
+                No hay empresas registradas. Crea la primera empresa al registrar este proyecto.
+              </p>
+            </div>
+            <div>
+              <label className={labelClass}>Nombre de la empresa *</label>
+              <input
+                type="text"
+                value={newCompanyName}
+                onChange={(e) => setNewCompanyName(e.target.value)}
+                className={inputClass}
+                placeholder="Ej: MI EMPRESA, S.R.L."
+                required
+              />
+            </div>
+            <div>
+              <label className={labelClass}>RNC (opcional)</label>
+              <input
+                type="text"
+                value={newCompanyRnc}
+                onChange={(e) => setNewCompanyRnc(e.target.value)}
+                className={inputClass}
+                placeholder="Ej: 1-32-66032-3"
+              />
+            </div>
+          </>
         )}
       </div>
 
@@ -145,19 +239,50 @@ export function ProjectForm({ initial, onSubmit, onCancel, saving }: Props) {
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className={labelClass}>Dirección técnica %</label>
-            <input type="number" step="0.1" min="0" max="100" value={dtPercent} onChange={(e) => setDtPercent(Number(e.target.value))} className={inputClass} />
+            <input
+              type="number"
+              step="0.1"
+              min="0"
+              max="100"
+              value={dtPercent}
+              onChange={(e) => setDtPercent(Number(e.target.value))}
+              className={inputClass}
+            />
           </div>
           <div>
             <label className={labelClass}>Administración %</label>
-            <input type="number" step="0.1" min="0" max="100" value={adminPercent} onChange={(e) => setAdminPercent(Number(e.target.value))} className={inputClass} />
+            <input
+              type="number"
+              step="0.1"
+              min="0"
+              max="100"
+              value={adminPercent}
+              onChange={(e) => setAdminPercent(Number(e.target.value))}
+              className={inputClass}
+            />
           </div>
           <div>
             <label className={labelClass}>Transporte %</label>
-            <input type="number" step="0.1" min="0" max="100" value={transportPercent} onChange={(e) => setTransportPercent(Number(e.target.value))} className={inputClass} />
+            <input
+              type="number"
+              step="0.1"
+              min="0"
+              max="100"
+              value={transportPercent}
+              onChange={(e) => setTransportPercent(Number(e.target.value))}
+              className={inputClass}
+            />
           </div>
           <div>
             <label className={labelClass}>Planificación (RD$)</label>
-            <input type="number" step="any" min="0" value={planningFee} onChange={(e) => setPlanningFee(Number(e.target.value))} className={inputClass} />
+            <input
+              type="text"
+              inputMode="decimal"
+              placeholder="0,00"
+              value={planningFee}
+              onChange={(e) => setPlanningFee(e.target.value)}
+              className={inputClass}
+            />
           </div>
         </div>
 
@@ -168,10 +293,18 @@ export function ProjectForm({ initial, onSubmit, onCancel, saving }: Props) {
       </div>
 
       <div className="flex justify-end gap-2 pt-2">
-        <button type="button" onClick={onCancel} className="px-4 py-2 text-sm text-app-muted border border-app-border rounded-lg hover:bg-app-hover">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-4 py-2 text-sm text-app-muted border border-app-border rounded-lg hover:bg-app-hover"
+        >
           Cancelar
         </button>
-        <button type="submit" disabled={saving || !name || !code} className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50">
+        <button
+          type="submit"
+          disabled={submitDisabled}
+          className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50"
+        >
           {saving ? 'Guardando...' : isEditing ? 'Guardar cambios' : 'Crear proyecto'}
         </button>
       </div>

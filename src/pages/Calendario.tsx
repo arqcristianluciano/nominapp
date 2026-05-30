@@ -3,6 +3,7 @@ import { Calendar } from 'lucide-react'
 import { CalendarMonthGrid } from '@/components/features/calendar/CalendarMonthGrid'
 import { CalendarKpis, CalendarSelectedDay, CalendarUpcoming } from '@/components/features/calendar/CalendarSidePanels'
 import { useCalendarEvents } from '@/hooks/useCalendarEvents'
+import { parseDateLocal } from '@/utils/dateLocal'
 
 export default function Calendario() {
   const { events, loading, totals } = useCalendarEvents()
@@ -15,7 +16,7 @@ export default function Calendario() {
   const eventsByDate = useMemo(() => {
     const grouped: Record<string, typeof events> = {}
     for (const event of events) {
-      const date = new Date(event.date + 'T12:00:00')
+      const date = parseDateLocal(event.date)
       if (date.getFullYear() === year && date.getMonth() === month) {
         if (!grouped[event.date]) grouped[event.date] = []
         grouped[event.date].push(event)
@@ -26,8 +27,12 @@ export default function Calendario() {
 
   const selectedEvents = selectedDate ? (eventsByDate[selectedDate] ?? []) : []
 
-  function prevMonth() { setCurrentDate(new Date(year, month - 1, 1)) }
-  function nextMonth() { setCurrentDate(new Date(year, month + 1, 1)) }
+  function prevMonth() {
+    setCurrentDate(new Date(year, month - 1, 1))
+  }
+  function nextMonth() {
+    setCurrentDate(new Date(year, month + 1, 1))
+  }
 
   return (
     <div className="p-4 lg:p-6 space-y-5 max-w-7xl mx-auto">

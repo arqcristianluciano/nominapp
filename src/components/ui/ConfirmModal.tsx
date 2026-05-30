@@ -25,16 +25,18 @@ export function ConfirmModal({
   const isDanger = variant === 'danger'
 
   return (
-    <Modal open={open} onClose={onCancel} title="" width="max-w-sm">
+    <Modal open={open} onClose={onCancel} title="" ariaLabel={title} width="max-w-sm">
       <div className="text-center space-y-4 pb-1">
-        <div className={`mx-auto w-12 h-12 rounded-full flex items-center justify-center ${
-          isDanger
-            ? 'bg-red-100 dark:bg-red-950/50'
-            : 'bg-amber-100 dark:bg-amber-950/50'
-        }`}>
-          {isDanger
-            ? <Trash2 className="w-5 h-5 text-red-600 dark:text-red-400" />
-            : <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />}
+        <div
+          className={`mx-auto w-12 h-12 rounded-full flex items-center justify-center ${
+            isDanger ? 'bg-red-100 dark:bg-red-950/50' : 'bg-amber-100 dark:bg-amber-950/50'
+          }`}
+        >
+          {isDanger ? (
+            <Trash2 className="w-5 h-5 text-red-600 dark:text-red-400" />
+          ) : (
+            <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+          )}
         </div>
 
         <div>
@@ -50,11 +52,12 @@ export function ConfirmModal({
             {cancelLabel}
           </button>
           <button
-            onClick={() => { onConfirm(); onCancel() }}
+            onClick={() => {
+              onConfirm()
+              onCancel()
+            }}
             className={`flex-1 px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors ${
-              isDanger
-                ? 'bg-red-600 hover:bg-red-700'
-                : 'bg-amber-600 hover:bg-amber-700'
+              isDanger ? 'bg-red-600 hover:bg-red-700' : 'bg-amber-600 hover:bg-amber-700'
             }`}
           >
             {confirmLabel}

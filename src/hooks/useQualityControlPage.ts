@@ -3,12 +3,15 @@ import { useProjectStore } from '@/stores/projectStore'
 import { qualityControlService } from '@/services/qualityControlService'
 import { getQualityStats } from '@/components/features/quality/qualityUtils'
 import type { QualityControl } from '@/types/database'
+import { useToast } from '@/components/ui/Toast'
+import { getErrorMessage } from '@/utils/errors'
 
 type QualityFormData = Omit<QualityControl, 'id' | 'status'>
 
 function useQualityRecords(projectId?: string) {
   const [records, setRecords] = useState<QualityControl[]>([])
   const [loading, setLoading] = useState(true)
+  const { error } = useToast()
 
   const load = useCallback(async () => {
     if (!projectId) {
@@ -20,10 +23,12 @@ function useQualityRecords(projectId?: string) {
     try {
       const nextRecords = await qualityControlService.getByProject(projectId)
       setRecords(nextRecords)
+    } catch (loadError) {
+      error(`No se pudieron cargar ensayos: ${getErrorMessage(loadError)}`)
     } finally {
       setLoading(false)
     }
-  }, [projectId])
+  }, [error, projectId])
 
   useEffect(() => {
     void load()
@@ -42,7 +47,7 @@ function useQualityProject(projectId?: string) {
 
   const projectName = useMemo(
     () => projects.find((project) => project.id === projectId)?.name ?? 'Proyecto',
-    [projectId, projects]
+    [projectId, projects],
   )
 
   return { projectName }
@@ -71,6 +76,7 @@ type QualityActionsArgs = {
   editing: QualityControl | undefined
   deletingId: string | null
   load: () => Promise<void>
+  onError: (message: string) => void
   setSaving: (value: boolean) => void
   setEditing: (value: QualityControl | undefined) => void
   setShowCreate: (value: boolean) => void
@@ -91,24 +97,31 @@ function useQualityActions(args: QualityActionsArgs) {
           args.setShowCreate(false)
         }
         await args.load()
+      } catch (saveError) {
+        args.onError(`No se pudo guardar ensayo: ${getErrorMessage(saveError)}`)
       } finally {
         args.setSaving(false)
       }
     },
-    [args]
+    [args],
   )
 
   const confirmDelete = useCallback(async () => {
     if (!args.deletingId) return
-    await qualityControlService.delete(args.deletingId)
-    args.setDeletingId(null)
-    await args.load()
+    try {
+      await qualityControlService.delete(args.deletingId)
+      args.setDeletingId(null)
+      await args.load()
+    } catch (deleteError) {
+      args.onError(`No se pudo eliminar ensayo: ${getErrorMessage(deleteError)}`)
+    }
   }, [args])
 
   return { submitRecord, confirmDelete }
 }
 
 export function useQualityControlPage(projectId?: string) {
+  const { error } = useToast()
   const quality = useQualityRecords(projectId)
   const project = useQualityProject(projectId)
   const modal = useQualityModals()
@@ -118,6 +131,7 @@ export function useQualityControlPage(projectId?: string) {
     editing: modal.editing,
     deletingId: modal.deletingId,
     load: quality.load,
+    onError: error,
     setSaving: modal.setSaving,
     setEditing: modal.setEditing,
     setShowCreate: modal.setShowCreate,

@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import {
   LayoutDashboard,
   Building2,
@@ -18,72 +19,76 @@ import {
   ChevronRight,
   Calendar,
   TrendingUp,
+  Users,
 } from 'lucide-react'
 import { usePendingApprovals } from '@/hooks/usePendingApprovals'
 import { usePendingCortes } from '@/hooks/usePendingCortes'
+import { useAppRoles, type UseAppRolesResult } from '@/hooks/useAppRoles'
 import { ThemeToggle } from '@/components/layout/ThemeToggle'
+
+type CapabilityKey = {
+  [K in keyof UseAppRolesResult]: UseAppRolesResult[K] extends boolean ? K : never
+}[keyof UseAppRolesResult]
 
 interface NavItem {
   to: string
   icon: React.ElementType
-  label: string
+  labelKey: string
   badgeKey?: 'approvals' | 'cortes'
+  capability?: CapabilityKey
 }
 
 interface NavSection {
-  label: string
+  labelKey: string
   items: NavItem[]
 }
 
 const NAV_SECTIONS: NavSection[] = [
   {
-    label: 'General',
+    labelKey: 'nav.sections.general',
     items: [
-      { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-      { to: '/proyectos', icon: Building2, label: 'Proyectos' },
-      { to: '/nominas', icon: ScrollText, label: 'Reportes' },
+      { to: '/', icon: LayoutDashboard, labelKey: 'nav.dashboard' },
+      { to: '/proyectos', icon: Building2, labelKey: 'nav.projects' },
+      { to: '/nominas', icon: ScrollText, labelKey: 'nav.payrollReports' },
     ],
   },
   {
-    label: 'Finanzas',
+    labelKey: 'nav.sections.finanzas',
     items: [
-      { to: '/finanzas', icon: Landmark, label: 'Control Financiero' },
-      { to: '/presupuesto', icon: BarChart3, label: 'Presupuesto' },
-      { to: '/cxp', icon: CreditCard, label: 'Cuentas por Pagar' },
-      { to: '/cubicaciones', icon: Layers, label: 'Cubicaciones', badgeKey: 'cortes' as const },
+      { to: '/finanzas', icon: Landmark, labelKey: 'nav.finance', capability: 'canViewFinanzas' },
+      { to: '/presupuesto', icon: BarChart3, labelKey: 'nav.budget' },
+      { to: '/cxp', icon: CreditCard, labelKey: 'nav.accountsPayable', capability: 'canViewFinanzas' },
+      { to: '/cubicaciones', icon: Layers, labelKey: 'nav.cubicaciones', badgeKey: 'cortes' as const },
     ],
   },
   {
-    label: 'Compras',
+    labelKey: 'nav.sections.compras',
+    items: [{ to: '/ordenes-compra', icon: ShoppingCart, labelKey: 'nav.purchaseOrders' }],
+  },
+  {
+    labelKey: 'nav.sections.recursos',
     items: [
-      { to: '/ordenes-compra', icon: ShoppingCart, label: 'Órdenes de Compra' },
+      { to: '/contratistas', icon: HardHat, labelKey: 'nav.contractors' },
+      { to: '/suplidores', icon: Truck, labelKey: 'nav.suppliers' },
+      { to: '/prestamos', icon: Banknote, labelKey: 'nav.loans', capability: 'canWriteLoans' },
     ],
   },
   {
-    label: 'Recursos',
+    labelKey: 'nav.sections.planificacion',
+    items: [{ to: '/calendario', icon: Calendar, labelKey: 'nav.calendar', capability: 'canViewFinanzas' }],
+  },
+  {
+    labelKey: 'nav.sections.reportes',
     items: [
-      { to: '/contratistas', icon: HardHat, label: 'Contratistas' },
-      { to: '/suplidores', icon: Truck, label: 'Suplidores' },
-      { to: '/prestamos', icon: Banknote, label: 'Préstamos' },
+      { to: '/reportes', icon: FileText, labelKey: 'nav.financialSummary', capability: 'canViewReportes' },
+      { to: '/historial-precios', icon: TrendingUp, labelKey: 'nav.priceHistory', capability: 'canViewPriceHistory' },
     ],
   },
   {
-    label: 'Planificación',
+    labelKey: 'nav.sections.sistema',
     items: [
-      { to: '/calendario', icon: Calendar, label: 'Calendario de pagos' },
-    ],
-  },
-  {
-    label: 'Reportes',
-    items: [
-      { to: '/reportes', icon: FileText, label: 'Resumen financiero' },
-      { to: '/historial-precios', icon: TrendingUp, label: 'Historial de precios' },
-    ],
-  },
-  {
-    label: 'Sistema',
-    items: [
-      { to: '/configuracion', icon: Settings, label: 'Configuración' },
+      { to: '/admin/usuarios', icon: Users, labelKey: 'nav.users', capability: 'canManageUsers' },
+      { to: '/configuracion', icon: Settings, labelKey: 'nav.settings' },
     ],
   },
 ]
@@ -94,8 +99,10 @@ interface SidebarProps {
 }
 
 export function Sidebar({ open, onClose }: SidebarProps) {
+  const { t } = useTranslation()
   const pendingApprovals = usePendingApprovals()
   const pendingCortes = usePendingCortes()
+  const app = useAppRoles()
 
   function getBadgeCount(item: NavItem): number {
     if (item.to === '/ordenes-compra') return pendingApprovals
@@ -103,16 +110,17 @@ export function Sidebar({ open, onClose }: SidebarProps) {
     return 0
   }
 
+  const sections = NAV_SECTIONS.map((section) => ({
+    ...section,
+    items: section.items.filter((item) => !item.capability || app[item.capability]),
+  })).filter((section) => section.items.length > 0)
+
   return (
     <>
-      {open && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm"
-          onClick={onClose}
-        />
-      )}
+      {open && <div className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm" onClick={onClose} />}
 
       <aside
+        style={{ paddingTop: 'env(safe-area-inset-top)' }}
         className={`
           fixed top-0 left-0 z-50 h-full w-64 bg-app-surface border-r border-app-border
           flex flex-col
@@ -127,18 +135,24 @@ export function Sidebar({ open, onClose }: SidebarProps) {
             <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center">
               <ClipboardList className="w-4 h-4 text-white" />
             </div>
-            <span className="text-base font-semibold text-white tracking-tight">NominaAPP</span>
+            <span className="text-base font-semibold text-white tracking-tight">{t('nav.brand')}</span>
           </div>
-          <button onClick={onClose} className="lg:hidden p-1 text-white/70 hover:text-white rounded-md hover:bg-white/10 transition-colors">
+          <button
+            type="button"
+            onClick={onClose}
+            className="lg:hidden p-2 -mr-1 text-white/70 hover:text-white rounded-md hover:bg-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
+            title={t('nav.closeMenu')}
+            aria-label={t('nav.closeMenuAria')}
+          >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         <nav className="p-2.5 space-y-5 overflow-y-auto flex-1 min-h-0 pt-3">
-          {NAV_SECTIONS.map((section) => (
-            <div key={section.label}>
+          {sections.map((section) => (
+            <div key={section.labelKey}>
               <p className="px-3 mb-1.5 text-[10px] font-bold uppercase tracking-widest text-app-subtle select-none">
-                {section.label}
+                {t(section.labelKey)}
               </p>
               <div className="space-y-0.5">
                 {section.items.map((item) => {
@@ -162,8 +176,10 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                           {isActive && (
                             <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-blue-600 dark:bg-blue-400 rounded-r-full" />
                           )}
-                          <item.icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-app-subtle group-hover:text-app-muted'}`} />
-                          <span className="flex-1 truncate">{item.label}</span>
+                          <item.icon
+                            className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-app-subtle group-hover:text-app-muted'}`}
+                          />
+                          <span className="flex-1 truncate">{t(item.labelKey)}</span>
                           {badge > 0 && (
                             <span className="text-[10px] font-bold bg-orange-500 text-white rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center leading-none shrink-0">
                               {badge}

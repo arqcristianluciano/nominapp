@@ -46,6 +46,23 @@ describe('mockSupabase filtros encadenados', () => {
     expect((res.data as Array<{ id: string }>).map((r) => r.id).sort()).toEqual([`${marker}-1`, `${marker}-3`])
   })
 
+  it('expone channel() con on/subscribe/unsubscribe encadenables', () => {
+    expect(() => {
+      mockSupabase
+        .channel('foo')
+        .on('x', {}, () => {})
+        .subscribe()
+    }).not.toThrow()
+
+    const ch = mockSupabase.channel('bar')
+    expect(typeof ch.on).toBe('function')
+    expect(typeof ch.subscribe).toBe('function')
+    expect(typeof ch.unsubscribe).toBe('function')
+    expect(ch.on('evt', {}, () => {})).toBe(ch)
+    expect(ch.subscribe()).toBe(ch)
+    expect(ch.unsubscribe()).toBe(ch)
+  })
+
   it('soporta filtro is para null', async () => {
     const marker = `TEST-IS-${Date.now()}`
 

@@ -1,10 +1,13 @@
 import { useState, type ReactNode } from 'react'
 import { BankAccountsSection } from '@/components/features/settings/BankAccountsSection'
+import { CompaniesSection } from '@/components/features/settings/CompaniesSection'
+import { ExportSection } from '@/components/features/settings/ExportSection'
 import {
   BudgetCategoriesPanel,
   PaymentConditionsPanel,
   SystemPanel,
 } from '@/components/features/settings/SettingsPanels'
+import { PushNotificationsSection } from '@/components/features/settings/PushNotificationsSection'
 import { SettingsTabsBar } from '@/components/features/settings/SettingsTabsBar'
 import { type SettingsTab } from '@/components/features/settings/settingsTabs'
 import { useSettingsBankAccounts } from '@/hooks/useSettingsBankAccounts'
@@ -29,6 +32,9 @@ export default function Settings() {
     ),
     condiciones: <PaymentConditionsPanel />,
     categorias: <BudgetCategoriesPanel />,
+    empresas: <CompaniesSection />,
+    notificaciones: <PushNotificationsSection />,
+    exportar: <ExportSection />,
     sistema: <SystemPanel />,
   }
 

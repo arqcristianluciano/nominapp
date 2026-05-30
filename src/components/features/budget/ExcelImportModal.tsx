@@ -1,143 +1,206 @@
 import { useState, useRef } from 'react'
-import { X, Upload, FileSpreadsheet, AlertTriangle, CheckCircle } from 'lucide-react'
-import type { BudgetCategory, BudgetItem } from '@/types/database'
+import { X, Upload, FileSpreadsheet, AlertTriangle, CheckCircle, Sparkles, Download } from 'lucide-react'
+import type { BudgetCategory } from '@/types/database'
 import { formatRD } from '@/utils/currency'
 import { getErrorMessage } from '@/utils/errors'
+import { readExcelRowsFromFile } from '@/utils/excel'
+import { downloadBudgetTemplate } from '@/utils/excelTemplates'
+import { parseRows, type ImportPayload, type NewCategoryDraft, type ParsedItem } from './parseBudgetExcel'
 
-interface ParsedRow {
-  categoryId: string
-  categoryName: string
-  code: string
-  description: string
-  unit: string
-  quantity: number
-  unit_price: number
-  valid: boolean
-  error?: string
-}
+export type { ImportPayload, NewCategoryDraft, ParsedItem } from './parseBudgetExcel'
 
 interface Props {
   categories: BudgetCategory[]
-  onImport: (items: Omit<BudgetItem, 'id'>[]) => Promise<void>
+  onImport: (payload: ImportPayload) => Promise<void>
   onClose: () => void
 }
 
-function matchCategory(categories: BudgetCategory[], rawCode: string, desc: string): BudgetCategory | null {
-  const code = rawCode?.toString().trim()
-  const name = desc?.toString().trim().toLowerCase()
-  return categories.find((c) =>
-    c.sort_order.toString() === code ||
-    c.code.toLowerCase().includes(name) ||
-    c.name.toLowerCase().includes(name)
-  ) ?? null
+interface ExcelDropZoneProps {
+  onFile: (file: File) => void
 }
 
-function parseRows(rows: unknown[][], categories: BudgetCategory[]): ParsedRow[] {
-  const parsed: ParsedRow[] = []
-  let currentCategory: BudgetCategory | null = null
+function ExcelDropZone({ onFile }: ExcelDropZoneProps) {
+  const inputRef = useRef<HTMLInputElement>(null)
 
-  for (const row of rows) {
-    const [colA, colB, colC, colD, colE] = row.map((v: unknown) => String(v ?? '').trim())
-    if (!colA && !colB) continue
-
-    const qty = parseFloat(colD.replace(/,/g, '.'))
-    const price = parseFloat(colE.replace(/,/g, '.'))
-    const isSubpartida = colC && !isNaN(qty) && qty > 0
-
-    if (!isSubpartida) {
-      // Es cabecera de partida
-      const matched = matchCategory(categories, colA, colB || colA)
-      if (matched) currentCategory = matched
-      continue
-    }
-
-    if (!currentCategory) {
-      parsed.push({
-        categoryId: '', categoryName: 'Sin partida',
-        code: colA, description: colB, unit: colC,
-        quantity: qty, unit_price: isNaN(price) ? 0 : price,
-        valid: false, error: 'No se detectó partida principal',
-      })
-      continue
-    }
-
-    parsed.push({
-      categoryId: currentCategory.id,
-      categoryName: currentCategory.name,
-      code: colA,
-      description: colB,
-      unit: colC,
-      quantity: qty,
-      unit_price: isNaN(price) ? 0 : price,
-      valid: true,
-    })
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    const file = e.dataTransfer.files[0]
+    if (file) onFile(file)
   }
 
-  return parsed
+  return (
+    <div
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={handleDrop}
+      onClick={() => inputRef.current?.click()}
+      className="border-2 border-dashed border-app-border rounded-xl p-10 text-center cursor-pointer hover:border-blue-300 hover:bg-blue-50/30 transition-colors"
+    >
+      <Upload className="w-8 h-8 text-app-subtle mx-auto mb-3" />
+      <p className="text-sm text-app-muted">Arrastra tu archivo Excel aquí</p>
+      <p className="text-xs text-app-subtle mt-1">o haz click para seleccionar (.xlsx, .xls)</p>
+      <input
+        ref={inputRef}
+        type="file"
+        accept=".xlsx,.xls"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0]
+          if (f) onFile(f)
+        }}
+      />
+    </div>
+  )
+}
+
+interface ImportPreviewTableProps {
+  items: ParsedItem[]
+}
+
+function ImportPreviewTable({ items }: ImportPreviewTableProps) {
+  return (
+    <div className="border border-app-border rounded-lg overflow-hidden">
+      <table className="w-full text-xs">
+        <thead>
+          <tr className="bg-app-bg border-b border-app-border">
+            <th className="px-3 py-2 text-left font-medium text-app-muted">Partida</th>
+            <th className="px-3 py-2 text-left font-medium text-app-muted">Cod.</th>
+            <th className="px-3 py-2 text-left font-medium text-app-muted">Descripción</th>
+            <th className="px-3 py-2 text-center font-medium text-app-muted">Und</th>
+            <th className="px-3 py-2 text-right font-medium text-app-muted">Cant.</th>
+            <th className="px-3 py-2 text-right font-medium text-app-muted">P. Unit.</th>
+            <th className="px-3 py-2 text-right font-medium text-app-muted">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {(() => {
+            const seenKeys = new Map<string, number>()
+            return items.map((row) => {
+              const baseKey = `${row.categoryId ?? row.newCategoryKey ?? 'nocat'}-${row.code || 'nocode'}-${row.description}`
+              const dup = seenKeys.get(baseKey) ?? 0
+              seenKeys.set(baseKey, dup + 1)
+              const rowKey = dup === 0 ? baseKey : `${baseKey}#${dup}`
+              return (
+                <tr
+                  key={rowKey}
+                  className={`border-b border-app-border ${row.valid ? 'hover:bg-app-hover' : 'bg-amber-50'}`}
+                >
+                  <td className="px-3 py-1.5 text-app-muted max-w-[160px] truncate">
+                    <span>{row.categoryName}</span>
+                    {row.isNewCategory && (
+                      <span className="ml-1 text-[9px] uppercase tracking-wide text-blue-600 font-semibold">nueva</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-1.5 text-app-subtle font-mono">{row.code}</td>
+                  <td className="px-3 py-1.5 text-app-text max-w-[200px] truncate">{row.description}</td>
+                  <td className="px-3 py-1.5 text-center text-app-muted">{row.unit}</td>
+                  <td className="px-3 py-1.5 text-right text-app-muted">{row.quantity}</td>
+                  <td className="px-3 py-1.5 text-right text-app-muted">{formatRD(row.unit_price)}</td>
+                  <td className="px-3 py-1.5 text-right font-medium text-app-text">
+                    {row.valid ? (
+                      formatRD(row.quantity * row.unit_price)
+                    ) : (
+                      <span className="text-amber-600 text-[10px]">{row.error}</span>
+                    )}
+                  </td>
+                </tr>
+              )
+            })
+          })()}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+interface ImportSummaryFooterProps {
+  done: boolean
+  validCount: number
+  importing: boolean
+  onClose: () => void
+  onConfirm: () => void
+}
+
+function ImportSummaryFooter({ done, validCount, importing, onClose, onConfirm }: ImportSummaryFooterProps) {
+  return (
+    <div className="flex justify-end gap-2 px-5 py-4 border-t border-app-border">
+      <button
+        onClick={onClose}
+        className="px-4 py-2 text-xs text-app-muted border border-app-border rounded-lg hover:bg-app-hover"
+      >
+        {done ? 'Cerrar' : 'Cancelar'}
+      </button>
+      {!done && validCount > 0 && (
+        <button
+          onClick={onConfirm}
+          disabled={importing}
+          className="px-4 py-2 text-xs text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50"
+        >
+          {importing ? 'Importando...' : `Importar ${validCount} subpartidas`}
+        </button>
+      )}
+    </div>
+  )
 }
 
 export default function ExcelImportModal({ categories, onImport, onClose }: Props) {
-  const inputRef = useRef<HTMLInputElement>(null)
-  const [rows, setRows] = useState<ParsedRow[]>([])
+  const [items, setItems] = useState<ParsedItem[]>([])
+  const [newCategories, setNewCategories] = useState<NewCategoryDraft[]>([])
   const [fileName, setFileName] = useState('')
   const [importing, setImporting] = useState(false)
   const [done, setDone] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const handleFile = (file: File) => {
+  const handleFile = async (file: File) => {
     setFileName(file.name)
     setDone(false)
     setError(null)
-    const reader = new FileReader()
-    reader.onload = async (e) => {
-      try {
-        const XLSX = await import('xlsx')
-        const wb = XLSX.read(e.target?.result, { type: 'binary' })
-        const ws = wb.Sheets[wb.SheetNames[0]]
-        const rawRows = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, defval: '' })
-        const parsed = parseRows(rawRows, categories)
-        setRows(parsed)
-      } catch {
-        setError('No se pudo leer el archivo. Verifique que sea un Excel válido.')
-      }
+    try {
+      const rawRows = await readExcelRowsFromFile(file)
+      const parsed = parseRows(rawRows, categories)
+      setItems(parsed.items)
+      setNewCategories(parsed.newCategories)
+    } catch (e) {
+      setError(getErrorMessage(e))
     }
-    reader.readAsBinaryString(file)
   }
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    const file = e.dataTransfer.files[0]
-    if (file) handleFile(file)
+  const handleDownloadTemplate = async () => {
+    await downloadBudgetTemplate()
   }
 
   const handleConfirm = async () => {
-    const valid = rows.filter((r) => r.valid)
+    const valid = items.filter((r) => r.valid)
     if (valid.length === 0) return
     setImporting(true)
     setError(null)
     try {
-      const items: Omit<BudgetItem, 'id'>[] = valid.map((r, i) => ({
-        budget_category_id: r.categoryId,
-        code: r.code || null,
-        description: r.description,
-        unit: r.unit,
-        quantity: r.quantity,
-        unit_price: r.unit_price,
-        sort_order: i + 1,
-        notes: null,
-      }))
-      await onImport(items)
+      const payload: ImportPayload = {
+        newCategories,
+        items: valid.map((r, i) => ({
+          budget_category_id: r.categoryId,
+          new_category_key: r.newCategoryKey,
+          code: r.code || null,
+          description: r.description,
+          unit: r.unit,
+          quantity: r.quantity,
+          unit_price: r.unit_price,
+          sort_order: i + 1,
+          notes: null,
+          start_date: null,
+          end_date: null,
+        })),
+      }
+      await onImport(payload)
       setDone(true)
     } catch (e) {
-
       setError(getErrorMessage(e))
     } finally {
       setImporting(false)
     }
   }
 
-  const validCount = rows.filter((r) => r.valid).length
-  const invalidCount = rows.filter((r) => !r.valid).length
+  const validCount = items.filter((r) => r.valid).length
+  const invalidCount = items.filter((r) => !r.valid).length
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
@@ -153,36 +216,75 @@ export default function ExcelImportModal({ categories, onImport, onClose }: Prop
         </div>
 
         <div className="p-5 overflow-y-auto flex-1 space-y-4">
-          {/* Instrucciones */}
-          <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-700 space-y-1">
-            <p className="font-medium">Formato esperado (columnas A–E):</p>
+          <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-700 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <p className="font-medium">Formato esperado (columnas A–E):</p>
+              <button
+                onClick={handleDownloadTemplate}
+                className="flex items-center gap-1 px-2 py-1 text-[11px] text-blue-700 bg-white border border-blue-200 rounded hover:bg-blue-100 transition-colors"
+                title="Descargar plantilla de ejemplo"
+              >
+                <Download className="w-3 h-3" /> Descargar plantilla
+              </button>
+            </div>
             <p>A: Código · B: Descripción · C: Unidad · D: Cantidad · E: Precio unitario</p>
-            <p className="text-blue-500">Las filas sin Unidad/Cantidad se detectan como cabeceras de partida.</p>
+            <div className="bg-white border border-blue-100 rounded overflow-hidden mt-1">
+              <table className="w-full text-[11px] text-blue-900">
+                <thead>
+                  <tr className="bg-blue-100/60 text-blue-700">
+                    <th className="px-2 py-1 text-left font-semibold">A · Código</th>
+                    <th className="px-2 py-1 text-left font-semibold">B · Descripción</th>
+                    <th className="px-2 py-1 text-center font-semibold">C · Unidad</th>
+                    <th className="px-2 py-1 text-right font-semibold">D · Cantidad</th>
+                    <th className="px-2 py-1 text-right font-semibold">E · P. Unit.</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-t border-blue-100 bg-blue-50/60 font-semibold">
+                    <td className="px-2 py-1">1</td>
+                    <td className="px-2 py-1">PRELIMINARES</td>
+                    <td className="px-2 py-1 text-center text-blue-400">—</td>
+                    <td className="px-2 py-1 text-right text-blue-400">—</td>
+                    <td className="px-2 py-1 text-right text-blue-400">—</td>
+                  </tr>
+                  <tr className="border-t border-blue-100">
+                    <td className="px-2 py-1">1.01</td>
+                    <td className="px-2 py-1">Campamento</td>
+                    <td className="px-2 py-1 text-center">pa</td>
+                    <td className="px-2 py-1 text-right">1</td>
+                    <td className="px-2 py-1 text-right">1,000,000</td>
+                  </tr>
+                  <tr className="border-t border-blue-100 bg-blue-50/60 font-semibold">
+                    <td className="px-2 py-1">2</td>
+                    <td className="px-2 py-1">MOVIMIENTO DE TIERRA</td>
+                    <td className="px-2 py-1 text-center text-blue-400">—</td>
+                    <td className="px-2 py-1 text-right text-blue-400">—</td>
+                    <td className="px-2 py-1 text-right text-blue-400">—</td>
+                  </tr>
+                  <tr className="border-t border-blue-100">
+                    <td className="px-2 py-1">2.01</td>
+                    <td className="px-2 py-1">Corte y bote</td>
+                    <td className="px-2 py-1 text-center">m3</td>
+                    <td className="px-2 py-1 text-right">1,500</td>
+                    <td className="px-2 py-1 text-right">650</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <ul className="list-disc pl-4 space-y-0.5 text-blue-600">
+              <li>
+                Las filas <strong>sin Unidad ni Cantidad</strong> se detectan como capítulos (partidas).
+              </li>
+              <li>
+                Si el nombre del capítulo no coincide con una partida existente, se crea una nueva automáticamente.
+              </li>
+              <li>Las cantidades y precios deben ser numéricos (sin símbolo RD$).</li>
+            </ul>
           </div>
 
-          {/* Drop zone */}
-          {!rows.length && (
-            <div
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={handleDrop}
-              onClick={() => inputRef.current?.click()}
-              className="border-2 border-dashed border-app-border rounded-xl p-10 text-center cursor-pointer hover:border-blue-300 hover:bg-blue-50/30 transition-colors"
-            >
-              <Upload className="w-8 h-8 text-app-subtle mx-auto mb-3" />
-              <p className="text-sm text-app-muted">Arrastra tu archivo Excel aquí</p>
-              <p className="text-xs text-app-subtle mt-1">o haz click para seleccionar (.xlsx, .xls)</p>
-              <input
-                ref={inputRef}
-                type="file"
-                accept=".xlsx,.xls"
-                className="hidden"
-                onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f) }}
-              />
-            </div>
-          )}
+          {!items.length && <ExcelDropZone onFile={handleFile} />}
 
-          {/* Resumen */}
-          {rows.length > 0 && (
+          {items.length > 0 && (
             <>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3 text-xs">
@@ -195,50 +297,36 @@ export default function ExcelImportModal({ categories, onImport, onClose }: Prop
                       <AlertTriangle className="w-3.5 h-3.5" /> {invalidCount} con errores
                     </span>
                   )}
+                  {newCategories.length > 0 && (
+                    <span className="text-blue-600 flex items-center gap-1">
+                      <Sparkles className="w-3.5 h-3.5" /> {newCategories.length} partidas nuevas
+                    </span>
+                  )}
                 </div>
                 <button
-                  onClick={() => { setRows([]); setFileName('') }}
+                  onClick={() => {
+                    setItems([])
+                    setNewCategories([])
+                    setFileName('')
+                  }}
                   className="text-xs text-app-subtle hover:text-app-muted"
                 >
                   Cambiar archivo
                 </button>
               </div>
 
-              <div className="border border-app-border rounded-lg overflow-hidden">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="bg-app-bg border-b border-app-border">
-                      <th className="px-3 py-2 text-left font-medium text-app-muted">Partida</th>
-                      <th className="px-3 py-2 text-left font-medium text-app-muted">Cod.</th>
-                      <th className="px-3 py-2 text-left font-medium text-app-muted">Descripción</th>
-                      <th className="px-3 py-2 text-center font-medium text-app-muted">Und</th>
-                      <th className="px-3 py-2 text-right font-medium text-app-muted">Cant.</th>
-                      <th className="px-3 py-2 text-right font-medium text-app-muted">P. Unit.</th>
-                      <th className="px-3 py-2 text-right font-medium text-app-muted">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rows.map((row, i) => (
-                      <tr
-                        key={i}
-                        className={`border-b border-app-border ${row.valid ? 'hover:bg-app-hover' : 'bg-amber-50'}`}
-                      >
-                        <td className="px-3 py-1.5 text-app-muted max-w-[120px] truncate">{row.categoryName}</td>
-                        <td className="px-3 py-1.5 text-app-subtle font-mono">{row.code}</td>
-                        <td className="px-3 py-1.5 text-app-text max-w-[200px] truncate">{row.description}</td>
-                        <td className="px-3 py-1.5 text-center text-app-muted">{row.unit}</td>
-                        <td className="px-3 py-1.5 text-right text-app-muted">{row.quantity}</td>
-                        <td className="px-3 py-1.5 text-right text-app-muted">{formatRD(row.unit_price)}</td>
-                        <td className="px-3 py-1.5 text-right font-medium text-app-text">
-                          {row.valid ? formatRD(row.quantity * row.unit_price) : (
-                            <span className="text-amber-600 text-[10px]">{row.error}</span>
-                          )}
-                        </td>
-                      </tr>
+              {newCategories.length > 0 && (
+                <div className="bg-blue-50/60 border border-blue-100 rounded-lg p-3 text-xs text-blue-700">
+                  <p className="font-medium mb-1">Se crearán estas partidas nuevas:</p>
+                  <ul className="list-disc pl-5 space-y-0.5">
+                    {newCategories.map((c) => (
+                      <li key={c.key}>{c.name}</li>
                     ))}
-                  </tbody>
-                </table>
-              </div>
+                  </ul>
+                </div>
+              )}
+
+              <ImportPreviewTable items={items} />
             </>
           )}
 
@@ -251,20 +339,13 @@ export default function ExcelImportModal({ categories, onImport, onClose }: Prop
           {error && <p className="text-xs text-red-600">{error}</p>}
         </div>
 
-        <div className="flex justify-end gap-2 px-5 py-4 border-t border-app-border">
-          <button onClick={onClose} className="px-4 py-2 text-xs text-app-muted border border-app-border rounded-lg hover:bg-app-hover">
-            {done ? 'Cerrar' : 'Cancelar'}
-          </button>
-          {!done && validCount > 0 && (
-            <button
-              onClick={handleConfirm}
-              disabled={importing}
-              className="px-4 py-2 text-xs text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50"
-            >
-              {importing ? 'Importando...' : `Importar ${validCount} subpartidas`}
-            </button>
-          )}
-        </div>
+        <ImportSummaryFooter
+          done={done}
+          validCount={validCount}
+          importing={importing}
+          onClose={onClose}
+          onConfirm={handleConfirm}
+        />
       </div>
     </div>
   )

@@ -1,7 +1,14 @@
 import { useCallback, useEffect, useState, useMemo } from 'react'
 import { useParams } from 'react-router-dom'
 import { useProjectStore } from '@/stores/projectStore'
-import { inventoryService, type InventoryItem, type InventoryMovement } from '@/services/inventoryService'
+import {
+  inventoryService,
+  InventoryError,
+  type InventoryItem,
+  type InventoryMovement,
+} from '@/services/inventoryService'
+import { useToast } from '@/components/ui/Toast'
+import { useAuthStore } from '@/stores/authStore'
 import { InventoryLowStockAlert } from '@/components/features/inventory/InventoryLowStockAlert'
 import {
   InventoryActionFormsSection,
@@ -10,12 +17,20 @@ import {
   InventoryPageHeader,
 } from '@/components/features/inventory/InventoryPageSections'
 import { InventoryTabs } from '@/components/features/inventory/InventoryTabs'
-import { EMPTY_ITEM_FORM, EMPTY_MOVEMENT_FORM, type InventoryTab } from '@/components/features/inventory/inventoryConfig'
+import {
+  EMPTY_ITEM_FORM,
+  EMPTY_MOVEMENT_FORM,
+  type InventoryMovementFormState,
+  type InventoryTab,
+} from '@/components/features/inventory/inventoryConfig'
+import { StockOverrideModal } from '@/components/features/inventory/StockOverrideModal'
+import { useProjectRoles } from '@/hooks/useProjectRoles'
 
 export default function InventarioPage() {
   const { projectId } = useParams<{ projectId: string }>()
   const { projects } = useProjectStore()
   const project = projects.find((p) => p.id === projectId)
+  const roles = useProjectRoles(projectId)
   const [items, setItems] = useState<InventoryItem[]>([])
   const [movements, setMovements] = useState<InventoryMovement[]>([])
   const [loading, setLoading] = useState(true)
@@ -26,6 +41,7 @@ export default function InventarioPage() {
   const [movForm, setMovForm] = useState(EMPTY_MOVEMENT_FORM)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [overrideOpen, setOverrideOpen] = useState(false)
 
   const loadAll = useCallback(async () => {
     setLoading(true)
@@ -36,19 +52,22 @@ export default function InventarioPage() {
       ])
       setItems(its)
       setMovements(movs)
-    } finally { setLoading(false) }
+    } finally {
+      setLoading(false)
+    }
   }, [projectId])
 
-  useEffect(() => { loadAll() }, [loadAll])
+  useEffect(() => {
+    loadAll()
+  }, [loadAll])
 
   const lowStock = useMemo(() => inventoryService.getLowStockItems(items), [items])
   const projectName = project?.name ?? 'Proyecto'
-  const handleMovementFormChange = useCallback(
-    (next: Pick<InventoryMovement, 'item_id' | 'type' | 'quantity' | 'date' | 'notes'>) => {
-      setMovForm((prev) => ({ ...prev, ...next }))
-    },
-    [],
-  )
+  const { success, error: toastError } = useToast()
+  const user = useAuthStore((s) => s.user)
+  const handleMovementFormChange = useCallback((next: InventoryMovementFormState) => {
+    setMovForm(next)
+  }, [])
 
   async function handleAddItem() {
     if (!itemForm.name.trim()) return
@@ -58,19 +77,74 @@ export default function InventarioPage() {
       setShowItemForm(false)
       setItemForm(EMPTY_ITEM_FORM)
       await loadAll()
-    } finally { setSaving(false) }
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function performAddMovement(override?: { motivo: string }) {
+    await inventoryService.addMovement({
+      item_id: movForm.item_id,
+      project_id: projectId!,
+      type: movForm.type,
+      quantity: movForm.quantity,
+      date: movForm.date,
+      notes: movForm.notes ?? null,
+      supplier_id: movForm.supplier_id ?? null,
+      budget_category_id: movForm.budget_category_id ?? null,
+      budget_item_id: movForm.budget_item_id ?? null,
+      purchase_order_id: movForm.purchase_order_id ?? null,
+      unit_cost: movForm.unit_cost ?? null,
+      created_by: user?.displayName ?? null,
+      override: override ? { motivo: override.motivo, actor: user?.displayName ?? 'desconocido' } : null,
+    })
   }
 
   async function handleAddMovement() {
     if (!movForm.item_id) return
     setSaving(true)
     try {
-      await inventoryService.addMovement({ ...movForm, project_id: projectId!, supplier_id: null })
+      await performAddMovement()
       setShowMovForm(false)
       setMovForm(EMPTY_MOVEMENT_FORM)
+      success('Movimiento registrado')
       await loadAll()
-    } finally { setSaving(false) }
+    } catch (e) {
+      if (e instanceof InventoryError) {
+        if (e.code === 'INSUFFICIENT_STOCK' && roles.canOverrideStock) {
+          setOverrideOpen(true)
+          return
+        }
+        toastError(e.message)
+      } else {
+        toastError('No se pudo registrar el movimiento')
+      }
+    } finally {
+      setSaving(false)
+    }
   }
+
+  async function handleConfirmOverride(motivo: string) {
+    setSaving(true)
+    try {
+      await performAddMovement({ motivo })
+      setShowMovForm(false)
+      setOverrideOpen(false)
+      setMovForm(EMPTY_MOVEMENT_FORM)
+      success('Salida registrada con override del Director')
+      await loadAll()
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const overrideContext = (() => {
+    const item = items.find((it) => it.id === movForm.item_id)
+    return {
+      currentStock: Number(item?.current_stock ?? 0),
+      requested: Number(movForm.quantity ?? 0),
+    }
+  })()
 
   async function handleDelete() {
     if (!deleteId) return
@@ -96,6 +170,7 @@ export default function InventarioPage() {
         itemForm={itemForm}
         movementForm={movForm}
         items={items}
+        projectId={projectId!}
         saving={saving}
         onItemFormChange={setItemForm}
         onMovementFormChange={handleMovementFormChange}
@@ -115,10 +190,15 @@ export default function InventarioPage() {
         onDeleteItem={setDeleteId}
       />
 
-      <InventoryDeleteModalSection
-        deleteId={deleteId}
-        onConfirm={handleDelete}
-        onCancel={() => setDeleteId(null)}
+      <InventoryDeleteModalSection deleteId={deleteId} onConfirm={handleDelete} onCancel={() => setDeleteId(null)} />
+
+      <StockOverrideModal
+        open={overrideOpen}
+        onClose={() => setOverrideOpen(false)}
+        onConfirm={handleConfirmOverride}
+        defaultActor={user?.displayName}
+        currentStock={overrideContext.currentStock}
+        requested={overrideContext.requested}
       />
     </div>
   )

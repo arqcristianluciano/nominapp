@@ -3,11 +3,12 @@ import { Check, X } from 'lucide-react'
 import type { PriceListItem, PriceListCategory } from '@/types/database'
 import { MEASURE_UNITS } from '@/constants/measureUnits'
 import { generatePriceCode } from '@/utils/priceCodeGenerator'
+import { useToast } from '@/components/ui/Toast'
 
 const CATEGORIES: { value: PriceListCategory; label: string }[] = [
-  { value: 'material',   label: 'Material' },
-  { value: 'labor',      label: 'Mano de obra' },
-  { value: 'equipment',  label: 'Equipo' },
+  { value: 'material', label: 'Material' },
+  { value: 'labor', label: 'Mano de obra' },
+  { value: 'equipment', label: 'Equipo' },
   { value: 'adjustment', label: 'Ajuste' },
 ]
 
@@ -38,18 +39,19 @@ export default function PriceListInlineForm({
 }: Props) {
   const [form, setForm] = useState({
     category: (initial?.category ?? 'material') as PriceListCategory,
-    code:        initial?.code        ?? '',
+    code: initial?.code ?? '',
     description: initial?.description ?? '',
-    unit:        initial?.unit        ?? 'M2',
-    unit_price:  initial?.unit_price  ?? '',
+    unit: initial?.unit ?? 'M2',
+    unit_price: initial?.unit_price ?? '',
   })
   const [saving, setSaving] = useState(false)
+  const { error: toastError } = useToast()
 
   // Auto-generar código solo al crear, y re-generar si cambia categoría sin código manual
   useEffect(() => {
     if (!isNew) return
     setForm((prev) => ({ ...prev, code: generatePriceCode(prev.category, existingItems) }))
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isNew])
 
   const set = <K extends keyof typeof form>(key: K, val: (typeof form)[K]) => {
@@ -63,17 +65,21 @@ export default function PriceListInlineForm({
   }
 
   const handleSave = async () => {
+    if (saving) return
     if (!form.description.trim()) return
     setSaving(true)
     try {
       await onSave({
         project_id: projectId,
-        category:   form.category,
-        code:       form.code.trim() || null,
+        category: form.category,
+        code: form.code.trim() || null,
         description: form.description.trim(),
-        unit:        form.unit,
-        unit_price:  Number(form.unit_price) || 0,
+        unit: form.unit,
+        unit_price: Number(form.unit_price) || 0,
       })
+    } catch (err) {
+      console.warn('[PriceListInlineForm] handleSave failed', err)
+      toastError('No se pudo guardar el precio. Inténtalo de nuevo.')
     } finally {
       setSaving(false)
     }
@@ -87,7 +93,11 @@ export default function PriceListInlineForm({
           onChange={(e) => set('category', e.target.value as PriceListCategory)}
           className="w-full px-2 py-1 border border-app-border rounded text-xs bg-app-surface"
         >
-          {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+          {CATEGORIES.map((c) => (
+            <option key={c.value} value={c.value}>
+              {c.label}
+            </option>
+          ))}
         </select>
       </td>
       <td className="px-3 py-1.5">
@@ -100,7 +110,9 @@ export default function PriceListInlineForm({
       </td>
       <td className="px-3 py-1.5">
         <input
-          type="text" placeholder="Descripción del ítem *" value={form.description}
+          type="text"
+          placeholder="Descripción del ítem *"
+          value={form.description}
           onChange={(e) => set('description', e.target.value)}
           className="w-full px-2 py-1 border border-app-border rounded text-xs"
           autoFocus
@@ -112,13 +124,25 @@ export default function PriceListInlineForm({
           onChange={(e) => set('unit', e.target.value)}
           className="w-full px-2 py-1 border border-app-border rounded text-xs bg-app-surface"
         >
-          {MEASURE_UNITS.map((u) => <option key={u.value} value={u.value}>{u.label}</option>)}
-          {EXTRA_UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+          {MEASURE_UNITS.map((u) => (
+            <option key={u.value} value={u.value}>
+              {u.label}
+            </option>
+          ))}
+          {EXTRA_UNITS.map((u) => (
+            <option key={u} value={u}>
+              {u}
+            </option>
+          ))}
         </select>
       </td>
       <td className="px-3 py-1.5">
         <input
-          type="number" step="any" min="0" placeholder="0.00" value={form.unit_price}
+          type="number"
+          step="any"
+          min="0"
+          placeholder="0.00"
+          value={form.unit_price}
           onChange={(e) => set('unit_price', e.target.value)}
           className="w-full px-2 py-1 border border-app-border rounded text-xs text-right"
         />
@@ -128,7 +152,8 @@ export default function PriceListInlineForm({
           <button
             onClick={handleSave}
             disabled={saving || !form.description.trim()}
-            className="p-1 text-green-600 hover:bg-green-50 rounded disabled:opacity-40"
+            aria-busy={saving}
+            className="p-1 text-green-600 hover:bg-green-50 rounded disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Check className="w-3.5 h-3.5" />
           </button>

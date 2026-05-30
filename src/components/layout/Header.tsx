@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { LogOut, Menu, Search, X } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { useProjectStore } from '@/stores/projectStore'
@@ -7,6 +8,7 @@ import { supplierService } from '@/services/supplierService'
 import { contractorService } from '@/services/contractorService'
 import { NotificationDropdown } from './NotificationDropdown'
 import { ThemeToggle } from './ThemeToggle'
+import { LanguageSwitcher } from './LanguageSwitcher'
 
 interface HeaderProps {
   onMenuClick: () => void
@@ -20,16 +22,10 @@ interface SearchResult {
   url: string
 }
 
-const TYPE_LABEL: Record<string, string> = {
-  proyecto: 'Proyecto',
-  contratista: 'Contratista',
-  suplidor: 'Suplidor',
-}
-
 const TYPE_COLOR: Record<string, string> = {
-  proyecto:    'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300',
+  proyecto: 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300',
   contratista: 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300',
-  suplidor:    'bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300',
+  suplidor: 'bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300',
 }
 
 function userInitials(displayName: string): string {
@@ -39,6 +35,7 @@ function userInitials(displayName: string): string {
 }
 
 export function Header({ onMenuClick }: HeaderProps) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
@@ -47,7 +44,10 @@ export function Header({ onMenuClick }: HeaderProps) {
   const [showResults, setShowResults] = useState(false)
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
   const [indexedSuppliers, setIndexedSuppliers] = useState<Array<{ id: string; name: string; rnc: string | null }>>([])
-  const [indexedContractors, setIndexedContractors] = useState<Array<{ id: string; name: string; specialty: string | null }>>([])
+  const [indexedContractors, setIndexedContractors] = useState<
+    Array<{ id: string; name: string; specialty: string | null }>
+  >([])
+  const [searchLoadError, setSearchLoadError] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const mobileInputRef = useRef<HTMLInputElement>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
@@ -56,14 +56,13 @@ export function Header({ onMenuClick }: HeaderProps) {
   useEffect(() => {
     async function loadSearchDirectory() {
       try {
-        const [suppliers, contractors] = await Promise.all([
-          supplierService.getAll(),
-          contractorService.getAll(),
-        ])
+        const [suppliers, contractors] = await Promise.all([supplierService.getAll(), contractorService.getAll()])
         setIndexedSuppliers(suppliers.map((s) => ({ id: s.id, name: s.name, rnc: s.rnc })))
         setIndexedContractors(contractors.map((c) => ({ id: c.id, name: c.name, specialty: c.specialty })))
+        setSearchLoadError(false)
       } catch (err) {
         console.error('Failed to load search directory', err)
+        setSearchLoadError(true)
       }
     }
     loadSearchDirectory()
@@ -139,9 +138,9 @@ export function Header({ onMenuClick }: HeaderProps) {
   }, [])
 
   useEffect(() => {
-    if (mobileSearchOpen) {
-      setTimeout(() => mobileInputRef.current?.focus(), 50)
-    }
+    if (!mobileSearchOpen) return
+    const id = setTimeout(() => mobileInputRef.current?.focus(), 50)
+    return () => clearTimeout(id)
   }, [mobileSearchOpen])
 
   function handleSelect(url: string) {
@@ -157,32 +156,39 @@ export function Header({ onMenuClick }: HeaderProps) {
     inputRef.current?.focus()
   }
 
-  const dropdownContent = (
-    results.length === 0
-      ? <div className="px-4 py-3 text-sm text-app-muted">Sin resultados para "{query}"</div>
-      : results.map((item) => (
-          <button
-            key={`${item.type}-${item.id}`}
-            onClick={() => handleSelect(item.url)}
-            className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-app-hover text-left transition-colors"
-          >
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-app-text truncate">{item.name}</p>
-              {item.detail && <p className="text-xs text-app-muted truncate">{item.detail}</p>}
-            </div>
-            <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full shrink-0 ${TYPE_COLOR[item.type]}`}>
-              {TYPE_LABEL[item.type]}
-            </span>
-          </button>
-        ))
-  )
+  const dropdownContent =
+    results.length === 0 ? (
+      <div className="px-4 py-3 text-sm text-app-muted">
+        {searchLoadError && (
+          <p className="mb-1 text-xs text-red-500 dark:text-red-400">{t('header.searchLoadError')}</p>
+        )}
+        {t('header.noResults', { query })}
+      </div>
+    ) : (
+      results.map((item) => (
+        <button
+          key={`${item.type}-${item.id}`}
+          onClick={() => handleSelect(item.url)}
+          className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-app-hover text-left transition-colors"
+        >
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-app-text truncate">{item.name}</p>
+            {item.detail && <p className="text-xs text-app-muted truncate">{item.detail}</p>}
+          </div>
+          <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full shrink-0 ${TYPE_COLOR[item.type]}`}>
+            {t(`header.types.${item.type}`)}
+          </span>
+        </button>
+      ))
+    )
 
   return (
     <>
       <header className="sticky top-0 z-30 h-14 bg-app-surface border-b border-app-border flex items-center justify-between px-4 lg:px-6 shadow-xs">
         <button
           onClick={onMenuClick}
-          className="lg:hidden p-2 -ml-1 rounded-lg text-app-muted hover:text-app-text hover:bg-app-hover transition-colors"
+          className="lg:hidden -ml-1 rounded-lg text-app-muted hover:text-app-text hover:bg-app-hover transition-colors flex items-center justify-center min-w-[44px] min-h-[44px]"
+          aria-label={t('nav.openMenuAria')}
         >
           <Menu className="w-5 h-5" />
         </button>
@@ -194,13 +200,19 @@ export function Header({ onMenuClick }: HeaderProps) {
             ref={inputRef}
             type="text"
             value={query}
-            onChange={(e) => { setQuery(e.target.value); setShowResults(true) }}
+            onChange={(e) => {
+              setQuery(e.target.value)
+              setShowResults(true)
+            }}
             onFocus={() => setShowResults(true)}
-            placeholder="Buscar proyectos, contratistas..."
+            placeholder={t('header.searchPlaceholder')}
             className="w-full pl-10 pr-20 py-2 bg-app-bg border border-app-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-app-surface transition-all"
           />
           {query ? (
-            <button onClick={clearSearch} className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-app-subtle hover:text-app-muted rounded">
+            <button
+              onClick={clearSearch}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-app-subtle hover:text-app-muted rounded"
+            >
               <X className="w-3.5 h-3.5" />
             </button>
           ) : (
@@ -222,12 +234,14 @@ export function Header({ onMenuClick }: HeaderProps) {
           {/* Mobile search button */}
           <button
             onClick={() => setMobileSearchOpen(true)}
-            className="lg:hidden p-2 rounded-lg text-app-muted hover:text-app-text hover:bg-app-hover transition-colors"
-            title="Buscar"
+            className="lg:hidden rounded-lg text-app-muted hover:text-app-text hover:bg-app-hover transition-colors flex items-center justify-center min-w-[44px] min-h-[44px]"
+            title={t('header.searchTitle')}
+            aria-label={t('header.searchTitle')}
           >
             <Search className="w-4.5 h-4.5" />
           </button>
 
+          <LanguageSwitcher />
           <ThemeToggle />
           <NotificationDropdown />
 
@@ -244,9 +258,12 @@ export function Header({ onMenuClick }: HeaderProps) {
               </div>
               <button
                 type="button"
-                onClick={() => { logout(); navigate('/login', { replace: true }) }}
+                onClick={async () => {
+                  await logout()
+                  navigate('/login', { replace: true })
+                }}
                 className="p-2 rounded-lg text-app-muted hover:bg-app-hover hover:text-app-text transition-colors"
-                title="Cerrar sesión"
+                title={t('header.logout')}
               >
                 <LogOut className="w-4 h-4" />
               </button>
@@ -266,11 +283,14 @@ export function Header({ onMenuClick }: HeaderProps) {
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Buscar..."
+                placeholder={t('header.searchPlaceholderMobile')}
                 className="flex-1 pl-10 pr-4 py-2.5 bg-app-bg border border-app-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <button
-                onClick={() => { setMobileSearchOpen(false); setQuery('') }}
+                onClick={() => {
+                  setMobileSearchOpen(false)
+                  setQuery('')
+                }}
                 className="p-2 rounded-lg text-app-muted hover:text-app-text"
               >
                 <X className="w-5 h-5" />

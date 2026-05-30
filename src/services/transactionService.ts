@@ -7,10 +7,7 @@ export interface TransactionWithRelations extends Transaction {
 }
 
 export const transactionService = {
-  async getByProject(
-    projectId: string,
-    filters?: { dateFrom?: string; dateTo?: string }
-  ) {
+  async getByProject(projectId: string, filters?: { dateFrom?: string; dateTo?: string }) {
     let query = supabase
       .from('transactions')
       .select('*, supplier:suppliers(id, name), budget_category:budget_categories(id, code, name)')
@@ -25,6 +22,17 @@ export const transactionService = {
     }
 
     const { data, error } = await query
+    if (error) throw error
+    return data as TransactionWithRelations[]
+  },
+
+  async getByProjects(projectIds: string[]) {
+    if (projectIds.length === 0) return []
+    const { data, error } = await supabase
+      .from('transactions')
+      .select('*, supplier:suppliers(id, name), budget_category:budget_categories(id, code, name)')
+      .in('project_id', projectIds)
+      .order('date', { ascending: false })
     if (error) throw error
     return data as TransactionWithRelations[]
   },
@@ -51,10 +59,7 @@ export const transactionService = {
   },
 
   async delete(id: string) {
-    const { error } = await supabase
-      .from('transactions')
-      .delete()
-      .eq('id', id)
+    const { error } = await supabase.from('transactions').delete().eq('id', id)
     if (error) throw error
   },
 }

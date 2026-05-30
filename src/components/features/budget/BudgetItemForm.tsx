@@ -3,12 +3,14 @@ import { X, Search } from 'lucide-react'
 import type { BudgetItem, BudgetCategory, PriceListItem } from '@/types/database'
 import { MEASURE_UNITS } from '@/constants/measureUnits'
 import { formatRD } from '@/utils/currency'
+import { parseDecimalInput } from '@/utils/decimalInput'
 import { getErrorMessage } from '@/utils/errors'
 
 interface Props {
   category: BudgetCategory
   priceList: PriceListItem[]
   editItem?: BudgetItem | null
+  defaultCode?: string
   onSave: (data: Omit<BudgetItem, 'id'>) => Promise<void>
   onClose: () => void
 }
@@ -22,8 +24,8 @@ const EMPTY_FORM = {
   notes: '',
 }
 
-export default function BudgetItemForm({ category, priceList, editItem, onSave, onClose }: Props) {
-  const [form, setForm] = useState(EMPTY_FORM)
+export default function BudgetItemForm({ category, priceList, editItem, defaultCode = '', onSave, onClose }: Props) {
+  const [form, setForm] = useState({ ...EMPTY_FORM, code: defaultCode })
   const [priceQuery, setPriceQuery] = useState('')
   const [showPriceList, setShowPriceList] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -42,12 +44,9 @@ export default function BudgetItemForm({ category, priceList, editItem, onSave, 
     }
   }, [editItem])
 
-  const set = (key: keyof typeof EMPTY_FORM, value: string) =>
-    setForm((prev) => ({ ...prev, [key]: value }))
+  const set = (key: keyof typeof EMPTY_FORM, value: string) => setForm((prev) => ({ ...prev, [key]: value }))
 
-  const filteredPrices = priceList.filter((p) =>
-    p.description.toLowerCase().includes(priceQuery.toLowerCase())
-  )
+  const filteredPrices = priceList.filter((p) => p.description.toLowerCase().includes(priceQuery.toLowerCase()))
 
   const applyPrice = (item: PriceListItem) => {
     setForm((prev) => ({
@@ -60,12 +59,26 @@ export default function BudgetItemForm({ category, priceList, editItem, onSave, 
     setPriceQuery('')
   }
 
-  const total = (Number(form.quantity) || 0) * (Number(form.unit_price) || 0)
+  const total = (parseDecimalInput(form.quantity) ?? 0) * (parseDecimalInput(form.unit_price) ?? 0)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.description.trim()) return setError('La descripción es requerida')
-    if (!form.quantity || Number(form.quantity) <= 0) return setError('La cantidad debe ser mayor a 0')
+
+    // Cantidad (requerida): debe ser número válido y > 0.
+    if (!form.quantity.trim()) return setError('Cantidad inválida')
+    const qty = parseDecimalInput(form.quantity)
+    if (qty === null) return setError('Cantidad inválida')
+    if (qty <= 0) return setError('La cantidad debe ser mayor a 0')
+
+    // Precio unitario (opcional): si tiene contenido, debe ser número válido. Vacío => 0.
+    let unitPrice = 0
+    if (form.unit_price.trim()) {
+      const parsed = parseDecimalInput(form.unit_price)
+      if (parsed === null) return setError('Precio unitario inválido')
+      unitPrice = parsed
+    }
+
     setSaving(true)
     setError(null)
     try {
@@ -75,10 +88,12 @@ export default function BudgetItemForm({ category, priceList, editItem, onSave, 
         code: form.code.trim() || null,
         description: form.description.trim(),
         unit: form.unit,
-        quantity: Number(form.quantity),
-        unit_price: Number(form.unit_price) || 0,
+        quantity: qty,
+        unit_price: unitPrice,
         sort_order,
         notes: form.notes.trim() || null,
+        start_date: null,
+        end_date: null,
       })
       onClose()
     } catch (e) {
@@ -96,7 +111,9 @@ export default function BudgetItemForm({ category, priceList, editItem, onSave, 
             <h2 className="text-sm font-semibold text-app-text">
               {editItem ? 'Editar subpartida' : 'Nueva subpartida'}
             </h2>
-            <p className="text-xs text-app-muted mt-0.5">{category.code} — {category.name}</p>
+            <p className="text-xs text-app-muted mt-0.5">
+              {category.code} — {category.name}
+            </p>
           </div>
           <button onClick={onClose} className="text-app-subtle hover:text-app-muted">
             <X className="w-4 h-4" />
@@ -115,7 +132,10 @@ export default function BudgetItemForm({ category, priceList, editItem, onSave, 
                 type="text"
                 placeholder="Buscar precio de referencia..."
                 value={priceQuery}
-                onChange={(e) => { setPriceQuery(e.target.value); setShowPriceList(true) }}
+                onChange={(e) => {
+                  setPriceQuery(e.target.value)
+                  setShowPriceList(true)
+                }}
                 onFocus={() => setShowPriceList(true)}
                 className="w-full pl-8 pr-3 py-2 border border-app-border rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-300"
               />
@@ -133,7 +153,9 @@ export default function BudgetItemForm({ category, priceList, editItem, onSave, 
                       className="w-full text-left px-3 py-2 hover:bg-blue-50 border-b border-app-border last:border-0"
                     >
                       <p className="text-xs font-medium text-app-text">{p.description}</p>
-                      <p className="text-[10px] text-app-muted">{p.unit} · {formatRD(p.unit_price)}</p>
+                      <p className="text-[10px] text-app-muted">
+                        {p.unit} · {formatRD(p.unit_price)}
+                      </p>
                     </button>
                   ))
                 )}
@@ -143,17 +165,21 @@ export default function BudgetItemForm({ category, priceList, editItem, onSave, 
 
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="text-[10px] font-medium text-app-muted mb-1 block uppercase tracking-wide">Código</label>
+              <label className="text-[10px] font-medium text-app-muted mb-1 block uppercase tracking-wide">
+                Código
+              </label>
               <input
                 type="text"
-                placeholder="3.1"
+                placeholder={defaultCode || '1.1'}
                 value={form.code}
                 onChange={(e) => set('code', e.target.value)}
                 className="w-full px-2.5 py-2 border border-app-border rounded-lg text-xs focus:ring-1 focus:ring-blue-500"
               />
             </div>
             <div className="col-span-2">
-              <label className="text-[10px] font-medium text-app-muted mb-1 block uppercase tracking-wide">Descripción *</label>
+              <label className="text-[10px] font-medium text-app-muted mb-1 block uppercase tracking-wide">
+                Descripción *
+              </label>
               <input
                 type="text"
                 placeholder="Descripción de la partida"
@@ -167,14 +193,18 @@ export default function BudgetItemForm({ category, priceList, editItem, onSave, 
 
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="text-[10px] font-medium text-app-muted mb-1 block uppercase tracking-wide">Unidad</label>
+              <label className="text-[10px] font-medium text-app-muted mb-1 block uppercase tracking-wide">
+                Unidad
+              </label>
               <select
                 value={form.unit}
                 onChange={(e) => set('unit', e.target.value)}
                 className="w-full px-2.5 py-2 border border-app-border rounded-lg text-xs focus:ring-1 focus:ring-blue-500 bg-app-surface"
               >
                 {MEASURE_UNITS.map((u) => (
-                  <option key={u.value} value={u.value}>{u.label}</option>
+                  <option key={u.value} value={u.value}>
+                    {u.label}
+                  </option>
                 ))}
                 <option value="Und">Unidad</option>
                 <option value="Saco">Saco</option>
@@ -185,11 +215,12 @@ export default function BudgetItemForm({ category, priceList, editItem, onSave, 
               </select>
             </div>
             <div>
-              <label className="text-[10px] font-medium text-app-muted mb-1 block uppercase tracking-wide">Cantidad *</label>
+              <label className="text-[10px] font-medium text-app-muted mb-1 block uppercase tracking-wide">
+                Cantidad *
+              </label>
               <input
-                type="number"
-                step="any"
-                min="0"
+                type="text"
+                inputMode="decimal"
                 placeholder="0"
                 value={form.quantity}
                 onChange={(e) => set('quantity', e.target.value)}
@@ -197,12 +228,13 @@ export default function BudgetItemForm({ category, priceList, editItem, onSave, 
               />
             </div>
             <div>
-              <label className="text-[10px] font-medium text-app-muted mb-1 block uppercase tracking-wide">Precio unit.</label>
+              <label className="text-[10px] font-medium text-app-muted mb-1 block uppercase tracking-wide">
+                Precio unit.
+              </label>
               <input
-                type="number"
-                step="any"
-                min="0"
-                placeholder="0.00"
+                type="text"
+                inputMode="decimal"
+                placeholder="0,00"
                 value={form.unit_price}
                 onChange={(e) => set('unit_price', e.target.value)}
                 className="w-full px-2.5 py-2 border border-app-border rounded-lg text-xs focus:ring-1 focus:ring-blue-500"
@@ -229,7 +261,11 @@ export default function BudgetItemForm({ category, priceList, editItem, onSave, 
           {error && <p className="text-xs text-red-600">{error}</p>}
 
           <div className="flex justify-end gap-2 pt-1">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-xs text-app-muted border border-app-border rounded-lg hover:bg-app-hover">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-xs text-app-muted border border-app-border rounded-lg hover:bg-app-hover"
+            >
               Cancelar
             </button>
             <button

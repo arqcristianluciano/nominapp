@@ -13,26 +13,44 @@
     "test:ui": "vitest --ui",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
-    "test:e2e:report": "playwright show-report"
+    "test:e2e:report": "playwright show-report",
+    "prepare": "husky install",
+    "format": "prettier --write .",
+    "typecheck": "tsc --noEmit",
+    "check-all": "npm run lint && npm run typecheck && npm test && npm run build",
+    "db:types": "echo 'Run via Supabase MCP'"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix"
+    ],
+    "*.{ts,tsx,json,md}": [
+      "prettier --write"
+    ]
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.100.0",
-    "@tanstack/react-query": "^5.95.2",
-    "date-fns": "^4.1.0",
+    "@sentry/react": "^10.54.0",
+    "@supabase/supabase-js": "^2.106.2",
+    "@tanstack/react-query": "^5.100.14",
     "decimal.js": "^10.6.0",
-    "lucide-react": "^1.0.1",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4",
-    "react-router-dom": "^7.13.2",
+    "i18next": "^26.3.0",
+    "lucide-react": "^1.16.0",
+    "pdfmake": "^0.3.9",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "react-i18next": "^17.0.8",
+    "react-router-dom": "^7.15.1",
     "xlsx": "^0.18.5",
-    "zustand": "^5.0.12"
+    "zustand": "^5.0.13"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
     "@playwright/test": "^1.59.1",
+    "@sentry/vite-plugin": "^2.22.6",
     "@tailwindcss/vite": "^4.2.2",
-    "@types/node": "^24.12.0",
-    "@types/react": "^19.2.14",
+    "@types/node": "^25.9.1",
+    "@types/pdfmake": "^0.3.3",
+    "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
     "@vitest/ui": "^4.1.5",
@@ -40,6 +58,8 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.5",
     "tailwindcss": "^4.2.2",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.57.0",

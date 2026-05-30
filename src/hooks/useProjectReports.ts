@@ -21,13 +21,31 @@ export function useProjectReports(projects: Project[]) {
 
       setLoading(true)
       try {
-        const cubProgress = await getProjectsProgress()
+        const projectIds = activeProjects.map((project) => project.id)
+        const [cubProgress, allTransactions, allCategories] = await Promise.all([
+          getProjectsProgress(),
+          transactionService.getByProjects(projectIds),
+          budgetCategoryService.getByProjects(projectIds),
+        ])
+
+        const transactionsByProject = new Map<string, typeof allTransactions>()
+        for (const tx of allTransactions) {
+          const list = transactionsByProject.get(tx.project_id)
+          if (list) list.push(tx)
+          else transactionsByProject.set(tx.project_id, [tx])
+        }
+
+        const categoriesByProject = new Map<string, typeof allCategories>()
+        for (const category of allCategories) {
+          const list = categoriesByProject.get(category.project_id)
+          if (list) list.push(category)
+          else categoriesByProject.set(category.project_id, [category])
+        }
+
         const results: ProjectReport[] = []
         for (const project of activeProjects) {
-          const [transactions, categories] = await Promise.all([
-            transactionService.getByProject(project.id),
-            budgetCategoryService.getByProject(project.id),
-          ])
+          const transactions = transactionsByProject.get(project.id) ?? []
+          const categories = categoriesByProject.get(project.id) ?? []
           const totalIncurrido = calcTotalIncurrido(transactions)
           const presupuesto = categories.reduce((sum, category) => sum + category.budgeted_amount, 0)
           const cub = cubProgress[project.id] ?? { acordado: 0, acumulado: 0, avg_completion: 0 }
@@ -70,9 +88,9 @@ export function useProjectReports(projects: Project[]) {
           cxp: acc.cxp + report.cxp,
           cashDisponible: acc.cashDisponible + report.cashDisponible,
         }),
-        { totalIncurrido: 0, presupuesto: 0, cxp: 0, cashDisponible: 0 }
+        { totalIncurrido: 0, presupuesto: 0, cxp: 0, cashDisponible: 0 },
       ),
-    [reports]
+    [reports],
   )
 
   async function exportToExcel() {

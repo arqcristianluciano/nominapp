@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { approvalsService } from '@/services/approvalsService'
 import { div, mul, pct, round2, sub, sumBy } from '@/utils/money'
 import type {
   AdjustmentContract,
@@ -19,20 +20,28 @@ export type ContractSummary = AdjustmentContract & {
   acordado: number
   acumulado: number
   retenido: number
+  total_adelantos: number
   pendiente: number
   completion_percent: number
 }
 
-function computeSummary(partidas: ContractPartida[], cortes: ContractCorte[]): Omit<ContractSummary, keyof AdjustmentContract> {
+function computeSummary(
+  partidas: ContractPartida[],
+  cortes: ContractCorte[],
+  adelantos: ContractAdelanto[] = [],
+): Omit<ContractSummary, keyof AdjustmentContract> {
   const acordado = round2(sumBy(partidas, (p) => mul(p.agreed_quantity, p.unit_price)))
   const acumulado = round2(sumBy(cortes, (c) => c.amount))
   const retenido = round2(sumBy(cortes, (c) => c.retention_amount))
+  const total_adelantos = round2(sumBy(adelantos, (a) => a.amount))
+  const pendienteRaw = round2(sub(sub(acordado, acumulado), total_adelantos))
   return {
     partidas_count: partidas.length,
     acordado,
     acumulado,
     retenido,
-    pendiente: round2(sub(acordado, acumulado)),
+    total_adelantos,
+    pendiente: pendienteRaw < 0 ? 0 : pendienteRaw,
     completion_percent: acordado > 0 ? Math.min(round2(mul(div(acumulado, acordado), 100)), 100) : 0,
   }
 }
@@ -50,12 +59,13 @@ export const contractService = {
 
     return Promise.all(
       (contracts as AdjustmentContract[]).map(async (c) => {
-        const [partidas, cortes] = await Promise.all([
+        const [partidas, cortes, adelantos] = await Promise.all([
           partidaService.getByContract(c.id),
           corteService.getByContract(c.id),
+          adelantoService.getByContract(c.id),
         ])
-        return { ...c, ...computeSummary(partidas, cortes) }
-      })
+        return { ...c, ...computeSummary(partidas, cortes, adelantos) }
+      }),
     )
   },
 
@@ -148,7 +158,17 @@ export const corteService = {
   },
 
   async create(
-    data: Omit<ContractCorte, 'id' | 'created_at' | 'amount' | 'retention_amount' | 'partida' | 'approved_by' | 'signature_data' | 'linked_payroll_id'>,
+    data: Omit<
+      ContractCorte,
+      | 'id'
+      | 'created_at'
+      | 'amount'
+      | 'retention_amount'
+      | 'partida'
+      | 'approved_by'
+      | 'signature_data'
+      | 'linked_payroll_id'
+    >,
     partida: ContractPartida,
     retentionPct: number,
   ): Promise<ContractCorte> {
@@ -169,6 +189,13 @@ export const corteService = {
       .update({ status: 'approved', approved_by: approvedBy, signature_data: signatureData })
       .eq('id', id)
     if (error) throw error
+    await approvalsService.log({
+      entity_type: 'contract_corte',
+      entity_id: id,
+      action: 'approve',
+      actor_display_name: approvedBy,
+      payload_after: { approved_by: approvedBy, signature_data: signatureData },
+    })
   },
 
   async linkToPayroll(id: string, payrollPeriodId: string): Promise<void> {
@@ -200,13 +227,18 @@ export const corteService = {
 
 // --- Progreso por proyecto (para Dashboard) ---
 
-export async function getProjectsProgress(): Promise<Record<string, { acordado: number; acumulado: number; contractor_count: number; avg_completion: number }>> {
+export async function getProjectsProgress(): Promise<
+  Record<string, { acordado: number; acumulado: number; contractor_count: number; avg_completion: number }>
+> {
   const { data: contracts } = await supabase.from('adjustment_contracts').select('id, project_id')
   const { data: partidas } = await supabase.from('contract_partidas').select('contract_id, unit_price, agreed_quantity')
   const { data: cortes } = await supabase.from('contract_cortes').select('contract_id, amount')
   if (!contracts) return {}
 
-  const result: Record<string, { acordado: number; acumulado: number; contractor_count: number; avg_completion: number }> = {}
+  const result: Record<
+    string,
+    { acordado: number; acumulado: number; contractor_count: number; avg_completion: number }
+  > = {}
 
   type ContractRow = { id: string; project_id: string }
   type PartidaRow = { contract_id: string; unit_price: number; agreed_quantity: number }
@@ -265,9 +297,7 @@ export async function getApprovedCortesByProject(
         .select('*, partida:contract_partidas(*)')
         .eq('contract_id', contract.id)
         .eq('status', 'approved')
-      return ((cortes as ContractCorte[]) || [])
-        .filter((c) => !c.linked_payroll_id)
-        .map((c) => ({ ...c, contract }))
+      return ((cortes as ContractCorte[]) || []).filter((c) => !c.linked_payroll_id).map((c) => ({ ...c, contract }))
     }),
   )
   return groups.flat()

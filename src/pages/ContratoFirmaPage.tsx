@@ -11,20 +11,39 @@ export default function ContratoFirmaPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (contratoId) contractService.getById(contratoId).then(setContrato).finally(() => setLoading(false))
+    if (contratoId)
+      contractService
+        .getById(contratoId)
+        .then(setContrato)
+        .finally(() => setLoading(false))
   }, [contratoId])
 
-  if (loading) return <div className="p-8 text-sm">Cargando...</div>
-  if (!contrato) return <div className="p-8 text-sm">Contrato no encontrado.</div>
+  if (loading)
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 text-sm text-app-muted">
+        Cargando contrato...
+      </div>
+    )
+  if (!contrato)
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 text-sm text-app-muted">
+        Contrato no encontrado.
+      </div>
+    )
 
   const partidas: ContractPartida[] = contrato.partidas ?? []
   const totalAcordado = partidas.reduce((s, p) => s + p.agreed_quantity * p.unit_price, 0)
   const printDate = new Date().toLocaleDateString('es-DO', { year: 'numeric', month: 'long', day: 'numeric' })
 
   return (
-    <div>
+    <div className="min-h-screen bg-app-bg print:bg-white">
       <ContratoFirmaTopBar projectId={projectId!} contratoId={contratoId!} />
-      <ContratoFirmaDocument contrato={contrato} partidas={partidas} totalAcordado={totalAcordado} printDate={printDate} />
+      <ContratoFirmaDocument
+        contrato={contrato}
+        partidas={partidas}
+        totalAcordado={totalAcordado}
+        printDate={printDate}
+      />
     </div>
   )
 }

@@ -3,6 +3,9 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
+  --safe-area-bottom: env(safe-area-inset-bottom, 0);
+  --safe-area-top: env(safe-area-inset-top, 0);
+
   --app-bg: #f1f5f9;
   --app-surface: #ffffff;
   --app-border: #e2e8f0;
@@ -63,12 +66,34 @@ html.dark {
 }
 
 @layer base {
+  html {
+    /* Quitar el flash gris al tocar en iOS Safari */
+    -webkit-tap-highlight-color: transparent;
+  }
+
   body {
     background-color: var(--app-bg);
     color: var(--app-text);
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    padding-bottom: var(--safe-area-bottom);
+  }
+
+  /* Eliminar el retardo de 300ms al tocar y mejorar la respuesta táctil */
+  button,
+  a,
+  [role="button"],
+  input,
+  select,
+  textarea,
+  label {
+    touch-action: manipulation;
+  }
+
+  /* Scroll con inercia nativa en iOS para todos los contenedores con scroll */
+  [class*="overflow-"] {
+    -webkit-overflow-scrolling: touch;
   }
 
   :root {
@@ -134,6 +159,23 @@ html.dark {
   }
 }
 
+/* ── Ajustes específicos para pantallas táctiles (iPhone/iPad) ── */
+@media (pointer: coarse) {
+  /* iOS Safari hace zoom automático al enfocar un campo con fuente < 16px.
+     Forzamos un mínimo de 16px en móvil sin afectar el diseño de escritorio. */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  /* Acciones que en escritorio aparecen sólo con hover (opacity-0 group-hover:…)
+     son inaccesibles en táctil porque no existe hover: las dejamos siempre visibles. */
+  [class*="group-hover:opacity-100"] {
+    opacity: 1 !important;
+  }
+}
+
 @media print {
   @page {
     size: letter;
@@ -163,7 +205,8 @@ html.dark {
   }
 
   /* Keep borders and backgrounds for tables */
-  table { border-collapse: collapse; width: 100%; }
+  table { border-collapse: collapse; width: 100%; page-break-inside: auto; }
+  tr { page-break-inside: avoid; page-break-after: auto; }
   th, td { border: 1px solid #ddd; padding: 4px 8px; }
-  thead { background: #f3f4f6 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  thead { display: table-header-group; background: #f3f4f6 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }

@@ -2,7 +2,7 @@ import { Filter } from 'lucide-react'
 import type { Project } from '@/types/database'
 
 const selectClass =
-  'w-full max-w-md px-3 py-2.5 border border-app-border rounded-lg text-sm bg-app-bg text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500'
+  'w-full sm:max-w-md px-3 py-2.5 border border-app-border rounded-lg text-sm bg-app-bg text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500'
 
 type Props = {
   value: string
@@ -12,7 +12,7 @@ type Props = {
 
 export function CxPProjectFilterBar({ value, onChange, activeProjects }: Props) {
   return (
-    <div className="bg-app-surface border border-app-border rounded-xl p-4 shadow-sm">
+    <div className="bg-app-surface border border-app-border rounded-xl p-3 sm:p-4 shadow-sm">
       <div className="flex items-start gap-3">
         <div className="mt-0.5 p-2 rounded-lg bg-app-bg text-blue-600 dark:text-blue-400 shrink-0">
           <Filter className="w-5 h-5" aria-hidden />
@@ -22,7 +22,7 @@ export function CxPProjectFilterBar({ value, onChange, activeProjects }: Props) 
           <p className="text-xs text-app-muted mt-1 mb-3">
             Elige una obra para ver solo sus cuentas por pagar, o «Todos los proyectos» para el consolidado.
           </p>
-          <label className="block max-w-md">
+          <label className="block w-full sm:max-w-md">
             <span className="sr-only">Proyecto</span>
             <select
               value={value}

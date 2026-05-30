@@ -18,7 +18,7 @@ export function ChequesEfectivoView({
       t.check_number ||
       t.payment_condition?.includes('Cash') ||
       t.payment_condition?.includes('Cheque') ||
-      t.budget_category?.code === DEPOSIT_CODE
+      t.budget_category?.code === DEPOSIT_CODE,
   )
 
   return (
@@ -54,7 +54,7 @@ export function ChequesEfectivoView({
         </div>
       ) : (
         <div className="bg-app-surface rounded-xl border border-app-border overflow-hidden">
-          <table className="w-full">
+          <table className="w-full hidden sm:table">
             <thead>
               <tr className="bg-app-bg border-b border-app-border">
                 <th className="px-3 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">Fecha</th>
@@ -74,23 +74,76 @@ export function ChequesEfectivoView({
                     key={t.id}
                     className={`border-b border-app-border hover:bg-app-hover ${isUncashed ? 'bg-amber-50 dark:bg-amber-950/20' : ''}`}
                   >
-                    <td className="px-3 py-2.5 text-xs text-app-muted">{new Date(t.date).toLocaleDateString('es-DO')}</td>
+                    <td className="px-3 py-2.5 text-xs text-app-muted">
+                      {new Date(t.date).toLocaleDateString('es-DO')}
+                    </td>
                     <td className="px-3 py-2.5 text-xs text-app-muted">{t.check_number || '—'}</td>
                     <td className="px-3 py-2.5 text-xs text-app-muted">{t.bank || '—'}</td>
                     <td className="px-3 py-2.5 text-xs text-app-muted">
-                      {t.cashed_date ? new Date(t.cashed_date).toLocaleDateString('es-DO') : (
-                        t.check_number ? <span className="text-amber-600 dark:text-amber-400 font-medium">Pendiente</span> : '—'
+                      {t.cashed_date ? (
+                        new Date(t.cashed_date).toLocaleDateString('es-DO')
+                      ) : t.check_number ? (
+                        <span className="text-amber-600 dark:text-amber-400 font-medium">Pendiente</span>
+                      ) : (
+                        '—'
                       )}
                     </td>
                     <td className="px-3 py-2.5 text-xs text-app-text">{t.description}</td>
-                    <td className={`px-3 py-2.5 text-xs font-semibold text-right ${isDeposit ? 'text-green-700 dark:text-green-400' : 'text-app-text'}`}>
-                      {isDeposit ? '+' : ''}{formatRD(t.total)}
+                    <td
+                      className={`px-3 py-2.5 text-xs font-semibold text-right ${isDeposit ? 'text-green-700 dark:text-green-400' : 'text-app-text'}`}
+                    >
+                      {isDeposit ? '+' : ''}
+                      {formatRD(t.total)}
                     </td>
                   </tr>
                 )
               })}
             </tbody>
           </table>
+          <div className="sm:hidden divide-y divide-app-border">
+            {bankMovements.map((t) => {
+              const isUncashed = t.check_number && !t.cashed_date
+              const isDeposit = t.budget_category?.code === DEPOSIT_CODE
+              return (
+                <div key={t.id} className={`p-4 ${isUncashed ? 'bg-amber-50 dark:bg-amber-950/20' : ''}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm text-app-text font-medium break-words">{t.description}</p>
+                      <p className="text-xs text-app-subtle mt-0.5">{new Date(t.date).toLocaleDateString('es-DO')}</p>
+                    </div>
+                    <p
+                      className={`text-sm font-semibold whitespace-nowrap text-right ${isDeposit ? 'text-green-700 dark:text-green-400' : 'text-app-text'}`}
+                    >
+                      {isDeposit ? '+' : ''}
+                      {formatRD(t.total)}
+                    </p>
+                  </div>
+                  <div className="mt-2 space-y-0.5 text-xs text-app-subtle">
+                    {t.check_number && (
+                      <p>
+                        No. Cheque: <span className="text-app-muted">{t.check_number}</span>
+                      </p>
+                    )}
+                    {t.bank && (
+                      <p>
+                        Banco: <span className="text-app-muted">{t.bank}</span>
+                      </p>
+                    )}
+                    <p>
+                      Fecha Canje:{' '}
+                      {t.cashed_date ? (
+                        <span className="text-app-muted">{new Date(t.cashed_date).toLocaleDateString('es-DO')}</span>
+                      ) : t.check_number ? (
+                        <span className="text-amber-600 dark:text-amber-400 font-medium">Pendiente</span>
+                      ) : (
+                        <span className="text-app-muted">—</span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         </div>
       )}
     </div>

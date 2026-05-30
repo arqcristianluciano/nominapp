@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import type { BudgetCategory } from '@/types/database'
 import { DEFAULT_BUDGET_CATEGORIES } from '@/constants/budgetCategories'
+import { approvalsService } from '@/services/approvalsService'
 
 export const budgetCategoryService = {
   async getByProject(projectId: string) {
@@ -8,6 +9,17 @@ export const budgetCategoryService = {
       .from('budget_categories')
       .select('*')
       .eq('project_id', projectId)
+      .order('sort_order')
+    if (error) throw error
+    return data as BudgetCategory[]
+  },
+
+  async getByProjects(projectIds: string[]) {
+    if (projectIds.length === 0) return []
+    const { data, error } = await supabase
+      .from('budget_categories')
+      .select('*')
+      .in('project_id', projectIds)
       .order('sort_order')
     if (error) throw error
     return data as BudgetCategory[]
@@ -36,11 +48,68 @@ export const budgetCategoryService = {
       budgeted_amount: 0,
     }))
 
-    const { data, error } = await supabase
-      .from('budget_categories')
-      .insert(categories)
-      .select()
+    const { data, error } = await supabase.from('budget_categories').insert(categories).select()
     if (error) throw error
     return (data as BudgetCategory[]).sort((a, b) => a.sort_order - b.sort_order)
+  },
+
+  async bulkCreate(
+    projectId: string,
+    items: { code: string; name: string; sort_order: number }[],
+  ): Promise<BudgetCategory[]> {
+    if (items.length === 0) return []
+    const rows = items.map((c) => ({
+      project_id: projectId,
+      code: c.code,
+      name: c.name,
+      sort_order: c.sort_order,
+      budgeted_amount: 0,
+    }))
+    const { data, error } = await supabase.from('budget_categories').insert(rows).select()
+    if (error) throw error
+    return data as BudgetCategory[]
+  },
+
+  async delete(id: string): Promise<void> {
+    const { data: category } = await supabase.from('budget_categories').select('*').eq('id', id).single()
+
+    const { error } = await supabase.from('budget_categories').delete().eq('id', id)
+    if (error) throw error
+
+    await approvalsService
+      .log({
+        entity_type: 'budget_category',
+        entity_id: id,
+        action: 'delete',
+        payload_before: category,
+      })
+      .catch((err) => console.warn('[budgetCategoryService.delete] log de auditoria fallo', err))
+  },
+
+  async deleteMany(ids: string[]): Promise<void> {
+    if (ids.length === 0) return
+
+    const { data: categories } = await supabase.from('budget_categories').select('*').in('id', ids)
+
+    const { error } = await supabase.from('budget_categories').delete().in('id', ids)
+    if (error) throw error
+
+    const rows = (categories as BudgetCategory[] | null) ?? []
+    const auditTargets = rows.length ? rows : ids.map((id) => ({ id }))
+    const results = await Promise.allSettled(
+      auditTargets.map((cat) =>
+        approvalsService.log({
+          entity_type: 'budget_category',
+          entity_id: (cat as { id: string }).id,
+          action: 'delete',
+          payload_before: cat,
+          metadata: { bulk: true },
+        }),
+      ),
+    )
+    const failed = results.filter((r) => r.status === 'rejected')
+    if (failed.length) {
+      console.warn('[budgetCategoryService.deleteMany] log de auditoria fallo', failed)
+    }
   },
 }

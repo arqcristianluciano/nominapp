@@ -18,8 +18,29 @@ export function BudgetDetailHeader({
 }) {
   return (
     <div>
-      <Breadcrumb items={[{ label: 'Proyectos', to: '/proyectos' }, { label: project.name, to: `/proyectos/${projectId}` }, { label: 'Presupuesto' }]} />
-      <div className="flex items-center justify-between"><div><h1 className="text-2xl font-bold text-app-text">Presupuesto</h1><p className="text-sm text-app-muted mt-0.5">{project.name} · {project.code}</p></div>{tab === 'presupuesto' && <button onClick={onOpenImport} className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-app-muted border border-app-border rounded-lg hover:bg-app-hover"><FileUp className="w-3.5 h-3.5" /> Importar Excel</button>}</div>
+      <Breadcrumb
+        items={[
+          { label: 'Proyectos', to: '/proyectos' },
+          { label: project.name, to: `/proyectos/${projectId}` },
+          { label: 'Presupuesto' },
+        ]}
+      />
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-app-text">Presupuesto</h1>
+          <p className="text-sm text-app-muted mt-0.5">
+            {project.name} · {project.code}
+          </p>
+        </div>
+        {tab === 'presupuesto' && (
+          <button
+            onClick={onOpenImport}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-app-muted border border-app-border rounded-lg hover:bg-app-hover"
+          >
+            <FileUp className="w-3.5 h-3.5" /> Importar Excel
+          </button>
+        )}
+      </div>
     </div>
   )
 }
@@ -35,6 +56,7 @@ export function BudgetPresupuestoTab({
   onUpdateItem,
   onDeleteItem,
   onEditBudgetAmount,
+  onDeleteCategory,
 }: {
   loading: boolean
   rows: Array<{ category: BudgetCategory; spent: number; budgeted: number }>
@@ -46,11 +68,24 @@ export function BudgetPresupuestoTab({
   onUpdateItem: (id: string, categoryId: string, changes: Partial<Omit<BudgetItem, 'id'>>) => Promise<void>
   onDeleteItem: (id: string, categoryId: string) => Promise<void>
   onEditBudgetAmount: (id: string, amount: number) => void
+  onDeleteCategory?: (categoryId: string) => Promise<void>
 }) {
   return (
     <>
       <BudgetSummaryCards spent={spentTotal} budgeted={budgetedTotal} />
-      <BudgetHierarchyTable loading={loading} rows={rows} spentTotal={spentTotal} budgetedTotal={budgetedTotal} itemsByCategory={itemsByCategory} priceList={priceList} onAddItem={onAddItem} onUpdateItem={onUpdateItem} onDeleteItem={onDeleteItem} onEditBudgetAmount={onEditBudgetAmount} />
+      <BudgetHierarchyTable
+        loading={loading}
+        rows={rows}
+        spentTotal={spentTotal}
+        budgetedTotal={budgetedTotal}
+        itemsByCategory={itemsByCategory}
+        priceList={priceList}
+        onAddItem={onAddItem}
+        onUpdateItem={onUpdateItem}
+        onDeleteItem={onDeleteItem}
+        onEditBudgetAmount={onEditBudgetAmount}
+        onDeleteCategory={onDeleteCategory}
+      />
     </>
   )
 }
@@ -70,5 +105,14 @@ export function BudgetPreciosTab({
   onDelete: (id: string) => Promise<void>
   onReplicate: () => void
 }) {
-  return <PriceListPanel projectId={projectId} items={items} onAdd={onAdd} onUpdate={onUpdate} onDelete={onDelete} onReplicate={onReplicate} />
+  return (
+    <PriceListPanel
+      projectId={projectId}
+      items={items}
+      onAdd={onAdd}
+      onUpdate={onUpdate}
+      onDelete={onDelete}
+      onReplicate={onReplicate}
+    />
+  )
 }

@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { EMPTY_SCHEDULE_FORM } from '@/components/features/schedule/scheduleConfig'
 import { buildGanttInfo, getTodayLeft } from '@/components/features/schedule/scheduleGanttUtils'
 import { scheduleService, type ScheduleTask, type ScheduleTaskFormData } from '@/services/scheduleService'
+import { useToast } from '@/components/ui/Toast'
+import { getErrorMessage } from '@/utils/errors'
 
 type ScheduleForm = Omit<ScheduleTaskFormData, 'project_id'>
 
@@ -19,6 +21,7 @@ function buildFormFromTask(task: ScheduleTask): ScheduleForm {
 function useScheduleTasks(projectId?: string) {
   const [tasks, setTasks] = useState<ScheduleTask[]>([])
   const [loading, setLoading] = useState(true)
+  const { error } = useToast()
 
   const load = useCallback(async () => {
     if (!projectId) {
@@ -29,10 +32,12 @@ function useScheduleTasks(projectId?: string) {
     setLoading(true)
     try {
       setTasks(await scheduleService.getByProject(projectId))
+    } catch (loadError) {
+      error(`No se pudo cargar cronograma: ${getErrorMessage(loadError)}`)
     } finally {
       setLoading(false)
     }
-  }, [projectId])
+  }, [error, projectId])
 
   useEffect(() => {
     void load()
@@ -80,7 +85,11 @@ function useScheduleFormState() {
   }
 }
 
-function useScheduleEditor(projectId: string | undefined, load: () => Promise<void>) {
+function useScheduleEditor(
+  projectId: string | undefined,
+  load: () => Promise<void>,
+  onError: (message: string) => void,
+) {
   const state = useScheduleFormState()
   const { form, editId, deleteId, setForm, setDeleteId, setSaving, closeForm } = state
 
@@ -94,24 +103,31 @@ function useScheduleEditor(projectId: string | undefined, load: () => Promise<vo
       closeForm()
       setForm({ ...EMPTY_SCHEDULE_FORM })
       await load()
+    } catch (saveError) {
+      onError(`No se pudo guardar tarea: ${getErrorMessage(saveError)}`)
     } finally {
       setSaving(false)
     }
-  }, [closeForm, editId, form, load, projectId, setForm, setSaving])
+  }, [closeForm, editId, form, load, onError, projectId, setForm, setSaving])
 
   const confirmDelete = useCallback(async () => {
     if (!deleteId) return
-    await scheduleService.delete(deleteId)
-    setDeleteId(null)
-    await load()
-  }, [deleteId, load, setDeleteId])
+    try {
+      await scheduleService.delete(deleteId)
+      setDeleteId(null)
+      await load()
+    } catch (deleteError) {
+      onError(`No se pudo eliminar tarea: ${getErrorMessage(deleteError)}`)
+    }
+  }, [deleteId, load, onError, setDeleteId])
 
   return { ...state, saveTask, confirmDelete }
 }
 
 export function useSchedulePage(projectId?: string) {
+  const { error } = useToast()
   const { tasks, loading, load } = useScheduleTasks(projectId)
-  const editor = useScheduleEditor(projectId, load)
+  const editor = useScheduleEditor(projectId, load, error)
   const overall = useMemo(() => scheduleService.getOverallProgress(tasks), [tasks])
   const delayed = useMemo(() => scheduleService.getDelayedTasks(tasks), [tasks])
   const ganttInfo = useMemo(() => buildGanttInfo(tasks), [tasks])
