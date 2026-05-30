@@ -1,11 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
-import { AlertTriangle, FileText, Loader2, Paperclip, Plus, Trash2, X } from 'lucide-react'
+import { AlertTriangle, Building2, FileText, Loader2, Paperclip, Plus, Trash2, X } from 'lucide-react'
 import type { BudgetCategory, BudgetItem, MaterialInvoice, Supplier } from '@/types/database'
 import { payrollService } from '@/services/payrollService'
 import { budgetItemService } from '@/services/budgetItemService'
+import { supplierService } from '@/services/supplierService'
 import { parseDecimalInput } from '@/utils/decimalInput'
+import { isRNC } from '@/utils/validators'
 import { sumInvoiceItems } from '@/utils/materialInvoice'
 import { formatRD } from '@/utils/currency'
+
+const NEW_SUPPLIER_VALUE = '__NEW__'
 
 interface ItemDraft {
   description: string
@@ -31,6 +35,8 @@ interface Props {
   initialInvoice?: MaterialInvoice
   /** Texto del botón de envío (por defecto "Guardar factura"). */
   submitLabel?: string
+  /** Notifica al padre cuando se crea un proveedor inline. */
+  onSupplierCreated?: (supplier: Supplier) => void
 }
 
 const inputCls =
@@ -62,9 +68,60 @@ export function AddMaterialForm({
   saving,
   initialInvoice,
   submitLabel,
+  onSupplierCreated,
 }: Props) {
   const [supplierId, setSupplierId] = useState(initialInvoice?.supplier_id ?? '')
   const [reference, setReference] = useState(initialInvoice?.invoice_reference ?? '')
+
+  const [showNewSupplier, setShowNewSupplier] = useState(false)
+  const [newName, setNewName] = useState('')
+  const [newRnc, setNewRnc] = useState('')
+  const [savingNew, setSavingNew] = useState(false)
+  const [newError, setNewError] = useState<string | null>(null)
+
+  function handleSupplierSelect(value: string) {
+    if (value === NEW_SUPPLIER_VALUE) {
+      setShowNewSupplier(true)
+      setSupplierId('')
+    } else {
+      setShowNewSupplier(false)
+      setSupplierId(value)
+    }
+  }
+
+  async function handleCreateSupplier() {
+    if (savingNew || !newName.trim()) return
+    setNewError(null)
+    const rncTrimmed = newRnc.trim()
+    if (rncTrimmed && !isRNC(rncTrimmed)) {
+      setNewError('RNC inválido (9 u 11 dígitos)')
+      return
+    }
+    setSavingNew(true)
+    try {
+      const created = await supplierService.create({
+        name: newName.trim().toUpperCase(),
+        rnc: rncTrimmed || undefined,
+      })
+      onSupplierCreated?.(created)
+      setSupplierId(created.id)
+      setShowNewSupplier(false)
+      setNewName('')
+      setNewRnc('')
+    } catch (err) {
+      console.warn('[AddMaterialForm] handleCreateSupplier failed', err)
+      setNewError('No se pudo crear el proveedor. Intenta de nuevo.')
+    } finally {
+      setSavingNew(false)
+    }
+  }
+
+  function cancelNewSupplier() {
+    setShowNewSupplier(false)
+    setNewName('')
+    setNewRnc('')
+    setNewError(null)
+  }
   const [budgetCategoryId, setBudgetCategoryId] = useState(initialInvoice?.budget_category_id ?? '')
   const [budgetItemId, setBudgetItemId] = useState(initialInvoice?.budget_item_id ?? '')
   const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([])
@@ -112,7 +169,7 @@ export function AddMaterialForm({
         it.description.trim().length > 0 && it.amount !== null && it.amount > 0,
     )
   const total = sumInvoiceItems(validItems)
-  const canSubmit = !!supplierId && validItems.length > 0 && !uploading && !saving
+  const canSubmit = !!supplierId && !showNewSupplier && validItems.length > 0 && !uploading && !saving
 
   function updateItem(index: number, field: keyof ItemDraft, value: string) {
     setItems((prev) => prev.map((it, i) => (i === index ? { ...it, [field]: value } : it)))
@@ -183,7 +240,12 @@ export function AddMaterialForm({
       )}
       <div>
         <label className="block text-xs font-medium text-app-muted mb-1">Proveedor *</label>
-        <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)} required className={inputCls}>
+        <select
+          value={showNewSupplier ? NEW_SUPPLIER_VALUE : supplierId}
+          onChange={(e) => handleSupplierSelect(e.target.value)}
+          required={!showNewSupplier}
+          className={inputCls}
+        >
           <option value="">Seleccionar proveedor...</option>
           {suppliers
             .filter((s) => s.is_active)
@@ -192,7 +254,49 @@ export function AddMaterialForm({
                 {s.name}
               </option>
             ))}
+          <option value={NEW_SUPPLIER_VALUE}>＋ Agregar proveedor</option>
         </select>
+
+        {showNewSupplier && (
+          <div className="mt-2 p-3 border border-blue-500/40 bg-blue-500/5 rounded-lg space-y-2">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-medium text-blue-400 flex items-center gap-1">
+                <Building2 size={12} /> Nuevo proveedor
+              </span>
+              <button type="button" onClick={cancelNewSupplier} className="text-app-muted hover:text-app-text">
+                <X size={14} />
+              </button>
+            </div>
+            <input
+              type="text"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="Nombre *"
+              className={inputCls}
+            />
+            <input
+              type="text"
+              value={newRnc}
+              onChange={(e) => setNewRnc(e.target.value)}
+              placeholder="RNC (opcional)"
+              className={inputCls}
+            />
+            {newError && (
+              <div className="text-xs text-red-600 dark:text-red-400" role="alert">
+                {newError}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={handleCreateSupplier}
+              disabled={savingNew || !newName.trim()}
+              aria-busy={savingNew}
+              className="w-full py-2 sm:py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {savingNew ? 'Creando...' : 'Crear y seleccionar'}
+            </button>
+          </div>
+        )}
       </div>
 
       <div>
