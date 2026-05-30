@@ -1,27 +1,18 @@
 -- =====================================================================
--- 052 - RLS: edicion de nomina por etapa (introduccion de datos vs aprobado)
+-- 052 - RLS: edicion de nomina por etapa (alineada con la app / opcion A)
 -- ---------------------------------------------------------------------
--- Refuerza en el servidor la regla de negocio de edicion de reportes de
--- nomina. Hasta ahora el bloqueo por estado vivia solo en el cliente
--- (flag canEdit en el editor); la RLS de las tablas de contenido del
--- reporte exigia unicamente la capability `edit_payroll`, sin mirar el
--- estado del periodo. Esto permitia, a nivel de API, que un usuario con
--- `edit_payroll` pero sin autorizacion editara un reporte ya aprobado.
+-- Refuerza en el servidor la regla de edicion de reportes de nomina. Hasta
+-- ahora el bloqueo por estado vivia solo en el cliente; la RLS de las tablas
+-- de contenido del reporte exigia unicamente `edit_payroll`, sin mirar el
+-- estado, permitiendo a nivel de API editar un reporte ya aprobado.
 --
 -- Regla (identica a utils/payrollItemPermissions.ts -> canEditPayrollItems):
---   * Etapa de introduccion de datos (status: draft, submitted):
---       escribe quien captura los datos (`edit_payroll`) y tambien los
---       usuarios autorizados (`approve_payroll`).
---   * Tras la aprobacion (status: approved, paid):
---       solo usuarios autorizados (`approve_payroll`).
+--   * BORRADOR (draft): edita quien captura los datos (`edit_payroll`).
+--   * ENVIADO / APROBADO / PAGADO: solo la mayor jerarquia (`approve_payroll`),
+--     que ademas puede editar en cualquier estado.
 --
--- Aplica a las tablas de contenido del reporte: labor_line_items,
--- material_invoices e indirect_costs. El recalculo de totales/indirectos
--- y el vinculo de cortes de cubicacion operan sobre estas mismas tablas,
--- por lo que un usuario autorizado conserva la capacidad de operar sobre
--- un reporte aprobado. payroll_periods conserva su policy (la transicion
--- de estados y el guardado de totales siguen disponibles para los caps de
--- nomina).
+-- Aplica a labor_line_items, material_invoices, indirect_costs y, si existe,
+-- material_invoice_items (renglones de factura).
 --
 -- Idempotente: CREATE OR REPLACE + DROP POLICY IF EXISTS.
 -- =====================================================================
@@ -37,10 +28,10 @@ AS $$
     FROM public.payroll_periods pp
     WHERE pp.id = p_payroll_period_id
       AND (
-        (pp.status IN ('draft', 'submitted')
+        (pp.status = 'draft'
            AND public.user_has_any_capability(pp.project_id, 'edit_payroll', 'approve_payroll'))
         OR
-        (pp.status IN ('approved', 'paid')
+        (pp.status IN ('submitted', 'approved', 'paid')
            AND public.user_has_capability(pp.project_id, 'approve_payroll'))
       )
   );
@@ -66,3 +57,19 @@ DROP POLICY IF EXISTS "rls_write_indirect_costs" ON public.indirect_costs;
 CREATE POLICY "rls_write_indirect_costs" ON public.indirect_costs FOR ALL TO authenticated
   USING (public.can_edit_payroll_period(payroll_period_id))
   WITH CHECK (public.can_edit_payroll_period(payroll_period_id));
+
+-- material_invoice_items (renglones de factura): misma regla por etapa que la
+-- factura padre. Guardado por si la tabla no existe en una DB sin esa feature.
+DO $$
+BEGIN
+  IF to_regclass('public.material_invoice_items') IS NOT NULL THEN
+    EXECUTE 'DROP POLICY IF EXISTS "rls_write_material_invoice_items" ON public.material_invoice_items';
+    EXECUTE $pol$
+      CREATE POLICY "rls_write_material_invoice_items" ON public.material_invoice_items FOR ALL TO authenticated
+        USING (public.can_edit_payroll_period(
+          (SELECT mi.payroll_period_id FROM public.material_invoices mi WHERE mi.id = material_invoice_id)))
+        WITH CHECK (public.can_edit_payroll_period(
+          (SELECT mi.payroll_period_id FROM public.material_invoices mi WHERE mi.id = material_invoice_id)))
+    $pol$;
+  END IF;
+END $$;
