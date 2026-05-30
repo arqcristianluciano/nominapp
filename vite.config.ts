@@ -26,6 +26,12 @@ export default defineConfig({
             project: sentryProject,
             authToken: sentryAuthToken,
             ...(release ? { release: { name: release } } : {}),
+            // La subida de source maps no debe tumbar el build: si Sentry falla
+            // (token vencido, cuota, red), avisamos y seguimos. Los mapas se
+            // suben igual cuando Sentry responde bien.
+            errorHandler: (err) => {
+              console.warn('[sentry-vite-plugin] subida de source maps fallida (no bloqueante):', err)
+            },
           }),
         ]
       : []),
