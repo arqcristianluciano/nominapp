@@ -22,11 +22,15 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 
 ### Changed
 
+- Números de requisición ahora consecutivos por año (REQ-2026-0001, 0002, …) en lugar de un número aleatorio.
+- `sort_order` de partidas de cubicación se calcula como máximo + 1 para no colisionar al borrar filas.
 - El editor y la impresión de nómina ahora muestran las facturas de materiales detalladas por ítem.
 - Distribución de pagos: ahora se selecciona un beneficiario (contratista o proveedor) y los datos bancarios se copian automáticamente desde su ficha, en lugar de exigir una cuenta bancaria interna (migración 052).
 
 ### Fixed
 
+- La numeración automática de subpartidas ahora respeta el código de la partida (p. ej. `T2.5`, no `2.5`) y continúa desde el mayor número existente, evitando defaults erróneos como `3.1` y colisiones tras borrar filas (#40).
+- La importación de presupuesto desde Excel asigna y persiste códigos consecutivos por partida a las subpartidas que no traen código, continuando desde el mayor existente y respetando los códigos que sí vengan en el archivo.
 - Modo demo: el cliente mock ahora implementa `removeChannel` y un stub de `storage`, evitando el crash al navegar y permitiendo adjuntar/ver comprobantes en demo.
 - La lista de precios ya permite guardar ítems de tipo "Ajuste". El constraint `category` de `price_list_items` omitía `adjustment`, por lo que esos precios fallaban en silencio al guardarse (migración 050).
 - `PriceListInlineForm` ahora muestra un toast de error cuando un precio no se puede guardar, en lugar de fallar en silencio.

@@ -79,7 +79,10 @@ export default function PresupuestoDetalle() {
         }}
         onCloseImport={() => setShowImport(false)}
         onImport={async (payload) => {
-          const result = await budgetItems.bulkImport(payload)
+          const result = await budgetItems.bulkImport(
+            payload,
+            budget.rows.map((r) => r.category),
+          )
           if (result.createdCategories.length > 0) {
             await budget.load()
           }
