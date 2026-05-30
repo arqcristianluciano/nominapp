@@ -1,11 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useProjectStore } from '@/stores/projectStore'
 import { useBudgetDetail } from '@/hooks/useBudgetDetail'
 import { useBudgetItems, type BulkImportPayload } from '@/hooks/useBudgetItems'
 import { findEmptyCategories } from '@/components/features/budget/emptyCategories'
-import { calcBudgetSpent } from '@/utils/financialCalculations'
-import type { TransactionWithRelations } from '@/services/transactionService'
-import type { BudgetCategory, BudgetItem, PriceListItem } from '@/types/database'
+import type { BudgetItem, PriceListItem } from '@/types/database'
 
 export type BudgetTab = 'presupuesto' | 'precios'
 
@@ -134,31 +132,60 @@ function usePriceHandlers(budgetItems: ReturnType<typeof useBudgetItems>) {
 }
 
 /**
- * Limpieza de partidas vacías. Tras importar un presupuesto, las partidas
- * predeterminadas que no coincidieron con el Excel quedan sin subpartidas, sin
- * monto y sin gasto. Las detectamos y las dejamos listas para que el usuario
- * confirme su eliminación (no se borra nada sin preguntar). También expone un
- * borrado puntual para eliminar una partida vacía desde la tabla.
+ * Limpieza de partidas vacías (sin subpartidas, sin monto y sin gasto).
+ *
+ * - Calcula en vivo qué partidas están vacías a partir del estado ya cargado.
+ * - Avisa automáticamente, una sola vez por proyecto, al abrir la página o tras
+ *   importar, mostrando un modal donde el usuario elige cuáles eliminar.
+ * - Nunca borra sin confirmación; también permite el borrado puntual desde la tabla.
  */
 function useEmptyCategoryCleanup(
+  projectId: string | undefined,
   budget: ReturnType<typeof useBudgetDetail>,
   budgetItems: ReturnType<typeof useBudgetItems>,
 ) {
-  const [emptyCategories, setEmptyCategories] = useState<BudgetCategory[]>([])
+  const [showEmptyModal, setShowEmptyModal] = useState(false)
   const [removingEmpty, setRemovingEmpty] = useState(false)
+  const autoPrompted = useRef(false)
 
-  const detectAfterImport = useCallback(
-    (
-      categories: BudgetCategory[],
-      itemsByCategory: Record<string, BudgetItem[]>,
-      transactions: TransactionWithRelations[],
-    ) => {
-      const empties = findEmptyCategories(categories, itemsByCategory, (id) => calcBudgetSpent(transactions, id))
-      setEmptyCategories(empties)
-      return empties
-    },
-    [],
+  const spentByCategory = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const row of budget.rows) map.set(row.category.id, row.spent)
+    return map
+  }, [budget.rows])
+
+  const emptyCategories = useMemo(
+    () =>
+      findEmptyCategories(
+        budget.rows.map((row) => row.category),
+        budgetItems.itemsByCategory,
+        (id) => spentByCategory.get(id) ?? 0,
+      ),
+    [budget.rows, budgetItems.itemsByCategory, spentByCategory],
   )
+
+  // Guarda: sin esto, antes de que carguen los items todas las partidas
+  // parecerían vacías (itemsByCategory aún no tiene sus claves).
+  const itemsLoaded =
+    budget.rows.length > 0 && budget.rows.every((row) => row.category.id in budgetItems.itemsByCategory)
+
+  // Reinicia el aviso automático al cambiar de proyecto.
+  useEffect(() => {
+    autoPrompted.current = false
+    setShowEmptyModal(false)
+  }, [projectId])
+
+  // Aviso automático (una sola vez por proyecto) cuando hay partidas vacías.
+  useEffect(() => {
+    if (autoPrompted.current) return
+    if (budget.loading || budgetItems.loading) return
+    if (!itemsLoaded) return
+    autoPrompted.current = true
+    if (emptyCategories.length > 0) setShowEmptyModal(true)
+  }, [budget.loading, budgetItems.loading, itemsLoaded, emptyCategories])
+
+  const openEmptyModal = useCallback(() => setShowEmptyModal(true), [])
+  const closeEmptyModal = useCallback(() => setShowEmptyModal(false), [])
 
   const removeCategories = useCallback(
     async (ids: string[]) => {
@@ -177,16 +204,13 @@ function useEmptyCategoryCleanup(
     [budget, budgetItems],
   )
 
-  const confirmRemoveEmpty = useCallback(async () => {
-    const ids = emptyCategories.map((c) => c.id)
-    try {
+  const confirmRemoveEmpty = useCallback(
+    async (ids: string[]) => {
       await removeCategories(ids)
-    } finally {
-      setEmptyCategories([])
-    }
-  }, [emptyCategories, removeCategories])
-
-  const cancelRemoveEmpty = useCallback(() => setEmptyCategories([]), [])
+      setShowEmptyModal(false)
+    },
+    [removeCategories],
+  )
 
   const removeCategory = useCallback(
     async (categoryId: string) => {
@@ -195,13 +219,18 @@ function useEmptyCategoryCleanup(
     [removeCategories],
   )
 
+  // Tras importar abrimos el modal; el render lo deja oculto si no hay vacías.
+  const promptAfterImport = useCallback(() => setShowEmptyModal(true), [])
+
   return {
     emptyCategories,
+    showEmptyModal,
     removingEmpty,
-    detectAfterImport,
+    openEmptyModal,
+    closeEmptyModal,
     confirmRemoveEmpty,
-    cancelRemoveEmpty,
     removeCategory,
+    promptAfterImport,
   }
 }
 
@@ -255,9 +284,9 @@ export function useBudgetDetailPage(projectId: string | undefined) {
   })
   const itemHandlers = useBudgetItemHandlers(context.budgetItems)
   const priceHandlers = usePriceHandlers(context.budgetItems)
-  const cleanup = useEmptyCategoryCleanup(context.budget, context.budgetItems)
+  const cleanup = useEmptyCategoryCleanup(projectId, context.budget, context.budgetItems)
 
-  const { detectAfterImport } = cleanup
+  const { promptAfterImport } = cleanup
   const handleImport = useCallback(
     async (payload: BulkImportPayload) => {
       // Pasamos las partidas actuales para que las subpartidas importadas sin
@@ -266,13 +295,12 @@ export function useBudgetDetailPage(projectId: string | undefined) {
         payload,
         context.budget.rows.map((r) => r.category),
       )
-      // Recargamos con datos frescos para evaluar qué partidas quedaron vacías
-      // sin depender del estado asíncrono de React.
-      const { categories, transactions } = await context.budget.load()
-      const itemsMap = await context.budgetItems.loadItems(categories.map((c) => c.id))
-      detectAfterImport(categories, itemsMap, transactions)
+      // Recargamos con datos frescos antes de evaluar qué partidas quedaron vacías.
+      const { categories } = await context.budget.load()
+      await context.budgetItems.loadItems(categories.map((c) => c.id))
+      promptAfterImport()
     },
-    [context.budgetItems, context.budget, detectAfterImport],
+    [context.budgetItems, context.budget, promptAfterImport],
   )
 
   return {
@@ -287,9 +315,11 @@ export function useBudgetDetailPage(projectId: string | undefined) {
     grandBudgeted: context.grandBudgeted,
     handleImport,
     emptyCategories: cleanup.emptyCategories,
+    showEmptyModal: cleanup.showEmptyModal,
     removingEmpty: cleanup.removingEmpty,
+    openEmptyModal: cleanup.openEmptyModal,
     confirmRemoveEmpty: cleanup.confirmRemoveEmpty,
-    cancelRemoveEmpty: cleanup.cancelRemoveEmpty,
+    cancelRemoveEmpty: cleanup.closeEmptyModal,
     handleDeleteCategory: cleanup.removeCategory,
   }
 }

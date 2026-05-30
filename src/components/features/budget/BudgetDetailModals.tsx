@@ -21,6 +21,7 @@ export function BudgetDetailModals({
   onCopyPriceList,
   onCloseImport,
   onImport,
+  showEmptyModal,
   emptyCategories,
   removingEmpty,
   onConfirmRemoveEmpty,
@@ -42,9 +43,10 @@ export function BudgetDetailModals({
   onCopyPriceList: (targetProjectId: string) => Promise<void>
   onCloseImport: () => void
   onImport: (payload: ImportPayload) => Promise<void>
+  showEmptyModal: boolean
   emptyCategories: BudgetCategory[]
   removingEmpty: boolean
-  onConfirmRemoveEmpty: () => void
+  onConfirmRemoveEmpty: (ids: string[]) => void
   onCancelRemoveEmpty: () => void
 }) {
   return (
@@ -71,6 +73,7 @@ export function BudgetDetailModals({
       {showImport && <ExcelImportModal categories={categories} onImport={onImport} onClose={onCloseImport} />}
 
       <DeleteEmptyCategoriesModal
+        open={showEmptyModal && emptyCategories.length > 0}
         categories={emptyCategories}
         loading={removingEmpty}
         onConfirm={onConfirmRemoveEmpty}

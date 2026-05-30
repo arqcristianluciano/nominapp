@@ -33,7 +33,9 @@ export default function PresupuestoDetalle() {
     handleDeletePrice,
     handleImport,
     emptyCategories,
+    showEmptyModal,
     removingEmpty,
+    openEmptyModal,
     confirmRemoveEmpty,
     cancelRemoveEmpty,
     grandBudgeted,
@@ -43,7 +45,14 @@ export default function PresupuestoDetalle() {
 
   return (
     <div className="space-y-5">
-      <BudgetDetailHeader project={project} projectId={projectId!} tab={tab} onOpenImport={() => setShowImport(true)} />
+      <BudgetDetailHeader
+        project={project}
+        projectId={projectId!}
+        tab={tab}
+        onOpenImport={() => setShowImport(true)}
+        emptyCount={emptyCategories.length}
+        onCleanEmpty={openEmptyModal}
+      />
 
       <BudgetTabs tab={tab} projectId={projectId!} priceCount={budgetItems.priceList.length} onChange={setTab} />
 
@@ -89,6 +98,7 @@ export default function PresupuestoDetalle() {
           await handleImport(payload)
           setShowImport(false)
         }}
+        showEmptyModal={showEmptyModal}
         emptyCategories={emptyCategories}
         removingEmpty={removingEmpty}
         onConfirmRemoveEmpty={confirmRemoveEmpty}
