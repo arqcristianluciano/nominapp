@@ -27,12 +27,8 @@ export function SentryErrorBoundary({ children }: SentryErrorBoundaryProps) {
           }}
         >
           <div style={{ maxWidth: '32rem' }}>
-            <h1 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '0.75rem' }}>
-              Algo salió mal
-            </h1>
-            <p style={{ color: '#4b5563', marginBottom: '1.5rem' }}>
-              Algo salió mal. Hemos sido notificados.
-            </p>
+            <h1 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '0.75rem' }}>Algo salió mal</h1>
+            <p style={{ color: '#4b5563', marginBottom: '1.5rem' }}>Algo salió mal. Hemos sido notificados.</p>
             <button
               type="button"
               onClick={() => window.location.reload()}

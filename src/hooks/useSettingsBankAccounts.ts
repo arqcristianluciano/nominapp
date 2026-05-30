@@ -52,27 +52,26 @@ function useBankAccountDialogState() {
   return { showForm, editing, openCreate, openEdit, closeForm }
 }
 
-function useBankAccountSave(
-  loadAccounts: () => Promise<void>,
-  closeForm: () => void,
-  editing?: BankAccount
-) {
+function useBankAccountSave(loadAccounts: () => Promise<void>, closeForm: () => void, editing?: BankAccount) {
   const [saving, setSaving] = useState(false)
   const { error } = useToast()
 
-  const saveAccount = useCallback(async (data: Partial<BankAccount>) => {
-    setSaving(true)
-    try {
-      if (editing) await bankAccountService.update(editing.id, data)
-      else await bankAccountService.create(data as BankAccountInput)
-      closeForm()
-      await loadAccounts()
-    } catch (saveError) {
-      error(`No se pudo guardar cuenta bancaria: ${getErrorMessage(saveError)}`)
-    } finally {
-      setSaving(false)
-    }
-  }, [closeForm, editing, error, loadAccounts])
+  const saveAccount = useCallback(
+    async (data: Partial<BankAccount>) => {
+      setSaving(true)
+      try {
+        if (editing) await bankAccountService.update(editing.id, data)
+        else await bankAccountService.create(data as BankAccountInput)
+        closeForm()
+        await loadAccounts()
+      } catch (saveError) {
+        error(`No se pudo guardar cuenta bancaria: ${getErrorMessage(saveError)}`)
+      } finally {
+        setSaving(false)
+      }
+    },
+    [closeForm, editing, error, loadAccounts],
+  )
 
   return { saving, saveAccount }
 }

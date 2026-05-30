@@ -19,7 +19,13 @@ export function InventoryPageHeader({
 }) {
   return (
     <div>
-      <Breadcrumb items={[{ label: 'Proyectos', to: '/proyectos' }, { label: projectName, to: `/proyectos/${projectId}` }, { label: 'Inventario' }]} />
+      <Breadcrumb
+        items={[
+          { label: 'Proyectos', to: '/proyectos' },
+          { label: projectName, to: `/proyectos/${projectId}` },
+          { label: 'Inventario' },
+        ]}
+      />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mt-2">
         <div className="flex items-center gap-2">
           <Package className="w-5 h-5 text-blue-600 shrink-0" />
@@ -143,11 +149,7 @@ interface InventoryDeleteModalSectionProps {
   onCancel: () => void
 }
 
-export function InventoryDeleteModalSection({
-  deleteId,
-  onConfirm,
-  onCancel,
-}: InventoryDeleteModalSectionProps) {
+export function InventoryDeleteModalSection({ deleteId, onConfirm, onCancel }: InventoryDeleteModalSectionProps) {
   return (
     <ConfirmModal
       open={Boolean(deleteId)}

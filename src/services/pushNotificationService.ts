@@ -55,10 +55,7 @@ export const pushNotificationService = {
    * @throws Error si la consulta a Supabase o el envio falla.
    */
   async notifyDirectors(title: string, body: string, url?: string): Promise<SendPushResult> {
-    const { data, error } = await supabase
-      .from('user_profiles')
-      .select('id')
-      .eq('is_director', true)
+    const { data, error } = await supabase.from('user_profiles').select('id').eq('is_director', true)
     if (error) throw error
     const userIds = (data ?? []).map((r: { id: string }) => r.id)
     if (userIds.length === 0) return { sent: 0, failed: 0 }

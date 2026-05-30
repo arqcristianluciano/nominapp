@@ -88,9 +88,9 @@ export function useProjectReports(projects: Project[]) {
           cxp: acc.cxp + report.cxp,
           cashDisponible: acc.cashDisponible + report.cashDisponible,
         }),
-        { totalIncurrido: 0, presupuesto: 0, cxp: 0, cashDisponible: 0 }
+        { totalIncurrido: 0, presupuesto: 0, cxp: 0, cashDisponible: 0 },
       ),
-    [reports]
+    [reports],
   )
 
   async function exportToExcel() {

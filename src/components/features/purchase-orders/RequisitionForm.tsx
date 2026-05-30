@@ -61,12 +61,7 @@ function RequisitionBasicFields({
     <>
       <div>
         <label className="block text-xs font-medium text-app-muted mb-1">Proyecto *</label>
-        <select
-          value={projectId}
-          onChange={(e) => setProjectId(e.target.value)}
-          required
-          className={inputClass}
-        >
+        <select value={projectId} onChange={(e) => setProjectId(e.target.value)} required className={inputClass}>
           <option value="">Seleccionar proyecto…</option>
           {projects.map((p) => (
             <option key={p.id} value={p.id}>
@@ -77,9 +72,7 @@ function RequisitionBasicFields({
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-app-muted mb-1">
-          ¿Qué se necesita comprar? *
-        </label>
+        <label className="block text-xs font-medium text-app-muted mb-1">¿Qué se necesita comprar? *</label>
         <input
           value={description}
           onChange={(e) => setDescription(e.target.value)}
@@ -233,14 +226,13 @@ function RequisitionResourceFields({
           {exceedsPlan && <AlertTriangle size={14} className="mt-0.5 shrink-0" />}
           <div>
             <p>
-              Planificado en partida: <strong>{availability.planned}</strong> · Disponible (plan −
-              ya comprometido): <strong>{availability.available}</strong>
+              Planificado en partida: <strong>{availability.planned}</strong> · Disponible (plan − ya comprometido):{' '}
+              <strong>{availability.available}</strong>
             </p>
             {exceedsPlan && (
               <p className="mt-1 font-medium">
-                Excede el plan en {(qtyNum - availability.available).toFixed(2)}. La solicitud
-                quedará en "Pendiente validación" hasta que Planificación o el Director la liberen
-                con motivo.
+                Excede el plan en {(qtyNum - availability.available).toFixed(2)}. La solicitud quedará en "Pendiente
+                validación" hasta que Planificación o el Director la liberen con motivo.
               </p>
             )}
           </div>
@@ -273,9 +265,7 @@ export function RequisitionForm({ projects, onSubmit, onCancel, saving }: Props)
   // Cargar capítulos cuando cambia el proyecto.
   useEffect(() => {
     let cancelled = false
-    const promise = projectId
-      ? budgetCategoryService.getByProject(projectId)
-      : Promise.resolve([] as BudgetCategory[])
+    const promise = projectId ? budgetCategoryService.getByProject(projectId) : Promise.resolve([] as BudgetCategory[])
     promise
       .then((data) => {
         if (!cancelled) {
@@ -295,9 +285,7 @@ export function RequisitionForm({ projects, onSubmit, onCancel, saving }: Props)
   // Cargar partidas cuando cambia el capítulo.
   useEffect(() => {
     let cancelled = false
-    const promise = categoryId
-      ? budgetItemService.getByCategoryId(categoryId)
-      : Promise.resolve([] as BudgetItem[])
+    const promise = categoryId ? budgetItemService.getByCategoryId(categoryId) : Promise.resolve([] as BudgetItem[])
     promise
       .then((data) => {
         if (!cancelled) {
@@ -316,9 +304,7 @@ export function RequisitionForm({ projects, onSubmit, onCancel, saving }: Props)
   // Auto-llenar unidad al elegir partida y recalcular disponibilidad.
   useEffect(() => {
     let cancelled = false
-    const promise = itemId
-      ? requisitionService.getAvailabilityForBudgetItem(itemId)
-      : Promise.resolve(null)
+    const promise = itemId ? requisitionService.getAvailabilityForBudgetItem(itemId) : Promise.resolve(null)
     promise
       .then((a) => {
         if (cancelled) return

@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { div, mul, round2, sub, sumBy } from '@/utils/money'
-import type {
-  ContractAdelanto,
-  ContractCorte,
-  ContractPartida,
-} from '@/types/database'
+import type { ContractAdelanto, ContractCorte, ContractPartida } from '@/types/database'
 
 // --- Wrapper local ---
 // `computeSummary` no está exportado desde `cubicationService.ts` y el
@@ -12,11 +8,7 @@ import type {
 // lógica pura (idéntica a la del service) para poder testearla en
 // aislamiento. Si cambia la fórmula en el service, este wrapper debe
 // actualizarse en paralelo.
-function computeSummary(
-  partidas: ContractPartida[],
-  cortes: ContractCorte[],
-  adelantos: ContractAdelanto[] = [],
-) {
+function computeSummary(partidas: ContractPartida[], cortes: ContractCorte[], adelantos: ContractAdelanto[] = []) {
   const acordado = round2(sumBy(partidas, (p) => mul(p.agreed_quantity, p.unit_price)))
   const acumulado = round2(sumBy(cortes, (c) => c.amount))
   const retenido = round2(sumBy(cortes, (c) => c.retention_amount))
@@ -29,8 +21,7 @@ function computeSummary(
     retenido,
     total_adelantos,
     pendiente: pendienteRaw < 0 ? 0 : pendienteRaw,
-    completion_percent:
-      acordado > 0 ? Math.min(round2(mul(div(acumulado, acordado), 100)), 100) : 0,
+    completion_percent: acordado > 0 ? Math.min(round2(mul(div(acumulado, acordado), 100)), 100) : 0,
   }
 }
 
@@ -95,8 +86,8 @@ describe('cubicationService.computeSummary', () => {
   it('2. acordado = sumatoria de agreed_quantity × unit_price por partida', () => {
     const partidas = [
       makePartida({ agreed_quantity: 10, unit_price: 100 }), // 1000
-      makePartida({ agreed_quantity: 5, unit_price: 250 }),  // 1250
-      makePartida({ agreed_quantity: 3, unit_price: 50 }),   // 150
+      makePartida({ agreed_quantity: 5, unit_price: 250 }), // 1250
+      makePartida({ agreed_quantity: 3, unit_price: 50 }), // 150
     ]
     const summary = computeSummary(partidas, [], [])
     expect(summary.acordado).toBe(2400)
@@ -105,11 +96,7 @@ describe('cubicationService.computeSummary', () => {
 
   it('3. acumulado = sumatoria del amount de cada corte', () => {
     const partidas = [makePartida({ agreed_quantity: 100, unit_price: 100 })] // acordado 10000
-    const cortes = [
-      makeCorte({ amount: 1500 }),
-      makeCorte({ amount: 2500 }),
-      makeCorte({ amount: 1000 }),
-    ]
+    const cortes = [makeCorte({ amount: 1500 }), makeCorte({ amount: 2500 }), makeCorte({ amount: 1000 })]
     const summary = computeSummary(partidas, cortes, [])
     expect(summary.acumulado).toBe(5000)
   })
@@ -117,10 +104,7 @@ describe('cubicationService.computeSummary', () => {
   it('4. pendiente = acordado - acumulado - total_adelantos', () => {
     const partidas = [makePartida({ agreed_quantity: 100, unit_price: 100 })] // acordado 10000
     const cortes = [makeCorte({ amount: 3000 })]
-    const adelantos = [
-      makeAdelanto({ amount: 1000 }),
-      makeAdelanto({ amount: 500 }),
-    ]
+    const adelantos = [makeAdelanto({ amount: 1000 }), makeAdelanto({ amount: 500 })]
     const summary = computeSummary(partidas, cortes, adelantos)
     expect(summary.acordado).toBe(10000)
     expect(summary.acumulado).toBe(3000)

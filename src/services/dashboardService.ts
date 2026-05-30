@@ -51,12 +51,8 @@ export const dashboardService = {
       .filter((p) => isBetween(p.created_at, prevMonthStart, prevMonthEnd))
       .reduce((sum, p) => sum + (p.grand_total || 0), 0)
 
-    const payrollsThisMonth = payrolls.filter(
-      (p) => p.created_at && p.created_at.slice(0, 10) >= monthStart
-    ).length
-    const prevPayrolls = payrolls.filter(
-      (p) => isBetween(p.created_at, prevMonthStart, prevMonthEnd)
-    ).length
+    const payrollsThisMonth = payrolls.filter((p) => p.created_at && p.created_at.slice(0, 10) >= monthStart).length
+    const prevPayrolls = payrolls.filter((p) => isBetween(p.created_at, prevMonthStart, prevMonthEnd)).length
 
     const cxpTotal = calcTotalCxP(transactions as FinancialTransaction[])
     const prevCxp = calcTotalCxP(
@@ -87,7 +83,14 @@ export const dashboardService = {
         .limit(5),
     ])
 
-    const activities: { id: string; type: string; description: string; amount: number; date: string; projectId: string }[] = []
+    const activities: {
+      id: string
+      type: string
+      description: string
+      amount: number
+      date: string
+      projectId: string
+    }[] = []
 
     for (const t of txnRes.data || []) {
       activities.push({
@@ -111,8 +114,6 @@ export const dashboardService = {
       })
     }
 
-    return activities
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      .slice(0, 8)
+    return activities.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 8)
   },
 }

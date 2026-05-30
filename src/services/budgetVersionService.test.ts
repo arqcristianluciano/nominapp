@@ -5,9 +5,7 @@ const projectId = `p_bv_${Date.now()}`
 
 describe('budgetVersionService', () => {
   it('snapshot exige motivo no vacío', async () => {
-    await expect(budgetVersionService.snapshot(projectId, '  ', 'cristian')).rejects.toThrow(
-      /Motivo obligatorio/,
-    )
+    await expect(budgetVersionService.snapshot(projectId, '  ', 'cristian')).rejects.toThrow(/Motivo obligatorio/)
   })
 
   it('snapshot crea versión 1 y luego 2', async () => {

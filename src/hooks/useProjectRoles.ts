@@ -63,23 +63,47 @@ export interface UseProjectRolesResult {
 }
 
 const DEMO_CAPS = new Set([
-  'edit_project','edit_budget','edit_price_list','edit_insumos','write_project_indirects',
-  'create_payroll','edit_payroll','submit_payroll','approve_payroll','distribute_payments','delete_payroll_draft',
-  'create_requisition','load_quotes','approve_excess','release_purchase_order','receive_order',
-  'inventory_write','override_stock',
-  'write_bitacora','write_attendance','write_quality','measure_progress','write_schedule',
-  'create_contract','edit_contract_partidas','create_corte','approve_corte','sign_contract','write_adelantos',
-  'view_cashflow','write_ledger','mark_paid','issue_check','write_loans',
-  'write_contractors','write_suppliers','write_materials_catalog','write_bank_accounts',
+  'edit_project',
+  'edit_budget',
+  'edit_price_list',
+  'edit_insumos',
+  'write_project_indirects',
+  'create_payroll',
+  'edit_payroll',
+  'submit_payroll',
+  'approve_payroll',
+  'distribute_payments',
+  'delete_payroll_draft',
+  'create_requisition',
+  'load_quotes',
+  'approve_excess',
+  'release_purchase_order',
+  'receive_order',
+  'inventory_write',
+  'override_stock',
+  'write_bitacora',
+  'write_attendance',
+  'write_quality',
+  'measure_progress',
+  'write_schedule',
+  'create_contract',
+  'edit_contract_partidas',
+  'create_corte',
+  'approve_corte',
+  'sign_contract',
+  'write_adelantos',
+  'view_cashflow',
+  'write_ledger',
+  'mark_paid',
+  'issue_check',
+  'write_loans',
+  'write_contractors',
+  'write_suppliers',
+  'write_materials_catalog',
+  'write_bank_accounts',
 ])
 
-const DEMO_ROLES: ProjectRole[] = [
-  'director_proyecto',
-  'planificacion',
-  'ingeniero_obra',
-  'comprador',
-  'almacenista',
-]
+const DEMO_ROLES: ProjectRole[] = ['director_proyecto', 'planificacion', 'ingeniero_obra', 'comprador', 'almacenista']
 
 // Carga las capabilities del usuario para el proyecto via RPC y deriva
 // flags por accion. La matriz de permisos vive en BD (roles +
@@ -112,11 +136,7 @@ export function useProjectRoles(projectId: string | undefined): UseProjectRolesR
       }
       try {
         const [{ data: memberData }, { data: capData }] = await Promise.all([
-          supabase
-            .from('project_members')
-            .select('role')
-            .eq('project_id', projectId)
-            .eq('user_id', user.id),
+          supabase.from('project_members').select('role').eq('project_id', projectId).eq('user_id', user.id),
           supabase.rpc('user_project_capabilities', { p_project_id: projectId }),
         ])
         if (cancelled) return
@@ -136,8 +156,7 @@ export function useProjectRoles(projectId: string | undefined): UseProjectRolesR
 
   const isDirector = user?.isDirector === true
   const can = (capability: string) => isDirector || caps.has(capability)
-  const hasAny = (...candidates: ProjectRole[]) =>
-    isDirector || candidates.some((c) => roles.includes(c))
+  const hasAny = (...candidates: ProjectRole[]) => isDirector || candidates.some((c) => roles.includes(c))
 
   return {
     roles,

@@ -11,7 +11,7 @@ function detectInitialLanguage(): string {
   // 1. localStorage persistence has highest priority
   try {
     const stored = typeof window !== 'undefined' ? window.localStorage.getItem(STORAGE_KEY) : null
-    if (stored && SUPPORTED_LANGS.includes(stored as typeof SUPPORTED_LANGS[number])) {
+    if (stored && SUPPORTED_LANGS.includes(stored as (typeof SUPPORTED_LANGS)[number])) {
       return stored
     }
   } catch {

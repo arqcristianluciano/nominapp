@@ -15,11 +15,7 @@ import type { Content } from 'pdfmake/interfaces'
  * The footer renders the project name on the left and a `Página X de Y`
  * counter on the right.
  */
-export function buildPageFooter(
-  currentPage: number,
-  pageCount: number,
-  projectName: string,
-): Content {
+export function buildPageFooter(currentPage: number, pageCount: number, projectName: string): Content {
   return {
     margin: [40, 10, 40, 20],
     columns: [

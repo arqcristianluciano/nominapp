@@ -38,7 +38,12 @@ export default function ProjectDetail() {
 
   return (
     <div className="space-y-6">
-      <ProjectDetailHeader project={project} draftPeriod={draftPeriod} onEdit={openEditProjectModal} onCreate={openCreateModal} />
+      <ProjectDetailHeader
+        project={project}
+        draftPeriod={draftPeriod}
+        onEdit={openEditProjectModal}
+        onCreate={openCreateModal}
+      />
 
       <ProjectModulesGrid projectId={projectId} />
       <ProjectBudgetSummary projectId={projectId} totalBudget={totalBudget} totalInvested={totalInvested} />

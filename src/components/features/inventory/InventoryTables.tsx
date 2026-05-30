@@ -13,9 +13,7 @@ export function InventoryStockTable({
   onDelete: (itemId: string) => void
 }) {
   const [deleteId, setDeleteId] = useState<string | null>(null)
-  const totalValue = round2(
-    items.reduce((sum, item) => sum + round2(mul(item.current_stock, item.unit_cost)), 0),
-  )
+  const totalValue = round2(items.reduce((sum, item) => sum + round2(mul(item.current_stock, item.unit_cost)), 0))
 
   return (
     <div className="bg-app-surface border border-app-border rounded-xl overflow-hidden">
@@ -25,15 +23,10 @@ export function InventoryStockTable({
           const isLow = item.current_stock <= item.min_stock
           const totalRow = round2(mul(item.current_stock, item.unit_cost))
           return (
-            <li
-              key={item.id}
-              className={`p-3 ${isLow ? 'bg-yellow-50/50 dark:bg-yellow-950/10' : ''}`}
-            >
+            <li key={item.id} className={`p-3 ${isLow ? 'bg-yellow-50/50 dark:bg-yellow-950/10' : ''}`}>
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-start gap-2 min-w-0 flex-1">
-                  {isLow && (
-                    <AlertTriangle className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
-                  )}
+                  {isLow && <AlertTriangle className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />}
                   <div className="min-w-0">
                     <div className="font-medium text-app-text break-words">{item.name}</div>
                     <div className="text-[11px] text-app-muted mt-0.5">Unidad: {item.unit}</div>
@@ -140,9 +133,7 @@ export function InventoryStockTable({
         </table>
       </div>
 
-      {items.length === 0 && (
-        <div className="text-center py-8 text-app-muted text-sm">Sin materiales registrados.</div>
-      )}
+      {items.length === 0 && <div className="text-center py-8 text-app-muted text-sm">Sin materiales registrados.</div>}
       <ConfirmModal
         open={!!deleteId}
         title="Eliminar material"
@@ -168,9 +159,7 @@ export function InventoryMovementsTable({ movements }: { movements: InventoryMov
             <li key={movement.id} className="p-3 space-y-2">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
-                  <div className="font-medium text-app-text break-words">
-                    {movement.item?.name ?? '—'}
-                  </div>
+                  <div className="font-medium text-app-text break-words">{movement.item?.name ?? '—'}</div>
                   <div className="text-[11px] text-app-muted mt-0.5">
                     {new Date(movement.date + 'T12:00:00').toLocaleDateString('es-DO', {
                       day: '2-digit',
@@ -186,11 +175,7 @@ export function InventoryMovementsTable({ movements }: { movements: InventoryMov
                       : 'text-red-700 bg-red-50 dark:text-red-300 dark:bg-red-950/40'
                   }`}
                 >
-                  {isIn ? (
-                    <ArrowDownCircle className="w-3.5 h-3.5" />
-                  ) : (
-                    <ArrowUpCircle className="w-3.5 h-3.5" />
-                  )}
+                  {isIn ? <ArrowDownCircle className="w-3.5 h-3.5" /> : <ArrowUpCircle className="w-3.5 h-3.5" />}
                   {isIn ? 'Entrada' : 'Salida'}
                 </span>
               </div>

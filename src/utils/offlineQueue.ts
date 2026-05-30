@@ -6,10 +6,7 @@ const DB_NAME = 'nominapp-offline'
 const DB_VERSION = 1
 const STORE = 'mutations'
 
-export type MutationKind =
-  | 'requisition.create'
-  | 'partida_progress.add'
-  | 'inventory_movement.add'
+export type MutationKind = 'requisition.create' | 'partida_progress.add' | 'inventory_movement.add'
 
 export interface QueuedMutation<TPayload = unknown> {
   id: string

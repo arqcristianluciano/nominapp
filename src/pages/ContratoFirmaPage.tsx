@@ -11,7 +11,11 @@ export default function ContratoFirmaPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (contratoId) contractService.getById(contratoId).then(setContrato).finally(() => setLoading(false))
+    if (contratoId)
+      contractService
+        .getById(contratoId)
+        .then(setContrato)
+        .finally(() => setLoading(false))
   }, [contratoId])
 
   if (loading)

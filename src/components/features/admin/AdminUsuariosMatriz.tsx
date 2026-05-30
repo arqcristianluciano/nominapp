@@ -5,8 +5,16 @@ import { adminService, type Capability, type Role, type RoleCapability } from '@
 import { useToast } from '@/components/ui/Toast'
 
 const SECTION_ORDER = [
-  'proyecto', 'nomina', 'compras', 'almacen', 'obra',
-  'cubicaciones', 'finanzas', 'maestros', 'cross', 'admin',
+  'proyecto',
+  'nomina',
+  'compras',
+  'almacen',
+  'obra',
+  'cubicaciones',
+  'finanzas',
+  'maestros',
+  'cross',
+  'admin',
 ] as const
 
 export function AdminUsuariosMatriz() {
@@ -62,10 +70,7 @@ export function AdminUsuariosMatriz() {
     }
   }, [roles, selectedRoleId])
 
-  const selectedRole = useMemo(
-    () => roles.find((r) => r.id === selectedRoleId) ?? null,
-    [roles, selectedRoleId],
-  )
+  const selectedRole = useMemo(() => roles.find((r) => r.id === selectedRoleId) ?? null, [roles, selectedRoleId])
 
   const groupedCaps = useMemo(() => {
     const groups: Record<string, Capability[]> = {}
@@ -74,8 +79,8 @@ export function AdminUsuariosMatriz() {
       groups[c.section].push(c)
     }
     return Object.entries(groups).sort((a, b) => {
-      const ai = SECTION_ORDER.indexOf(a[0] as typeof SECTION_ORDER[number])
-      const bi = SECTION_ORDER.indexOf(b[0] as typeof SECTION_ORDER[number])
+      const ai = SECTION_ORDER.indexOf(a[0] as (typeof SECTION_ORDER)[number])
+      const bi = SECTION_ORDER.indexOf(b[0] as (typeof SECTION_ORDER)[number])
       return ai - bi
     })
   }, [caps])
@@ -89,10 +94,14 @@ export function AdminUsuariosMatriz() {
     try {
       if (has) {
         await adminService.revokeCapability(role.id, cap.id)
-        const next = new Set(mappings); next.delete(key); setMappings(next)
+        const next = new Set(mappings)
+        next.delete(key)
+        setMappings(next)
       } else {
         await adminService.grantCapability(role.id, cap.id)
-        const next = new Set(mappings); next.add(key); setMappings(next)
+        const next = new Set(mappings)
+        next.add(key)
+        setMappings(next)
       }
       success(`${role.name}: ${has ? t('admin.matriz.without') : t('admin.matriz.with')} ${cap.name}`)
     } catch (err) {
@@ -109,9 +118,7 @@ export function AdminUsuariosMatriz() {
 
   return (
     <div className="space-y-4">
-      <div className="text-sm text-app-muted">
-        {t('admin.matriz.instruction')}
-      </div>
+      <div className="text-sm text-app-muted">{t('admin.matriz.instruction')}</div>
 
       {/* Mobile view selector */}
       <div className="md:hidden flex items-center gap-2">
@@ -138,13 +145,21 @@ export function AdminUsuariosMatriz() {
       </div>
 
       {/* Matrix view (desktop always; mobile only when matrix selected) */}
-      <div className={`bg-app-surface rounded-xl border border-app-border overflow-x-auto ${mobileView === 'byRole' ? 'hidden md:block' : ''}`}>
+      <div
+        className={`bg-app-surface rounded-xl border border-app-border overflow-x-auto ${mobileView === 'byRole' ? 'hidden md:block' : ''}`}
+      >
         <table className="w-full text-sm">
           <thead className="sticky top-0 bg-app-surface">
             <tr className="border-b border-app-border bg-app-bg">
-              <th className="text-left px-3 py-2 text-xs font-bold text-app-subtle uppercase tracking-wide sticky left-0 bg-app-bg z-10 min-w-[260px]">{t('admin.matriz.action')}</th>
+              <th className="text-left px-3 py-2 text-xs font-bold text-app-subtle uppercase tracking-wide sticky left-0 bg-app-bg z-10 min-w-[260px]">
+                {t('admin.matriz.action')}
+              </th>
               {roles.map((r) => (
-                <th key={r.id} className="px-2 py-2 text-center text-xs font-bold text-app-subtle uppercase tracking-wide min-w-[80px]" title={r.description ?? r.name}>
+                <th
+                  key={r.id}
+                  className="px-2 py-2 text-center text-xs font-bold text-app-subtle uppercase tracking-wide min-w-[80px]"
+                  title={r.description ?? r.name}
+                >
                   {r.is_director ? <span className="text-amber-600">{r.name}</span> : r.name}
                 </th>
               ))}
@@ -154,7 +169,10 @@ export function AdminUsuariosMatriz() {
             {groupedCaps.map(([section, sectionCaps]) => (
               <Fragment key={section}>
                 <tr className="bg-blue-50/40 dark:bg-blue-950/30">
-                  <td colSpan={roles.length + 1} className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest text-blue-700 dark:text-blue-300">
+                  <td
+                    colSpan={roles.length + 1}
+                    className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest text-blue-700 dark:text-blue-300"
+                  >
                     {SECTION_LABEL[section] ?? section}
                   </td>
                 </tr>
@@ -162,7 +180,9 @@ export function AdminUsuariosMatriz() {
                   <tr key={c.id} className="border-t border-app-border hover:bg-app-hover">
                     <td className="px-3 py-2 sticky left-0 bg-app-surface group-hover:bg-app-hover">
                       <div className="font-medium text-app-text">{c.name}</div>
-                      <div className="text-[10px] uppercase tracking-wide text-app-subtle">{c.slug} · {c.scope}</div>
+                      <div className="text-[10px] uppercase tracking-wide text-app-subtle">
+                        {c.slug} · {c.scope}
+                      </div>
                     </td>
                     {roles.map((r) => {
                       const key = `${r.id}:${c.id}`
@@ -174,15 +194,27 @@ export function AdminUsuariosMatriz() {
                           <button
                             onClick={() => toggle(r, c)}
                             disabled={disabled || isSaving}
-                            title={disabled ? t('admin.matriz.director_bypass_tooltip') : checked ? t('admin.matriz.checked_tooltip') : t('admin.matriz.unchecked_tooltip')}
+                            title={
+                              disabled
+                                ? t('admin.matriz.director_bypass_tooltip')
+                                : checked
+                                  ? t('admin.matriz.checked_tooltip')
+                                  : t('admin.matriz.unchecked_tooltip')
+                            }
                             aria-label={`${r.name} - ${c.name}: ${checked ? t('admin.matriz.aria_access_yes') : t('admin.matriz.aria_access_no')}`}
                             className={`relative w-7 h-7 rounded-md inline-flex items-center justify-center transition-colors before:absolute before:inset-0 before:-m-2 before:content-[''] ${
                               checked
-                                ? (disabled ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/50' : 'bg-emerald-500 text-white hover:bg-emerald-600')
+                                ? disabled
+                                  ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/50'
+                                  : 'bg-emerald-500 text-white hover:bg-emerald-600'
                                 : 'bg-app-chip text-app-subtle hover:bg-app-border'
                             } ${isSaving ? 'opacity-50 cursor-wait' : ''}`}
                           >
-                            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : checked ? <Check className="w-4 h-4" /> : null}
+                            {isSaving ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : checked ? (
+                              <Check className="w-4 h-4" />
+                            ) : null}
                           </button>
                         </td>
                       )
@@ -205,7 +237,8 @@ export function AdminUsuariosMatriz() {
         >
           {roles.map((r) => (
             <option key={r.id} value={r.id}>
-              {r.name}{r.is_director ? t('admin.matriz.bypass_suffix') : ''}
+              {r.name}
+              {r.is_director ? t('admin.matriz.bypass_suffix') : ''}
             </option>
           ))}
         </select>
@@ -232,20 +265,34 @@ export function AdminUsuariosMatriz() {
                       <li key={c.id} className="flex items-center justify-between gap-3 px-3 py-2">
                         <div className="min-w-0 flex-1">
                           <div className="font-medium text-app-text text-sm">{c.name}</div>
-                          <div className="text-[10px] uppercase tracking-wide text-app-subtle">{c.slug} · {c.scope}</div>
+                          <div className="text-[10px] uppercase tracking-wide text-app-subtle">
+                            {c.slug} · {c.scope}
+                          </div>
                         </div>
                         <button
                           onClick={() => toggle(selectedRole, c)}
                           disabled={disabled || isSaving}
                           aria-label={`${c.name}: ${checked ? t('admin.matriz.aria_tap_remove') : t('admin.matriz.aria_tap_grant')}`}
-                          title={disabled ? t('admin.matriz.director_bypass_tooltip') : checked ? t('admin.matriz.checked_tooltip') : t('admin.matriz.unchecked_tooltip')}
+                          title={
+                            disabled
+                              ? t('admin.matriz.director_bypass_tooltip')
+                              : checked
+                                ? t('admin.matriz.checked_tooltip')
+                                : t('admin.matriz.unchecked_tooltip')
+                          }
                           className={`shrink-0 w-11 h-11 rounded-lg inline-flex items-center justify-center transition-colors ${
                             checked
-                              ? (disabled ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/50' : 'bg-emerald-500 text-white hover:bg-emerald-600')
+                              ? disabled
+                                ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/50'
+                                : 'bg-emerald-500 text-white hover:bg-emerald-600'
                               : 'bg-app-chip text-app-subtle hover:bg-app-border'
                           } ${isSaving ? 'opacity-50 cursor-wait' : ''}`}
                         >
-                          {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : checked ? <Check className="w-5 h-5" /> : null}
+                          {isSaving ? (
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                          ) : checked ? (
+                            <Check className="w-5 h-5" />
+                          ) : null}
                         </button>
                       </li>
                     )

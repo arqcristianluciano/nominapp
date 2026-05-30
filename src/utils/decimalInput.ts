@@ -128,10 +128,7 @@ export function parseDecimalInput(s: string): number | null {
  * ICU builds — `Intl.NumberFormat('es-DO', ...)` actually uses US-style
  * separators in some runtimes, which is not what we want here.
  */
-export function formatDecimalForInput(
-  n: number | null | undefined,
-  decimals = 2,
-): string {
+export function formatDecimalForInput(n: number | null | undefined, decimals = 2): string {
   if (n === null || n === undefined) return ''
   if (typeof n !== 'number' || !Number.isFinite(n)) return ''
 

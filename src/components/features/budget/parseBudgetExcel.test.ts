@@ -121,9 +121,7 @@ describe('parseRows (Excel import)', () => {
   })
 
   it('matchea capítulos ignorando acentos (HORMIGON ↔ Hormigón)', () => {
-    const cats: BudgetCategory[] = [
-      cat({ id: 'cat-hormigon', name: 'Hormigón armado', sort_order: 4 }),
-    ]
+    const cats: BudgetCategory[] = [cat({ id: 'cat-hormigon', name: 'Hormigón armado', sort_order: 4 })]
     const rows = [
       ['Código', 'Descripción', 'Unidad', 'Cantidad', 'Precio unitario'],
       [4, 'HORMIGON ARMADO', '', '', ''],

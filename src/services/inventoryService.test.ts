@@ -88,10 +88,7 @@ describe('inventoryService - regla 7.5 (bloqueo stock negativo)', () => {
       }),
     ).resolves.not.toThrow()
 
-    const { data: approvals } = await supabase
-      .from('approvals')
-      .select('*')
-      .eq('action', 'override_stock')
+    const { data: approvals } = await supabase.from('approvals').select('*').eq('action', 'override_stock')
     expect((approvals ?? []).length).toBeGreaterThanOrEqual(1)
   })
 })

@@ -82,11 +82,7 @@ function buildSummaryTable(input: ExecutiveSummaryInput, opts: FormatOptions): C
   const labelStyle = { bold: true, fillColor: '#f1f3f4', color: '#202124' }
 
   type CellStyle = { color?: string; bold?: boolean; alignment?: Alignment }
-  const row = (
-    label: string,
-    value: string,
-    valueStyle: CellStyle = {},
-  ): TableCell[] => [
+  const row = (label: string, value: string, valueStyle: CellStyle = {}): TableCell[] => [
     { text: label, ...labelStyle },
     { text: value, alignment: 'right', ...valueStyle },
   ]

@@ -162,10 +162,7 @@ export default function DirectorDashboard() {
             {/* Mobile: cards */}
             <div className="md:hidden space-y-2">
               {companies.map((c) => (
-                <div
-                  key={c.company_id}
-                  className="bg-app-surface border border-app-border rounded-xl p-3 space-y-2"
-                >
+                <div key={c.company_id} className="bg-app-surface border border-app-border rounded-xl p-3 space-y-2">
                   <div className="flex items-start justify-between gap-2">
                     <div className="font-medium text-app-text">{c.company_name}</div>
                     <span className={`text-sm font-semibold whitespace-nowrap ${pctClass(c.variance_pct)}`}>
@@ -250,10 +247,7 @@ export default function DirectorDashboard() {
             {/* Mobile: cards */}
             <div className="md:hidden space-y-2">
               {projects.map((p) => (
-                <div
-                  key={p.project_id}
-                  className="bg-app-surface border border-app-border rounded-xl p-3 space-y-2"
-                >
+                <div key={p.project_id} className="bg-app-surface border border-app-border rounded-xl p-3 space-y-2">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <Link
@@ -289,11 +283,7 @@ export default function DirectorDashboard() {
                     </div>
                     <div className="col-span-2">
                       <div className="text-app-muted">Items bajo mínimo</div>
-                      <div
-                        className={`font-medium ${
-                          p.low_stock_items > 0 ? 'text-amber-600 font-semibold' : ''
-                        }`}
-                      >
+                      <div className={`font-medium ${p.low_stock_items > 0 ? 'text-amber-600 font-semibold' : ''}`}>
                         {p.low_stock_items}
                       </div>
                     </div>

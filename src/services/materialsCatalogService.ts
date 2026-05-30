@@ -48,11 +48,7 @@ export const materialsCatalogService = {
   },
 
   async getById(id: string): Promise<MaterialCatalogItem | null> {
-    const { data, error } = await supabase
-      .from('materials_catalog')
-      .select('*')
-      .eq('id', id)
-      .single()
+    const { data, error } = await supabase.from('materials_catalog').select('*').eq('id', id).single()
     if (error) return null
     return data as MaterialCatalogItem
   },
@@ -93,10 +89,7 @@ export const materialsCatalogService = {
   },
 
   async setActive(id: string, isActive: boolean): Promise<void> {
-    const { error } = await supabase
-      .from('materials_catalog')
-      .update({ is_active: isActive })
-      .eq('id', id)
+    const { error } = await supabase.from('materials_catalog').update({ is_active: isActive }).eq('id', id)
     if (error) throw error
   },
 

@@ -16,10 +16,10 @@ export interface ExpectedInflow {
 
 export interface MonthlyCashFlowRow {
   month: string // YYYY-MM
-  planned_outflow: number  // egresos planificados (presupuesto en el mes)
-  actual_outflow: number   // egresos ejecutados (nóminas approved + OC liberadas + transactions)
-  planned_inflow: number   // ingresos esperados
-  actual_inflow: number    // ingresos reales (cuando se registren — placeholder 0 por ahora)
+  planned_outflow: number // egresos planificados (presupuesto en el mes)
+  actual_outflow: number // egresos ejecutados (nóminas approved + OC liberadas + transactions)
+  planned_inflow: number // ingresos esperados
+  actual_inflow: number // ingresos reales (cuando se registren — placeholder 0 por ahora)
   net_planned: number
   net_actual: number
 }
@@ -58,11 +58,7 @@ export const cashFlowService = {
   },
 
   async addExpectedInflow(input: Omit<ExpectedInflow, 'id' | 'created_at'>): Promise<ExpectedInflow> {
-    const { data, error } = await supabase
-      .from('expected_cash_inflows')
-      .insert(input)
-      .select()
-      .single()
+    const { data, error } = await supabase.from('expected_cash_inflows').insert(input).select().single()
     if (error) throw error
     return data as ExpectedInflow
   },
@@ -81,10 +77,7 @@ export const cashFlowService = {
     const map = new Map<string, MonthlyCashFlowRow>()
 
     // 1) Planificado: budget_items con start_date.
-    const { data: categories } = await supabase
-      .from('budget_categories')
-      .select('id')
-      .eq('project_id', projectId)
+    const { data: categories } = await supabase.from('budget_categories').select('id').eq('project_id', projectId)
     const categoryIds = (categories ?? []).map((c: { id: string }) => c.id)
     if (categoryIds.length > 0) {
       const { data: items } = await supabase
@@ -116,10 +109,7 @@ export const cashFlowService = {
     }
 
     // 3) Real - transactions (libro diario).
-    const { data: transactions } = await supabase
-      .from('transactions')
-      .select('total, date')
-      .eq('project_id', projectId)
+    const { data: transactions } = await supabase.from('transactions').select('total, date').eq('project_id', projectId)
     for (const t of (transactions ?? []) as Array<{ total: number | null; date: string | null }>) {
       const key = monthKey(t.date)
       if (!key) continue

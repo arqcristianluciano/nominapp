@@ -39,18 +39,41 @@ export interface UseAppRolesResult {
 }
 
 const DEMO_CAPS = new Set([
-  'edit_project','edit_budget','create_payroll','edit_payroll','approve_payroll',
-  'create_requisition','load_quotes','release_purchase_order','receive_order',
-  'inventory_write','override_stock',
-  'write_ledger','mark_paid','issue_check','write_loans','view_cashflow',
-  'write_contractors','write_suppliers','write_materials_catalog','write_bank_accounts',
-  'view_director_dashboard','view_approvals_log','view_reportes','view_price_history',
-  'manage_users','manage_roles',
+  'edit_project',
+  'edit_budget',
+  'create_payroll',
+  'edit_payroll',
+  'approve_payroll',
+  'create_requisition',
+  'load_quotes',
+  'release_purchase_order',
+  'receive_order',
+  'inventory_write',
+  'override_stock',
+  'write_ledger',
+  'mark_paid',
+  'issue_check',
+  'write_loans',
+  'view_cashflow',
+  'write_contractors',
+  'write_suppliers',
+  'write_materials_catalog',
+  'write_bank_accounts',
+  'view_director_dashboard',
+  'view_approvals_log',
+  'view_reportes',
+  'view_price_history',
+  'manage_users',
+  'manage_roles',
 ])
 
 const DEMO_ROLES: ProjectRole[] = [
-  'director_proyecto', 'planificacion', 'ingeniero_obra',
-  'comprador', 'almacenista', 'contabilidad',
+  'director_proyecto',
+  'planificacion',
+  'ingeniero_obra',
+  'comprador',
+  'almacenista',
+  'contabilidad',
 ]
 
 /**
@@ -89,9 +112,7 @@ export function useAppRoles(): UseAppRolesResult {
           supabase.rpc('user_app_capabilities'),
         ])
         if (cancelled) return
-        const memberRoles = Array.from(
-          new Set((memberData ?? []).map((r: { role: ProjectRole }) => r.role)),
-        )
+        const memberRoles = Array.from(new Set((memberData ?? []).map((r: { role: ProjectRole }) => r.role)))
         const capSlugs = ((capData ?? []) as { capability_slug: string }[]).map((r) => r.capability_slug)
         setRoles(memberRoles)
         setCaps(new Set(capSlugs))
@@ -107,8 +128,7 @@ export function useAppRoles(): UseAppRolesResult {
 
   const isDirector = user?.isDirector === true
   const can = (capability: string) => isDirector || caps.has(capability)
-  const hasAny = (...candidates: ProjectRole[]) =>
-    isDirector || candidates.some((c) => roles.includes(c))
+  const hasAny = (...candidates: ProjectRole[]) => isDirector || candidates.some((c) => roles.includes(c))
 
   return {
     roles,
@@ -124,7 +144,8 @@ export function useAppRoles(): UseAppRolesResult {
     canWriteSuppliers: can('write_suppliers'),
     canWriteMaterialsCatalog: can('write_materials_catalog'),
     canWriteBankAccounts: can('write_bank_accounts'),
-    canViewBankAccounts: can('write_bank_accounts') || can('mark_paid') || can('issue_check') || can('write_contractors'),
+    canViewBankAccounts:
+      can('write_bank_accounts') || can('mark_paid') || can('issue_check') || can('write_contractors'),
     canViewDirectorDashboard: can('view_director_dashboard'),
     canViewApprovalsLog: can('view_approvals_log'),
     canViewReportes: can('view_reportes'),

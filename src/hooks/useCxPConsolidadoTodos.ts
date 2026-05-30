@@ -19,23 +19,22 @@ export function useCxPConsolidadoTodos() {
   const [projectFilter, setProjectFilter] = useState<string>('all')
 
   const activeProjects = useMemo(
-    () => [...projects.filter((project) => project.status === 'active')].sort((a, b) => a.name.localeCompare(b.name, 'es')),
-    [projects]
+    () =>
+      [...projects.filter((project) => project.status === 'active')].sort((a, b) => a.name.localeCompare(b.name, 'es')),
+    [projects],
   )
 
   const displayedGroups = useMemo(
     () => (projectFilter === 'all' ? groups : groups.filter((group) => group.projectId === projectFilter)),
-    [groups, projectFilter]
+    [groups, projectFilter],
   )
 
-  const displayedTotal = useMemo(
-    () => displayedGroups.reduce((sum, group) => sum + group.total, 0),
-    [displayedGroups]
-  )
+  const displayedTotal = useMemo(() => displayedGroups.reduce((sum, group) => sum + group.total, 0), [displayedGroups])
 
   const filteredProjectName = useMemo(
-    () => (projectFilter === 'all' ? null : activeProjects.find((project) => project.id === projectFilter)?.name ?? null),
-    [projectFilter, activeProjects]
+    () =>
+      projectFilter === 'all' ? null : (activeProjects.find((project) => project.id === projectFilter)?.name ?? null),
+    [projectFilter, activeProjects],
   )
 
   useEffect(() => {

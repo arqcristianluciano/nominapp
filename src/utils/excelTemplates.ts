@@ -16,10 +16,7 @@ const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.s
  * Construye una hoja a partir de una matriz de filas (la primera es el header)
  * y aplica negrita a las celdas del header via la propiedad `s`.
  */
-function buildSheetWithBoldHeader(
-  XLSX: typeof XLSXType,
-  rows: (string | number)[][],
-): XLSXType.WorkSheet {
+function buildSheetWithBoldHeader(XLSX: typeof XLSXType, rows: (string | number)[][]): XLSXType.WorkSheet {
   const ws = XLSX.utils.aoa_to_sheet(rows)
   const headerLength = rows[0]?.length ?? 0
   for (let c = 0; c < headerLength; c++) {
@@ -35,11 +32,7 @@ function buildSheetWithBoldHeader(
 /**
  * Dispara la descarga del workbook como archivo .xlsx usando Blob + <a download>.
  */
-function downloadWorkbook(
-  XLSX: typeof XLSXType,
-  wb: XLSXType.WorkBook,
-  filename: string,
-): void {
+function downloadWorkbook(XLSX: typeof XLSXType, wb: XLSXType.WorkBook, filename: string): void {
   const out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' }) as ArrayBuffer
   const blob = new Blob([out], { type: XLSX_MIME })
   const url = URL.createObjectURL(blob)

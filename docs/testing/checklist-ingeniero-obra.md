@@ -115,6 +115,7 @@ Objetivo: Validar el flujo diario del Ingeniero de Obra (IO) desde el sitio de o
 ---
 
 **Notas:**
+
 - Reportar bugs en el canal `#qa-mobile` con captura y pasos.
 - Repetir checklist en al menos 1 Android y 1 iOS.
 - Validar tambien con red 3G/4G lenta (modo throttling).

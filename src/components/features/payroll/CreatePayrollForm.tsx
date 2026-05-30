@@ -23,13 +23,12 @@ export function CreatePayrollForm({ projectId, onCreated, onCancel }: Props) {
 
   useEffect(() => {
     setChecking(true)
-    Promise.all([
-      payrollService.getNextPeriodNumber(projectId),
-      payrollService.getDraftPeriod(projectId),
-    ]).then(([nextNum, draft]) => {
-      setNumber(nextNum)
-      setDraftPeriod(draft)
-    }).finally(() => setChecking(false))
+    Promise.all([payrollService.getNextPeriodNumber(projectId), payrollService.getDraftPeriod(projectId)])
+      .then(([nextNum, draft]) => {
+        setNumber(nextNum)
+        setDraftPeriod(draft)
+      })
+      .finally(() => setChecking(false))
   }, [projectId])
 
   async function handleSubmit(e: React.FormEvent) {
@@ -120,8 +119,15 @@ export function CreatePayrollForm({ projectId, onCreated, onCancel }: Props) {
       </div>
 
       <div className="flex justify-end gap-2 pt-2">
-        <button type="button" onClick={onCancel} className="px-4 py-2 text-sm text-app-muted">Cancelar</button>
-        <button type="submit" disabled={saving} aria-busy={saving} className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
+        <button type="button" onClick={onCancel} className="px-4 py-2 text-sm text-app-muted">
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          disabled={saving}
+          aria-busy={saving}
+          className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
           {saving ? 'Creando...' : 'Crear reporte'}
         </button>
       </div>

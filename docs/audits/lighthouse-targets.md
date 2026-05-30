@@ -4,13 +4,13 @@
 
 La aplicación debe alcanzar los siguientes scores en Lighthouse v12+:
 
-| Categoría | Target | Estado Esperado |
-|-----------|--------|-----------------|
-| **Performance** | >90 | ⚠️ Por optimizar |
-| **Accessibility** | >90 | ✅ Bueno (85+) |
-| **Best Practices** | >90 | ✅ Bueno |
-| **SEO** | >90 | ⚠️ Por mejorar |
-| **PWA** | >90 | ✅ Presente |
+| Categoría          | Target | Estado Esperado  |
+| ------------------ | ------ | ---------------- |
+| **Performance**    | >90    | ⚠️ Por optimizar |
+| **Accessibility**  | >90    | ✅ Bueno (85+)   |
+| **Best Practices** | >90    | ✅ Bueno         |
+| **SEO**            | >90    | ⚠️ Por mejorar   |
+| **PWA**            | >90    | ✅ Presente      |
 
 ---
 
@@ -21,7 +21,7 @@ La aplicación debe alcanzar los siguientes scores en Lighthouse v12+:
 - [x] **HTTPS**: Deployado en Vercel con HTTPS obligatorio
 - [x] **Manifest válido** (`/manifest.json`): Present con name, short_name, display, icons, theme_color
 - [x] **Service Worker registrado**: Registrado en `/public/sw.js`, estrategias de cache implementadas
-- [x] **Icons en tamaños correctos**: 
+- [x] **Icons en tamaños correctos**:
   - 192x192 PNG (favicon.png)
   - 512x512 PNG (icon-512.png)
   - 512x512 maskable PNG (icon-maskable-512.png)
@@ -139,6 +139,7 @@ La aplicación debe alcanzar los siguientes scores en Lighthouse v12+:
 ## 4. Plan de Acción Priorizado
 
 ### FASE 1: SEO (3-4 horas)
+
 1. Crear `/public/robots.txt`
 2. Generar `/public/sitemap.xml` (rutas estáticas)
 3. Agregar Open Graph meta tags dinámicos a `index.html`
@@ -146,17 +147,20 @@ La aplicación debe alcanzar los siguientes scores en Lighthouse v12+:
 5. Implementar canonical dinámico (React Router integration)
 
 ### FASE 2: Performance (2-3 horas)
+
 1. Agregar `preconnect` a Supabase en `index.html`
 2. Auditar y agregar `loading="lazy"` a imágenes
 3. Implementar Web Vitals tracking (Sentry integration)
 4. Revisar bundle size con `npm run build --report` (si hay plugin)
 
 ### FASE 3: Security Headers (1-2 horas)
+
 1. Actualizar `vercel.json` con security headers completos
 2. Revisar y actualizar CORS en Supabase
 3. Configurar Content Security Policy (CSP)
 
 ### FASE 4: Validación Final (1 hora)
+
 1. Ejecutar Lighthouse en modo SPA
 2. Validar manifest con: https://www.pwabuilder.com/
 3. Revisar Core Web Vitals en PageSpeed Insights

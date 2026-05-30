@@ -4,7 +4,11 @@ import type { PurchaseQuote } from '@/types/purchaseOrder'
 import { formatRD } from '@/utils/currency'
 import { parseDecimalInput } from '@/utils/decimalInput'
 
-interface NegotiationState { price: string; notes: string; editing: boolean }
+interface NegotiationState {
+  price: string
+  notes: string
+  editing: boolean
+}
 
 interface Props {
   quotes: PurchaseQuote[]
@@ -18,14 +22,15 @@ interface Props {
 export function QuotesPanel({ quotes, approvedQuoteId, canDelete, canNegotiate, onDelete, onNegotiate }: Props) {
   const [neg, setNeg] = useState<Record<string, NegotiationState>>({})
 
-  const startEdit = (q: PurchaseQuote) => setNeg((p) => ({
-    ...p,
-    [q.id]: {
-      price: q.negotiated_total ? String(q.negotiated_total) : '',
-      notes: q.negotiated_notes || '',
-      editing: true,
-    },
-  }))
+  const startEdit = (q: PurchaseQuote) =>
+    setNeg((p) => ({
+      ...p,
+      [q.id]: {
+        price: q.negotiated_total ? String(q.negotiated_total) : '',
+        notes: q.negotiated_notes || '',
+        editing: true,
+      },
+    }))
 
   const cancelEdit = (id: string) => setNeg((p) => ({ ...p, [id]: { ...p[id], editing: false } }))
 
@@ -39,7 +44,9 @@ export function QuotesPanel({ quotes, approvedQuoteId, canDelete, canNegotiate, 
   if (!quotes.length) {
     return (
       <div className="border-2 border-dashed border-app-border rounded-xl p-6 sm:p-10 text-center text-app-subtle">
-        <p className="text-sm">No hay cotizaciones. Agregue al menos 2 suplidores (o 1 con justificación al aprobar).</p>
+        <p className="text-sm">
+          No hay cotizaciones. Agregue al menos 2 suplidores (o 1 con justificación al aprobar).
+        </p>
       </div>
     )
   }
@@ -55,10 +62,15 @@ export function QuotesPanel({ quotes, approvedQuoteId, canDelete, canNegotiate, 
         const hasNeg = !!q.negotiated_total
 
         return (
-          <div key={q.id} className={`bg-app-surface rounded-xl border-2 overflow-hidden flex flex-col ${
-            isApproved ? 'border-green-400 shadow-sm shadow-green-100' : 'border-app-border'
-          }`}>
-            <div className={`px-3 sm:px-4 py-3 flex items-start justify-between gap-2 ${isApproved ? 'bg-green-50' : 'bg-app-bg'}`}>
+          <div
+            key={q.id}
+            className={`bg-app-surface rounded-xl border-2 overflow-hidden flex flex-col ${
+              isApproved ? 'border-green-400 shadow-sm shadow-green-100' : 'border-app-border'
+            }`}
+          >
+            <div
+              className={`px-3 sm:px-4 py-3 flex items-start justify-between gap-2 ${isApproved ? 'bg-green-50' : 'bg-app-bg'}`}
+            >
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-app-text truncate">{q.supplier?.name}</p>
                 {q.quote_number && <p className="text-xs text-app-muted truncate">Cot. {q.quote_number}</p>}
@@ -101,7 +113,9 @@ export function QuotesPanel({ quotes, approvedQuoteId, canDelete, canNegotiate, 
                     <tr key={it.id}>
                       <td className="py-1.5 pr-2 text-app-muted align-top break-words">
                         <p className="break-words">{it.description}</p>
-                        <p className="text-app-subtle">{it.quantity} {it.unit} × {formatRD(it.unit_price)}</p>
+                        <p className="text-app-subtle">
+                          {it.quantity} {it.unit} × {formatRD(it.unit_price)}
+                        </p>
                       </td>
                       <td className="py-1.5 text-right font-medium text-app-text whitespace-nowrap align-top w-24 sm:w-28">
                         {formatRD(it.subtotal)}
@@ -113,20 +127,25 @@ export function QuotesPanel({ quotes, approvedQuoteId, canDelete, canNegotiate, 
 
               <div className="border-t border-app-border pt-2 space-y-0.5 text-xs">
                 <div className="flex justify-between gap-2 text-app-muted">
-                  <span>Subtotal</span><span className="whitespace-nowrap">{formatRD(q.subtotal)}</span>
+                  <span>Subtotal</span>
+                  <span className="whitespace-nowrap">{formatRD(q.subtotal)}</span>
                 </div>
                 <div className="flex justify-between gap-2 text-app-muted">
                   <span>ITBIS ({q.tax_percent}%)</span>
-                  <span className="whitespace-nowrap">{formatRD(q.subtotal * q.tax_percent / 100)}</span>
+                  <span className="whitespace-nowrap">{formatRD((q.subtotal * q.tax_percent) / 100)}</span>
                 </div>
-                <div className={`flex justify-between gap-2 font-semibold text-sm pt-1 ${
-                  isApproved ? 'text-green-700' : hasNeg ? 'text-app-subtle line-through' : 'text-blue-700'
-                }`}>
-                  <span>Total cotizado</span><span className="whitespace-nowrap">{formatRD(q.total)}</span>
+                <div
+                  className={`flex justify-between gap-2 font-semibold text-sm pt-1 ${
+                    isApproved ? 'text-green-700' : hasNeg ? 'text-app-subtle line-through' : 'text-blue-700'
+                  }`}
+                >
+                  <span>Total cotizado</span>
+                  <span className="whitespace-nowrap">{formatRD(q.total)}</span>
                 </div>
                 {hasNeg && !state?.editing && (
                   <div className="flex justify-between gap-2 font-bold text-sm text-orange-600 bg-orange-50 -mx-1 px-1 py-0.5 rounded">
-                    <span>Precio negociado</span><span className="whitespace-nowrap">{formatRD(q.negotiated_total!)}</span>
+                    <span>Precio negociado</span>
+                    <span className="whitespace-nowrap">{formatRD(q.negotiated_total!)}</span>
                   </div>
                 )}
                 {q.negotiated_notes && !state?.editing && (
@@ -135,14 +154,17 @@ export function QuotesPanel({ quotes, approvedQuoteId, canDelete, canNegotiate, 
               </div>
 
               {q.notes && !state?.editing && (
-                <p className="mt-2 text-xs text-app-muted italic border-t border-app-border pt-2 break-words">{q.notes}</p>
+                <p className="mt-2 text-xs text-app-muted italic border-t border-app-border pt-2 break-words">
+                  {q.notes}
+                </p>
               )}
 
               {state?.editing && (
                 <div className="mt-3 border-t border-orange-200 pt-3 space-y-2">
                   <p className="text-xs font-medium text-orange-600">Precio negociado (total final)</p>
                   <input
-                    type="text" inputMode="decimal"
+                    type="text"
+                    inputMode="decimal"
                     value={state.price}
                     onChange={(e) => setNeg((p) => ({ ...p, [q.id]: { ...p[q.id], price: e.target.value } }))}
                     placeholder="Ej: 195000"

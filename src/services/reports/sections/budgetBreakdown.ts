@@ -78,10 +78,7 @@ function formatPercent(value: number): string {
 }
 
 function buildCategoryRow(category: BudgetBreakdownCategory): TableCell[] {
-  const { variance, variancePct, state } = computeVariance(
-    category.budgeted,
-    category.actual,
-  )
+  const { variance, variancePct, state } = computeVariance(category.budgeted, category.actual)
   const color = stateColor(state)
   return [
     { text: category.code, bold: true, color },
@@ -95,10 +92,7 @@ function buildCategoryRow(category: BudgetBreakdownCategory): TableCell[] {
 }
 
 function buildItemRow(item: BudgetBreakdownItem): TableCell[] {
-  const { variance, variancePct, state } = computeVariance(
-    item.budgeted,
-    item.actual,
-  )
+  const { variance, variancePct, state } = computeVariance(item.budgeted, item.actual)
   const color = stateColor(state)
   return [
     { text: item.code, color, margin: [12, 0, 0, 0] },
@@ -120,10 +114,7 @@ function buildTotalsRow(input: BudgetBreakdownInput): TableCell[] {
     },
     { budgeted: 0, actual: 0 },
   )
-  const { variance, variancePct, state } = computeVariance(
-    totals.budgeted,
-    totals.actual,
-  )
+  const { variance, variancePct, state } = computeVariance(totals.budgeted, totals.actual)
   const color = stateColor(state)
   return [
     { text: '', fillColor: '#ecf0f1' },

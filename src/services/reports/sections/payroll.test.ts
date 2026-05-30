@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  buildPayrollSection,
-  type PayrollSectionInput,
-  type PayrollSectionRow,
-} from './payroll'
+import { buildPayrollSection, type PayrollSectionInput, type PayrollSectionRow } from './payroll'
 
 function row(overrides: Partial<PayrollSectionRow> = {}): PayrollSectionRow {
   return {
@@ -46,9 +42,7 @@ describe('buildPayrollSection', () => {
   })
 
   it('respects USD + en-US producing "$" not "US$"', () => {
-    const result = buildPayrollSection(
-      baseInput({ currency: 'USD', locale: 'en-US' }),
-    )
+    const result = buildPayrollSection(baseInput({ currency: 'USD', locale: 'en-US' }))
     const json = JSON.stringify(result)
 
     expect(json).toContain('$')

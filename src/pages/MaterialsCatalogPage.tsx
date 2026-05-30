@@ -229,9 +229,7 @@ export default function MaterialsCatalogPage() {
                   <td className="px-3 py-2 text-center">
                     <span
                       className={`px-2 py-0.5 rounded text-xs ${
-                        it.is_active
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-app-chip text-app-subtle'
+                        it.is_active ? 'bg-green-100 text-green-700' : 'bg-app-chip text-app-subtle'
                       }`}
                     >
                       {it.is_active ? 'Activo' : 'Inactivo'}
@@ -239,10 +237,7 @@ export default function MaterialsCatalogPage() {
                   </td>
                   <td className="px-3 py-2 text-right">
                     {canWriteMaterialsCatalog && (
-                      <button
-                        onClick={() => handleToggleActive(it)}
-                        className="text-xs text-blue-600 hover:underline"
-                      >
+                      <button onClick={() => handleToggleActive(it)} className="text-xs text-blue-600 hover:underline">
                         {it.is_active ? 'Desactivar' : 'Activar'}
                       </button>
                     )}

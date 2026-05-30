@@ -33,7 +33,8 @@ const ROLE_LABEL: Record<ProjectRole, string> = Object.fromEntries(
   PROJECT_ROLES.map((r) => [r.value, r.label]),
 ) as Record<ProjectRole, string>
 
-const inputCls = 'w-full px-3 py-2 text-sm border border-app-border rounded-lg bg-app-bg text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500'
+const inputCls =
+  'w-full px-3 py-2 text-sm border border-app-border rounded-lg bg-app-bg text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500'
 const labelCls = 'text-xs font-medium text-app-muted mb-1 block'
 
 export function UserProjectRolesSection({ user, onRefresh }: Props) {
@@ -49,10 +50,7 @@ export function UserProjectRolesSection({ user, onRefresh }: Props) {
   const loadProjects = useCallback(async () => {
     setLoadingProjects(true)
     try {
-      const { data, error: err } = await supabase
-        .from('projects')
-        .select('id, name, code')
-        .order('name')
+      const { data, error: err } = await supabase.from('projects').select('id, name, code').order('name')
       if (err) throw err
       const list = (data ?? []) as ProjectLite[]
       setAllProjects(list)
@@ -140,7 +138,9 @@ export function UserProjectRolesSection({ user, onRefresh }: Props) {
               <li key={key} className="flex items-center justify-between gap-2 px-3 py-2">
                 <div className="min-w-0">
                   <div className="text-sm font-medium text-app-text truncate">{projectLabel(m.project_id)}</div>
-                  <div className="text-[11px] uppercase tracking-wide text-app-subtle">{ROLE_LABEL[m.role] ?? m.role}</div>
+                  <div className="text-[11px] uppercase tracking-wide text-app-subtle">
+                    {ROLE_LABEL[m.role] ?? m.role}
+                  </div>
                 </div>
                 <button
                   type="button"
@@ -205,10 +205,7 @@ function AssignForm({ userId, projects, existing, onCancel, onSaved }: AssignFor
   const [saving, setSaving] = useState(false)
   const { error } = useToast()
 
-  const existingKeys = useMemo(
-    () => new Set(existing.map((m) => `${m.project_id}:${m.role}`)),
-    [existing],
-  )
+  const existingKeys = useMemo(() => new Set(existing.map((m) => `${m.project_id}:${m.role}`)), [existing])
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -236,12 +233,7 @@ function AssignForm({ userId, projects, existing, onCancel, onSaved }: AssignFor
     <form onSubmit={handleSubmit} className="space-y-3">
       <div>
         <label className={labelCls}>Proyecto *</label>
-        <select
-          className={inputCls}
-          required
-          value={projectId}
-          onChange={(e) => setProjectId(e.target.value)}
-        >
+        <select className={inputCls} required value={projectId} onChange={(e) => setProjectId(e.target.value)}>
           {projects.length === 0 && <option value="">No hay proyectos disponibles</option>}
           {projects.map((p) => (
             <option key={p.id} value={p.id}>
@@ -252,12 +244,7 @@ function AssignForm({ userId, projects, existing, onCancel, onSaved }: AssignFor
       </div>
       <div>
         <label className={labelCls}>Rol *</label>
-        <select
-          className={inputCls}
-          required
-          value={role}
-          onChange={(e) => setRole(e.target.value as ProjectRole)}
-        >
+        <select className={inputCls} required value={role} onChange={(e) => setRole(e.target.value as ProjectRole)}>
           {PROJECT_ROLES.map((r) => (
             <option key={r.value} value={r.value}>
               {r.label}

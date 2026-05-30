@@ -6,11 +6,7 @@ import { ReportsSummaryCards } from '@/components/features/reports/ReportsSummar
 import { CubicationsTable, FinancialSummaryTable } from '@/components/features/reports/ReportsTables'
 import { ReporteMensualModal } from '@/components/features/reports/ReporteMensualModal'
 import { Modal } from '@/components/ui/Modal'
-import {
-  downloadPdf,
-  generateMonthlyReport,
-  type MonthlyReportInput,
-} from '@/services/reports/pdfReportService'
+import { downloadPdf, generateMonthlyReport, type MonthlyReportInput } from '@/services/reports/pdfReportService'
 
 const MONTH_NAMES = [
   'Enero',
@@ -170,7 +166,9 @@ export default function Reportes() {
                 <Printer className="w-4 h-4" /> Imprimir / PDF
               </button>
               <button
-                onClick={() => { void handleExport() }}
+                onClick={() => {
+                  void handleExport()
+                }}
                 disabled={exporting}
                 className="flex items-center gap-2 px-4 py-2 border border-app-border bg-app-surface text-sm font-medium text-app-muted rounded-xl hover:bg-app-hover transition-colors"
               >
@@ -185,16 +183,9 @@ export default function Reportes() {
       <CubicationsTable reports={reports} />
       <FinancialSummaryTable reports={reports} totals={totals} loading={loading} />
 
-      <ReporteMensualModal
-        open={reporteMensualOpen}
-        onClose={() => setReporteMensualOpen(false)}
-      />
+      <ReporteMensualModal open={reporteMensualOpen} onClose={() => setReporteMensualOpen(false)} />
 
-      <Modal
-        open={monthlyDialogOpen}
-        onClose={closeMonthlyDialog}
-        title="Descargar reporte mensual PDF"
-      >
+      <Modal open={monthlyDialogOpen} onClose={closeMonthlyDialog} title="Descargar reporte mensual PDF">
         <div className="space-y-4">
           <div>
             <label htmlFor="monthly-report-project" className="block text-xs font-medium text-app-muted mb-2">
@@ -230,14 +221,14 @@ export default function Reportes() {
               const parsed = parseMonthValue(selectedMonth)
               if (!parsed) return null
               const label = `${MONTH_NAMES[parsed.month - 1]} ${parsed.year}`
-              return (
-                <p className="mt-1 text-xs text-app-muted">{label}</p>
-              )
+              return <p className="mt-1 text-xs text-app-muted">{label}</p>
             })()}
           </div>
 
           {pdfError && (
-            <p className="text-xs text-red-600" role="alert">{pdfError}</p>
+            <p className="text-xs text-red-600" role="alert">
+              {pdfError}
+            </p>
           )}
 
           <div className="flex justify-end gap-2 pt-2">
@@ -251,7 +242,9 @@ export default function Reportes() {
             </button>
             <button
               type="button"
-              onClick={() => { void handleGenerateMonthlyPdf() }}
+              onClick={() => {
+                void handleGenerateMonthlyPdf()
+              }}
               disabled={generatingPdf || !selectedProjectId}
               aria-busy={generatingPdf}
               className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"

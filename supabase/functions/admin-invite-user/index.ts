@@ -55,7 +55,9 @@ Deno.serve(async (req) => {
   const callerClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     global: { headers: { Authorization: authHeader } },
   })
-  const { data: { user: caller } } = await callerClient.auth.getUser()
+  const {
+    data: { user: caller },
+  } = await callerClient.auth.getUser()
   if (!caller) return jsonResponse({ error: 'unauthorized' }, 401)
 
   const { data: callerProfile } = await callerClient
@@ -64,16 +66,13 @@ Deno.serve(async (req) => {
     .eq('id', caller.id)
     .maybeSingle()
   if (!callerProfile?.is_director) {
-    return jsonResponse(
-      { error: 'forbidden', detail: 'solo el director general puede invitar usuarios' },
-      403,
-    )
+    return jsonResponse({ error: 'forbidden', detail: 'solo el director general puede invitar usuarios' }, 403)
   }
 
   // 2) Validar payload
   let body: InviteUserInput
   try {
-    body = await req.json() as InviteUserInput
+    body = (await req.json()) as InviteUserInput
   } catch {
     return jsonResponse({ error: 'invalid_json' }, 400)
   }
@@ -84,18 +83,13 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: 'invalid_email' }, 400)
   }
   if (body.project_id && !body.role) {
-    return jsonResponse(
-      { error: 'missing_role', detail: 'role es obligatorio cuando se especifica project_id' },
-      400,
-    )
+    return jsonResponse({ error: 'missing_role', detail: 'role es obligatorio cuando se especifica project_id' }, 400)
   }
 
   // 3) Enviar la invitacion via admin API. Supabase envia el email automatico.
   const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-  const { data: invited, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(
-    body.email,
-  )
+  const { data: invited, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(body.email)
   if (inviteError || !invited.user) {
     return jsonResponse({ error: 'invite_failed', detail: inviteError?.message }, 400)
   }
@@ -108,9 +102,7 @@ Deno.serve(async (req) => {
     is_director: false,
     is_active: true,
   }
-  const { error: profileError } = await adminClient
-    .from('user_profiles')
-    .insert(profilePayload)
+  const { error: profileError } = await adminClient.from('user_profiles').insert(profilePayload)
   if (profileError) {
     // best-effort rollback: borrar el usuario invitado
     await adminClient.auth.admin.deleteUser(invited.user.id).catch(() => undefined)
@@ -119,13 +111,11 @@ Deno.serve(async (req) => {
 
   // 5) Opcionalmente asignar rol en un proyecto
   if (body.project_id && body.role) {
-    const { error: memberError } = await adminClient
-      .from('project_members')
-      .insert({
-        user_id: invited.user.id,
-        project_id: body.project_id,
-        role: body.role,
-      })
+    const { error: memberError } = await adminClient.from('project_members').insert({
+      user_id: invited.user.id,
+      project_id: body.project_id,
+      role: body.role,
+    })
     if (memberError) {
       console.warn('project_members insert failed', memberError.message)
     }
@@ -152,15 +142,17 @@ Deno.serve(async (req) => {
   }
 
   // 7) Audit log en consola
-  console.log(JSON.stringify({
-    action: 'admin-invite-user',
-    actor: caller.id,
-    target: invited.user.id,
-    target_email: invited.user.email,
-    role: body.role ?? null,
-    project_id: body.project_id ?? null,
-    ts: new Date().toISOString(),
-  }))
+  console.log(
+    JSON.stringify({
+      action: 'admin-invite-user',
+      actor: caller.id,
+      target: invited.user.id,
+      target_email: invited.user.email,
+      role: body.role ?? null,
+      project_id: body.project_id ?? null,
+      ts: new Date().toISOString(),
+    }),
+  )
 
   return jsonResponse({ id: invited.user.id, email: invited.user.email })
 })

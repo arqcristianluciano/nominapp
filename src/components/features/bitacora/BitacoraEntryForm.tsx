@@ -127,9 +127,7 @@ export function BitacoraEntryForm({ form, saving, editMode, onChange, onCancel, 
             type="number"
             inputMode="decimal"
             value={form.temp_c ?? ''}
-            onChange={(e) =>
-              onChange({ ...form, temp_c: e.target.value === '' ? null : +e.target.value })
-            }
+            onChange={(e) => onChange({ ...form, temp_c: e.target.value === '' ? null : +e.target.value })}
             className={inputCls}
           />
         </div>

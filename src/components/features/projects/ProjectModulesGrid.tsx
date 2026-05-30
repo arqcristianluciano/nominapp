@@ -27,18 +27,80 @@ interface ModuleDef {
 }
 
 const topModules: ModuleDef[] = [
-  { label: 'Control Financiero', desc: 'Libro diario, CxP, cheques', to: 'control', icon: Landmark, tone: 'bg-blue-50 text-blue-600', visibleTo: ['director_proyecto', 'contabilidad'] },
-  { label: 'Presupuesto', desc: 'Presupuesto vs real', to: 'presupuesto', icon: BarChart3, tone: 'bg-purple-50 text-purple-600' },
+  {
+    label: 'Control Financiero',
+    desc: 'Libro diario, CxP, cheques',
+    to: 'control',
+    icon: Landmark,
+    tone: 'bg-blue-50 text-blue-600',
+    visibleTo: ['director_proyecto', 'contabilidad'],
+  },
+  {
+    label: 'Presupuesto',
+    desc: 'Presupuesto vs real',
+    to: 'presupuesto',
+    icon: BarChart3,
+    tone: 'bg-purple-50 text-purple-600',
+  },
 ]
 
 const extraModules: ModuleDef[] = [
-  { label: 'Cubicaciones', desc: 'Contrato por contratista', to: 'cubicaciones', icon: Layers, tone: 'bg-teal-50 text-teal-600', visibleTo: ['director_proyecto', 'comprador', 'ingeniero_obra', 'contabilidad'] },
-  { label: 'Control de Calidad', desc: 'Ensayos de hormigón', to: 'calidad', icon: ClipboardCheck, tone: 'bg-rose-50 text-rose-600', visibleTo: ['director_proyecto', 'planificacion', 'ingeniero_obra', 'supervisor_especializado'] },
-  { label: 'Listado de Insumos', desc: 'Presupuesto Mercado · contratos de ajuste', to: 'insumos', icon: PackageSearch, tone: 'bg-green-50 text-green-600', visibleTo: ['director_proyecto', 'planificacion'] },
-  { label: 'Bitácora de Obra', desc: 'Registro diario de actividades', to: 'bitacora', icon: BookOpen, tone: 'bg-amber-50 text-amber-600', visibleTo: ['director_proyecto', 'planificacion', 'ingeniero_obra', 'supervisor_especializado'] },
-  { label: 'Asistencia Diaria', desc: 'Personal · horas-hombre', to: 'asistencia', icon: Users, tone: 'bg-indigo-50 text-indigo-600', visibleTo: ['director_proyecto', 'planificacion', 'ingeniero_obra', 'supervisor_especializado'] },
-  { label: 'Inventario de Materiales', desc: 'Stock · entradas y salidas', to: 'inventario', icon: Package, tone: 'bg-orange-50 text-orange-600', visibleTo: ['director_proyecto', 'almacenista'] },
-  { label: 'Cronograma de Obra', desc: 'Diagrama de Gantt · avance', to: 'cronograma', icon: BarChart2, tone: 'bg-sky-50 text-sky-600', visibleTo: ['director_proyecto', 'planificacion', 'ingeniero_obra', 'supervisor_especializado', 'comprador'] },
+  {
+    label: 'Cubicaciones',
+    desc: 'Contrato por contratista',
+    to: 'cubicaciones',
+    icon: Layers,
+    tone: 'bg-teal-50 text-teal-600',
+    visibleTo: ['director_proyecto', 'comprador', 'ingeniero_obra', 'contabilidad'],
+  },
+  {
+    label: 'Control de Calidad',
+    desc: 'Ensayos de hormigón',
+    to: 'calidad',
+    icon: ClipboardCheck,
+    tone: 'bg-rose-50 text-rose-600',
+    visibleTo: ['director_proyecto', 'planificacion', 'ingeniero_obra', 'supervisor_especializado'],
+  },
+  {
+    label: 'Listado de Insumos',
+    desc: 'Presupuesto Mercado · contratos de ajuste',
+    to: 'insumos',
+    icon: PackageSearch,
+    tone: 'bg-green-50 text-green-600',
+    visibleTo: ['director_proyecto', 'planificacion'],
+  },
+  {
+    label: 'Bitácora de Obra',
+    desc: 'Registro diario de actividades',
+    to: 'bitacora',
+    icon: BookOpen,
+    tone: 'bg-amber-50 text-amber-600',
+    visibleTo: ['director_proyecto', 'planificacion', 'ingeniero_obra', 'supervisor_especializado'],
+  },
+  {
+    label: 'Asistencia Diaria',
+    desc: 'Personal · horas-hombre',
+    to: 'asistencia',
+    icon: Users,
+    tone: 'bg-indigo-50 text-indigo-600',
+    visibleTo: ['director_proyecto', 'planificacion', 'ingeniero_obra', 'supervisor_especializado'],
+  },
+  {
+    label: 'Inventario de Materiales',
+    desc: 'Stock · entradas y salidas',
+    to: 'inventario',
+    icon: Package,
+    tone: 'bg-orange-50 text-orange-600',
+    visibleTo: ['director_proyecto', 'almacenista'],
+  },
+  {
+    label: 'Cronograma de Obra',
+    desc: 'Diagrama de Gantt · avance',
+    to: 'cronograma',
+    icon: BarChart2,
+    tone: 'bg-sky-50 text-sky-600',
+    visibleTo: ['director_proyecto', 'planificacion', 'ingeniero_obra', 'supervisor_especializado', 'comprador'],
+  },
 ]
 
 function ModuleCard({

@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  buildBudgetBreakdownSection,
-  type BudgetBreakdownInput,
-} from './budgetBreakdown'
+import { buildBudgetBreakdownSection, type BudgetBreakdownInput } from './budgetBreakdown'
 
 function baseInput(): BudgetBreakdownInput {
   return {
@@ -70,9 +67,7 @@ describe('buildBudgetBreakdownSection', () => {
           name: 'Empty',
           budgeted: 0,
           actual: 0,
-          items: [
-            { code: '01.01', name: 'Sub', budgeted: 0, actual: 0 },
-          ],
+          items: [{ code: '01.01', name: 'Sub', budgeted: 0, actual: 0 }],
         },
       ],
     })

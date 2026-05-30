@@ -105,10 +105,10 @@ describe('todayISO + parseDateLocal: equivalencia (round-trip)', () => {
 
   it('round-trip estable en distintas fechas del año', () => {
     const fechas: Array<[number, number, number]> = [
-      [2026, 0, 1],   // 1 enero
-      [2026, 4, 21],  // 21 mayo
+      [2026, 0, 1], // 1 enero
+      [2026, 4, 21], // 21 mayo
       [2025, 11, 31], // 31 diciembre
-      [2024, 1, 29],  // 29 febrero (bisiesto)
+      [2024, 1, 29], // 29 febrero (bisiesto)
     ]
     for (const [y, m, d] of fechas) {
       vi.setSystemTime(new Date(y, m, d, 10, 0, 0))

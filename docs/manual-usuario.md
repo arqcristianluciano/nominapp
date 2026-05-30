@@ -21,16 +21,16 @@ Este manual da una vision general y enlaza al manual detallado de cada rol.
 
 ### Roles cubiertos en este manual
 
-| Rol | Alcance | Manual detallado |
-|-----|---------|------------------|
-| Director General | Cross-empresa, bypass total | [docs/roles/director-general.md](roles/director-general.md) |
-| Director de Proyecto | Un proyecto, full control | [docs/roles/director-proyecto.md](roles/director-proyecto.md) |
-| Planificacion | Presupuesto y cronograma | [docs/roles/planificacion.md](roles/planificacion.md) |
-| Ingeniero de Obra | Operacion en campo | [docs/roles/ingeniero-obra.md](roles/ingeniero-obra.md) |
-| Supervisor Especializado | Solo lectura de su area | [docs/roles/supervisor-especializado.md](roles/supervisor-especializado.md) |
-| Comprador | Ciclo de compras | [docs/roles/comprador.md](roles/comprador.md) |
-| Almacenista | Inventario fisico | [docs/roles/almacenista.md](roles/almacenista.md) |
-| Contabilidad | Libro diario, CxP, bancos | [docs/roles/contabilidad.md](roles/contabilidad.md) |
+| Rol                      | Alcance                     | Manual detallado                                                            |
+| ------------------------ | --------------------------- | --------------------------------------------------------------------------- |
+| Director General         | Cross-empresa, bypass total | [docs/roles/director-general.md](roles/director-general.md)                 |
+| Director de Proyecto     | Un proyecto, full control   | [docs/roles/director-proyecto.md](roles/director-proyecto.md)               |
+| Planificacion            | Presupuesto y cronograma    | [docs/roles/planificacion.md](roles/planificacion.md)                       |
+| Ingeniero de Obra        | Operacion en campo          | [docs/roles/ingeniero-obra.md](roles/ingeniero-obra.md)                     |
+| Supervisor Especializado | Solo lectura de su area     | [docs/roles/supervisor-especializado.md](roles/supervisor-especializado.md) |
+| Comprador                | Ciclo de compras            | [docs/roles/comprador.md](roles/comprador.md)                               |
+| Almacenista              | Inventario fisico           | [docs/roles/almacenista.md](roles/almacenista.md)                           |
+| Contabilidad             | Libro diario, CxP, bancos   | [docs/roles/contabilidad.md](roles/contabilidad.md)                         |
 
 ---
 

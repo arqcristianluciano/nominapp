@@ -2,10 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Download } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { useProjectStore } from '@/stores/projectStore'
-import {
-  downloadPdf,
-  generateMonthlyReport,
-} from '@/services/reports/pdfReportService'
+import { downloadPdf, generateMonthlyReport } from '@/services/reports/pdfReportService'
 import { loadMonthlyReportData } from '@/services/reports/monthlyReportData'
 import { getErrorMessage } from '@/utils/errors'
 
@@ -115,10 +112,7 @@ export function ReporteMensualModal({ open, onClose }: ReporteMensualModalProps)
     }
     setGenerating(true)
     try {
-      const input = await loadMonthlyReportData(
-        selectedProject.id,
-        selectedMonthOption.value,
-      )
+      const input = await loadMonthlyReportData(selectedProject.id, selectedMonthOption.value)
       const doc = generateMonthlyReport(input)
       const monthLabel = `${selectedMonthOption.year}-${String(selectedMonthOption.month).padStart(2, '0')}`
       const filename = `reporte-mensual-${selectedProject.code || selectedProject.id}-${monthLabel}.pdf`
@@ -136,10 +130,7 @@ export function ReporteMensualModal({ open, onClose }: ReporteMensualModalProps)
     <Modal open={open} onClose={handleClose} title="Generar reporte mensual">
       <div className="space-y-4">
         <div>
-          <label
-            htmlFor="reporte-mensual-project"
-            className="block text-xs font-medium text-app-muted mb-2"
-          >
+          <label htmlFor="reporte-mensual-project" className="block text-xs font-medium text-app-muted mb-2">
             Proyecto
           </label>
           <select
@@ -159,10 +150,7 @@ export function ReporteMensualModal({ open, onClose }: ReporteMensualModalProps)
         </div>
 
         <div>
-          <label
-            htmlFor="reporte-mensual-month"
-            className="block text-xs font-medium text-app-muted mb-2"
-          >
+          <label htmlFor="reporte-mensual-month" className="block text-xs font-medium text-app-muted mb-2">
             Mes
           </label>
           <select

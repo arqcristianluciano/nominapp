@@ -50,10 +50,7 @@ function PhotoLink({ path, label }: { path: string; label?: string }) {
   }
   if (failed) {
     return (
-      <span
-        className="flex items-center gap-1 text-xs text-app-subtle"
-        title="No se pudo cargar la foto"
-      >
+      <span className="flex items-center gap-1 text-xs text-app-subtle" title="No se pudo cargar la foto">
         <ImageOff className="w-3.5 h-3.5" />
         <span>{label ? 'Foto no disponible' : 'No disponible'}</span>
       </span>
@@ -132,9 +129,7 @@ function AttendanceMobileCardComponent({ record, onDelete }: AttendanceRowProps)
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <p className="text-xs text-app-muted">{formatDate(record.date)}</p>
-          <p className="font-semibold text-app-text text-sm truncate">
-            {record.contractor?.name ?? '—'}
-          </p>
+          <p className="font-semibold text-app-text text-sm truncate">{record.contractor?.name ?? '—'}</p>
           <p className="text-xs text-app-muted line-clamp-2">{record.activity}</p>
         </div>
         <button
@@ -157,9 +152,7 @@ function AttendanceMobileCardComponent({ record, onDelete }: AttendanceRowProps)
         </div>
         <div className="bg-app-hover/40 rounded-lg px-2 py-1.5">
           <p className="text-[10px] text-app-subtle uppercase">H-H</p>
-          <p className="font-semibold text-blue-600">
-            {record.workers_count * record.hours_worked}
-          </p>
+          <p className="font-semibold text-blue-600">{record.workers_count * record.hours_worked}</p>
         </div>
       </div>
 
@@ -253,7 +246,9 @@ export function AttendanceHistoryTable({
 
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-4 py-2.5 border-t border-app-border">
-              <span className="text-xs text-app-muted">Pág. {page + 1} de {totalPages}</span>
+              <span className="text-xs text-app-muted">
+                Pág. {page + 1} de {totalPages}
+              </span>
               <div className="flex gap-1">
                 <button
                   onClick={onPrev}

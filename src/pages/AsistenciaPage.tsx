@@ -159,7 +159,11 @@ export default function AsistenciaPage() {
 
   return (
     <div className="p-4 lg:p-6 space-y-5 max-w-5xl mx-auto">
-      <AttendancePageHeader projectId={projectId ?? ''} projectName={project?.name ?? 'Proyecto'} onRegister={openForm} />
+      <AttendancePageHeader
+        projectId={projectId ?? ''}
+        projectName={project?.name ?? 'Proyecto'}
+        onRegister={openForm}
+      />
 
       <div className="flex justify-end">
         <button
@@ -171,11 +175,7 @@ export default function AsistenciaPage() {
         </button>
       </div>
 
-      <AttendanceSummaryCards
-        todayWorkers={todayWorkers}
-        todayHours={todayHours}
-        totalRecords={records.length}
-      />
+      <AttendanceSummaryCards todayWorkers={todayWorkers} todayHours={todayHours} totalRecords={records.length} />
 
       {showForm && (
         <AttendanceForm

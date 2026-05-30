@@ -30,7 +30,7 @@ interface LoansUiState {
 async function fetchLoansData() {
   const [loans, contractors] = await Promise.all([loanService.getAll(), contractorService.getAll()])
   const paidEntries = await Promise.all(
-    loans.map(async (loan) => [loan.id, await loanService.getTotalPaid(loan.id)] as const)
+    loans.map(async (loan) => [loan.id, await loanService.getTotalPaid(loan.id)] as const),
   )
   return { loans, contractors, paidMap: Object.fromEntries(paidEntries) }
 }
@@ -39,8 +39,7 @@ function filterLoans(loans: ContractorLoan[], search: string) {
   const term = search.trim().toLowerCase()
   if (!term) return loans
   return loans.filter(
-    (loan) =>
-      loan.contractor?.name?.toLowerCase().includes(term) || loan.notes?.toLowerCase().includes(term)
+    (loan) => loan.contractor?.name?.toLowerCase().includes(term) || loan.notes?.toLowerCase().includes(term),
   )
 }
 
@@ -74,10 +73,7 @@ function useLoansData(onError: (message: string) => void) {
 function useLoanFilters(loans: ContractorLoan[], search: string) {
   const filteredLoans = useMemo(() => filterLoans(loans, search), [loans, search])
   const activeLoans = useMemo(() => filteredLoans.filter((loan) => loan.status === 'active'), [filteredLoans])
-  const otherLoans = useMemo(
-    () => filteredLoans.filter((loan) => loan.status !== 'active'),
-    [filteredLoans]
-  )
+  const otherLoans = useMemo(() => filteredLoans.filter((loan) => loan.status !== 'active'), [filteredLoans])
   return { activeLoans, otherLoans }
 }
 
@@ -119,32 +115,35 @@ function useLoanHandlers(
   context: LoanActionContext,
   setSaving: (value: boolean) => void,
   setShowForm: (value: boolean) => void,
-  setCancelTargetId: (value: string | null) => void
+  setCancelTargetId: (value: string | null) => void,
 ) {
-  const handleCreate = useCallback(async (values: LoanCreateInput) => {
-    setSaving(true)
-    try {
-      await loanService.create(values)
-      setShowForm(false)
-      await context.refresh()
-      context.success('Préstamo creado correctamente')
-    } catch (err) {
-      console.error('[useLoansPage] handleCreate fallo', err)
-      Sentry.captureException(err, { tags: { area: 'useLoansPage' } })
-      context.error('Error al crear el préstamo')
-    } finally {
-      setSaving(false)
-    }
-  }, [context, setSaving, setShowForm])
-
-  const handleMarkPaid = useCallback(
-    async (loanId: string) => markLoanAsPaid(loanId, context),
-    [context]
+  const handleCreate = useCallback(
+    async (values: LoanCreateInput) => {
+      setSaving(true)
+      try {
+        await loanService.create(values)
+        setShowForm(false)
+        await context.refresh()
+        context.success('Préstamo creado correctamente')
+      } catch (err) {
+        console.error('[useLoansPage] handleCreate fallo', err)
+        Sentry.captureException(err, { tags: { area: 'useLoansPage' } })
+        context.error('Error al crear el préstamo')
+      } finally {
+        setSaving(false)
+      }
+    },
+    [context, setSaving, setShowForm],
   )
-  const handleCancel = useCallback(async (loanId: string) => {
-    const cancelled = await cancelLoan(loanId, context)
-    if (cancelled) setCancelTargetId(null)
-  }, [context, setCancelTargetId])
+
+  const handleMarkPaid = useCallback(async (loanId: string) => markLoanAsPaid(loanId, context), [context])
+  const handleCancel = useCallback(
+    async (loanId: string) => {
+      const cancelled = await cancelLoan(loanId, context)
+      if (cancelled) setCancelTargetId(null)
+    },
+    [context, setCancelTargetId],
+  )
 
   return { handleCreate, handleMarkPaid, handleCancel }
 }
@@ -158,7 +157,7 @@ export function useLoansPage({ success, error }: ToastHandlers) {
     actionContext,
     ui.setSaving,
     ui.setShowForm,
-    ui.setCancelTargetId
+    ui.setCancelTargetId,
   )
 
   return {

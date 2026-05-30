@@ -36,8 +36,8 @@ export function ExcessValidationModal({ open, onClose, onValidate, defaultValida
     <Modal open={open} onClose={onClose} title="Validar solicitud excedente" width="max-w-lg">
       <div className="space-y-4">
         <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 rounded-lg p-3 text-xs text-amber-800 dark:text-amber-200">
-          La solicitud excede la cantidad planificada en la partida. Tu validación queda registrada en
-          la auditoría con tu nombre, fecha y motivo (regla 7.1).
+          La solicitud excede la cantidad planificada en la partida. Tu validación queda registrada en la auditoría con
+          tu nombre, fecha y motivo (regla 7.1).
         </div>
         <div>
           <label className="block text-xs font-medium text-app-muted mb-1">Validado por *</label>

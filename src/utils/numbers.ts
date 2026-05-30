@@ -16,10 +16,7 @@ const EMPTY = '—'
  *              (i.e. `12.5` -> `"12.5%"`, not `0.125`).
  * @param decimals Number of decimal digits to render. Defaults to `1`.
  */
-export function formatPercent(
-  value: number | null | undefined,
-  decimals = 1,
-): string {
+export function formatPercent(value: number | null | undefined, decimals = 1): string {
   if (value === null || value === undefined || !Number.isFinite(value)) {
     return EMPTY
   }
@@ -34,10 +31,7 @@ export function formatPercent(
  * @param value Numeric value to format.
  * @param decimals Number of decimal digits to render. Defaults to `2`.
  */
-export function formatQuantity(
-  value: number | null | undefined,
-  decimals = 2,
-): string {
+export function formatQuantity(value: number | null | undefined, decimals = 2): string {
   if (value === null || value === undefined || !Number.isFinite(value)) {
     return EMPTY
   }

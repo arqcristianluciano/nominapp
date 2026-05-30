@@ -5,7 +5,7 @@ import { MessageCircle } from 'lucide-react'
 
 function buildWhatsAppLink(supplierName: string, amount: number, invoiceNo: string | null, days: number): string {
   const msg = encodeURIComponent(
-    `Estimado proveedor ${supplierName},\n\nLe recordamos que tenemos pendiente de pago la factura${invoiceNo ? ` No. ${invoiceNo}` : ''} por ${formatRD(amount)} con ${days} días de antigüedad.\n\nPor favor, confirme la forma de pago.\n\nGracias,\nConstructora`
+    `Estimado proveedor ${supplierName},\n\nLe recordamos que tenemos pendiente de pago la factura${invoiceNo ? ` No. ${invoiceNo}` : ''} por ${formatRD(amount)} con ${days} días de antigüedad.\n\nPor favor, confirme la forma de pago.\n\nGracias,\nConstructora`,
   )
   return `https://wa.me/?text=${msg}`
 }
@@ -15,8 +15,10 @@ function daysSince(dateStr: string): number {
 }
 
 function agingBucket(days: number): { label: string; cls: string } {
-  if (days <= 30) return { label: '0-30d', cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400' }
-  if (days <= 60) return { label: '31-60d', cls: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400' }
+  if (days <= 30)
+    return { label: '0-30d', cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400' }
+  if (days <= 60)
+    return { label: '31-60d', cls: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400' }
   return { label: '+60d', cls: 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400' }
 }
 
@@ -31,28 +33,34 @@ export function CxPView({ transactions }: { transactions: TransactionWithRelatio
     buckets[label as keyof typeof buckets] += item.pending
   })
 
-  const sortedItems = [...cxpItems].sort(
-    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-  )
+  const sortedItems = [...cxpItems].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
 
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
         <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-xl p-3 sm:p-4 min-w-0">
           <p className="text-[10px] sm:text-xs text-red-600 dark:text-red-400">Total CxP</p>
-          <p className="text-base sm:text-2xl font-bold text-red-700 dark:text-red-400 mt-0.5 break-all leading-tight">{formatRD(totalCxP)}</p>
+          <p className="text-base sm:text-2xl font-bold text-red-700 dark:text-red-400 mt-0.5 break-all leading-tight">
+            {formatRD(totalCxP)}
+          </p>
         </div>
         <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 rounded-xl p-3 sm:p-4 min-w-0">
           <p className="text-[10px] sm:text-xs text-emerald-600 dark:text-emerald-400">Corriente (0-30d)</p>
-          <p className="text-sm sm:text-lg font-bold text-emerald-700 dark:text-emerald-400 mt-0.5 break-all leading-tight">{formatRD(buckets['0-30d'])}</p>
+          <p className="text-sm sm:text-lg font-bold text-emerald-700 dark:text-emerald-400 mt-0.5 break-all leading-tight">
+            {formatRD(buckets['0-30d'])}
+          </p>
         </div>
         <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl p-3 sm:p-4 min-w-0">
           <p className="text-[10px] sm:text-xs text-amber-600 dark:text-amber-400">Por vencer (31-60d)</p>
-          <p className="text-sm sm:text-lg font-bold text-amber-700 dark:text-amber-400 mt-0.5 break-all leading-tight">{formatRD(buckets['31-60d'])}</p>
+          <p className="text-sm sm:text-lg font-bold text-amber-700 dark:text-amber-400 mt-0.5 break-all leading-tight">
+            {formatRD(buckets['31-60d'])}
+          </p>
         </div>
         <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-xl p-3 sm:p-4 min-w-0">
           <p className="text-[10px] sm:text-xs text-red-600 dark:text-red-400">Vencido (+60d)</p>
-          <p className="text-sm sm:text-lg font-bold text-red-700 dark:text-red-400 mt-0.5 break-all leading-tight">{formatRD(buckets['+60d'])}</p>
+          <p className="text-sm sm:text-lg font-bold text-red-700 dark:text-red-400 mt-0.5 break-all leading-tight">
+            {formatRD(buckets['+60d'])}
+          </p>
         </div>
       </div>
 
@@ -68,16 +76,11 @@ export function CxPView({ transactions }: { transactions: TransactionWithRelatio
               const days = daysSince(item.date)
               const bucket = agingBucket(days)
               return (
-                <div
-                  key={idx}
-                  className="bg-app-surface rounded-xl border border-app-border p-3 shadow-sm"
-                >
+                <div key={idx} className="bg-app-surface rounded-xl border border-app-border p-3 shadow-sm">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold text-app-text truncate">{item.supplierName}</p>
-                      <p className="text-[11px] text-app-muted mt-0.5">
-                        Factura {item.invoiceNumber || '—'}
-                      </p>
+                      <p className="text-[11px] text-app-muted mt-0.5">Factura {item.invoiceNumber || '—'}</p>
                     </div>
                     <span className={`shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${bucket.cls}`}>
                       {bucket.label}
@@ -131,11 +134,21 @@ export function CxPView({ transactions }: { transactions: TransactionWithRelatio
                   <tr className="bg-app-bg border-b border-app-border">
                     <th className="px-3 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">Fecha</th>
                     <th className="px-3 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">Días</th>
-                    <th className="px-3 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">Antigüedad</th>
-                    <th className="px-3 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">Factura No.</th>
-                    <th className="px-3 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">Proveedor</th>
-                    <th className="px-3 py-2 text-right text-[10px] font-semibold text-app-muted uppercase">Pendiente</th>
-                    <th className="px-3 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">Condición</th>
+                    <th className="px-3 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">
+                      Antigüedad
+                    </th>
+                    <th className="px-3 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">
+                      Factura No.
+                    </th>
+                    <th className="px-3 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">
+                      Proveedor
+                    </th>
+                    <th className="px-3 py-2 text-right text-[10px] font-semibold text-app-muted uppercase">
+                      Pendiente
+                    </th>
+                    <th className="px-3 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">
+                      Condición
+                    </th>
                     <th className="px-3 py-2 text-[10px] font-semibold text-app-muted uppercase" />
                   </tr>
                 </thead>
@@ -145,22 +158,32 @@ export function CxPView({ transactions }: { transactions: TransactionWithRelatio
                     const bucket = agingBucket(days)
                     return (
                       <tr key={idx} className="border-b border-app-border hover:bg-app-hover">
-                        <td className="px-3 py-2.5 text-xs text-app-muted whitespace-nowrap">{new Date(item.date).toLocaleDateString('es-DO')}</td>
+                        <td className="px-3 py-2.5 text-xs text-app-muted whitespace-nowrap">
+                          {new Date(item.date).toLocaleDateString('es-DO')}
+                        </td>
                         <td className="px-3 py-2.5 text-xs text-app-muted">{days}d</td>
                         <td className="px-3 py-2.5">
-                          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${bucket.cls}`}>{bucket.label}</span>
+                          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${bucket.cls}`}>
+                            {bucket.label}
+                          </span>
                         </td>
                         <td className="px-3 py-2.5 text-xs text-app-muted">{item.invoiceNumber || '—'}</td>
                         <td className="px-3 py-2.5 text-xs text-app-text font-medium">{item.supplierName}</td>
-                        <td className="px-3 py-2.5 text-xs text-red-700 dark:text-red-400 font-semibold text-right whitespace-nowrap">{formatRD(item.pending)}</td>
+                        <td className="px-3 py-2.5 text-xs text-red-700 dark:text-red-400 font-semibold text-right whitespace-nowrap">
+                          {formatRD(item.pending)}
+                        </td>
                         <td className="px-3 py-2.5 text-xs text-app-muted">{item.paymentCondition}</td>
                         <td className="px-3 py-2.5">
                           {days > 30 && (
-                            <a href={buildWhatsAppLink(item.supplierName, item.pending, item.invoiceNumber, days)}
-                              target="_blank" rel="noopener noreferrer"
+                            <a
+                              href={buildWhatsAppLink(item.supplierName, item.pending, item.invoiceNumber, days)}
+                              target="_blank"
+                              rel="noopener noreferrer"
                               title="Notificar por WhatsApp"
-                              className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-medium text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800 rounded-lg hover:bg-green-100 dark:hover:bg-green-950/60 transition-colors">
-                              <MessageCircle className="w-3 h-3" />WA
+                              className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-medium text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800 rounded-lg hover:bg-green-100 dark:hover:bg-green-950/60 transition-colors"
+                            >
+                              <MessageCircle className="w-3 h-3" />
+                              WA
                             </a>
                           )}
                         </td>
@@ -170,8 +193,12 @@ export function CxPView({ transactions }: { transactions: TransactionWithRelatio
                 </tbody>
                 <tfoot>
                   <tr className="bg-app-bg border-t border-app-border">
-                    <td colSpan={5} className="px-3 py-2 text-xs font-semibold text-app-muted text-right">Total CxP:</td>
-                    <td className="px-3 py-2 text-xs font-bold text-red-700 dark:text-red-400 text-right whitespace-nowrap">{formatRD(totalCxP)}</td>
+                    <td colSpan={5} className="px-3 py-2 text-xs font-semibold text-app-muted text-right">
+                      Total CxP:
+                    </td>
+                    <td className="px-3 py-2 text-xs font-bold text-red-700 dark:text-red-400 text-right whitespace-nowrap">
+                      {formatRD(totalCxP)}
+                    </td>
                     <td></td>
                     <td></td>
                   </tr>

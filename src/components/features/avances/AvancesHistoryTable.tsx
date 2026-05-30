@@ -7,18 +7,12 @@ interface AvancesHistoryTableProps {
   itemById: Map<string, BudgetItem>
 }
 
-export function AvancesHistoryTable({
-  progresses,
-  catById,
-  itemById,
-}: AvancesHistoryTableProps) {
+export function AvancesHistoryTable({ progresses, catById, itemById }: AvancesHistoryTableProps) {
   if (progresses.length === 0) {
     return (
       <div className="bg-app-surface rounded-xl border border-app-border p-12 text-center">
         <p className="text-base font-semibold text-app-text mb-1">Sin avances registrados</p>
-        <p className="text-sm text-app-muted">
-          Captura avances por partida para alimentar la cubicación mensual.
-        </p>
+        <p className="text-sm text-app-muted">Captura avances por partida para alimentar la cubicación mensual.</p>
       </div>
     )
   }
@@ -31,10 +25,7 @@ export function AvancesHistoryTable({
           const cat = p.budget_category_id ? catById.get(p.budget_category_id) : null
           const it = p.budget_item_id ? itemById.get(p.budget_item_id) : null
           return (
-            <div
-              key={p.id}
-              className="bg-app-surface rounded-xl border border-app-border p-3 space-y-2"
-            >
+            <div key={p.id} className="bg-app-surface rounded-xl border border-app-border p-3 space-y-2">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-app-text break-words">
@@ -53,9 +44,7 @@ export function AvancesHistoryTable({
                     </p>
                   )}
                 </div>
-                <span className="font-mono text-[10px] text-app-muted whitespace-nowrap">
-                  {p.cut_date}
-                </span>
+                <span className="font-mono text-[10px] text-app-muted whitespace-nowrap">{p.cut_date}</span>
               </div>
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div>

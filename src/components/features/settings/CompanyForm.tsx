@@ -44,13 +44,7 @@ export function CompanyForm({ initial, saving, onSubmit, onCancel }: Props) {
       <div className="grid grid-cols-2 gap-3">
         <div className="col-span-2">
           <label className="text-xs font-medium text-app-muted mb-1 block">Nombre</label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className={inputClass}
-            required
-          />
+          <input type="text" value={name} onChange={(e) => setName(e.target.value)} className={inputClass} required />
         </div>
         <div className="col-span-2">
           <label className="text-xs font-medium text-app-muted mb-1 block">RNC</label>

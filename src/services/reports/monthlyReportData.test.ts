@@ -49,15 +49,13 @@ vi.mock('@/services/budgetCategoryService', () => ({
 
 vi.mock('@/services/budgetItemService', () => ({
   budgetItemService: {
-    getByProjectCategories: (...args: unknown[]) =>
-      budgetItemGetByProjectCategories(...args),
+    getByProjectCategories: (...args: unknown[]) => budgetItemGetByProjectCategories(...args),
   },
 }))
 
 vi.mock('@/services/cashFlowService', () => ({
   cashFlowService: {
-    getMonthlyProjection: (...args: unknown[]) =>
-      cashFlowGetMonthlyProjection(...args),
+    getMonthlyProjection: (...args: unknown[]) => cashFlowGetMonthlyProjection(...args),
     listExpectedInflows: (...args: unknown[]) => cashFlowListExpectedInflows(...args),
   },
 }))
@@ -83,8 +81,7 @@ function makeChain(): unknown {
     get(_t, prop) {
       // Thenable: `await chain` resuelve a { data, error }.
       if (prop === 'then') {
-        return (resolve: (v: { data: unknown; error: null }) => unknown) =>
-          resolve({ data: supabaseData, error: null })
+        return (resolve: (v: { data: unknown; error: null }) => unknown) => resolve({ data: supabaseData, error: null })
       }
       // Cualquier otro acceso (select, eq, gte, lte, in, gt, lt, order, single,
       // maybeSingle, is, not, ...) devuelve una función que retorna el mismo
@@ -167,15 +164,11 @@ describe('loadMonthlyReportData - parsing yearMonth', () => {
   })
 
   it('lanza ante formato inválido de yearMonth', async () => {
-    await expect(loadMonthlyReportData('p-1', '2026/05')).rejects.toThrow(
-      /Invalid yearMonth/,
-    )
+    await expect(loadMonthlyReportData('p-1', '2026/05')).rejects.toThrow(/Invalid yearMonth/)
   })
 
   it('lanza ante mes fuera de rango (00 / 13)', async () => {
-    await expect(loadMonthlyReportData('p-1', '2026-13')).rejects.toThrow(
-      /Invalid month/,
-    )
+    await expect(loadMonthlyReportData('p-1', '2026-13')).rejects.toThrow(/Invalid month/)
   })
 })
 
@@ -241,9 +234,7 @@ describe('loadMonthlyReportData - propagación de errores', () => {
   it('si projectService.getById rechaza, la función rechaza', async () => {
     projectGetById.mockRejectedValueOnce(new Error('project not found'))
 
-    await expect(loadMonthlyReportData('p-1', '2026-05')).rejects.toThrow(
-      'project not found',
-    )
+    await expect(loadMonthlyReportData('p-1', '2026-05')).rejects.toThrow('project not found')
   })
 })
 
@@ -290,9 +281,7 @@ describe('loadMonthlyReportData - executiveSummary aggregations', () => {
   })
 
   it('cae a `budgeted_amount` cuando la categoría no tiene items detallados', async () => {
-    budgetCategoryGetByProject.mockResolvedValue([
-      { id: 'cat-1', code: 'C1', name: 'Cap 1', budgeted_amount: 750 },
-    ])
+    budgetCategoryGetByProject.mockResolvedValue([{ id: 'cat-1', code: 'C1', name: 'Cap 1', budgeted_amount: 750 }])
     budgetItemGetByProjectCategories.mockResolvedValue([])
 
     const result = await loadMonthlyReportData('p-1', '2026-05')

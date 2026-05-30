@@ -112,11 +112,7 @@ export function rowsToCsv(rows: Row[]): string {
   if (rows.length === 0) return ''
   const columns = collectColumns(rows)
   const header = columns.map(escapeCell).join(',')
-  const lines = rows.map((row) =>
-    columns
-      .map((col) => escapeCell(row[col] as Primitive | object))
-      .join(',')
-  )
+  const lines = rows.map((row) => columns.map((col) => escapeCell(row[col] as Primitive | object)).join(','))
   // CRLF para máxima compatibilidad con Excel.
   return [header, ...lines].join('\r\n') + '\r\n'
 }
@@ -157,9 +153,7 @@ function triggerDownload(filename: string, blob: Blob): void {
  * Descarga todas las entidades configuradas y arma un ZIP con un CSV por tabla.
  * Devuelve un resumen con totales y eventuales errores por tabla.
  */
-export async function exportAllToZip(
-  entities: ExportableEntity[] = EXPORTABLE_ENTITIES
-): Promise<ExportSummary> {
+export async function exportAllToZip(entities: ExportableEntity[] = EXPORTABLE_ENTITIES): Promise<ExportSummary> {
   const results: ExportEntityResult[] = []
   const files: Record<string, Uint8Array> = {}
 

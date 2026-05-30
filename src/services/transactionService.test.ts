@@ -49,8 +49,7 @@ function mockUpdateChain(data: unknown, error: unknown = null) {
   return { updateMock, eqMock, selectMock, singleMock }
 }
 
-const SELECT_WITH_JOINS =
-  '*, supplier:suppliers(id, name), budget_category:budget_categories(id, code, name)'
+const SELECT_WITH_JOINS = '*, supplier:suppliers(id, name), budget_category:budget_categories(id, code, name)'
 
 beforeEach(() => {
   fromMock.mockReset()
@@ -191,8 +190,6 @@ describe('transactionService.update', () => {
 
   it('propaga error de supabase', async () => {
     mockUpdateChain(null, { message: 'update fail' })
-    await expect(
-      transactionService.update('tx-upd', { total: 1 }),
-    ).rejects.toEqual({ message: 'update fail' })
+    await expect(transactionService.update('tx-upd', { total: 1 })).rejects.toEqual({ message: 'update fail' })
   })
 })

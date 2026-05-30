@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useState, useMemo } from 'react'
 import { useParams } from 'react-router-dom'
 import { useProjectStore } from '@/stores/projectStore'
-import { inventoryService, InventoryError, type InventoryItem, type InventoryMovement } from '@/services/inventoryService'
+import {
+  inventoryService,
+  InventoryError,
+  type InventoryItem,
+  type InventoryMovement,
+} from '@/services/inventoryService'
 import { useToast } from '@/components/ui/Toast'
 import { useAuthStore } from '@/stores/authStore'
 import { InventoryLowStockAlert } from '@/components/features/inventory/InventoryLowStockAlert'
@@ -47,21 +52,22 @@ export default function InventarioPage() {
       ])
       setItems(its)
       setMovements(movs)
-    } finally { setLoading(false) }
+    } finally {
+      setLoading(false)
+    }
   }, [projectId])
 
-  useEffect(() => { loadAll() }, [loadAll])
+  useEffect(() => {
+    loadAll()
+  }, [loadAll])
 
   const lowStock = useMemo(() => inventoryService.getLowStockItems(items), [items])
   const projectName = project?.name ?? 'Proyecto'
   const { success, error: toastError } = useToast()
   const user = useAuthStore((s) => s.user)
-  const handleMovementFormChange = useCallback(
-    (next: InventoryMovementFormState) => {
-      setMovForm(next)
-    },
-    [],
-  )
+  const handleMovementFormChange = useCallback((next: InventoryMovementFormState) => {
+    setMovForm(next)
+  }, [])
 
   async function handleAddItem() {
     if (!itemForm.name.trim()) return
@@ -71,7 +77,9 @@ export default function InventarioPage() {
       setShowItemForm(false)
       setItemForm(EMPTY_ITEM_FORM)
       await loadAll()
-    } finally { setSaving(false) }
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function performAddMovement(override?: { motivo: string }) {
@@ -182,11 +190,7 @@ export default function InventarioPage() {
         onDeleteItem={setDeleteId}
       />
 
-      <InventoryDeleteModalSection
-        deleteId={deleteId}
-        onConfirm={handleDelete}
-        onCancel={() => setDeleteId(null)}
-      />
+      <InventoryDeleteModalSection deleteId={deleteId} onConfirm={handleDelete} onCancel={() => setDeleteId(null)} />
 
       <StockOverrideModal
         open={overrideOpen}

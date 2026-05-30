@@ -72,117 +72,122 @@ export function useCalendarEvents(options: UseCalendarEventsOptions = {}) {
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [loading, setLoading] = useState(true)
 
-  const load = useCallback(async (signal?: AbortSignal) => {
-    setLoading(true)
-    try {
-      const todayStr = todayISO()
+  const load = useCallback(
+    async (signal?: AbortSignal) => {
+      setLoading(true)
+      try {
+        const todayStr = todayISO()
 
-      let txnQuery = supabase
-        .from('transactions')
-        .select('id, description, total, date, project_id, payment_condition, supplier:suppliers(name)')
-      if (startDate) txnQuery = txnQuery.gte('date', startDate)
-      if (endDate) txnQuery = txnQuery.lte('date', endDate)
-      txnQuery = txnQuery.limit(300)
+        let txnQuery = supabase
+          .from('transactions')
+          .select('id, description, total, date, project_id, payment_condition, supplier:suppliers(name)')
+        if (startDate) txnQuery = txnQuery.gte('date', startDate)
+        if (endDate) txnQuery = txnQuery.lte('date', endDate)
+        txnQuery = txnQuery.limit(300)
 
-      let corteQuery = supabase
-        .from('contract_cortes')
-        .select('id, cut_date, amount, retention_amount, contract:adjustment_contracts(project_id, specialty)')
-        .eq('status', 'approved')
-      if (startDate) corteQuery = corteQuery.gte('cut_date', startDate)
-      if (endDate) corteQuery = corteQuery.lte('cut_date', endDate)
-      corteQuery = corteQuery.limit(50)
+        let corteQuery = supabase
+          .from('contract_cortes')
+          .select('id, cut_date, amount, retention_amount, contract:adjustment_contracts(project_id, specialty)')
+          .eq('status', 'approved')
+        if (startDate) corteQuery = corteQuery.gte('cut_date', startDate)
+        if (endDate) corteQuery = corteQuery.lte('cut_date', endDate)
+        corteQuery = corteQuery.limit(50)
 
-      const loanQuery = supabase
-        .from('contractor_loans')
-        .select('*, contractor:contractors(name)')
-        .eq('status', 'active')
-      const loanDeductionQuery = supabase.from('loan_deductions').select('loan_id, amount')
-      const projectQuery = supabase.from('projects').select('id, name, code')
+        const loanQuery = supabase
+          .from('contractor_loans')
+          .select('*, contractor:contractors(name)')
+          .eq('status', 'active')
+        const loanDeductionQuery = supabase.from('loan_deductions').select('loan_id, amount')
+        const projectQuery = supabase.from('projects').select('id, name, code')
 
-      const requests = signal
-        ? [
-            txnQuery.abortSignal(signal),
-            loanQuery.abortSignal(signal),
-            loanDeductionQuery.abortSignal(signal),
-            corteQuery.abortSignal(signal),
-            projectQuery.abortSignal(signal),
-          ]
-        : [txnQuery, loanQuery, loanDeductionQuery, corteQuery, projectQuery]
+        const requests = signal
+          ? [
+              txnQuery.abortSignal(signal),
+              loanQuery.abortSignal(signal),
+              loanDeductionQuery.abortSignal(signal),
+              corteQuery.abortSignal(signal),
+              projectQuery.abortSignal(signal),
+            ]
+          : [txnQuery, loanQuery, loanDeductionQuery, corteQuery, projectQuery]
 
-      const [txnRes, loanRes, loanDeductionRes, corteRes, projectRes] = await Promise.all(requests)
+        const [txnRes, loanRes, loanDeductionRes, corteRes, projectRes] = await Promise.all(requests)
 
-      if (signal?.aborted) return
+        if (signal?.aborted) return
 
-      const projectMap: Record<string, ProjectLite> = Object.fromEntries(((projectRes.data ?? []) as ProjectLite[]).map((project) => [project.id, project]))
-      const paidByLoan = new Map<string, number>()
-      for (const deduction of (loanDeductionRes.data ?? []) as LoanDeductionAggregate[]) {
-        const paid = paidByLoan.get(deduction.loan_id) ?? 0
-        paidByLoan.set(deduction.loan_id, paid + (deduction.amount ?? 0))
-      }
+        const projectMap: Record<string, ProjectLite> = Object.fromEntries(
+          ((projectRes.data ?? []) as ProjectLite[]).map((project) => [project.id, project]),
+        )
+        const paidByLoan = new Map<string, number>()
+        for (const deduction of (loanDeductionRes.data ?? []) as LoanDeductionAggregate[]) {
+          const paid = paidByLoan.get(deduction.loan_id) ?? 0
+          paidByLoan.set(deduction.loan_id, paid + (deduction.amount ?? 0))
+        }
 
-      const allEvents: CalendarEvent[] = []
-      for (const txn of (txnRes.data ?? []) as CalendarTransaction[]) {
-        if (!isCreditCondition(txn.payment_condition)) continue
-        const project = projectMap[txn.project_id]
-        allEvents.push({
-          id: `cxp-${txn.id}`,
-          date: txn.date,
-          title: txn.supplier?.name ?? txn.description,
-          amount: txn.total,
-          type: 'cxp',
-          projectName: project?.name ?? 'Proyecto',
-          link: `/proyectos/${txn.project_id}/control`,
-          overdue: txn.date < todayStr,
-        })
-      }
-
-      for (const loan of (loanRes.data ?? []) as CalendarLoan[]) {
-        if (loan.installment_amount <= 0) continue
-        const totalPaid = paidByLoan.get(loan.id) ?? 0
-        const paidInstallments = Math.floor(totalPaid / loan.installment_amount)
-        const disbursed = parseDateLocal(loan.disbursed_date)
-        for (let installment = paidInstallments + 1; installment <= loan.installments; installment += 1) {
-          const dueDate = new Date(disbursed)
-          dueDate.setMonth(dueDate.getMonth() + installment)
-          const date = `${dueDate.getFullYear()}-${String(dueDate.getMonth() + 1).padStart(2, '0')}-${String(dueDate.getDate()).padStart(2, '0')}`
-          if (startDate && date < startDate) continue
-          if (endDate && date > endDate) continue
+        const allEvents: CalendarEvent[] = []
+        for (const txn of (txnRes.data ?? []) as CalendarTransaction[]) {
+          if (!isCreditCondition(txn.payment_condition)) continue
+          const project = projectMap[txn.project_id]
           allEvents.push({
-            id: `loan-${loan.id}-${installment}`,
-            date,
-            title: `Cuota ${installment}/${loan.installments} — ${loan.contractor?.name ?? 'Contratista'}`,
-            amount: loan.installment_amount,
-            type: 'loan',
-            projectName: 'Préstamos',
-            link: '/prestamos',
-            overdue: date < todayStr,
+            id: `cxp-${txn.id}`,
+            date: txn.date,
+            title: txn.supplier?.name ?? txn.description,
+            amount: txn.total,
+            type: 'cxp',
+            projectName: project?.name ?? 'Proyecto',
+            link: `/proyectos/${txn.project_id}/control`,
+            overdue: txn.date < todayStr,
           })
         }
-      }
 
-      for (const corte of (corteRes.data ?? []) as CalendarCorte[]) {
-        const project = corte.contract?.project_id ? projectMap[corte.contract.project_id] : undefined
-        allEvents.push({
-          id: `corte-${corte.id}`,
-          date: corte.cut_date,
-          title: `Corte — ${corte.contract?.specialty ?? 'Contrato'}`,
-          amount: corte.amount - corte.retention_amount,
-          type: 'corte',
-          projectName: project?.name ?? 'Proyecto',
-          link: `/proyectos/${corte.contract?.project_id}/cubicaciones`,
-          overdue: false,
-        })
-      }
+        for (const loan of (loanRes.data ?? []) as CalendarLoan[]) {
+          if (loan.installment_amount <= 0) continue
+          const totalPaid = paidByLoan.get(loan.id) ?? 0
+          const paidInstallments = Math.floor(totalPaid / loan.installment_amount)
+          const disbursed = parseDateLocal(loan.disbursed_date)
+          for (let installment = paidInstallments + 1; installment <= loan.installments; installment += 1) {
+            const dueDate = new Date(disbursed)
+            dueDate.setMonth(dueDate.getMonth() + installment)
+            const date = `${dueDate.getFullYear()}-${String(dueDate.getMonth() + 1).padStart(2, '0')}-${String(dueDate.getDate()).padStart(2, '0')}`
+            if (startDate && date < startDate) continue
+            if (endDate && date > endDate) continue
+            allEvents.push({
+              id: `loan-${loan.id}-${installment}`,
+              date,
+              title: `Cuota ${installment}/${loan.installments} — ${loan.contractor?.name ?? 'Contratista'}`,
+              amount: loan.installment_amount,
+              type: 'loan',
+              projectName: 'Préstamos',
+              link: '/prestamos',
+              overdue: date < todayStr,
+            })
+          }
+        }
 
-      if (signal?.aborted) return
-      setEvents(allEvents)
-    } catch (error) {
-      if (isAbortError(error) || signal?.aborted) return
-      throw error
-    } finally {
-      if (!signal?.aborted) setLoading(false)
-    }
-  }, [startDate, endDate])
+        for (const corte of (corteRes.data ?? []) as CalendarCorte[]) {
+          const project = corte.contract?.project_id ? projectMap[corte.contract.project_id] : undefined
+          allEvents.push({
+            id: `corte-${corte.id}`,
+            date: corte.cut_date,
+            title: `Corte — ${corte.contract?.specialty ?? 'Contrato'}`,
+            amount: corte.amount - corte.retention_amount,
+            type: 'corte',
+            projectName: project?.name ?? 'Proyecto',
+            link: `/proyectos/${corte.contract?.project_id}/cubicaciones`,
+            overdue: false,
+          })
+        }
+
+        if (signal?.aborted) return
+        setEvents(allEvents)
+      } catch (error) {
+        if (isAbortError(error) || signal?.aborted) return
+        throw error
+      } finally {
+        if (!signal?.aborted) setLoading(false)
+      }
+    },
+    [startDate, endDate],
+  )
 
   useEffect(() => {
     const controller = new AbortController()

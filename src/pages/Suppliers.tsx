@@ -36,42 +36,49 @@ export default function Suppliers() {
     void load()
   }, [load])
 
-  const handleCreate = useCallback(async (data: Parameters<typeof supplierService.create>[0]) => {
-    setSaving(true)
-    try {
-      await supplierService.create(data)
-      setShowForm(false)
-      await load()
-      success(t('suppliers.toast.created'))
-    } catch {
-      error(t('suppliers.toast.create_failed'))
-    } finally {
-      setSaving(false)
-    }
-  }, [error, load, success, t])
+  const handleCreate = useCallback(
+    async (data: Parameters<typeof supplierService.create>[0]) => {
+      setSaving(true)
+      try {
+        await supplierService.create(data)
+        setShowForm(false)
+        await load()
+        success(t('suppliers.toast.created'))
+      } catch {
+        error(t('suppliers.toast.create_failed'))
+      } finally {
+        setSaving(false)
+      }
+    },
+    [error, load, success, t],
+  )
 
-  const handleUpdate = useCallback(async (data: Parameters<typeof supplierService.create>[0]) => {
-    if (!editing) return
-    setSaving(true)
-    try {
-      await supplierService.update(editing.id, data)
-      setEditing(undefined)
-      await load()
-      success(t('suppliers.toast.updated'))
-    } catch {
-      error(t('suppliers.toast.update_failed'))
-    } finally {
-      setSaving(false)
-    }
-  }, [editing, error, load, success, t])
+  const handleUpdate = useCallback(
+    async (data: Parameters<typeof supplierService.create>[0]) => {
+      if (!editing) return
+      setSaving(true)
+      try {
+        await supplierService.update(editing.id, data)
+        setEditing(undefined)
+        await load()
+        success(t('suppliers.toast.updated'))
+      } catch {
+        error(t('suppliers.toast.update_failed'))
+      } finally {
+        setSaving(false)
+      }
+    },
+    [editing, error, load, success, t],
+  )
 
   const normalizedSearch = useMemo(() => search.toLowerCase(), [search])
 
   const filtered = useMemo(
     () =>
-      suppliers.filter((supplier) =>
-        supplier.name.toLowerCase().includes(normalizedSearch) ||
-        supplier.rnc?.toLowerCase().includes(normalizedSearch),
+      suppliers.filter(
+        (supplier) =>
+          supplier.name.toLowerCase().includes(normalizedSearch) ||
+          supplier.rnc?.toLowerCase().includes(normalizedSearch),
       ),
     [normalizedSearch, suppliers],
   )
@@ -102,7 +109,9 @@ export default function Suppliers() {
         <SupplierForm onSubmit={handleCreate} onCancel={closeCreateModal} saving={saving} />
       </Modal>
       <Modal open={!!editing} onClose={closeEditModal} title={t('suppliers.edit_supplier')}>
-        {editing && <SupplierForm initial={editing} onSubmit={handleUpdate} onCancel={closeEditModal} saving={saving} />}
+        {editing && (
+          <SupplierForm initial={editing} onSubmit={handleUpdate} onCancel={closeEditModal} saving={saving} />
+        )}
       </Modal>
     </div>
   )

@@ -67,13 +67,7 @@ function PhotoThumb({ path, alt }: { path: string; alt: string }) {
       </div>
     )
   }
-  return (
-    <img
-      src={url}
-      alt={alt}
-      className="w-12 h-12 rounded-md object-cover border border-app-border"
-    />
-  )
+  return <img src={url} alt={alt} className="w-12 h-12 rounded-md object-cover border border-app-border" />
 }
 
 function PhotoFull({ path, alt }: { path: string; alt: string }) {
@@ -95,11 +89,7 @@ function PhotoFull({ path, alt }: { path: string; alt: string }) {
   if (!url) return null
   return (
     <a href={url} target="_blank" rel="noopener noreferrer" className="inline-block">
-      <img
-        src={url}
-        alt={alt}
-        className="max-h-64 rounded-lg border border-app-border object-cover"
-      />
+      <img src={url} alt={alt} className="max-h-64 rounded-lg border border-app-border object-cover" />
     </a>
   )
 }
@@ -225,10 +215,7 @@ export function BitacoraEntriesList({ entries, expandedId, onToggleExpand, onEdi
           })
           const isExpanded = expandedId === entry.id
           return (
-            <div
-              key={entry.id}
-              className="bg-app-surface border border-app-border rounded-xl overflow-hidden"
-            >
+            <div key={entry.id} className="bg-app-surface border border-app-border rounded-xl overflow-hidden">
               <button
                 onClick={() => onToggleExpand(entry.id)}
                 className="w-full text-left hover:bg-app-hover transition-colors"
@@ -249,16 +236,10 @@ export function BitacoraEntriesList({ entries, expandedId, onToggleExpand, onEdi
                       <div className="flex items-center gap-2 sm:hidden text-app-muted mb-0.5">
                         <WeatherIcon weather={entry.weather} />
                         {entry.temp_c != null && <span className="text-xs">{entry.temp_c}°C</span>}
-                        {entry.incidents && (
-                          <AlertTriangle className="w-3.5 h-3.5 text-yellow-500" />
-                        )}
+                        {entry.incidents && <AlertTriangle className="w-3.5 h-3.5 text-yellow-500" />}
                       </div>
-                      <p className="text-sm font-semibold text-app-text capitalize truncate">
-                        {dateLabel}
-                      </p>
-                      <p className="text-xs text-app-muted line-clamp-2 sm:truncate">
-                        {entry.work_summary}
-                      </p>
+                      <p className="text-sm font-semibold text-app-text capitalize truncate">{dateLabel}</p>
+                      <p className="text-xs text-app-muted line-clamp-2 sm:truncate">{entry.work_summary}</p>
                     </div>
                   </div>
 
@@ -268,9 +249,7 @@ export function BitacoraEntriesList({ entries, expandedId, onToggleExpand, onEdi
                       <Users className="w-3.5 h-3.5" />
                       {entry.workforce_count}
                     </span>
-                    {entry.incidents && (
-                      <AlertTriangle className="hidden sm:block w-4 h-4 text-yellow-500" />
-                    )}
+                    {entry.incidents && <AlertTriangle className="hidden sm:block w-4 h-4 text-yellow-500" />}
                     {isExpanded ? (
                       <ChevronUp className="w-4 h-4 text-app-subtle" />
                     ) : (
