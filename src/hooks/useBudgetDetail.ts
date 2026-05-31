@@ -50,14 +50,15 @@ export function useBudgetDetail(projectId: string | undefined) {
     [projectId],
   )
 
-  const removeCategories = useCallback(async (categoryIds: string[]) => {
-    if (categoryIds.length === 0) return
+  const removeCategories = useCallback(async (categoryIds: string[]): Promise<BudgetCategory[]> => {
+    if (categoryIds.length === 0) return []
     setSaving(true)
     setError(null)
     try {
-      await budgetCategoryService.deleteMany(categoryIds)
+      const removedRows = await budgetCategoryService.deleteMany(categoryIds)
       const removed = new Set(categoryIds)
       setCategories((prev) => prev.filter((c) => !removed.has(c.id)))
+      return removedRows
     } catch (e) {
       setError(getErrorMessage(e))
       throw e
@@ -65,6 +66,24 @@ export function useBudgetDetail(projectId: string | undefined) {
       setSaving(false)
     }
   }, [])
+
+  const restoreCategories = useCallback(
+    async (rows: BudgetCategory[]) => {
+      if (!projectId || rows.length === 0) return
+      setSaving(true)
+      setError(null)
+      try {
+        const recreated = await budgetCategoryService.restore(projectId, rows)
+        setCategories((prev) => [...prev, ...recreated].sort((a, b) => a.sort_order - b.sort_order))
+      } catch (e) {
+        setError(getErrorMessage(e))
+        throw e
+      } finally {
+        setSaving(false)
+      }
+    },
+    [projectId],
+  )
 
   const updateBudget = useCallback(async (categoryId: string, amount: number) => {
     setSaving(true)
@@ -119,5 +138,6 @@ export function useBudgetDetail(projectId: string | undefined) {
     load,
     updateBudget,
     removeCategories,
+    restoreCategories,
   }
 }

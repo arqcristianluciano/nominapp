@@ -86,8 +86,8 @@ export const budgetCategoryService = {
       .catch((err) => console.warn('[budgetCategoryService.delete] log de auditoria fallo', err))
   },
 
-  async deleteMany(ids: string[]): Promise<void> {
-    if (ids.length === 0) return
+  async deleteMany(ids: string[]): Promise<BudgetCategory[]> {
+    if (ids.length === 0) return []
 
     const { data: categories } = await supabase.from('budget_categories').select('*').in('id', ids)
 
@@ -111,5 +111,48 @@ export const budgetCategoryService = {
     if (failed.length) {
       console.warn('[budgetCategoryService.deleteMany] log de auditoria fallo', failed)
     }
+    // Devolvemos las filas borradas para permitir "deshacer" recreándolas.
+    return rows
+  },
+
+  /**
+   * Recrea partidas previamente borradas (para "deshacer"). Reusa code, name,
+   * sort_order, monto y fechas; el id es nuevo (las partidas estaban vacías, así
+   * que nada referenciaba el id anterior). Registra la recreación en la bitácora.
+   */
+  async restore(
+    projectId: string,
+    categories: Pick<BudgetCategory, 'code' | 'name' | 'sort_order' | 'budgeted_amount' | 'start_date' | 'end_date'>[],
+  ): Promise<BudgetCategory[]> {
+    if (categories.length === 0) return []
+    const rows = categories.map((c) => ({
+      project_id: projectId,
+      code: c.code,
+      name: c.name,
+      sort_order: c.sort_order,
+      budgeted_amount: c.budgeted_amount,
+      start_date: c.start_date,
+      end_date: c.end_date,
+    }))
+    const { data, error } = await supabase.from('budget_categories').insert(rows).select()
+    if (error) throw error
+
+    const created = data as BudgetCategory[]
+    await Promise.allSettled(
+      created.map((cat) =>
+        approvalsService.log({
+          entity_type: 'budget_category',
+          entity_id: cat.id,
+          action: 'create',
+          payload_after: cat,
+          metadata: { undo: true },
+        }),
+      ),
+    ).then((results) => {
+      const failed = results.filter((r) => r.status === 'rejected')
+      if (failed.length) console.warn('[budgetCategoryService.restore] log de auditoria fallo', failed)
+    })
+
+    return created
   },
 }
