@@ -93,6 +93,7 @@ export function PrestamoSection({ contractorId }: Props) {
       await load()
     } catch (err) {
       console.warn('[PrestamoSection] handleCreate failed', err)
+      toastError('No se pudo registrar el préstamo. Inténtalo de nuevo.')
     } finally {
       setSaving(false)
     }

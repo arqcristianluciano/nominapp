@@ -520,6 +520,7 @@ export function PartidaSection({ contractId, projectId, partidas, cortes, onRefr
       onRefresh()
     } catch (err) {
       console.warn('[PartidaSection] handleSave failed', err)
+      toastError('No se pudo guardar la partida. Inténtalo de nuevo.')
     } finally {
       setSaving(false)
     }
