@@ -122,4 +122,16 @@ describe('partidaProgressService', () => {
     expect(coverage.unattributed).toBe(500)
     expect(coverage.total).toBe(9500)
   })
+
+  it('getMonthlyCubication incluye las transacciones (CxP) en el costo real', async () => {
+    const rows = await partidaProgressService.getMonthlyCubication(projectId)
+    const may = rows.find((r) => r.month === '2026-05' && r.budget_category_id === categoryId)
+    expect(may).toBeDefined()
+    // La transacción de RD$2000, imputada a la partida del capítulo, ahora suma
+    // en el costo real mensual (antes era 0). La factura del test anterior no
+    // tiene budget_category_id (solo partida) y el manejo mensual de facturas no
+    // deriva el capítulo desde la partida, así que cae en la fila "sin capítulo";
+    // la salida de almacén no tiene fecha, así que no entra en la vista mensual.
+    expect(may!.costo_real).toBe(2000)
+  })
 })

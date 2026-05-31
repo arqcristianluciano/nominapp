@@ -21,6 +21,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - Imputación de partida en lote desde el Diario: asigna una partida a todas las transacciones de un capítulo que aún no la tienen, para completar la cobertura del costo por partida en el histórico.
 - Exportación del Diario a Excel (incluye la columna de partida), respetando el filtro de fechas activo.
 - Coherencia capítulo/partida en transacciones garantizada en la base (migración 056): un trigger fuerza el capítulo de la transacción al de su partida, evitando imputaciones inconsistentes por import o edición directa.
+- La vista mensual por capítulo de Cubicación ahora incluye las transacciones (CxP) en el costo real, igual que la vista por partida (antes quedaban fuera), unificando el criterio entre ambos reportes.
 - La vista "Por partida" de Cubicación muestra un indicador de cobertura: qué porcentaje del costo real está imputado a una partida y cuánto quedó sin partida.
 - Sugerencia de partida al capturar mano de obra, materiales y transacciones: si el capítulo tiene una sola partida se autoselecciona, y se avisa suavemente cuando se deja sin partida.
 - Botón "Devolver a borrador" en el reporte de nómina: la mayor jerarquía (quien aprueba) puede regresar un reporte enviado o aprobado a borrador para que el autor lo corrija. Pide confirmación, quita la aprobación y registra la acción (`return_for_revision`) en la bitácora. Un reporte pagado no se puede devolver.

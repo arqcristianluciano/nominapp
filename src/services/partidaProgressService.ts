@@ -104,7 +104,8 @@ export const partidaProgressService = {
   // Cubicación mensual del proyecto (estado deseado, sección 6.6).
   // Para cada capítulo y mes:
   //  - cubicado = Σ (avance ejecutado en el mes × precio presupuestado de la partida)
-  //  - costo_real = Σ (salidas inventario imputadas al cap. + nóminas approved imputadas + material_invoices)
+  //  - costo_real = Σ (salidas inventario imputadas al cap. + nóminas approved imputadas
+  //    + material_invoices + transacciones CxP imputadas), consistente con la vista por partida.
   async getMonthlyCubication(projectId: string): Promise<MonthlyCubicationRow[]> {
     // 1) Capítulos del proyecto
     const { data: categories } = await supabase
@@ -251,6 +252,26 @@ export const partidaProgressService = {
         if (!month) continue
         getRow(month, inv.budget_category_id ?? null).costo_real += Number(inv.amount ?? 0)
       }
+    }
+
+    // 5b) Costo real - transacciones (CxP / diario) imputadas a capítulo/partida.
+    // Consistente con getActualCostByPartida, que ya las incluye. El mes sale de
+    // la fecha de la transacción; el capítulo, de su capítulo o el de su partida.
+    const { data: txns } = await supabase
+      .from('transactions')
+      .select('total, date, budget_category_id, budget_item_id')
+      .eq('project_id', projectId)
+    for (const tx of (txns ?? []) as Array<{
+      total: number | null
+      date: string | null
+      budget_category_id: string | null
+      budget_item_id: string | null
+    }>) {
+      const month = monthKey(tx.date)
+      if (!month) continue
+      const itemCat = tx.budget_item_id ? (itemById.get(tx.budget_item_id)?.budget_category_id ?? null) : null
+      const categoryId = tx.budget_category_id ?? itemCat
+      getRow(month, categoryId).costo_real += Number(tx.total ?? 0)
     }
 
     // 6) Desviación
