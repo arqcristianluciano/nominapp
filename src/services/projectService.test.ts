@@ -200,9 +200,9 @@ describe('projectService.create', () => {
 
   it('propaga error de supabase', async () => {
     mockCreateChain(null, { message: 'create fail' })
-    await expect(
-      projectService.create({ company_id: 'c1', name: 'x', code: 'X' }),
-    ).rejects.toEqual({ message: 'create fail' })
+    await expect(projectService.create({ company_id: 'c1', name: 'x', code: 'X' })).rejects.toEqual({
+      message: 'create fail',
+    })
   })
 })
 

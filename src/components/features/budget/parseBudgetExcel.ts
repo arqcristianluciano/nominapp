@@ -33,10 +33,7 @@ export interface ImportPayload {
 function isExcelHeaderRow(colA: string, colB: string) {
   const a = normalizeText(colA)
   const b = normalizeText(colB)
-  return (
-    (a === 'codigo' || a === 'cod.' || a === 'cod') &&
-    (b === 'descripcion' || b === 'desc.' || b === 'desc')
-  )
+  return (a === 'codigo' || a === 'cod.' || a === 'cod') && (b === 'descripcion' || b === 'desc.' || b === 'desc')
 }
 
 function matchExistingCategory(categories: BudgetCategory[], name: string): BudgetCategory | null {

@@ -5,9 +5,7 @@ export async function readExcelRowsFromFile(file: File): Promise<unknown[][]> {
   return readExcelRowsFromBuffer(buffer)
 }
 
-export async function readExcelRowsFromBuffer(
-  buffer: ArrayBuffer | Uint8Array,
-): Promise<unknown[][]> {
+export async function readExcelRowsFromBuffer(buffer: ArrayBuffer | Uint8Array): Promise<unknown[][]> {
   const XLSX = await import('xlsx')
   let wb: ReturnType<typeof XLSX.read> | null = XLSX.read(buffer, { type: 'array' })
   if (!wb.SheetNames || wb.SheetNames.length === 0) {

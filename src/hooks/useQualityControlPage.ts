@@ -47,7 +47,7 @@ function useQualityProject(projectId?: string) {
 
   const projectName = useMemo(
     () => projects.find((project) => project.id === projectId)?.name ?? 'Proyecto',
-    [projectId, projects]
+    [projectId, projects],
   )
 
   return { projectName }
@@ -103,7 +103,7 @@ function useQualityActions(args: QualityActionsArgs) {
         args.setSaving(false)
       }
     },
-    [args]
+    [args],
   )
 
   const confirmDelete = useCallback(async () => {

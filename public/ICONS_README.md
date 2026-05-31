@@ -44,11 +44,11 @@ const svg = require('fs').readFileSync('public/favicon.svg');
 
 ## Archivos esperados
 
-| Archivo                      | Tamaño  | Propósito           |
-| ---------------------------- | ------- | ------------------- |
-| `favicon.svg`                | escala  | icono vectorial     |
-| `icon-192.png`               | 192x192 | `purpose: any`      |
-| `icon-512.png`               | 512x512 | `purpose: any`      |
-| `icon-maskable-512.png`      | 512x512 | `purpose: maskable` |
+| Archivo                 | Tamaño  | Propósito           |
+| ----------------------- | ------- | ------------------- |
+| `favicon.svg`           | escala  | icono vectorial     |
+| `icon-192.png`          | 192x192 | `purpose: any`      |
+| `icon-512.png`          | 512x512 | `purpose: any`      |
+| `icon-maskable-512.png` | 512x512 | `purpose: maskable` |
 
 Para el icono **maskable**, asegúrate de que el contenido principal quede dentro del 80% central (safe zone), ya que el sistema operativo puede recortarlo en círculo, squircle, etc.

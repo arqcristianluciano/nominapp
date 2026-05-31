@@ -32,7 +32,10 @@ export function BankAccountsSection({
     <div className="space-y-4">
       {canWriteBankAccounts && (
         <div className="flex justify-end">
-          <button onClick={onCreate} className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
+          <button
+            onClick={onCreate}
+            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
+          >
             + Nueva cuenta
           </button>
         </div>

@@ -110,7 +110,18 @@ export function PriceHistoryTable({
   }
 
   const handleExportCsv = () => {
-    const headers = ['Material', 'Proveedor', 'Fecha mas reciente', 'Precio actual', 'Promedio', 'Minimo', 'Maximo', 'Tendencia', 'Variacion %', 'Registros']
+    const headers = [
+      'Material',
+      'Proveedor',
+      'Fecha mas reciente',
+      'Precio actual',
+      'Promedio',
+      'Minimo',
+      'Maximo',
+      'Tendencia',
+      'Variacion %',
+      'Registros',
+    ]
     const lines: string[] = [headers.join(',')]
     for (const h of sorted) {
       const name = h.supplier ?? h.entries[0]?.description ?? h.key
@@ -146,7 +157,9 @@ export function PriceHistoryTable({
     <div className="bg-app-surface border border-app-border rounded-xl overflow-hidden">
       <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-3 px-3 sm:px-4 py-3 border-b border-app-border bg-app-hover/30">
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
-          <label className="text-xs text-app-muted font-medium" htmlFor="supplier-filter">Proveedor:</label>
+          <label className="text-xs text-app-muted font-medium" htmlFor="supplier-filter">
+            Proveedor:
+          </label>
           <select
             id="supplier-filter"
             value={supplierFilter}
@@ -156,10 +169,14 @@ export function PriceHistoryTable({
             <option value="__all__">Todos ({items.length})</option>
             {supplierOptions.hasNone && <option value="__none__">Sin proveedor</option>}
             {supplierOptions.suppliers.map((s) => (
-              <option key={s} value={s}>{s}</option>
+              <option key={s} value={s}>
+                {s}
+              </option>
             ))}
           </select>
-          <span className="text-xs text-app-subtle">{sorted.length} resultado{sorted.length === 1 ? '' : 's'}</span>
+          <span className="text-xs text-app-subtle">
+            {sorted.length} resultado{sorted.length === 1 ? '' : 's'}
+          </span>
         </div>
         <button
           type="button"
@@ -175,10 +192,17 @@ export function PriceHistoryTable({
       {/* Mobile: cards */}
       <div className="md:hidden divide-y divide-app-border">
         {sorted.length === 0 ? (
-          <div className="px-4 py-6 text-center text-app-muted text-sm">Sin resultados para el filtro seleccionado.</div>
+          <div className="px-4 py-6 text-center text-app-muted text-sm">
+            Sin resultados para el filtro seleccionado.
+          </div>
         ) : (
           sorted.map((history) => (
-            <PriceHistoryMobileCard key={history.key} history={history} expanded={expanded === history.key} onToggle={() => onToggle(history.key)} />
+            <PriceHistoryMobileCard
+              key={history.key}
+              history={history}
+              expanded={expanded === history.key}
+              onToggle={() => onToggle(history.key)}
+            />
           ))
         )}
       </div>
@@ -186,23 +210,85 @@ export function PriceHistoryTable({
       {/* Desktop: table */}
       <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-sm">
-          <thead><tr className="bg-app-hover/50 text-xs text-app-muted">
-            <SortableTh label="Material / Proveedor" align="left" sortKey="name" currentKey={sortKey} dir={sortDir} onSort={handleSort} />
-            <SortableTh label="Precio actual" align="right" sortKey="latest" currentKey={sortKey} dir={sortDir} onSort={handleSort} />
-            <SortableTh label="Promedio" align="right" sortKey="avg" currentKey={sortKey} dir={sortDir} onSort={handleSort} className="hidden sm:table-cell" />
-            <SortableTh label="Min / Max" align="right" sortKey="minMax" currentKey={sortKey} dir={sortDir} onSort={handleSort} className="hidden md:table-cell" />
-            <SortableTh label="Tendencia" align="center" sortKey="trend" currentKey={sortKey} dir={sortDir} onSort={handleSort} />
-            <SortableTh label="Registros" align="center" sortKey="count" currentKey={sortKey} dir={sortDir} onSort={handleSort} className="hidden sm:table-cell" />
-            <SortableTh label="Ult. fecha" align="right" sortKey="date" currentKey={sortKey} dir={sortDir} onSort={handleSort} className="hidden lg:table-cell" />
-          </tr></thead>
+          <thead>
+            <tr className="bg-app-hover/50 text-xs text-app-muted">
+              <SortableTh
+                label="Material / Proveedor"
+                align="left"
+                sortKey="name"
+                currentKey={sortKey}
+                dir={sortDir}
+                onSort={handleSort}
+              />
+              <SortableTh
+                label="Precio actual"
+                align="right"
+                sortKey="latest"
+                currentKey={sortKey}
+                dir={sortDir}
+                onSort={handleSort}
+              />
+              <SortableTh
+                label="Promedio"
+                align="right"
+                sortKey="avg"
+                currentKey={sortKey}
+                dir={sortDir}
+                onSort={handleSort}
+                className="hidden sm:table-cell"
+              />
+              <SortableTh
+                label="Min / Max"
+                align="right"
+                sortKey="minMax"
+                currentKey={sortKey}
+                dir={sortDir}
+                onSort={handleSort}
+                className="hidden md:table-cell"
+              />
+              <SortableTh
+                label="Tendencia"
+                align="center"
+                sortKey="trend"
+                currentKey={sortKey}
+                dir={sortDir}
+                onSort={handleSort}
+              />
+              <SortableTh
+                label="Registros"
+                align="center"
+                sortKey="count"
+                currentKey={sortKey}
+                dir={sortDir}
+                onSort={handleSort}
+                className="hidden sm:table-cell"
+              />
+              <SortableTh
+                label="Ult. fecha"
+                align="right"
+                sortKey="date"
+                currentKey={sortKey}
+                dir={sortDir}
+                onSort={handleSort}
+                className="hidden lg:table-cell"
+              />
+            </tr>
+          </thead>
           <tbody className="divide-y divide-app-border">
             {sorted.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-6 text-center text-app-muted text-sm">Sin resultados para el filtro seleccionado.</td>
+                <td colSpan={7} className="px-4 py-6 text-center text-app-muted text-sm">
+                  Sin resultados para el filtro seleccionado.
+                </td>
               </tr>
             ) : (
               sorted.map((history) => (
-                <PriceHistoryRow key={history.key} history={history} expanded={expanded === history.key} onToggle={() => onToggle(history.key)} />
+                <PriceHistoryRow
+                  key={history.key}
+                  history={history}
+                  expanded={expanded === history.key}
+                  onToggle={() => onToggle(history.key)}
+                />
               ))
             )}
           </tbody>
@@ -242,7 +328,11 @@ function SortableTh({
       >
         <span>{label}</span>
         {active ? (
-          dir === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+          dir === 'asc' ? (
+            <ArrowUp className="w-3 h-3" />
+          ) : (
+            <ArrowDown className="w-3 h-3" />
+          )
         ) : (
           <ArrowUpDown className="w-3 h-3 opacity-40" />
         )}
@@ -264,12 +354,7 @@ function PriceHistoryMobileCard({
   const name = history.supplier ?? history.entries[0]?.description ?? history.key
   return (
     <div className="px-3 py-3">
-      <button
-        type="button"
-        onClick={onToggle}
-        className="w-full text-left min-h-[44px]"
-        aria-expanded={expanded}
-      >
+      <button type="button" onClick={onToggle} className="w-full text-left min-h-[44px]" aria-expanded={expanded}>
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <p className="font-medium text-app-text capitalize break-words">{name}</p>
@@ -280,7 +365,13 @@ function PriceHistoryMobileCard({
           <div className="text-right shrink-0">
             <p className="font-semibold text-app-text">{formatRD(history.latestPrice)}</p>
             <p className="text-[11px] text-app-subtle mt-0.5">
-              {latestDate ? new Date(latestDate + 'T12:00:00').toLocaleDateString('es-DO', { day: '2-digit', month: 'short', year: '2-digit' }) : '—'}
+              {latestDate
+                ? new Date(latestDate + 'T12:00:00').toLocaleDateString('es-DO', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: '2-digit',
+                  })
+                : '—'}
             </p>
           </div>
         </div>
@@ -292,16 +383,27 @@ function PriceHistoryMobileCard({
           </div>
           <div>
             {history.trend === 'up' ? (
-              <span className="inline-flex items-center gap-1 text-red-600 font-semibold"><TrendingUp className="w-3.5 h-3.5" />+{history.trendPct.toFixed(1)}%</span>
+              <span className="inline-flex items-center gap-1 text-red-600 font-semibold">
+                <TrendingUp className="w-3.5 h-3.5" />+{history.trendPct.toFixed(1)}%
+              </span>
             ) : history.trend === 'down' ? (
-              <span className="inline-flex items-center gap-1 text-green-600 font-semibold"><TrendingDown className="w-3.5 h-3.5" />{history.trendPct.toFixed(1)}%</span>
+              <span className="inline-flex items-center gap-1 text-green-600 font-semibold">
+                <TrendingDown className="w-3.5 h-3.5" />
+                {history.trendPct.toFixed(1)}%
+              </span>
             ) : (
-              <span className="inline-flex items-center gap-1 text-app-muted"><Minus className="w-3.5 h-3.5" />Estable</span>
+              <span className="inline-flex items-center gap-1 text-app-muted">
+                <Minus className="w-3.5 h-3.5" />
+                Estable
+              </span>
             )}
           </div>
         </div>
         <div className="flex items-center justify-between gap-2 mt-1 text-[11px] text-app-subtle">
-          <span><span className="text-green-600">{formatRD(history.minPrice)}</span> <span className="mx-1">/</span> <span className="text-red-600">{formatRD(history.maxPrice)}</span></span>
+          <span>
+            <span className="text-green-600">{formatRD(history.minPrice)}</span> <span className="mx-1">/</span>{' '}
+            <span className="text-red-600">{formatRD(history.maxPrice)}</span>
+          </span>
           <span>{expanded ? 'Ocultar detalle' : 'Ver detalle'}</span>
         </div>
       </button>
@@ -321,12 +423,21 @@ function PriceHistoryMobileCard({
                 return (
                   <div key={rowKey} className="bg-app-hover/30 rounded-lg p-2 text-xs">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-app-muted">{new Date(entry.date + 'T12:00:00').toLocaleDateString('es-DO', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                      <span className="text-app-muted">
+                        {new Date(entry.date + 'T12:00:00').toLocaleDateString('es-DO', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </span>
                       <span className="font-semibold text-app-text">
                         {formatRD(entry.unit_price)}
                         {change !== null && (
-                          <span className={`ml-1.5 ${change > 0 ? 'text-red-500' : change < 0 ? 'text-green-500' : 'text-app-subtle'}`}>
-                            {change > 0 ? '+' : ''}{change.toFixed(1)}%
+                          <span
+                            className={`ml-1.5 ${change > 0 ? 'text-red-500' : change < 0 ? 'text-green-500' : 'text-app-subtle'}`}
+                          >
+                            {change > 0 ? '+' : ''}
+                            {change.toFixed(1)}%
                           </span>
                         )}
                       </span>
@@ -359,13 +470,46 @@ function PriceHistoryRow({
   return (
     <>
       <tr onClick={onToggle} className="hover:bg-app-hover/50 cursor-pointer">
-        <td className="px-4 py-3"><p className="font-medium text-app-text capitalize">{history.supplier ?? history.entries[0]?.description ?? history.key}</p>{history.supplier && <p className="text-xs text-app-muted truncate">{history.entries[0]?.description}</p>}</td>
+        <td className="px-4 py-3">
+          <p className="font-medium text-app-text capitalize">
+            {history.supplier ?? history.entries[0]?.description ?? history.key}
+          </p>
+          {history.supplier && <p className="text-xs text-app-muted truncate">{history.entries[0]?.description}</p>}
+        </td>
         <td className="px-4 py-3 text-right font-semibold text-app-text">{formatRD(history.latestPrice)}</td>
         <td className="px-4 py-3 text-right text-app-muted hidden sm:table-cell">{formatRD(history.avgPrice)}</td>
-        <td className="px-4 py-3 text-right text-xs hidden md:table-cell"><span className="text-green-600">{formatRD(history.minPrice)}</span><span className="text-app-subtle mx-1">/</span><span className="text-red-600">{formatRD(history.maxPrice)}</span></td>
-        <td className="px-4 py-3 text-center">{history.trend === 'up' ? <span className="inline-flex items-center gap-1 text-red-600 text-xs font-semibold"><TrendingUp className="w-3.5 h-3.5" />+{history.trendPct.toFixed(1)}%</span> : history.trend === 'down' ? <span className="inline-flex items-center gap-1 text-green-600 text-xs font-semibold"><TrendingDown className="w-3.5 h-3.5" />{history.trendPct.toFixed(1)}%</span> : <span className="inline-flex items-center gap-1 text-app-muted text-xs"><Minus className="w-3.5 h-3.5" />Estable</span>}</td>
+        <td className="px-4 py-3 text-right text-xs hidden md:table-cell">
+          <span className="text-green-600">{formatRD(history.minPrice)}</span>
+          <span className="text-app-subtle mx-1">/</span>
+          <span className="text-red-600">{formatRD(history.maxPrice)}</span>
+        </td>
+        <td className="px-4 py-3 text-center">
+          {history.trend === 'up' ? (
+            <span className="inline-flex items-center gap-1 text-red-600 text-xs font-semibold">
+              <TrendingUp className="w-3.5 h-3.5" />+{history.trendPct.toFixed(1)}%
+            </span>
+          ) : history.trend === 'down' ? (
+            <span className="inline-flex items-center gap-1 text-green-600 text-xs font-semibold">
+              <TrendingDown className="w-3.5 h-3.5" />
+              {history.trendPct.toFixed(1)}%
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 text-app-muted text-xs">
+              <Minus className="w-3.5 h-3.5" />
+              Estable
+            </span>
+          )}
+        </td>
         <td className="px-4 py-3 text-center text-app-muted text-xs hidden sm:table-cell">{history.entries.length}</td>
-        <td className="px-4 py-3 text-right text-app-muted text-xs hidden lg:table-cell">{latestDate ? new Date(latestDate + 'T12:00:00').toLocaleDateString('es-DO', { day: '2-digit', month: 'short', year: '2-digit' }) : '—'}</td>
+        <td className="px-4 py-3 text-right text-app-muted text-xs hidden lg:table-cell">
+          {latestDate
+            ? new Date(latestDate + 'T12:00:00').toLocaleDateString('es-DO', {
+                day: '2-digit',
+                month: 'short',
+                year: '2-digit',
+              })
+            : '—'}
+        </td>
       </tr>
       {expanded && (
         <tr className="bg-app-hover/20">
@@ -373,7 +517,14 @@ function PriceHistoryRow({
             <p className="text-xs font-semibold text-app-muted mb-2 uppercase tracking-wide">Historial de precios</p>
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
-                <thead><tr className="text-app-subtle"><th className="text-left py-1 pr-4">Fecha</th><th className="text-right py-1 pr-4">Precio unitario</th><th className="text-right py-1 pr-4">Cantidad</th><th className="text-left py-1">Proyecto</th></tr></thead>
+                <thead>
+                  <tr className="text-app-subtle">
+                    <th className="text-left py-1 pr-4">Fecha</th>
+                    <th className="text-right py-1 pr-4">Precio unitario</th>
+                    <th className="text-right py-1 pr-4">Cantidad</th>
+                    <th className="text-left py-1">Proyecto</th>
+                  </tr>
+                </thead>
                 <tbody>
                   {(() => {
                     const seenKeys = new Map<string, number>()
@@ -385,12 +536,30 @@ function PriceHistoryRow({
                       seenKeys.set(baseKey, dup + 1)
                       const rowKey = dup === 0 ? baseKey : `${baseKey}#${dup}`
                       return (
-                      <tr key={rowKey} className="border-t border-app-border/30">
-                        <td className="py-1 pr-4 text-app-muted">{new Date(entry.date + 'T12:00:00').toLocaleDateString('es-DO', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
-                        <td className="py-1 pr-4 text-right font-semibold text-app-text">{formatRD(entry.unit_price)}{change !== null && <span className={`ml-1.5 ${change > 0 ? 'text-red-500' : change < 0 ? 'text-green-500' : 'text-app-subtle'}`}>{change > 0 ? '+' : ''}{change.toFixed(1)}%</span>}</td>
-                        <td className="py-1 pr-4 text-right text-app-muted">{entry.quantity > 0 ? entry.quantity : '—'}</td>
-                        <td className="py-1 text-app-muted truncate max-w-[200px]">{entry.project}</td>
-                      </tr>
+                        <tr key={rowKey} className="border-t border-app-border/30">
+                          <td className="py-1 pr-4 text-app-muted">
+                            {new Date(entry.date + 'T12:00:00').toLocaleDateString('es-DO', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric',
+                            })}
+                          </td>
+                          <td className="py-1 pr-4 text-right font-semibold text-app-text">
+                            {formatRD(entry.unit_price)}
+                            {change !== null && (
+                              <span
+                                className={`ml-1.5 ${change > 0 ? 'text-red-500' : change < 0 ? 'text-green-500' : 'text-app-subtle'}`}
+                              >
+                                {change > 0 ? '+' : ''}
+                                {change.toFixed(1)}%
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-1 pr-4 text-right text-app-muted">
+                            {entry.quantity > 0 ? entry.quantity : '—'}
+                          </td>
+                          <td className="py-1 text-app-muted truncate max-w-[200px]">{entry.project}</td>
+                        </tr>
                       )
                     })
                   })()}

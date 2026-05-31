@@ -53,19 +53,13 @@ export const loanService = {
 
   /** Actualiza el estado de un préstamo. */
   async updateStatus(id: string, status: LoanStatus): Promise<void> {
-    const { error } = await supabase
-      .from('contractor_loans')
-      .update({ status })
-      .eq('id', id)
+    const { error } = await supabase.from('contractor_loans').update({ status }).eq('id', id)
     if (error) throw error
   },
 
   /** Elimina un préstamo por id. */
   async delete(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('contractor_loans')
-      .delete()
-      .eq('id', id)
+    const { error } = await supabase.from('contractor_loans').delete().eq('id', id)
     if (error) throw error
   },
 
@@ -83,10 +77,7 @@ export const loanService = {
 
   /** Lista las deducciones asociadas a un préstamo. */
   async getDeductionsByLoan(loanId: string): Promise<LoanDeduction[]> {
-    const { data, error } = await supabase
-      .from('loan_deductions')
-      .select('*')
-      .eq('loan_id', loanId)
+    const { data, error } = await supabase.from('loan_deductions').select('*').eq('loan_id', loanId)
     if (error) throw error
     return data as LoanDeduction[]
   },
@@ -109,10 +100,7 @@ export const loanService = {
 
   /** Elimina una deducción de préstamo por id. */
   async deleteDeduction(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('loan_deductions')
-      .delete()
-      .eq('id', id)
+    const { error } = await supabase.from('loan_deductions').delete().eq('id', id)
     if (error) throw error
   },
 
@@ -126,10 +114,7 @@ export const loanService = {
    *  Devuelve `{ [loanId]: totalPaid }`. IDs sin deducciones no aparecen en el map. */
   async getTotalPaidByLoans(loanIds: string[]): Promise<Record<string, number>> {
     if (loanIds.length === 0) return {}
-    const { data, error } = await supabase
-      .from('loan_deductions')
-      .select('loan_id, amount')
-      .in('loan_id', loanIds)
+    const { data, error } = await supabase.from('loan_deductions').select('loan_id, amount').in('loan_id', loanIds)
     if (error) throw error
     const totals: Record<string, number> = {}
     for (const row of (data ?? []) as Array<{ loan_id: string; amount: number }>) {

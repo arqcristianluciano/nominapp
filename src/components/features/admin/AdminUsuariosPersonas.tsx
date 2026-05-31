@@ -34,12 +34,13 @@ export function AdminUsuariosPersonas() {
   const filtered = useMemo(() => {
     if (!search) return users
     const q = search.toLowerCase()
-    return users.filter((u) =>
-      u.display_name?.toLowerCase().includes(q)
-      || u.first_name?.toLowerCase().includes(q)
-      || u.last_name?.toLowerCase().includes(q)
-      || u.cedula?.toLowerCase().includes(q)
-      || u.job_title?.toLowerCase().includes(q),
+    return users.filter(
+      (u) =>
+        u.display_name?.toLowerCase().includes(q) ||
+        u.first_name?.toLowerCase().includes(q) ||
+        u.last_name?.toLowerCase().includes(q) ||
+        u.cedula?.toLowerCase().includes(q) ||
+        u.job_title?.toLowerCase().includes(q),
     )
   }, [search, users])
 
@@ -70,11 +71,21 @@ export function AdminUsuariosPersonas() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-app-bg border-b border-app-border">
-                <th className="text-left px-4 py-3 text-xs font-semibold text-app-subtle uppercase tracking-wide">{t('admin.personas.table_person')}</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-app-subtle uppercase tracking-wide hidden sm:table-cell">{t('admin.personas.table_position')}</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-app-subtle uppercase tracking-wide hidden md:table-cell">{t('admin.personas.table_cedula')}</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-app-subtle uppercase tracking-wide hidden lg:table-cell">{t('admin.personas.table_phone')}</th>
-                <th className="text-center px-4 py-3 text-xs font-semibold text-app-subtle uppercase tracking-wide">{t('admin.personas.table_status')}</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-app-subtle uppercase tracking-wide">
+                  {t('admin.personas.table_person')}
+                </th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-app-subtle uppercase tracking-wide hidden sm:table-cell">
+                  {t('admin.personas.table_position')}
+                </th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-app-subtle uppercase tracking-wide hidden md:table-cell">
+                  {t('admin.personas.table_cedula')}
+                </th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-app-subtle uppercase tracking-wide hidden lg:table-cell">
+                  {t('admin.personas.table_phone')}
+                </th>
+                <th className="text-center px-4 py-3 text-xs font-semibold text-app-subtle uppercase tracking-wide">
+                  {t('admin.personas.table_status')}
+                </th>
                 <th className="w-12" />
               </tr>
             </thead>
@@ -83,21 +94,33 @@ export function AdminUsuariosPersonas() {
                 <tr key={u.id} className="hover:bg-app-hover group">
                   <td className="px-4 py-3">
                     <div className="font-medium text-app-text">
-                      {u.display_name || `${u.first_name ?? ''} ${u.last_name ?? ''}`.trim() || t('admin.personas.no_name')}
+                      {u.display_name ||
+                        `${u.first_name ?? ''} ${u.last_name ?? ''}`.trim() ||
+                        t('admin.personas.no_name')}
                     </div>
                     {u.is_director && (
-                      <span className="text-[10px] font-bold uppercase tracking-wide text-amber-600">{t('admin.personas.director_general')}</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wide text-amber-600">
+                        {t('admin.personas.director_general')}
+                      </span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-app-muted hidden sm:table-cell">{u.job_title || <span className="text-app-subtle">—</span>}</td>
-                  <td className="px-4 py-3 text-app-muted hidden md:table-cell">{u.cedula || <span className="text-app-subtle">—</span>}</td>
-                  <td className="px-4 py-3 text-app-muted hidden lg:table-cell">{u.phone || <span className="text-app-subtle">—</span>}</td>
+                  <td className="px-4 py-3 text-app-muted hidden sm:table-cell">
+                    {u.job_title || <span className="text-app-subtle">—</span>}
+                  </td>
+                  <td className="px-4 py-3 text-app-muted hidden md:table-cell">
+                    {u.cedula || <span className="text-app-subtle">—</span>}
+                  </td>
+                  <td className="px-4 py-3 text-app-muted hidden lg:table-cell">
+                    {u.phone || <span className="text-app-subtle">—</span>}
+                  </td>
                   <td className="px-4 py-3 text-center">
-                    <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
-                      u.is_active
-                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300'
-                        : 'bg-app-chip text-app-subtle'
-                    }`}>
+                    <span
+                      className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+                        u.is_active
+                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300'
+                          : 'bg-app-chip text-app-subtle'
+                      }`}
+                    >
                       {u.is_active ? t('admin.personas.active') : t('admin.personas.inactive')}
                     </span>
                   </td>

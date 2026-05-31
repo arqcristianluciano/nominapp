@@ -26,7 +26,7 @@ export function useCubicacionesBaseData(projectId: string | undefined) {
 
   const project = useMemo(
     () => projects.find((currentProject) => currentProject.id === projectId),
-    [projectId, projects]
+    [projectId, projects],
   )
 
   return { project, contractors }

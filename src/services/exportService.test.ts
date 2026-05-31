@@ -13,12 +13,7 @@ vi.mock('@/lib/supabase', () => ({
   },
 }))
 
-import {
-  EXPORTABLE_ENTITIES,
-  exportAllToZip,
-  rowsToCsv,
-  triggerBackup,
-} from './exportService'
+import { EXPORTABLE_ENTITIES, exportAllToZip, rowsToCsv, triggerBackup } from './exportService'
 
 interface SupabaseResponse {
   data: unknown
@@ -99,9 +94,7 @@ describe('rowsToCsv', () => {
   })
 
   it('mapea null/undefined a celda vacía y serializa objetos/arrays/Date', () => {
-    const csv = rowsToCsv([
-      { a: null, b: undefined, c: { x: 1 }, d: [1, 2], e: new Date('2026-05-21T00:00:00Z') },
-    ])
+    const csv = rowsToCsv([{ a: null, b: undefined, c: { x: 1 }, d: [1, 2], e: new Date('2026-05-21T00:00:00Z') }])
     const lines = csv.split('\r\n')
     expect(lines[0]).toBe('a,b,c,d,e')
     // null y undefined -> vacío; objeto/array -> JSON entrecomillado por las comas.
@@ -141,14 +134,14 @@ describe('exportAllToZip', () => {
   it('genera un Blob ZIP que contiene al menos un CSV (más el README)', async () => {
     // Mockeamos UNA sola entidad para mantener el test acotado: supabase.from
     // se resuelve con una fila simple y exportAllToZip debe armar el ZIP.
-    fromMock.mockImplementation(() => buildBuilder({
-      data: [{ id: 1, nombre: 'Niño' }],
-      error: null,
-    }))
+    fromMock.mockImplementation(() =>
+      buildBuilder({
+        data: [{ id: 1, nombre: 'Niño' }],
+        error: null,
+      }),
+    )
 
-    const summary = await exportAllToZip([
-      { table: 'companies', filename: 'companies.csv' },
-    ])
+    const summary = await exportAllToZip([{ table: 'companies', filename: 'companies.csv' }])
 
     expect(summary.totalRows).toBe(1)
     expect(summary.entities).toHaveLength(1)
@@ -182,13 +175,9 @@ describe('exportAllToZip', () => {
   })
 
   it('reporta el error cuando supabase devuelve {error}', async () => {
-    fromMock.mockImplementation(() =>
-      buildBuilder({ data: null, error: { message: 'rls denied' } }),
-    )
+    fromMock.mockImplementation(() => buildBuilder({ data: null, error: { message: 'rls denied' } }))
 
-    const summary = await exportAllToZip([
-      { table: 'companies', filename: 'companies.csv' },
-    ])
+    const summary = await exportAllToZip([{ table: 'companies', filename: 'companies.csv' }])
 
     expect(summary.totalRows).toBe(0)
     expect(summary.entities[0]).toMatchObject({

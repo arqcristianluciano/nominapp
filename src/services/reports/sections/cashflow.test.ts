@@ -56,9 +56,7 @@ describe('buildCashflowSection', () => {
   })
 
   it('handles negative values (formatted with a leading "-")', () => {
-    const result = buildCashflowSection(
-      baseInput({ collections: { expected: -100, actual: -200 } }),
-    )
+    const result = buildCashflowSection(baseInput({ collections: { expected: -100, actual: -200 } }))
     const json = JSON.stringify(result)
 
     expect(json).not.toMatch(/NaN/)

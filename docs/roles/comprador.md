@@ -59,17 +59,20 @@ El comprador participa en la fase administrativa del contrato:
 ## Ejemplos concretos
 
 **Ejemplo 1 — OC de cemento:**
+
 - Requisicion `REQ-2026-0142`: 200 sacos de cemento para vaciado de losa nivel 3.
 - Cotizaciones: Cemex DOP $245/saco, Domicem DOP $238/saco, Argos DOP $251/saco.
 - Selecciona Domicem (total DOP $47,600). Esta dentro de presupuesto → libera `OC-2026-0089`.
 - Notifica al almacenista que debe recibir 200 sacos antes del viernes.
 
 **Ejemplo 2 — Material nuevo en catalogo:**
+
 - El ingeniero pide "varilla #4 grado 60". No existe en catalogo.
 - El comprador la da de alta como `ACE-VAR-04-60`, unidad `quintal`, familia `aceros`.
 - Ahora puede cotizarse y agregarse a requisiciones.
 
 **Ejemplo 3 — Suplidor nuevo:**
+
 - Llega oferta de un suplidor nuevo de bloques 20% mas barato.
 - El comprador crea la ficha del suplidor con RNC, contacto y terminos (credito 30 dias).
 - Lo agrega como tercer cotizador en la proxima requisicion de bloques.

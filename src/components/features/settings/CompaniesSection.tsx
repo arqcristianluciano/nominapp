@@ -91,17 +91,8 @@ export function CompaniesSection() {
 
       <CompaniesPanel loading={loading} companies={companies} onEdit={openEdit} />
 
-      <Modal
-        open={showForm}
-        onClose={closeForm}
-        title={editing ? 'Editar empresa' : 'Nueva empresa'}
-      >
-        <CompanyForm
-          initial={editing}
-          saving={saving}
-          onSubmit={saveCompany}
-          onCancel={closeForm}
-        />
+      <Modal open={showForm} onClose={closeForm} title={editing ? 'Editar empresa' : 'Nueva empresa'}>
+        <CompanyForm initial={editing} saving={saving} onSubmit={saveCompany} onCancel={closeForm} />
       </Modal>
     </div>
   )

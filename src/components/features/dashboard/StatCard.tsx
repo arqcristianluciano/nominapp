@@ -3,7 +3,10 @@ import { useTranslation } from 'react-i18next'
 
 const ACCENT_STYLES: Record<string, { icon: string; border: string }> = {
   blue: { icon: 'bg-blue-100 text-blue-600 dark:bg-blue-950/70 dark:text-blue-300', border: 'border-l-blue-500' },
-  emerald: { icon: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950/70 dark:text-emerald-300', border: 'border-l-emerald-500' },
+  emerald: {
+    icon: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950/70 dark:text-emerald-300',
+    border: 'border-l-emerald-500',
+  },
   red: { icon: 'bg-red-100 text-red-600 dark:bg-red-950/70 dark:text-red-300', border: 'border-l-red-500' },
   amber: { icon: 'bg-amber-100 text-amber-600 dark:bg-amber-950/70 dark:text-amber-300', border: 'border-l-amber-500' },
 }
@@ -41,7 +44,11 @@ export function StatCard({ icon: Icon, label, value, accent, prev, invertTrend }
     const change = ((current - prev) / Math.abs(prev)) * 100
     const isPositive = invertTrend ? change < 0 : change > 0
     const isNeutral = Math.abs(change) < 0.5
-    const color = isNeutral ? 'text-app-muted' : isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'
+    const color = isNeutral
+      ? 'text-app-muted'
+      : isPositive
+        ? 'text-emerald-600 dark:text-emerald-400'
+        : 'text-red-500 dark:text-red-400'
     const TrendIcon = isNeutral ? Minus : isPositive ? TrendingUp : TrendingDown
     trendEl = (
       <div className={`mt-1 flex items-center gap-0.5 text-[11px] font-semibold ${color}`}>

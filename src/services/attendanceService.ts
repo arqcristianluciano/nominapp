@@ -80,13 +80,8 @@ export const attendanceService = {
   /**
    * Genera una URL firmada (privada) para ver una foto del bucket.
    */
-  async getPhotoUrl(
-    filePath: string,
-    expiresInSec: number = PHOTO_SIGNED_URL_EXPIRES_SEC,
-  ): Promise<string> {
-    const { data, error } = await supabase.storage
-      .from(PHOTO_BUCKET)
-      .createSignedUrl(filePath, expiresInSec)
+  async getPhotoUrl(filePath: string, expiresInSec: number = PHOTO_SIGNED_URL_EXPIRES_SEC): Promise<string> {
+    const { data, error } = await supabase.storage.from(PHOTO_BUCKET).createSignedUrl(filePath, expiresInSec)
     if (error) throw error
     if (!data?.signedUrl) throw new Error('No signed URL returned')
     return data.signedUrl

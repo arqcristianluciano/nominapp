@@ -11,7 +11,12 @@ import { ContractorKpiGrid } from '@/components/features/contractors/ContractorK
 import { ContractorProjectsSummary } from '@/components/features/contractors/ContractorProjectsSummary'
 import { ContractorCubicationsList } from '@/components/features/contractors/ContractorCubicationsList'
 import { ContractorLaborItemsTable } from '@/components/features/contractors/ContractorLaborItemsTable'
-import { buildProjectSummary, type Cubication, type LaborItem, type ProjectLite } from '@/components/features/contractors/detailTypes'
+import {
+  buildProjectSummary,
+  type Cubication,
+  type LaborItem,
+  type ProjectLite,
+} from '@/components/features/contractors/detailTypes'
 
 type ContractorWithHierarchy = Contractor & { parent_contractor_id?: string | null }
 
@@ -52,7 +57,9 @@ export default function ContractorDetail() {
     }
   }, [contractorId])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    load()
+  }, [load])
 
   const billableItems = items.filter((i) => !i.is_advance_deduction)
   const totalPaid = billableItems.reduce((s, i) => s + safeNumber(i.subtotal), 0)
@@ -77,7 +84,9 @@ export default function ContractorDetail() {
     return (
       <div className="p-6">
         <p className="text-sm text-app-muted">Contratista no encontrado.</p>
-        <Link to="/contratistas" className="text-sm text-blue-600 hover:text-blue-800 mt-2 inline-block">← Volver</Link>
+        <Link to="/contratistas" className="text-sm text-blue-600 hover:text-blue-800 mt-2 inline-block">
+          ← Volver
+        </Link>
       </div>
     )
   }
@@ -88,10 +97,7 @@ export default function ContractorDetail() {
         { label: parentContractor.name, to: `/contratistas/${parentContractor.id}` },
         { label: contractor.name },
       ]
-    : [
-        { label: 'Contratistas', to: '/contratistas' },
-        { label: contractor.name },
-      ]
+    : [{ label: 'Contratistas', to: '/contratistas' }, { label: contractor.name }]
 
   return (
     <div className="space-y-6 max-w-4xl">

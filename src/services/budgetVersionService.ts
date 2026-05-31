@@ -47,7 +47,10 @@ export const budgetVersionService = {
       supabase.from('budget_categories').select('*').eq('project_id', projectId),
       // budget_items por categoría
       (async () => {
-        const { data: cats, error: catsError } = await supabase.from('budget_categories').select('id').eq('project_id', projectId)
+        const { data: cats, error: catsError } = await supabase
+          .from('budget_categories')
+          .select('id')
+          .eq('project_id', projectId)
         if (catsError) throw catsError
         const ids = (cats ?? []).map((c: { id: string }) => c.id)
         if (ids.length === 0) return { data: [] as BudgetItem[], error: null }

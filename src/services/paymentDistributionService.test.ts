@@ -70,14 +70,21 @@ describe('paymentDistributionService.getBeneficiaries', () => {
     tableResults.contractors = [
       {
         data: [
-          { id: 'c1', name: 'Maestro Pedro', bank_name: 'Popular', bank_account: '123', payment_method: 'transfer' },
+          {
+            id: 'c1',
+            name: 'Maestro Pedro',
+            bank_name: 'Popular',
+            bank_account: '123',
+            payment_method: 'transfer',
+            cedula: '001-1234567-8',
+          },
         ],
         error: null,
       },
     ]
     tableResults.suppliers = [
       {
-        data: [{ id: 's1', name: 'Ferretería Llibre', bank_name: 'BHD', bank_account: '456' }],
+        data: [{ id: 's1', name: 'Ferretería Llibre', bank_name: 'BHD', bank_account: '456', rnc: '1-30-12345-6' }],
         error: null,
       },
     ]
@@ -93,6 +100,7 @@ describe('paymentDistributionService.getBeneficiaries', () => {
         name: 'Maestro Pedro',
         bank_name: 'Popular',
         bank_account: '123',
+        doc: '001-1234567-8',
         payment_method: 'transfer',
       },
       {
@@ -101,6 +109,7 @@ describe('paymentDistributionService.getBeneficiaries', () => {
         name: 'Ferretería Llibre',
         bank_name: 'BHD',
         bank_account: '456',
+        doc: '1-30-12345-6',
         payment_method: null,
       },
     ])
@@ -113,7 +122,15 @@ describe('paymentDistributionService.getBeneficiaries', () => {
     const result = await paymentDistributionService.getBeneficiaries()
 
     expect(result).toEqual([
-      { id: 'c2', type: 'contractor', name: 'Sin Banco', bank_name: null, bank_account: null, payment_method: null },
+      {
+        id: 'c2',
+        type: 'contractor',
+        name: 'Sin Banco',
+        bank_name: null,
+        bank_account: null,
+        doc: null,
+        payment_method: null,
+      },
     ])
   })
 

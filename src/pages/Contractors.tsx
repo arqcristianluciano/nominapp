@@ -38,42 +38,49 @@ export default function Contractors() {
     void load()
   }, [load])
 
-  const handleCreate = useCallback(async (data: CreateContractorInput) => {
-    setSaving(true)
-    try {
-      await contractorService.create(data)
-      setShowForm(false)
-      await load()
-      success(t('contractors.toast.created'))
-    } catch {
-      error(t('contractors.toast.create_failed'))
-    } finally {
-      setSaving(false)
-    }
-  }, [error, load, success, t])
+  const handleCreate = useCallback(
+    async (data: CreateContractorInput) => {
+      setSaving(true)
+      try {
+        await contractorService.create(data)
+        setShowForm(false)
+        await load()
+        success(t('contractors.toast.created'))
+      } catch {
+        error(t('contractors.toast.create_failed'))
+      } finally {
+        setSaving(false)
+      }
+    },
+    [error, load, success, t],
+  )
 
-  const handleUpdate = useCallback(async (data: CreateContractorInput) => {
-    if (!editing) return
-    setSaving(true)
-    try {
-      await contractorService.update(editing.id, data)
-      setEditing(undefined)
-      await load()
-      success(t('contractors.toast.updated'))
-    } catch {
-      error(t('contractors.toast.update_failed'))
-    } finally {
-      setSaving(false)
-    }
-  }, [editing, error, load, success, t])
+  const handleUpdate = useCallback(
+    async (data: CreateContractorInput) => {
+      if (!editing) return
+      setSaving(true)
+      try {
+        await contractorService.update(editing.id, data)
+        setEditing(undefined)
+        await load()
+        success(t('contractors.toast.updated'))
+      } catch {
+        error(t('contractors.toast.update_failed'))
+      } finally {
+        setSaving(false)
+      }
+    },
+    [editing, error, load, success, t],
+  )
 
   const normalizedSearch = useMemo(() => search.toLowerCase(), [search])
 
   const filtered = useMemo(
     () =>
-      contractors.filter((contractor) =>
-        contractor.name.toLowerCase().includes(normalizedSearch) ||
-        contractor.specialty?.toLowerCase().includes(normalizedSearch),
+      contractors.filter(
+        (contractor) =>
+          contractor.name.toLowerCase().includes(normalizedSearch) ||
+          contractor.specialty?.toLowerCase().includes(normalizedSearch),
       ),
     [contractors, normalizedSearch],
   )
@@ -104,7 +111,9 @@ export default function Contractors() {
         <ContractorForm onSubmit={handleCreate} onCancel={closeCreateModal} saving={saving} />
       </Modal>
       <Modal open={!!editing} onClose={closeEditModal} title={t('contractors.edit_contractor')}>
-        {editing && <ContractorForm initial={editing} onSubmit={handleUpdate} onCancel={closeEditModal} saving={saving} />}
+        {editing && (
+          <ContractorForm initial={editing} onSubmit={handleUpdate} onCancel={closeEditModal} saving={saving} />
+        )}
       </Modal>
     </div>
   )

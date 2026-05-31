@@ -48,10 +48,7 @@ function request<T>(req: IDBRequest<T>): Promise<T> {
   })
 }
 
-async function withStore<T>(
-  mode: IDBTransactionMode,
-  fn: (store: IDBObjectStore) => Promise<T> | T,
-): Promise<T> {
+async function withStore<T>(mode: IDBTransactionMode, fn: (store: IDBObjectStore) => Promise<T> | T): Promise<T> {
   const db = await openDb()
   try {
     const transaction = db.transaction(STORE, mode)

@@ -19,15 +19,7 @@ interface Props {
 const inputCls =
   'w-full px-3 py-2 text-sm border border-app-border rounded-lg bg-app-bg text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500'
 
-export function AttendanceForm({
-  form,
-  contractors,
-  saving,
-  projectId,
-  onChange,
-  onCancel,
-  onSave,
-}: Props) {
+export function AttendanceForm({ form, contractors, saving, projectId, onChange, onCancel, onSave }: Props) {
   const cameraInputRef = useRef<HTMLInputElement | null>(null)
   const galleryInputRef = useRef<HTMLInputElement | null>(null)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
@@ -178,7 +170,9 @@ export function AttendanceForm({
           >
             <option value="">Seleccionar...</option>
             {contractors.map((contractor) => (
-              <option key={contractor.id} value={contractor.id}>{contractor.name}</option>
+              <option key={contractor.id} value={contractor.id}>
+                {contractor.name}
+              </option>
             ))}
           </select>
         </div>

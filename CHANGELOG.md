@@ -10,6 +10,9 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ### Added
 
 - Subpartidas del presupuesto numeradas automáticamente (1.1, 1.2, …) en la lista y en el modal de creación (#40).
+- Las partidas que quedan vacías (sin subpartidas, sin monto y sin gasto) se detectan automáticamente. Tras importar un presupuesto desde Excel se ofrece eliminarlas de una vez, y en cualquier momento desde el botón "Limpiar partidas vacías (N)" de la cabecera. Siempre pide confirmación y permite elegir con checkboxes cuáles borrar (nunca se borra sin preguntar). Las partidas vacías se resaltan en la tabla con una etiqueta "vacía", y tras eliminarlas un aviso ofrece "Deshacer" para recuperarlas.
+- Botón para eliminar manualmente una partida vacía desde la tabla de presupuesto, con confirmación.
+- Los avisos (toast) admiten un botón de acción opcional (p. ej. "Deshacer") y duración configurable.
 - Facturas de materiales con varios ítems: una factura agrupa proveedor, referencia y varios ítems (descripción + monto), con total calculado automáticamente (nueva tabla `material_invoice_items`, migración 051).
 - Comprobante de factura (imagen o PDF): botón para adjuntar el comprobante al crear la factura o después desde la lista, almacenado en el bucket privado `invoice-attachments`. Las facturas sin comprobante muestran una advertencia "Falta comprobante" que desaparece al adjuntarlo.
 - Las facturas de materiales y las partidas de mano de obra ahora se pueden imputar a un capítulo y a una partida del presupuesto.
@@ -27,6 +30,8 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - Botón "Devolver a borrador" en el reporte de nómina: la mayor jerarquía (quien aprueba) puede regresar un reporte enviado o aprobado a borrador para que el autor lo corrija. Pide confirmación, quita la aprobación y registra la acción (`return_for_revision`) en la bitácora. Un reporte pagado no se puede devolver.
 - Sección "Historial de cambios" en el reporte de nómina: lista quién y cuándo realizó cada acción auditada (creación, envío, aprobación, devolución a borrador, edición de partidas/facturas en reportes comprometidos), leída de la bitácora de aprobaciones.
 - Autor de cada partida/factura (`created_by`): las partidas de mano de obra y facturas de materiales registran quién las introdujo (migración 052, aditiva, con `DEFAULT auth.uid()` + trigger). El editor muestra "Agregado por …" al corregir una línea.
+- Exportar a CSV la distribución de pagos del período (beneficiario, cédula/RNC, banco, cuenta, monto, método, cuenta de origen y estado), apto para banca electrónica u hojas de cálculo.
+- La distribución de pagos captura la cédula/RNC del beneficiario y permite registrar la cuenta de origen interna desde la que sale el pago (migración 056, aditiva).
 
 ### Changed
 
@@ -36,16 +41,22 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - `sort_order` de partidas de cubicación se calcula como máximo + 1 para no colisionar al borrar filas.
 - El editor y la impresión de nómina ahora muestran las facturas de materiales detalladas por ítem.
 - Distribución de pagos: ahora se selecciona un beneficiario (contratista o proveedor) y los datos bancarios se copian automáticamente desde su ficha, en lugar de exigir una cuenta bancaria interna (migración 052).
+- Distribución de pagos: el desplegable marca los beneficiarios sin datos bancarios y eliminar un pago ahora pide confirmación.
 
 ### Fixed
 
 - En la cubicación mensual por capítulo, los costos imputados solo a una partida (mano de obra y facturas de materiales sin capítulo explícito) ahora se agrupan en el capítulo de esa partida, en lugar de caer en "sin capítulo". El cálculo del capítulo es ahora consistente entre todas las fuentes de costo (inventario, nómina, facturas y CxP).
+- Integridad del total de facturas: `material_invoices.amount` se recalcula automáticamente como la suma de sus ítems mediante un trigger en BD (migración 058), blindándolo frente a ediciones directas además de la lógica de la app.
+- E2E (Playwright) en CI como job _advisory_ (no bloqueante hasta estabilizar la suite), con nuevo spec del flujo de factura de materiales con varios ítems y advertencia de comprobante.
+- Comprobantes huérfanos: al eliminar una factura de materiales —o al reemplazar/quitar su comprobante al editarla— el archivo se borra del bucket `invoice-attachments` (antes quedaba huérfano ocupando espacio).
+- Endurecimiento del bucket `invoice-attachments`: ahora valida del lado del servidor que sólo se suban imágenes o PDF de hasta 10 MB (migración 057), como defensa en profundidad además de la validación del cliente.
 - La numeración automática de subpartidas ahora respeta el código de la partida (p. ej. `T2.5`, no `2.5`) y continúa desde el mayor número existente, evitando defaults erróneos como `3.1` y colisiones tras borrar filas (#40).
 - La importación de presupuesto desde Excel asigna y persiste códigos consecutivos por partida a las subpartidas que no traen código, continuando desde el mayor existente y respetando los códigos que sí vengan en el archivo.
 - Modo demo: el cliente mock ahora implementa `removeChannel` y un stub de `storage`, evitando el crash al navegar y permitiendo adjuntar/ver comprobantes en demo.
 - La lista de precios ya permite guardar ítems de tipo "Ajuste". El constraint `category` de `price_list_items` omitía `adjustment`, por lo que esos precios fallaban en silencio al guardarse (migración 050).
 - `PriceListInlineForm` ahora muestra un toast de error cuando un precio no se puede guardar, en lugar de fallar en silencio.
 - El selector de la distribución de pagos ya no aparece vacío: antes dependía de la tabla `bank_accounts` (sin registros) en vez de los beneficiarios.
+- Distribución de pagos: completar o eliminar un pago ahora avisa al usuario si la operación falla, en lugar de hacerlo en silencio.
 
 ## [0.6.0] - 2026-05-26
 

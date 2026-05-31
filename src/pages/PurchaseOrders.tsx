@@ -44,19 +44,22 @@ export default function PurchaseOrders() {
     void loadAll()
   }, [loadAll])
 
-  const handleCreate = useCallback(async (payload: Parameters<typeof requisitionService.create>[0]) => {
-    setSaving(true)
-    try {
-      const req = await requisitionService.create(payload)
-      setShowForm(false)
-      setRequisitions((prev) => [req, ...prev])
-      success('Solicitud de compra creada')
-    } catch (err) {
-      error(getErrorMessage(err) || 'No se pudo crear la solicitud')
-    } finally {
-      setSaving(false)
-    }
-  }, [error, success])
+  const handleCreate = useCallback(
+    async (payload: Parameters<typeof requisitionService.create>[0]) => {
+      setSaving(true)
+      try {
+        const req = await requisitionService.create(payload)
+        setShowForm(false)
+        setRequisitions((prev) => [req, ...prev])
+        success('Solicitud de compra creada')
+      } catch (err) {
+        error(getErrorMessage(err) || 'No se pudo crear la solicitud')
+      } finally {
+        setSaving(false)
+      }
+    },
+    [error, success],
+  )
 
   const normalizedSearch = useMemo(() => search.toLowerCase(), [search])
 
@@ -95,12 +98,7 @@ export default function PurchaseOrders() {
       )}
 
       <Modal open={showForm} onClose={closeCreateModal} title="Nueva Solicitud de Compra">
-        <RequisitionForm
-          projects={projects}
-          onSubmit={handleCreate}
-          onCancel={closeCreateModal}
-          saving={saving}
-        />
+        <RequisitionForm projects={projects} onSubmit={handleCreate} onCancel={closeCreateModal} saving={saving} />
       </Modal>
     </div>
   )

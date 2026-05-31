@@ -27,8 +27,12 @@ export default function Calendario() {
 
   const selectedEvents = selectedDate ? (eventsByDate[selectedDate] ?? []) : []
 
-  function prevMonth() { setCurrentDate(new Date(year, month - 1, 1)) }
-  function nextMonth() { setCurrentDate(new Date(year, month + 1, 1)) }
+  function prevMonth() {
+    setCurrentDate(new Date(year, month - 1, 1))
+  }
+  function nextMonth() {
+    setCurrentDate(new Date(year, month + 1, 1))
+  }
 
   return (
     <div className="p-4 lg:p-6 space-y-5 max-w-7xl mx-auto">

@@ -38,9 +38,7 @@ export function AvancesFormSection({
           <label className="text-xs text-app-muted block mb-1">Capítulo *</label>
           <select
             value={form.budget_category_id}
-            onChange={(e) =>
-              setForm({ ...form, budget_category_id: e.target.value, budget_item_id: '' })
-            }
+            onChange={(e) => setForm({ ...form, budget_category_id: e.target.value, budget_item_id: '' })}
             className={INPUT_CLASS}
           >
             <option value="">Seleccionar…</option>
@@ -84,9 +82,7 @@ export function AvancesFormSection({
             inputMode="decimal"
             step="0.01"
             value={form.executed_quantity}
-            onChange={(e) =>
-              setForm({ ...form, executed_quantity: e.target.value, executed_percent: '' })
-            }
+            onChange={(e) => setForm({ ...form, executed_quantity: e.target.value, executed_percent: '' })}
             placeholder="ej: 25"
             className={INPUT_CLASS}
           />
@@ -100,9 +96,7 @@ export function AvancesFormSection({
             min={0}
             max={100}
             value={form.executed_percent}
-            onChange={(e) =>
-              setForm({ ...form, executed_percent: e.target.value, executed_quantity: '' })
-            }
+            onChange={(e) => setForm({ ...form, executed_percent: e.target.value, executed_quantity: '' })}
             placeholder="ej: 30"
             className={INPUT_CLASS}
           />

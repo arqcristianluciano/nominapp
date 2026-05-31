@@ -18,7 +18,8 @@ const INITIAL_FORM: CreateContractFormState = {
   notes: '',
 }
 
-const CREATE_ERROR_FALLBACK = 'Error al crear el contrato. Verifica que las tablas del módulo de cubicación existan en Supabase.'
+const CREATE_ERROR_FALLBACK =
+  'Error al crear el contrato. Verifica que las tablas del módulo de cubicación existan en Supabase.'
 
 interface SubmitCreateContractParams {
   event: React.FormEvent
@@ -91,7 +92,7 @@ export function useCreateContractModal(projectId: string | undefined) {
         setFormError,
       })
     },
-    [form, navigate, projectId]
+    [form, navigate, projectId],
   )
 
   return {

@@ -20,7 +20,9 @@ export function QuickAction({ icon: Icon, label, sub, accent, onClick }: Props) 
       onClick={onClick}
       className="group flex w-full items-center gap-3 rounded-xl border border-app-border bg-app-surface p-4 text-left transition-all hover:border-blue-300 hover:shadow-sm dark:hover:border-blue-700 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-app-bg"
     >
-      <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-transform group-hover:scale-105 ${ICON_COLORS[accent]}`}>
+      <div
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-transform group-hover:scale-105 ${ICON_COLORS[accent]}`}
+      >
         <Icon className="h-4 w-4" />
       </div>
       <div className="min-w-0">

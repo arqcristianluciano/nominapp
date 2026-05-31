@@ -22,8 +22,13 @@ vi.mock('react', async () => {
   const actual = await vi.importActual<typeof import('react')>('react')
   return {
     ...actual,
-    useState: <T,>(initial: T | (() => T)) => {
-      const next = stateQueue.length > 0 ? (stateQueue.shift() as T) : (typeof initial === 'function' ? (initial as () => T)() : initial)
+    useState: <T>(initial: T | (() => T)) => {
+      const next =
+        stateQueue.length > 0
+          ? (stateQueue.shift() as T)
+          : typeof initial === 'function'
+            ? (initial as () => T)()
+            : initial
       return [next, vi.fn()] as [T, (v: T) => void]
     },
     useEffect: vi.fn(),
@@ -45,7 +50,7 @@ vi.mock('@/lib/supabase', () => ({
 // authStore se mockea como selector function-style: useAuthStore((s) => s.user)
 let mockUser: { id: string; isDirector?: boolean } | null = null
 vi.mock('@/stores/authStore', () => ({
-  useAuthStore: <T,>(selector: (s: { user: typeof mockUser }) => T) => selector({ user: mockUser }),
+  useAuthStore: <T>(selector: (s: { user: typeof mockUser }) => T) => selector({ user: mockUser }),
 }))
 
 // Importar despues de mocks.
@@ -54,18 +59,41 @@ import * as supabaseModule from '@/lib/supabase'
 
 // Lista de caps en demo (debe matchear DEMO_CAPS del hook).
 const EXPECTED_DEMO_CAPS = [
-  'edit_project', 'edit_budget', 'create_payroll', 'edit_payroll', 'approve_payroll',
-  'create_requisition', 'load_quotes', 'release_purchase_order', 'receive_order',
-  'inventory_write', 'override_stock',
-  'write_ledger', 'mark_paid', 'issue_check', 'write_loans', 'view_cashflow',
-  'write_contractors', 'write_suppliers', 'write_materials_catalog', 'write_bank_accounts',
-  'view_director_dashboard', 'view_approvals_log', 'view_reportes', 'view_price_history',
-  'manage_users', 'manage_roles',
+  'edit_project',
+  'edit_budget',
+  'create_payroll',
+  'edit_payroll',
+  'approve_payroll',
+  'create_requisition',
+  'load_quotes',
+  'release_purchase_order',
+  'receive_order',
+  'inventory_write',
+  'override_stock',
+  'write_ledger',
+  'mark_paid',
+  'issue_check',
+  'write_loans',
+  'view_cashflow',
+  'write_contractors',
+  'write_suppliers',
+  'write_materials_catalog',
+  'write_bank_accounts',
+  'view_director_dashboard',
+  'view_approvals_log',
+  'view_reportes',
+  'view_price_history',
+  'manage_users',
+  'manage_roles',
 ]
 
 const EXPECTED_DEMO_ROLES: ProjectRole[] = [
-  'director_proyecto', 'planificacion', 'ingeniero_obra',
-  'comprador', 'almacenista', 'contabilidad',
+  'director_proyecto',
+  'planificacion',
+  'ingeniero_obra',
+  'comprador',
+  'almacenista',
+  'contabilidad',
 ]
 
 /** Helper: arma el estado que useState devolvera para roles/caps/loading. */

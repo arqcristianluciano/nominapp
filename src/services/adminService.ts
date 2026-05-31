@@ -1,9 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import {
-  approvalsService,
-  type ApprovalAction,
-  type ApprovalEntity,
-} from '@/services/approvalsService'
+import { approvalsService, type ApprovalAction, type ApprovalEntity } from '@/services/approvalsService'
 import type { ProjectRole } from '@/hooks/useProjectRoles'
 import { addBreadcrumb } from '@/lib/sentry'
 
@@ -89,17 +85,8 @@ export const adminService = {
   },
 
   async updateRole(id: string, updates: Pick<Role, 'name' | 'description'>): Promise<Role> {
-    const { data: beforeRow } = await supabase
-      .from('roles')
-      .select('name, description')
-      .eq('id', id)
-      .single()
-    const { data, error } = await supabase
-      .from('roles')
-      .update(updates)
-      .eq('id', id)
-      .select('*')
-      .single()
+    const { data: beforeRow } = await supabase.from('roles').select('name, description').eq('id', id).single()
+    const { data, error } = await supabase.from('roles').update(updates).eq('id', id).select('*').single()
     if (error) throw error
     const after = data as Role
     approvalsService
@@ -107,9 +94,7 @@ export const adminService = {
         entity_type: 'role' as ApprovalEntity,
         entity_id: id,
         action: 'update' as ApprovalAction,
-        payload_before: beforeRow
-          ? { name: beforeRow.name, description: beforeRow.description }
-          : null,
+        payload_before: beforeRow ? { name: beforeRow.name, description: beforeRow.description } : null,
         payload_after: { name: after.name, description: after.description },
       })
       .catch((err) => console.warn('approvalsService.log updateRole failed', err))
@@ -117,11 +102,7 @@ export const adminService = {
   },
 
   async deleteRole(id: string): Promise<void> {
-    const { data: beforeRow } = await supabase
-      .from('roles')
-      .select('*')
-      .eq('id', id)
-      .single()
+    const { data: beforeRow } = await supabase.from('roles').select('*').eq('id', id).single()
     const { error } = await supabase.from('roles').delete().eq('id', id)
     if (error) throw error
     approvalsService
@@ -136,10 +117,7 @@ export const adminService = {
 
   // -- Capabilities --------------------------------------------------------
   async listCapabilities(): Promise<Capability[]> {
-    const { data, error } = await supabase
-      .from('capabilities')
-      .select('*')
-      .order('sort_order')
+    const { data, error } = await supabase.from('capabilities').select('*').order('sort_order')
     if (error) throw error
     return (data ?? []) as Capability[]
   },
@@ -153,9 +131,7 @@ export const adminService = {
 
   async grantCapability(roleId: string, capabilityId: string): Promise<void> {
     addBreadcrumb('admin', 'grantCapability', { roleId, capabilityId })
-    const { error } = await supabase
-      .from('role_capabilities')
-      .insert({ role_id: roleId, capability_id: capabilityId })
+    const { error } = await supabase.from('role_capabilities').insert({ role_id: roleId, capability_id: capabilityId })
     if (error && error.code !== '23505') throw error // ignorar duplicate
     approvalsService
       .log({
@@ -201,17 +177,8 @@ export const adminService = {
     const { project_memberships, email, ...patch } = updates as AdminUser & Record<string, unknown>
     void project_memberships
     void email
-    const { data: beforeRow } = await supabase
-      .from('user_profiles')
-      .select('*')
-      .eq('id', id)
-      .single()
-    const { data, error } = await supabase
-      .from('user_profiles')
-      .update(patch)
-      .eq('id', id)
-      .select('*')
-      .single()
+    const { data: beforeRow } = await supabase.from('user_profiles').select('*').eq('id', id).single()
+    const { data, error } = await supabase.from('user_profiles').update(patch).eq('id', id).select('*').single()
     if (error) throw error
     const after = data as AdminUser
     approvalsService
@@ -227,9 +194,7 @@ export const adminService = {
   },
 
   async assignProjectRole(userId: string, projectId: string, role: ProjectRole): Promise<void> {
-    const { error } = await supabase
-      .from('project_members')
-      .upsert({ user_id: userId, project_id: projectId, role })
+    const { error } = await supabase.from('project_members').upsert({ user_id: userId, project_id: projectId, role })
     if (error) throw error
     approvalsService
       .log({
@@ -291,11 +256,7 @@ export const adminService = {
    *
    * Solo DG puede invocar (validado en el servidor).
    */
-  async inviteUser(
-    email: string,
-    role?: ProjectRole,
-    projectId?: string,
-  ): Promise<{ id: string; email: string }> {
+  async inviteUser(email: string, role?: ProjectRole, projectId?: string): Promise<{ id: string; email: string }> {
     const { data, error } = await supabase.functions.invoke('admin-invite-user', {
       body: {
         email,

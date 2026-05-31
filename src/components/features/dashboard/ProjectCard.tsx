@@ -38,11 +38,16 @@ export function ProjectCard({ project, progress }: Props) {
           {percent !== null ? (
             <span className="text-sm font-bold text-app-text">{Math.round(percent)}%</span>
           ) : (
-            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">{t('dashboard.projects.active_badge')}</span>
+            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
+              {t('dashboard.projects.active_badge')}
+            </span>
           )}
           {progress && (
             <p className="mt-0.5 text-[11px] text-app-subtle">
-              {progress.contractor_count} {progress.contractor_count === 1 ? t('dashboard.projects.contract_one') : t('dashboard.projects.contract_other')}
+              {progress.contractor_count}{' '}
+              {progress.contractor_count === 1
+                ? t('dashboard.projects.contract_one')
+                : t('dashboard.projects.contract_other')}
             </p>
           )}
         </div>

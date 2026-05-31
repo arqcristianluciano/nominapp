@@ -19,6 +19,8 @@
     "brand": "NominaAPP",
     "closeMenu": "Close menu",
     "closeMenuAria": "Close side menu",
+    "more": "More",
+    "openMenuAria": "Open navigation menu",
     "sections": {
       "general": "General",
       "finanzas": "Finance",

@@ -1,4 +1,4 @@
-import { FileUp } from 'lucide-react'
+import { FileUp, Trash2 } from 'lucide-react'
 import { Breadcrumb } from '@/components/ui/Breadcrumb'
 import { BudgetHierarchyTable } from '@/components/features/budget/BudgetHierarchyTable'
 import { BudgetSummaryCards } from '@/components/features/budget/BudgetSummaryCards'
@@ -10,11 +10,15 @@ export function BudgetDetailHeader({
   projectId,
   tab,
   onOpenImport,
+  emptyCount = 0,
+  onCleanEmpty,
 }: {
   project: Project
   projectId: string
   tab: 'presupuesto' | 'precios'
   onOpenImport: () => void
+  emptyCount?: number
+  onCleanEmpty?: () => void
 }) {
   return (
     <div>
@@ -33,12 +37,23 @@ export function BudgetDetailHeader({
           </p>
         </div>
         {tab === 'presupuesto' && (
-          <button
-            onClick={onOpenImport}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-app-muted border border-app-border rounded-lg hover:bg-app-hover"
-          >
-            <FileUp className="w-3.5 h-3.5" /> Importar Excel
-          </button>
+          <div className="flex items-center gap-2">
+            {emptyCount > 0 && onCleanEmpty && (
+              <button
+                onClick={onCleanEmpty}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-amber-700 border border-amber-200 bg-amber-50 rounded-lg hover:bg-amber-100 transition-colors"
+                title="Eliminar partidas vacías (sin subpartidas, monto ni gasto)"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Limpiar partidas vacías ({emptyCount})
+              </button>
+            )}
+            <button
+              onClick={onOpenImport}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-app-muted border border-app-border rounded-lg hover:bg-app-hover"
+            >
+              <FileUp className="w-3.5 h-3.5" /> Importar Excel
+            </button>
+          </div>
         )}
       </div>
     </div>
@@ -56,6 +71,7 @@ export function BudgetPresupuestoTab({
   onUpdateItem,
   onDeleteItem,
   onEditBudgetAmount,
+  onDeleteCategory,
 }: {
   loading: boolean
   rows: Array<{ category: BudgetCategory; spent: number; budgeted: number }>
@@ -67,6 +83,7 @@ export function BudgetPresupuestoTab({
   onUpdateItem: (id: string, categoryId: string, changes: Partial<Omit<BudgetItem, 'id'>>) => Promise<void>
   onDeleteItem: (id: string, categoryId: string) => Promise<void>
   onEditBudgetAmount: (id: string, amount: number) => void
+  onDeleteCategory?: (categoryId: string) => Promise<void>
 }) {
   return (
     <>
@@ -82,6 +99,7 @@ export function BudgetPresupuestoTab({
         onUpdateItem={onUpdateItem}
         onDeleteItem={onDeleteItem}
         onEditBudgetAmount={onEditBudgetAmount}
+        onDeleteCategory={onDeleteCategory}
       />
     </>
   )

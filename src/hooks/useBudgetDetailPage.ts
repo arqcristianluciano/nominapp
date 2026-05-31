@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useProjectStore } from '@/stores/projectStore'
 import { useBudgetDetail } from '@/hooks/useBudgetDetail'
-import { useBudgetItems } from '@/hooks/useBudgetItems'
-import type { BudgetItem, PriceListItem } from '@/types/database'
+import { useBudgetItems, type BulkImportPayload } from '@/hooks/useBudgetItems'
+import { findEmptyCategories } from '@/components/features/budget/emptyCategories'
+import type { BudgetCategory, BudgetItem, PriceListItem } from '@/types/database'
 
 export type BudgetTab = 'presupuesto' | 'precios'
 
@@ -30,9 +31,9 @@ function useBudgetDetailPageState() {
 type EffectsArgs = {
   projectsLength: number
   fetchProjects: () => Promise<unknown>
-  loadBudget: () => Promise<void>
+  loadBudget: () => Promise<unknown>
   categoryIds: string[]
-  loadItems: (ids: string[]) => Promise<void>
+  loadItems: (ids: string[]) => Promise<unknown>
 }
 
 function useBudgetDetailPageEffects(args: EffectsArgs) {
@@ -63,10 +64,13 @@ type EditHandlersArgs = {
 function useBudgetEditHandlers(args: EditHandlersArgs) {
   const { budget, editValue, editingId, setEditValue, setEditingId } = args
 
-  const startEdit = useCallback((id: string, amount: number) => {
-    setEditingId(id)
-    setEditValue(amount.toString())
-  }, [setEditValue, setEditingId])
+  const startEdit = useCallback(
+    (id: string, amount: number) => {
+      setEditingId(id)
+      setEditValue(amount.toString())
+    },
+    [setEditValue, setEditingId],
+  )
 
   const saveEdit = useCallback(async () => {
     if (!editingId) return
@@ -78,45 +82,149 @@ function useBudgetEditHandlers(args: EditHandlersArgs) {
 }
 
 function useBudgetItemHandlers(budgetItems: ReturnType<typeof useBudgetItems>) {
-  const handleAddItem = useCallback(async (data: Omit<BudgetItem, 'id'>) => {
-    await budgetItems.addItem(data)
-  }, [budgetItems])
-
-  const handleUpdateItem = useCallback(
-    async (
-      id: string,
-      categoryId: string,
-      changes: Partial<Omit<BudgetItem, 'id'>>
-    ) => {
-      await budgetItems.updateItem(id, categoryId, changes)
+  const handleAddItem = useCallback(
+    async (data: Omit<BudgetItem, 'id'>) => {
+      await budgetItems.addItem(data)
     },
-    [budgetItems]
+    [budgetItems],
   )
 
-  const handleDeleteItem = useCallback(async (id: string, categoryId: string) => {
-    await budgetItems.deleteItem(id, categoryId)
-  }, [budgetItems])
+  const handleUpdateItem = useCallback(
+    async (id: string, categoryId: string, changes: Partial<Omit<BudgetItem, 'id'>>) => {
+      await budgetItems.updateItem(id, categoryId, changes)
+    },
+    [budgetItems],
+  )
+
+  const handleDeleteItem = useCallback(
+    async (id: string, categoryId: string) => {
+      await budgetItems.deleteItem(id, categoryId)
+    },
+    [budgetItems],
+  )
 
   return { handleAddItem, handleUpdateItem, handleDeleteItem }
 }
 
 function usePriceHandlers(budgetItems: ReturnType<typeof useBudgetItems>) {
-  const handleAddPrice = useCallback(async (item: Omit<PriceListItem, 'id'>) => {
-    await budgetItems.addPriceListItem(item)
-  }, [budgetItems])
+  const handleAddPrice = useCallback(
+    async (item: Omit<PriceListItem, 'id'>) => {
+      await budgetItems.addPriceListItem(item)
+    },
+    [budgetItems],
+  )
 
   const handleUpdatePrice = useCallback(
     async (id: string, changes: Partial<Omit<PriceListItem, 'id'>>) => {
       await budgetItems.updatePriceListItem(id, changes)
     },
-    [budgetItems]
+    [budgetItems],
   )
 
-  const handleDeletePrice = useCallback(async (id: string) => {
-    await budgetItems.deletePriceListItem(id)
-  }, [budgetItems])
+  const handleDeletePrice = useCallback(
+    async (id: string) => {
+      await budgetItems.deletePriceListItem(id)
+    },
+    [budgetItems],
+  )
 
   return { handleAddPrice, handleUpdatePrice, handleDeletePrice }
+}
+
+/**
+ * Limpieza de partidas vacías (sin subpartidas, sin monto y sin gasto).
+ *
+ * - Calcula en vivo qué partidas están vacías a partir del estado ya cargado.
+ * - Tras importar abre el aviso automáticamente; en la carga normal de la página
+ *   se ofrece de forma no intrusiva con el botón "Limpiar partidas vacías" de la
+ *   cabecera (el modal nunca salta solo al abrir el presupuesto).
+ * - Nunca borra sin confirmación; también permite el borrado puntual desde la tabla.
+ */
+function useEmptyCategoryCleanup(
+  projectId: string | undefined,
+  budget: ReturnType<typeof useBudgetDetail>,
+  budgetItems: ReturnType<typeof useBudgetItems>,
+) {
+  const [showEmptyModal, setShowEmptyModal] = useState(false)
+  const [removingEmpty, setRemovingEmpty] = useState(false)
+
+  const spentByCategory = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const row of budget.rows) map.set(row.category.id, row.spent)
+    return map
+  }, [budget.rows])
+
+  const emptyCategories = useMemo(
+    () =>
+      findEmptyCategories(
+        budget.rows.map((row) => row.category),
+        budgetItems.itemsByCategory,
+        (id) => spentByCategory.get(id) ?? 0,
+      ),
+    [budget.rows, budgetItems.itemsByCategory, spentByCategory],
+  )
+
+  // Al cambiar de proyecto cerramos cualquier aviso abierto.
+  useEffect(() => {
+    setShowEmptyModal(false)
+  }, [projectId])
+
+  const openEmptyModal = useCallback(() => setShowEmptyModal(true), [])
+  const closeEmptyModal = useCallback(() => setShowEmptyModal(false), [])
+
+  const removeCategories = useCallback(
+    async (ids: string[]): Promise<BudgetCategory[]> => {
+      if (ids.length === 0) return []
+      setRemovingEmpty(true)
+      try {
+        const removed = await budget.removeCategories(ids)
+        budgetItems.dropCategories(ids)
+        return removed
+      } catch {
+        // budget.removeCategories ya registró el error en budget.error;
+        // no propagamos para no dejar promesas sin manejar en la UI.
+        return []
+      } finally {
+        setRemovingEmpty(false)
+      }
+    },
+    [budget, budgetItems],
+  )
+
+  // Recibe las filas borradas explícitamente (no las lee de estado) para evitar
+  // cierres obsoletos cuando el botón "Deshacer" se dispara desde un aviso.
+  const undoRemove = useCallback(
+    async (rows: BudgetCategory[]) => {
+      await budget.restoreCategories(rows)
+    },
+    [budget],
+  )
+
+  const confirmRemoveEmpty = useCallback(
+    async (ids: string[]) => {
+      const removed = await removeCategories(ids)
+      setShowEmptyModal(false)
+      return removed
+    },
+    [removeCategories],
+  )
+
+  const removeCategory = useCallback(async (categoryId: string) => removeCategories([categoryId]), [removeCategories])
+
+  // Tras importar abrimos el modal; el render lo deja oculto si no hay vacías.
+  const promptAfterImport = useCallback(() => setShowEmptyModal(true), [])
+
+  return {
+    emptyCategories,
+    showEmptyModal,
+    removingEmpty,
+    openEmptyModal,
+    closeEmptyModal,
+    confirmRemoveEmpty,
+    removeCategory,
+    promptAfterImport,
+    undoRemove,
+  }
 }
 
 function calculateGrandBudgeted(args: {
@@ -136,10 +244,7 @@ function useBudgetDetailPageContext(projectId: string | undefined) {
   const budgetItems = useBudgetItems(projectId)
   const project = useMemo(() => projects.find((item) => item.id === projectId), [projects, projectId])
   const categoryIds = useMemo(() => budget.rows.map((row) => row.category.id), [budget.rows])
-  const grandBudgeted = useMemo(
-    () => calculateGrandBudgeted({ budget, budgetItems }),
-    [budget, budgetItems]
-  )
+  const grandBudgeted = useMemo(() => calculateGrandBudgeted({ budget, budgetItems }), [budget, budgetItems])
 
   return {
     projects,
@@ -172,6 +277,24 @@ export function useBudgetDetailPage(projectId: string | undefined) {
   })
   const itemHandlers = useBudgetItemHandlers(context.budgetItems)
   const priceHandlers = usePriceHandlers(context.budgetItems)
+  const cleanup = useEmptyCategoryCleanup(projectId, context.budget, context.budgetItems)
+
+  const { promptAfterImport } = cleanup
+  const handleImport = useCallback(
+    async (payload: BulkImportPayload) => {
+      // Pasamos las partidas actuales para que las subpartidas importadas sin
+      // código reciban su código consecutivo (p. ej. 1.5) de la partida correcta.
+      await context.budgetItems.bulkImport(
+        payload,
+        context.budget.rows.map((r) => r.category),
+      )
+      // Recargamos con datos frescos antes de evaluar qué partidas quedaron vacías.
+      const { categories } = await context.budget.load()
+      await context.budgetItems.loadItems(categories.map((c) => c.id))
+      promptAfterImport()
+    },
+    [context.budgetItems, context.budget, promptAfterImport],
+  )
 
   return {
     projects: context.projects,
@@ -183,5 +306,14 @@ export function useBudgetDetailPage(projectId: string | undefined) {
     ...itemHandlers,
     ...priceHandlers,
     grandBudgeted: context.grandBudgeted,
+    handleImport,
+    emptyCategories: cleanup.emptyCategories,
+    showEmptyModal: cleanup.showEmptyModal,
+    removingEmpty: cleanup.removingEmpty,
+    openEmptyModal: cleanup.openEmptyModal,
+    confirmRemoveEmpty: cleanup.confirmRemoveEmpty,
+    cancelRemoveEmpty: cleanup.closeEmptyModal,
+    handleDeleteCategory: cleanup.removeCategory,
+    undoRemove: cleanup.undoRemove,
   }
 }

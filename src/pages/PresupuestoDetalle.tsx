@@ -1,5 +1,7 @@
 import { useParams } from 'react-router-dom'
 import { useBudgetDetailPage } from '@/hooks/useBudgetDetailPage'
+import { useToast } from '@/components/ui/Toast'
+import type { BudgetCategory } from '@/types/database'
 import { BudgetTabs } from '@/components/features/budget/BudgetTabs'
 import { BudgetDetailModals } from '@/components/features/budget/BudgetDetailModals'
 import { BudgetDetailHeader } from '@/components/features/budget/BudgetDetailSections'
@@ -7,6 +9,7 @@ import { BudgetDetailTabContent } from '@/components/features/budget/BudgetDetai
 
 export default function PresupuestoDetalle() {
   const { projectId } = useParams<{ projectId: string }>()
+  const toast = useToast()
   const {
     projects,
     project,
@@ -27,17 +30,44 @@ export default function PresupuestoDetalle() {
     handleAddItem,
     handleUpdateItem,
     handleDeleteItem,
+    handleDeleteCategory,
     handleAddPrice,
     handleUpdatePrice,
     handleDeletePrice,
+    handleImport,
+    emptyCategories,
+    showEmptyModal,
+    removingEmpty,
+    openEmptyModal,
+    confirmRemoveEmpty,
+    cancelRemoveEmpty,
+    undoRemove,
     grandBudgeted,
   } = useBudgetDetailPage(projectId)
+
+  // Tras borrar partidas vacías, ofrecemos "Deshacer" en un aviso temporal que
+  // las recrea con sus datos originales. Pasamos las filas borradas directamente
+  // para no depender de estado que aún no se haya re-renderizado.
+  const notifyDeleted = (rows: BudgetCategory[]) => {
+    if (rows.length === 0) return
+    toast.success(rows.length === 1 ? 'Partida vacía eliminada.' : `${rows.length} partidas vacías eliminadas.`, {
+      action: { label: 'Deshacer', onClick: () => void undoRemove(rows) },
+      durationMs: 8000,
+    })
+  }
 
   if (!project) return <div className="text-sm text-app-muted">Cargando proyecto...</div>
 
   return (
     <div className="space-y-5">
-      <BudgetDetailHeader project={project} projectId={projectId!} tab={tab} onOpenImport={() => setShowImport(true)} />
+      <BudgetDetailHeader
+        project={project}
+        projectId={projectId!}
+        tab={tab}
+        onOpenImport={() => setShowImport(true)}
+        emptyCount={emptyCategories.length}
+        onCleanEmpty={openEmptyModal}
+      />
 
       <BudgetTabs tab={tab} projectId={projectId!} priceCount={budgetItems.priceList.length} onChange={setTab} />
 
@@ -54,6 +84,10 @@ export default function PresupuestoDetalle() {
         onUpdateItem={handleUpdateItem}
         onDeleteItem={handleDeleteItem}
         onEditBudgetAmount={startEdit}
+        onDeleteCategory={async (categoryId) => {
+          const removed = await handleDeleteCategory(categoryId)
+          notifyDeleted(removed)
+        }}
         onAddPrice={handleAddPrice}
         onUpdatePrice={handleUpdatePrice}
         onDeletePrice={handleDeletePrice}
@@ -79,14 +113,17 @@ export default function PresupuestoDetalle() {
         }}
         onCloseImport={() => setShowImport(false)}
         onImport={async (payload) => {
-          const result = await budgetItems.bulkImport(
-            payload,
-            budget.rows.map((r) => r.category),
-          )
-          if (result.createdCategories.length > 0) {
-            await budget.load()
-          }
+          await handleImport(payload)
+          setShowImport(false)
         }}
+        showEmptyModal={showEmptyModal}
+        emptyCategories={emptyCategories}
+        removingEmpty={removingEmpty}
+        onConfirmRemoveEmpty={async (ids) => {
+          const removed = await confirmRemoveEmpty(ids)
+          notifyDeleted(removed)
+        }}
+        onCancelRemoveEmpty={cancelRemoveEmpty}
       />
 
       {budget.error && (

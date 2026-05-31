@@ -49,15 +49,33 @@ export function BudgetAmountEditModal({
           inputMode="decimal"
           autoFocus
           value={value}
-          onChange={(e) => { onChange(e.target.value); if (error) setError(null) }}
-          onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') onClose() }}
+          onChange={(e) => {
+            onChange(e.target.value)
+            if (error) setError(null)
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') handleSave()
+            if (e.key === 'Escape') onClose()
+          }}
           className="w-full px-3 py-2 border border-blue-300 rounded-lg text-sm text-right focus:ring-1 focus:ring-blue-500"
         />
         {error && <p className="text-[11px] text-red-600">{error}</p>}
-        <p className="text-[10px] text-app-subtle">O agrega subpartidas para que el total se calcule automáticamente.</p>
+        <p className="text-[10px] text-app-subtle">
+          O agrega subpartidas para que el total se calcule automáticamente.
+        </p>
         <div className="flex justify-end gap-2">
-          <button onClick={onClose} className="px-3 py-1.5 text-xs text-app-muted border border-app-border rounded-lg hover:bg-app-hover">Cancelar</button>
-          <button onClick={handleSave} className="px-3 py-1.5 text-xs text-white bg-blue-600 rounded-lg hover:bg-blue-700">Guardar</button>
+          <button
+            onClick={onClose}
+            className="px-3 py-1.5 text-xs text-app-muted border border-app-border rounded-lg hover:bg-app-hover"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleSave}
+            className="px-3 py-1.5 text-xs text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+          >
+            Guardar
+          </button>
         </div>
       </div>
     </div>

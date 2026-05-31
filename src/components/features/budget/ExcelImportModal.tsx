@@ -5,12 +5,7 @@ import { formatRD } from '@/utils/currency'
 import { getErrorMessage } from '@/utils/errors'
 import { readExcelRowsFromFile } from '@/utils/excel'
 import { downloadBudgetTemplate } from '@/utils/excelTemplates'
-import {
-  parseRows,
-  type ImportPayload,
-  type NewCategoryDraft,
-  type ParsedItem,
-} from './parseBudgetExcel'
+import { parseRows, type ImportPayload, type NewCategoryDraft, type ParsedItem } from './parseBudgetExcel'
 
 export type { ImportPayload, NewCategoryDraft, ParsedItem } from './parseBudgetExcel'
 
@@ -48,7 +43,10 @@ function ExcelDropZone({ onFile }: ExcelDropZoneProps) {
         type="file"
         accept=".xlsx,.xls"
         className="hidden"
-        onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f) }}
+        onChange={(e) => {
+          const f = e.target.files?.[0]
+          if (f) onFile(f)
+        }}
       />
     </div>
   )
@@ -89,9 +87,7 @@ function ImportPreviewTable({ items }: ImportPreviewTableProps) {
                   <td className="px-3 py-1.5 text-app-muted max-w-[160px] truncate">
                     <span>{row.categoryName}</span>
                     {row.isNewCategory && (
-                      <span className="ml-1 text-[9px] uppercase tracking-wide text-blue-600 font-semibold">
-                        nueva
-                      </span>
+                      <span className="ml-1 text-[9px] uppercase tracking-wide text-blue-600 font-semibold">nueva</span>
                     )}
                   </td>
                   <td className="px-3 py-1.5 text-app-subtle font-mono">{row.code}</td>
@@ -100,7 +96,9 @@ function ImportPreviewTable({ items }: ImportPreviewTableProps) {
                   <td className="px-3 py-1.5 text-right text-app-muted">{row.quantity}</td>
                   <td className="px-3 py-1.5 text-right text-app-muted">{formatRD(row.unit_price)}</td>
                   <td className="px-3 py-1.5 text-right font-medium text-app-text">
-                    {row.valid ? formatRD(row.quantity * row.unit_price) : (
+                    {row.valid ? (
+                      formatRD(row.quantity * row.unit_price)
+                    ) : (
                       <span className="text-amber-600 text-[10px]">{row.error}</span>
                     )}
                   </td>
@@ -125,7 +123,10 @@ interface ImportSummaryFooterProps {
 function ImportSummaryFooter({ done, validCount, importing, onClose, onConfirm }: ImportSummaryFooterProps) {
   return (
     <div className="flex justify-end gap-2 px-5 py-4 border-t border-app-border">
-      <button onClick={onClose} className="px-4 py-2 text-xs text-app-muted border border-app-border rounded-lg hover:bg-app-hover">
+      <button
+        onClick={onClose}
+        className="px-4 py-2 text-xs text-app-muted border border-app-border rounded-lg hover:bg-app-hover"
+      >
         {done ? 'Cerrar' : 'Cancelar'}
       </button>
       {!done && validCount > 0 && (
@@ -271,8 +272,12 @@ export default function ExcelImportModal({ categories, onImport, onClose }: Prop
               </table>
             </div>
             <ul className="list-disc pl-4 space-y-0.5 text-blue-600">
-              <li>Las filas <strong>sin Unidad ni Cantidad</strong> se detectan como capítulos (partidas).</li>
-              <li>Si el nombre del capítulo no coincide con una partida existente, se crea una nueva automáticamente.</li>
+              <li>
+                Las filas <strong>sin Unidad ni Cantidad</strong> se detectan como capítulos (partidas).
+              </li>
+              <li>
+                Si el nombre del capítulo no coincide con una partida existente, se crea una nueva automáticamente.
+              </li>
               <li>Las cantidades y precios deben ser numéricos (sin símbolo RD$).</li>
             </ul>
           </div>
@@ -299,7 +304,11 @@ export default function ExcelImportModal({ categories, onImport, onClose }: Prop
                   )}
                 </div>
                 <button
-                  onClick={() => { setItems([]); setNewCategories([]); setFileName('') }}
+                  onClick={() => {
+                    setItems([])
+                    setNewCategories([])
+                    setFileName('')
+                  }}
                   className="text-xs text-app-subtle hover:text-app-muted"
                 >
                   Cambiar archivo

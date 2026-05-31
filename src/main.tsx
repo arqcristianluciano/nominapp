@@ -20,7 +20,9 @@ if (useThemeStore.persist.hasHydrated()) {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {/* SW registration is optional */})
+    navigator.serviceWorker.register('/sw.js').catch(() => {
+      /* SW registration is optional */
+    })
   })
 }
 

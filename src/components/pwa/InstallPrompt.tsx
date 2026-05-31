@@ -28,9 +28,7 @@ function isIos(): boolean {
   const isIosDevice = /iPad|iPhone|iPod/.test(ua)
   // iPadOS 13+ reports as Mac, detect via touch
   const isIpadOs =
-    ua.includes('Macintosh') &&
-    typeof navigator.maxTouchPoints === 'number' &&
-    navigator.maxTouchPoints > 1
+    ua.includes('Macintosh') && typeof navigator.maxTouchPoints === 'number' && navigator.maxTouchPoints > 1
   return isIosDevice || isIpadOs
 }
 
@@ -121,9 +119,7 @@ export default function InstallPrompt() {
               Tocar Compartir &gt; Anadir a Pantalla de Inicio
             </p>
           ) : (
-            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-              Accede mas rapido y trabaja sin conexion.
-            </p>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Accede mas rapido y trabaja sin conexion.</p>
           )}
           <div className="mt-3 flex items-center justify-end gap-2">
             <button

@@ -40,16 +40,16 @@ npm run dev
 
 ## Comandos
 
-| Comando            | Descripción                                  |
-| ------------------ | -------------------------------------------- |
-| `npm run dev`      | Servidor de desarrollo (Vite, HMR)           |
-| `npm run build`    | Type-check + build de producción             |
-| `npm run preview`  | Sirve el build de producción localmente      |
-| `npm run lint`     | ESLint sobre todo el repo                    |
-| `npm test`         | Unit tests (Vitest, single run)              |
-| `npm run test:watch` | Vitest en modo watch                       |
-| `npm run test:ui`  | UI interactiva de Vitest                     |
-| `npm run test:e2e` | Tests end-to-end con Playwright              |
+| Comando              | Descripción                             |
+| -------------------- | --------------------------------------- |
+| `npm run dev`        | Servidor de desarrollo (Vite, HMR)      |
+| `npm run build`      | Type-check + build de producción        |
+| `npm run preview`    | Sirve el build de producción localmente |
+| `npm run lint`       | ESLint sobre todo el repo               |
+| `npm test`           | Unit tests (Vitest, single run)         |
+| `npm run test:watch` | Vitest en modo watch                    |
+| `npm run test:ui`    | UI interactiva de Vitest                |
+| `npm run test:e2e`   | Tests end-to-end con Playwright         |
 
 ## Estructura
 
@@ -97,14 +97,14 @@ Capabilities efectivas se resuelven en `src/hooks/useAppRoles.ts` (app-wide) y `
 
 ### Matriz de roles (resumen)
 
-| Rol                  | Edita proyecto | Presupuesto | Nómina | Requisiciones | Finanzas | Admin usuarios |
-| -------------------- | :------------: | :---------: | :----: | :-----------: | :------: | :------------: |
-| `director_proyecto`  |       OK       |     OK      |   OK   |      OK       |    OK    |       OK       |
-| `planificacion`      |       OK       |     OK      |        |      OK       |          |                |
-| `ingeniero_obra`     |                |             |   OK   |      OK       |          |                |
-| `comprador`          |                |             |        |      OK       |          |                |
-| `almacenista`        |                |             |        |               |          |                |
-| `contabilidad`       |                |             |        |               |    OK    |                |
+| Rol                 | Edita proyecto | Presupuesto | Nómina | Requisiciones | Finanzas | Admin usuarios |
+| ------------------- | :------------: | :---------: | :----: | :-----------: | :------: | :------------: |
+| `director_proyecto` |       OK       |     OK      |   OK   |      OK       |    OK    |       OK       |
+| `planificacion`     |       OK       |     OK      |        |      OK       |          |                |
+| `ingeniero_obra`    |                |             |   OK   |      OK       |          |                |
+| `comprador`         |                |             |        |      OK       |          |                |
+| `almacenista`       |                |             |        |               |          |                |
+| `contabilidad`      |                |             |        |               |    OK    |                |
 
 Detalle completo de capabilities en `useAppRoles.ts` (write_ledger, view_cashflow, write_loans, view_director_dashboard, view_approvals_log, etc.).
 

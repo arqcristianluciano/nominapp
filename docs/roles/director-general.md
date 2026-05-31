@@ -24,11 +24,11 @@ El **Director General** es el rol de mayor privilegio en NominApp. Se identifica
 
 Ruta: **`/admin/usuarios`**. Tres pestanas:
 
-| Pestana | Componente | Para que |
-| --- | --- | --- |
-| **Personas** | `AdminUsuariosPersonas` | Alta / baja de usuarios, datos personales, marcar `is_director`. |
-| **Roles** | `AdminUsuariosRoles` | Asignar roles (`director_proyecto`, `planificacion`, `comprador`, etc.) a un usuario por proyecto. |
-| **Matriz** | `AdminUsuariosMatriz` | Editar la tabla `role_capabilities`: que capability tiene cada rol. |
+| Pestana      | Componente              | Para que                                                                                           |
+| ------------ | ----------------------- | -------------------------------------------------------------------------------------------------- |
+| **Personas** | `AdminUsuariosPersonas` | Alta / baja de usuarios, datos personales, marcar `is_director`.                                   |
+| **Roles**    | `AdminUsuariosRoles`    | Asignar roles (`director_proyecto`, `planificacion`, `comprador`, etc.) a un usuario por proyecto. |
+| **Matriz**   | `AdminUsuariosMatriz`   | Editar la tabla `role_capabilities`: que capability tiene cada rol.                                |
 
 Roles disponibles (ver `ProjectRole` en `useProjectRoles.ts`):
 
@@ -41,14 +41,14 @@ Los cambios en la matriz se reflejan al recargar el hook (los hooks consultan vi
 
 ## 4. Aprobar nominas, OC y cortes
 
-| Accion | Capability | Donde |
-| --- | --- | --- |
-| Aprobar nomina | `approve_payroll` | Modulo Nomina → estado **En revision** → boton **Aprobar**. |
-| Distribuir pagos | `distribute_payments` | Nomina aprobada → **Pagos** → seleccionar cuenta bancaria. |
-| Aprobar OC con sobrecosto | `approve_excess` | Requisiciones → OC con diferencia > umbral → **Aprobar excedente**. |
-| Liberar OC | `release_purchase_order` | OC en estado **Cotizada** → **Liberar**. |
-| Aprobar corte de obra | `approve_corte` | Contratos → Corte en estado **Enviado** → **Aprobar**. |
-| Firmar contrato | `sign_contract` | Contratos → **Firmar**. |
+| Accion                    | Capability               | Donde                                                               |
+| ------------------------- | ------------------------ | ------------------------------------------------------------------- |
+| Aprobar nomina            | `approve_payroll`        | Modulo Nomina → estado **En revision** → boton **Aprobar**.         |
+| Distribuir pagos          | `distribute_payments`    | Nomina aprobada → **Pagos** → seleccionar cuenta bancaria.          |
+| Aprobar OC con sobrecosto | `approve_excess`         | Requisiciones → OC con diferencia > umbral → **Aprobar excedente**. |
+| Liberar OC                | `release_purchase_order` | OC en estado **Cotizada** → **Liberar**.                            |
+| Aprobar corte de obra     | `approve_corte`          | Contratos → Corte en estado **Enviado** → **Aprobar**.              |
+| Firmar contrato           | `sign_contract`          | Contratos → **Firmar**.                                             |
 
 El Director ve siempre el boton, aunque la nomina / OC / corte pertenezca a otra empresa.
 
@@ -56,18 +56,18 @@ El Director ve siempre el boton, aunque la nomina / OC / corte pertenezca a otra
 
 Todas las capabilities resuelven `true`. Resumen por seccion:
 
-| Seccion | Capabilities | Director |
-| --- | --- | --- |
-| 1. Proyecto / presupuesto | `edit_project`, `edit_budget`, `edit_price_list`, `edit_insumos`, `write_project_indirects` | si |
-| 2. Nomina | `create_payroll`, `edit_payroll`, `submit_payroll`, `approve_payroll`, `distribute_payments`, `delete_payroll_draft` | si |
-| 3. Compras | `create_requisition`, `load_quotes`, `approve_excess`, `release_purchase_order`, `receive_order` | si |
-| 4. Almacen | `inventory_write`, `override_stock` | si |
-| 5. Obra | `write_bitacora`, `write_attendance`, `write_quality`, `measure_progress`, `write_schedule` | si |
-| 6. Contratos | `create_contract`, `edit_contract_partidas`, `sign_contract`, `create_corte`, `approve_corte`, `write_adelantos` | si |
-| 7. Finanzas | `write_ledger`, `view_cashflow`, `mark_paid`, `issue_check`, `write_loans` | si |
-| 8. Catalogos | `write_contractors`, `write_suppliers`, `write_materials_catalog`, `write_bank_accounts` | si |
-| 9. Reportes | `view_director_dashboard`, `view_approvals_log`, `view_reportes`, `view_price_history` | si |
-| Admin | `manage_users`, `manage_roles` | si |
+| Seccion                   | Capabilities                                                                                                         | Director |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------- | -------- |
+| 1. Proyecto / presupuesto | `edit_project`, `edit_budget`, `edit_price_list`, `edit_insumos`, `write_project_indirects`                          | si       |
+| 2. Nomina                 | `create_payroll`, `edit_payroll`, `submit_payroll`, `approve_payroll`, `distribute_payments`, `delete_payroll_draft` | si       |
+| 3. Compras                | `create_requisition`, `load_quotes`, `approve_excess`, `release_purchase_order`, `receive_order`                     | si       |
+| 4. Almacen                | `inventory_write`, `override_stock`                                                                                  | si       |
+| 5. Obra                   | `write_bitacora`, `write_attendance`, `write_quality`, `measure_progress`, `write_schedule`                          | si       |
+| 6. Contratos              | `create_contract`, `edit_contract_partidas`, `sign_contract`, `create_corte`, `approve_corte`, `write_adelantos`     | si       |
+| 7. Finanzas               | `write_ledger`, `view_cashflow`, `mark_paid`, `issue_check`, `write_loans`                                           | si       |
+| 8. Catalogos              | `write_contractors`, `write_suppliers`, `write_materials_catalog`, `write_bank_accounts`                             | si       |
+| 9. Reportes               | `view_director_dashboard`, `view_approvals_log`, `view_reportes`, `view_price_history`                               | si       |
+| Admin                     | `manage_users`, `manage_roles`                                                                                       | si       |
 
 Mecanica: en ambos hooks, `const can = (cap) => isDirector || caps.has(cap)`.
 

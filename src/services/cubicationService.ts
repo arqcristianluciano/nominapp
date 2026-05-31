@@ -65,7 +65,7 @@ export const contractService = {
           adelantoService.getByContract(c.id),
         ])
         return { ...c, ...computeSummary(partidas, cortes, adelantos) }
-      })
+      }),
     )
   },
 
@@ -158,7 +158,17 @@ export const corteService = {
   },
 
   async create(
-    data: Omit<ContractCorte, 'id' | 'created_at' | 'amount' | 'retention_amount' | 'partida' | 'approved_by' | 'signature_data' | 'linked_payroll_id'>,
+    data: Omit<
+      ContractCorte,
+      | 'id'
+      | 'created_at'
+      | 'amount'
+      | 'retention_amount'
+      | 'partida'
+      | 'approved_by'
+      | 'signature_data'
+      | 'linked_payroll_id'
+    >,
     partida: ContractPartida,
     retentionPct: number,
   ): Promise<ContractCorte> {
@@ -217,13 +227,18 @@ export const corteService = {
 
 // --- Progreso por proyecto (para Dashboard) ---
 
-export async function getProjectsProgress(): Promise<Record<string, { acordado: number; acumulado: number; contractor_count: number; avg_completion: number }>> {
+export async function getProjectsProgress(): Promise<
+  Record<string, { acordado: number; acumulado: number; contractor_count: number; avg_completion: number }>
+> {
   const { data: contracts } = await supabase.from('adjustment_contracts').select('id, project_id')
   const { data: partidas } = await supabase.from('contract_partidas').select('contract_id, unit_price, agreed_quantity')
   const { data: cortes } = await supabase.from('contract_cortes').select('contract_id, amount')
   if (!contracts) return {}
 
-  const result: Record<string, { acordado: number; acumulado: number; contractor_count: number; avg_completion: number }> = {}
+  const result: Record<
+    string,
+    { acordado: number; acumulado: number; contractor_count: number; avg_completion: number }
+  > = {}
 
   type ContractRow = { id: string; project_id: string }
   type PartidaRow = { contract_id: string; unit_price: number; agreed_quantity: number }
@@ -282,9 +297,7 @@ export async function getApprovedCortesByProject(
         .select('*, partida:contract_partidas(*)')
         .eq('contract_id', contract.id)
         .eq('status', 'approved')
-      return ((cortes as ContractCorte[]) || [])
-        .filter((c) => !c.linked_payroll_id)
-        .map((c) => ({ ...c, contract }))
+      return ((cortes as ContractCorte[]) || []).filter((c) => !c.linked_payroll_id).map((c) => ({ ...c, contract }))
     }),
   )
   return groups.flat()

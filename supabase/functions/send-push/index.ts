@@ -85,9 +85,8 @@ Deno.serve(async (req) => {
   // Autenticacion: aceptar EITHER (a) un secreto interno valido para jobs
   // server-to-server, O (b) un JWT de usuario con is_director = true.
   const internalSecret = req.headers.get('x-internal-secret')
-  const hasValidInternalSecret = INTERNAL_PUSH_SECRET.length > 0 &&
-    internalSecret !== null &&
-    safeEqual(internalSecret, INTERNAL_PUSH_SECRET)
+  const hasValidInternalSecret =
+    INTERNAL_PUSH_SECRET.length > 0 && internalSecret !== null && safeEqual(internalSecret, INTERNAL_PUSH_SECRET)
 
   if (!hasValidInternalSecret) {
     const authHeader = req.headers.get('Authorization')
@@ -96,7 +95,9 @@ Deno.serve(async (req) => {
     const callerClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       global: { headers: { Authorization: authHeader } },
     })
-    const { data: { user: caller } } = await callerClient.auth.getUser()
+    const {
+      data: { user: caller },
+    } = await callerClient.auth.getUser()
     if (!caller) return jsonResponse({ error: 'unauthorized' }, 401)
 
     const { data: callerProfile } = await callerClient
@@ -105,10 +106,7 @@ Deno.serve(async (req) => {
       .eq('id', caller.id)
       .maybeSingle()
     if (!callerProfile?.is_director) {
-      return jsonResponse(
-        { error: 'forbidden', detail: 'solo el director general puede enviar notificaciones' },
-        403,
-      )
+      return jsonResponse({ error: 'forbidden', detail: 'solo el director general puede enviar notificaciones' }, 403)
     }
   }
 

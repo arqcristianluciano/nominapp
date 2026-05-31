@@ -44,12 +44,9 @@ export default function BudgetItemForm({ category, priceList, editItem, defaultC
     }
   }, [editItem])
 
-  const set = (key: keyof typeof EMPTY_FORM, value: string) =>
-    setForm((prev) => ({ ...prev, [key]: value }))
+  const set = (key: keyof typeof EMPTY_FORM, value: string) => setForm((prev) => ({ ...prev, [key]: value }))
 
-  const filteredPrices = priceList.filter((p) =>
-    p.description.toLowerCase().includes(priceQuery.toLowerCase())
-  )
+  const filteredPrices = priceList.filter((p) => p.description.toLowerCase().includes(priceQuery.toLowerCase()))
 
   const applyPrice = (item: PriceListItem) => {
     setForm((prev) => ({
@@ -114,7 +111,9 @@ export default function BudgetItemForm({ category, priceList, editItem, defaultC
             <h2 className="text-sm font-semibold text-app-text">
               {editItem ? 'Editar subpartida' : 'Nueva subpartida'}
             </h2>
-            <p className="text-xs text-app-muted mt-0.5">{category.code} — {category.name}</p>
+            <p className="text-xs text-app-muted mt-0.5">
+              {category.code} — {category.name}
+            </p>
           </div>
           <button onClick={onClose} className="text-app-subtle hover:text-app-muted">
             <X className="w-4 h-4" />
@@ -133,7 +132,10 @@ export default function BudgetItemForm({ category, priceList, editItem, defaultC
                 type="text"
                 placeholder="Buscar precio de referencia..."
                 value={priceQuery}
-                onChange={(e) => { setPriceQuery(e.target.value); setShowPriceList(true) }}
+                onChange={(e) => {
+                  setPriceQuery(e.target.value)
+                  setShowPriceList(true)
+                }}
                 onFocus={() => setShowPriceList(true)}
                 className="w-full pl-8 pr-3 py-2 border border-app-border rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-300"
               />
@@ -151,7 +153,9 @@ export default function BudgetItemForm({ category, priceList, editItem, defaultC
                       className="w-full text-left px-3 py-2 hover:bg-blue-50 border-b border-app-border last:border-0"
                     >
                       <p className="text-xs font-medium text-app-text">{p.description}</p>
-                      <p className="text-[10px] text-app-muted">{p.unit} · {formatRD(p.unit_price)}</p>
+                      <p className="text-[10px] text-app-muted">
+                        {p.unit} · {formatRD(p.unit_price)}
+                      </p>
                     </button>
                   ))
                 )}
@@ -161,7 +165,9 @@ export default function BudgetItemForm({ category, priceList, editItem, defaultC
 
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="text-[10px] font-medium text-app-muted mb-1 block uppercase tracking-wide">Código</label>
+              <label className="text-[10px] font-medium text-app-muted mb-1 block uppercase tracking-wide">
+                Código
+              </label>
               <input
                 type="text"
                 placeholder={defaultCode || '1.1'}
@@ -171,7 +177,9 @@ export default function BudgetItemForm({ category, priceList, editItem, defaultC
               />
             </div>
             <div className="col-span-2">
-              <label className="text-[10px] font-medium text-app-muted mb-1 block uppercase tracking-wide">Descripción *</label>
+              <label className="text-[10px] font-medium text-app-muted mb-1 block uppercase tracking-wide">
+                Descripción *
+              </label>
               <input
                 type="text"
                 placeholder="Descripción de la partida"
@@ -185,14 +193,18 @@ export default function BudgetItemForm({ category, priceList, editItem, defaultC
 
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="text-[10px] font-medium text-app-muted mb-1 block uppercase tracking-wide">Unidad</label>
+              <label className="text-[10px] font-medium text-app-muted mb-1 block uppercase tracking-wide">
+                Unidad
+              </label>
               <select
                 value={form.unit}
                 onChange={(e) => set('unit', e.target.value)}
                 className="w-full px-2.5 py-2 border border-app-border rounded-lg text-xs focus:ring-1 focus:ring-blue-500 bg-app-surface"
               >
                 {MEASURE_UNITS.map((u) => (
-                  <option key={u.value} value={u.value}>{u.label}</option>
+                  <option key={u.value} value={u.value}>
+                    {u.label}
+                  </option>
                 ))}
                 <option value="Und">Unidad</option>
                 <option value="Saco">Saco</option>
@@ -203,7 +215,9 @@ export default function BudgetItemForm({ category, priceList, editItem, defaultC
               </select>
             </div>
             <div>
-              <label className="text-[10px] font-medium text-app-muted mb-1 block uppercase tracking-wide">Cantidad *</label>
+              <label className="text-[10px] font-medium text-app-muted mb-1 block uppercase tracking-wide">
+                Cantidad *
+              </label>
               <input
                 type="text"
                 inputMode="decimal"
@@ -214,7 +228,9 @@ export default function BudgetItemForm({ category, priceList, editItem, defaultC
               />
             </div>
             <div>
-              <label className="text-[10px] font-medium text-app-muted mb-1 block uppercase tracking-wide">Precio unit.</label>
+              <label className="text-[10px] font-medium text-app-muted mb-1 block uppercase tracking-wide">
+                Precio unit.
+              </label>
               <input
                 type="text"
                 inputMode="decimal"
@@ -245,7 +261,11 @@ export default function BudgetItemForm({ category, priceList, editItem, defaultC
           {error && <p className="text-xs text-red-600">{error}</p>}
 
           <div className="flex justify-end gap-2 pt-1">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-xs text-app-muted border border-app-border rounded-lg hover:bg-app-hover">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-xs text-app-muted border border-app-border rounded-lg hover:bg-app-hover"
+            >
               Cancelar
             </button>
             <button

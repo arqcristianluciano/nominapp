@@ -92,6 +92,6 @@ export function computeBudgetTotals(lines: ParsedMercadoLine[]) {
       else if (l.category === 'MATERIALES') acc.total_materiales += l.budgeted_total
       return acc
     },
-    { total_ajustes: 0, total_equipos: 0, total_mano_obra: 0, total_materiales: 0 }
+    { total_ajustes: 0, total_equipos: 0, total_mano_obra: 0, total_materiales: 0 },
   )
 }

@@ -27,8 +27,8 @@ export function useBudgetItems(projectId: string | undefined) {
   const [error, setError] = useState<string | null>(null)
 
   const loadItems = useCallback(
-    async (categoryIds: string[]) => {
-      if (!projectId || categoryIds.length === 0) return
+    async (categoryIds: string[]): Promise<Record<string, BudgetItem[]>> => {
+      if (!projectId || categoryIds.length === 0) return {}
       setLoading(true)
       setError(null)
       try {
@@ -42,14 +42,25 @@ export function useBudgetItems(projectId: string | undefined) {
         }, {})
         setItemsByCategory(grouped)
         setPriceList(prices)
+        return grouped
       } catch (e) {
         setError(getErrorMessage(e))
+        return {}
       } finally {
         setLoading(false)
       }
     },
     [projectId],
   )
+
+  const dropCategories = useCallback((categoryIds: string[]) => {
+    if (categoryIds.length === 0) return
+    setItemsByCategory((prev) => {
+      const next = { ...prev }
+      for (const id of categoryIds) delete next[id]
+      return next
+    })
+  }, [])
 
   const addItem = useCallback(async (item: Omit<BudgetItem, 'id'>) => {
     const created = await budgetItemService.create(item)
@@ -172,6 +183,7 @@ export function useBudgetItems(projectId: string | undefined) {
     loading,
     error,
     loadItems,
+    dropCategories,
     addItem,
     updateItem,
     deleteItem,

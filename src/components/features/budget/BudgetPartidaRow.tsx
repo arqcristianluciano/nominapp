@@ -15,6 +15,7 @@ interface Props {
   onUpdateItem: (id: string, changes: Partial<Omit<BudgetItem, 'id'>>) => Promise<void>
   onDeleteItem: (id: string) => Promise<void>
   onEditBudgetAmount: () => void
+  onDeleteCategory?: () => Promise<void>
 }
 
 export default function BudgetPartidaRow({
@@ -26,16 +27,22 @@ export default function BudgetPartidaRow({
   onUpdateItem,
   onDeleteItem,
   onEditBudgetAmount,
+  onDeleteCategory,
 }: Props) {
   const [expanded, setExpanded] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [editItem, setEditItem] = useState<BudgetItem | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [confirmDeleteCategory, setConfirmDeleteCategory] = useState(false)
+  const [deletingCategory, setDeletingCategory] = useState(false)
 
   const hasItems = items.length > 0
   const total = items.reduce((sum, it) => sum + it.quantity * it.unit_price, 0)
   const budgeted = hasItems ? total : category.budgeted_amount
   const difference = budgeted - spent
+  // Una partida es eliminable cuando está vacía: sin subpartidas, sin monto y sin gasto.
+  const isEmpty = !hasItems && Number(category.budgeted_amount) === 0 && spent === 0
+  const canDeleteCategory = isEmpty && !!onDeleteCategory
 
   const handleSave = async (data: Omit<BudgetItem, 'id'>) => {
     if (editItem) {
@@ -53,11 +60,22 @@ export default function BudgetPartidaRow({
     setDeleteId(null)
   }
 
+  const handleDeleteCategory = async () => {
+    if (!onDeleteCategory) return
+    setDeletingCategory(true)
+    try {
+      await onDeleteCategory()
+    } finally {
+      setDeletingCategory(false)
+      setConfirmDeleteCategory(false)
+    }
+  }
+
   return (
     <>
       {/* Fila de partida */}
       <tr
-        className="border-b border-app-border hover:bg-app-hover cursor-pointer"
+        className={`border-b border-app-border hover:bg-app-hover cursor-pointer ${isEmpty ? 'bg-amber-50/40 dark:bg-amber-950/10' : ''}`}
         onClick={() => setExpanded((v) => !v)}
       >
         <td className="px-3 py-2.5 w-8">
@@ -78,6 +96,11 @@ export default function BudgetPartidaRow({
             {hasItems && (
               <span className="text-[10px] text-app-subtle bg-app-chip rounded px-1.5 py-0.5">
                 {items.length} subpartidas
+              </span>
+            )}
+            {isEmpty && (
+              <span className="text-[10px] text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-950/40 rounded px-1.5 py-0.5">
+                vacía
               </span>
             )}
           </div>
@@ -105,17 +128,31 @@ export default function BudgetPartidaRow({
           {formatRD(difference)}
         </td>
         <td className="px-3 py-2.5 text-right">
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              setShowForm(true)
-              setEditItem(null)
-            }}
-            className="inline-flex items-center gap-1 px-2 py-1 text-[10px] text-blue-600 hover:bg-blue-50 rounded transition-colors"
-            title="Agregar subpartida"
-          >
-            <Plus className="w-3 h-3" /> Sub
-          </button>
+          <div className="flex items-center justify-end gap-1">
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setShowForm(true)
+                setEditItem(null)
+              }}
+              className="inline-flex items-center gap-1 px-2 py-1 text-[10px] text-blue-600 hover:bg-blue-50 rounded transition-colors"
+              title="Agregar subpartida"
+            >
+              <Plus className="w-3 h-3" /> Sub
+            </button>
+            {canDeleteCategory && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setConfirmDeleteCategory(true)
+                }}
+                className="p-1 text-app-subtle hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                title="Eliminar partida vacía"
+              >
+                <Trash2 className="w-3 h-3" />
+              </button>
+            )}
+          </div>
         </td>
       </tr>
 
@@ -189,6 +226,21 @@ export default function BudgetPartidaRow({
               confirmLabel="Eliminar"
               onConfirm={() => deleteId && handleDelete(deleteId)}
               onCancel={() => setDeleteId(null)}
+            />
+          </td>
+        </tr>
+      )}
+
+      {confirmDeleteCategory && (
+        <tr>
+          <td colSpan={6}>
+            <ConfirmModal
+              open={confirmDeleteCategory}
+              title="Eliminar partida vacía"
+              message={`¿Eliminar la partida "${category.name}"? Está vacía (sin subpartidas, monto ni gasto) y esta acción no se puede deshacer.`}
+              confirmLabel={deletingCategory ? 'Eliminando…' : 'Eliminar'}
+              onConfirm={handleDeleteCategory}
+              onCancel={() => setConfirmDeleteCategory(false)}
             />
           </td>
         </tr>

@@ -23,8 +23,11 @@ export function useBudgetDetail(projectId: string | undefined) {
   const [error, setError] = useState<string | null>(null)
 
   const load = useCallback(
-    async (filters?: { dateFrom?: string; dateTo?: string }) => {
-      if (!projectId) return
+    async (filters?: {
+      dateFrom?: string
+      dateTo?: string
+    }): Promise<{ categories: BudgetCategory[]; transactions: TransactionWithRelations[] }> => {
+      if (!projectId) return { categories: [], transactions: [] }
       setLoading(true)
       setError(null)
       try {
@@ -36,10 +39,47 @@ export function useBudgetDetail(projectId: string | undefined) {
         setCategories(cats)
         setTransactions(txns)
         setImputedByCategory(imputed)
+        return { categories: cats, transactions: txns }
       } catch (e) {
         setError(getErrorMessage(e))
+        return { categories: [], transactions: [] }
       } finally {
         setLoading(false)
+      }
+    },
+    [projectId],
+  )
+
+  const removeCategories = useCallback(async (categoryIds: string[]): Promise<BudgetCategory[]> => {
+    if (categoryIds.length === 0) return []
+    setSaving(true)
+    setError(null)
+    try {
+      const removedRows = await budgetCategoryService.deleteMany(categoryIds)
+      const removed = new Set(categoryIds)
+      setCategories((prev) => prev.filter((c) => !removed.has(c.id)))
+      return removedRows
+    } catch (e) {
+      setError(getErrorMessage(e))
+      throw e
+    } finally {
+      setSaving(false)
+    }
+  }, [])
+
+  const restoreCategories = useCallback(
+    async (rows: BudgetCategory[]) => {
+      if (!projectId || rows.length === 0) return
+      setSaving(true)
+      setError(null)
+      try {
+        const recreated = await budgetCategoryService.restore(projectId, rows)
+        setCategories((prev) => [...prev, ...recreated].sort((a, b) => a.sort_order - b.sort_order))
+      } catch (e) {
+        setError(getErrorMessage(e))
+        throw e
+      } finally {
+        setSaving(false)
       }
     },
     [projectId],
@@ -97,5 +137,7 @@ export function useBudgetDetail(projectId: string | undefined) {
     error,
     load,
     updateBudget,
+    removeCategories,
+    restoreCategories,
   }
 }

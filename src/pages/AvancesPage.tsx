@@ -1,20 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Plus, TrendingUp } from 'lucide-react'
-import {
-  partidaProgressService,
-  type PartidaProgress,
-} from '@/services/partidaProgressService'
+import { partidaProgressService, type PartidaProgress } from '@/services/partidaProgressService'
 import { budgetCategoryService } from '@/services/budgetCategoryService'
 import { budgetItemService } from '@/services/budgetItemService'
 import type { BudgetCategory, BudgetItem } from '@/types/database'
 import { useAuthStore } from '@/stores/authStore'
 import { useProjectStore } from '@/stores/projectStore'
 import { useToast } from '@/components/ui/Toast'
-import {
-  AvancesFormSection,
-  type AvancesFormState,
-} from '@/components/features/avances/AvancesFormSection'
+import { AvancesFormSection, type AvancesFormState } from '@/components/features/avances/AvancesFormSection'
 import { AvancesHistoryTable } from '@/components/features/avances/AvancesHistoryTable'
 
 const EMPTY: AvancesFormState = {
@@ -141,11 +135,7 @@ export default function AvancesPage() {
       {loading ? (
         <div className="text-center py-12 text-app-muted text-sm">Cargando…</div>
       ) : (
-        <AvancesHistoryTable
-          progresses={progresses}
-          catById={catById}
-          itemById={itemById}
-        />
+        <AvancesHistoryTable progresses={progresses} catById={catById} itemById={itemById} />
       )}
     </div>
   )

@@ -3,10 +3,7 @@ import type { InventoryItem } from '@/services/inventoryService'
 import type { BudgetCategory, BudgetItem } from '@/types/database'
 import { budgetCategoryService } from '@/services/budgetCategoryService'
 import { budgetItemService } from '@/services/budgetItemService'
-import {
-  materialsCatalogService,
-  type MaterialCatalogItem,
-} from '@/services/materialsCatalogService'
+import { materialsCatalogService, type MaterialCatalogItem } from '@/services/materialsCatalogService'
 import { parseDecimalInput } from '@/utils/decimalInput'
 import type { InventoryMovementFormState } from './inventoryConfig'
 
@@ -55,11 +52,7 @@ function CatalogPicker({
   return (
     <div>
       <label className="text-xs text-app-muted block mb-1">Material del catálogo global (opcional)</label>
-      <select
-        value={value ?? ''}
-        onChange={(e) => onPick(e.target.value)}
-        className={INPUT_CLS}
-      >
+      <select value={value ?? ''} onChange={(e) => onPick(e.target.value)} className={INPUT_CLS}>
         <option value="">— Material libre —</option>
         {catalog.map((c) => (
           <option key={c.id} value={c.id}>
@@ -115,24 +108,22 @@ export function InventoryItemForm({ form, saving, onChange, onCancel, onSave }: 
     setMinStockStr(formatNumberForInput(nextMinStock))
   }
 
-  const handleDecimalChange = (
-    field: 'unit_cost' | 'current_stock' | 'min_stock',
-    setter: (s: string) => void,
-  ) => (value: string) => {
-    setter(value)
-    // Solo propagar cuando el string parsea limpiamente (incluido vacío → 0).
-    // Strings intermedios ("1." o "1,") quedan en el buffer local hasta que
-    // el usuario complete el número; al disparar handleSave reparseamos.
-    const trimmed = value.trim()
-    if (!trimmed) {
-      onChange({ ...form, [field]: 0 })
-      return
+  const handleDecimalChange =
+    (field: 'unit_cost' | 'current_stock' | 'min_stock', setter: (s: string) => void) => (value: string) => {
+      setter(value)
+      // Solo propagar cuando el string parsea limpiamente (incluido vacío → 0).
+      // Strings intermedios ("1." o "1,") quedan en el buffer local hasta que
+      // el usuario complete el número; al disparar handleSave reparseamos.
+      const trimmed = value.trim()
+      if (!trimmed) {
+        onChange({ ...form, [field]: 0 })
+        return
+      }
+      const parsed = parseDecimalInput(value)
+      if (parsed !== null) {
+        onChange({ ...form, [field]: parsed })
+      }
     }
-    const parsed = parseDecimalInput(value)
-    if (parsed !== null) {
-      onChange({ ...form, [field]: parsed })
-    }
-  }
 
   return (
     <div className="bg-app-surface border border-app-border rounded-xl p-3 sm:p-4 space-y-3">
@@ -297,13 +288,17 @@ export function InventoryMovementForm({
 
   useEffect(() => {
     let cancelled = false
-    const promise = projectId
-      ? budgetCategoryService.getByProject(projectId)
-      : Promise.resolve([] as BudgetCategory[])
+    const promise = projectId ? budgetCategoryService.getByProject(projectId) : Promise.resolve([] as BudgetCategory[])
     promise
-      .then((data) => { if (!cancelled) setCategories(data) })
-      .catch(() => { if (!cancelled) setCategories([]) })
-    return () => { cancelled = true }
+      .then((data) => {
+        if (!cancelled) setCategories(data)
+      })
+      .catch(() => {
+        if (!cancelled) setCategories([])
+      })
+    return () => {
+      cancelled = true
+    }
   }, [projectId])
 
   useEffect(() => {
@@ -312,9 +307,15 @@ export function InventoryMovementForm({
       ? budgetItemService.getByCategoryId(form.budget_category_id)
       : Promise.resolve([] as BudgetItem[])
     promise
-      .then((data) => { if (!cancelled) setBudgetItems(data) })
-      .catch(() => { if (!cancelled) setBudgetItems([]) })
-    return () => { cancelled = true }
+      .then((data) => {
+        if (!cancelled) setBudgetItems(data)
+      })
+      .catch(() => {
+        if (!cancelled) setBudgetItems([])
+      })
+    return () => {
+      cancelled = true
+    }
   }, [form.budget_category_id])
 
   const isOut = form.type === 'out'
@@ -438,12 +439,7 @@ export function InventoryMovementForm({
         )}
 
         {isOut && (
-          <StockOverrideFields
-            form={form}
-            categories={categories}
-            budgetItems={budgetItems}
-            onChange={onChange}
-          />
+          <StockOverrideFields form={form} categories={categories} budgetItems={budgetItems} onChange={onChange} />
         )}
 
         <div className="sm:col-span-4">
@@ -472,11 +468,7 @@ export function InventoryMovementForm({
         </button>
         <button
           onClick={onSave}
-          disabled={
-            saving ||
-            !form.item_id ||
-            (isOut && !form.budget_category_id && !form.budget_item_id)
-          }
+          disabled={saving || !form.item_id || (isOut && !form.budget_category_id && !form.budget_item_id)}
           className="w-full sm:w-auto px-4 py-3 sm:py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium"
         >
           {saving ? 'Guardando...' : 'Guardar'}

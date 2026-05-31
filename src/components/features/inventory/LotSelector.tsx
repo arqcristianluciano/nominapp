@@ -19,12 +19,7 @@ function formatReceivedDate(value: string | null): string {
   return date.toLocaleDateString()
 }
 
-export function LotSelector({
-  itemId,
-  selectedLotId,
-  onChange,
-  required = false,
-}: LotSelectorProps) {
+export function LotSelector({ itemId, selectedLotId, onChange, required = false }: LotSelectorProps) {
   const { error: toastError } = useToast()
   const [lots, setLots] = useState<InventoryLot[]>([])
   const [loading, setLoading] = useState(false)
@@ -63,9 +58,7 @@ export function LotSelector({
 
   return (
     <div>
-      <label className="text-xs text-app-muted block mb-1">
-        Lote {required ? '*' : '(opcional)'}
-      </label>
+      <label className="text-xs text-app-muted block mb-1">Lote {required ? '*' : '(opcional)'}</label>
       <div className="relative">
         <select
           value={value}
@@ -96,13 +89,9 @@ export function LotSelector({
           ▾
         </span>
       </div>
-      {loading && itemId && (
-        <p className="text-[10px] text-app-subtle mt-1">Cargando lotes disponibles…</p>
-      )}
+      {loading && itemId && <p className="text-[10px] text-app-subtle mt-1">Cargando lotes disponibles…</p>}
       {!loading && lots.length === 0 && itemId && (
-        <p className="text-[10px] text-app-subtle mt-1">
-          No hay lotes con stock disponible para este ítem.
-        </p>
+        <p className="text-[10px] text-app-subtle mt-1">No hay lotes con stock disponible para este ítem.</p>
       )}
     </div>
   )

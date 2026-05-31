@@ -9,6 +9,8 @@ export interface Beneficiary {
   name: string
   bank_name: string | null
   bank_account: string | null
+  /** Documento de identidad: cédula (contratista) o RNC (proveedor). */
+  doc: string | null
   /** Solo aplica a contratistas; permite preseleccionar el método de pago. */
   payment_method: 'cash' | 'check' | 'transfer' | null
 }
@@ -23,8 +25,8 @@ export const paymentDistributionService = {
   /** Contratistas y proveedores con sus datos bancarios, para distribuir pagos. */
   async getBeneficiaries(): Promise<Beneficiary[]> {
     const [contractorsRes, suppliersRes] = await Promise.all([
-      supabase.from('contractors').select('id, name, bank_name, bank_account, payment_method').order('name'),
-      supabase.from('suppliers').select('id, name, bank_name, bank_account').order('name'),
+      supabase.from('contractors').select('id, name, bank_name, bank_account, payment_method, cedula').order('name'),
+      supabase.from('suppliers').select('id, name, bank_name, bank_account, rnc').order('name'),
     ])
     if (contractorsRes.error) throw contractorsRes.error
     if (suppliersRes.error) throw suppliersRes.error
@@ -35,6 +37,7 @@ export const paymentDistributionService = {
       name: c.name,
       bank_name: c.bank_name ?? null,
       bank_account: c.bank_account ?? null,
+      doc: c.cedula ?? null,
       payment_method: c.payment_method ?? null,
     }))
     const suppliers: Beneficiary[] = (suppliersRes.data || []).map((s) => ({
@@ -43,6 +46,7 @@ export const paymentDistributionService = {
       name: s.name,
       bank_name: s.bank_name ?? null,
       bank_account: s.bank_account ?? null,
+      doc: s.rnc ?? null,
       payment_method: null,
     }))
     return [...contractors, ...suppliers]

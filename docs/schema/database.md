@@ -27,13 +27,13 @@ Resumen del schema `public` de Supabase (project `pkllcsexipdvwdpunlkz`).
 
 ### Nomina
 
-| Tabla                   | Proposito                                                      | Columnas clave                                                                                                  |
-| ----------------------- | -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `payroll_periods`       | Periodo de nomina por proyecto                                 | `id, project_id, status`                                                                                        |
-| `attendance_records`    | Asistencias por contratista/dia                                | `id, project_id, contractor_id, date`                                                                           |
-| `labor_line_items`      | Linea de mano de obra imputable a presupuesto                  | `id, contractor_id, payroll_period_id, budget_category_id, budget_item_id`                                      |
-| `payment_distributions` | Distribucion de pagos por beneficiario (contratista/proveedor) | `id, payroll_period_id, beneficiary, beneficiary_type, beneficiary_id, bank_name, bank_account, amount, status` |
-| `indirect_costs`        | Costos indirectos del periodo de nomina                        | `id, payroll_period_id`                                                                                         |
+| Tabla                   | Proposito                                                      | Columnas clave                                                                                                                                    |
+| ----------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `payroll_periods`       | Periodo de nomina por proyecto                                 | `id, project_id, status`                                                                                                                          |
+| `attendance_records`    | Asistencias por contratista/dia                                | `id, project_id, contractor_id, date`                                                                                                             |
+| `labor_line_items`      | Linea de mano de obra imputable a presupuesto                  | `id, contractor_id, payroll_period_id, budget_category_id, budget_item_id`                                                                        |
+| `payment_distributions` | Distribucion de pagos por beneficiario (contratista/proveedor) | `id, payroll_period_id, beneficiary, beneficiary_type, beneficiary_id, beneficiary_doc, bank_name, bank_account, bank_account_id, amount, status` |
+| `indirect_costs`        | Costos indirectos del periodo de nomina                        | `id, payroll_period_id`                                                                                                                           |
 
 ### Compras
 

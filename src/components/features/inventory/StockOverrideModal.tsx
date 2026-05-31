@@ -11,14 +11,7 @@ interface Props {
   requested: number
 }
 
-export function StockOverrideModal({
-  open,
-  onClose,
-  onConfirm,
-  defaultActor,
-  currentStock,
-  requested,
-}: Props) {
+export function StockOverrideModal({ open, onClose, onConfirm, defaultActor, currentStock, requested }: Props) {
   const [motivo, setMotivo] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -54,20 +47,15 @@ export function StockOverrideModal({
   const resultingStock = currentStock - requested
 
   return (
-    <Modal
-      open={open}
-      onClose={handleClose}
-      title="Forzar salida con stock insuficiente"
-      width="max-w-lg"
-    >
+    <Modal open={open} onClose={handleClose} title="Forzar salida con stock insuficiente" width="max-w-lg">
       <div className="space-y-4">
         <div className="bg-red-50 dark:bg-red-950/40 border border-red-300 dark:border-red-700 rounded-lg p-3 flex gap-2 text-xs sm:text-sm text-red-800 dark:text-red-200">
           <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
           <div className="space-y-1">
             <p className="font-semibold">Esta acción requiere autorización del Director.</p>
             <p>
-              Quedará registrada en la auditoría con tu nombre, fecha y motivo (regla 7.5). Úsala
-              solo cuando exista una razón operativa justificada.
+              Quedará registrada en la auditoría con tu nombre, fecha y motivo (regla 7.5). Úsala solo cuando exista una
+              razón operativa justificada.
             </p>
           </div>
         </div>
@@ -113,8 +101,8 @@ export function StockOverrideModal({
             className="mt-0.5 w-4 h-4 accent-red-600"
           />
           <span>
-            Confirmo que tengo autorización como Director y entiendo que esta acción dejará el
-            stock en <strong>{resultingStock}</strong> y quedará en auditoría.
+            Confirmo que tengo autorización como Director y entiendo que esta acción dejará el stock en{' '}
+            <strong>{resultingStock}</strong> y quedará en auditoría.
           </span>
         </label>
 

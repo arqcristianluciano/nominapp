@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  buildExecutiveSummarySection,
-  type ExecutiveSummaryInput,
-} from './executiveSummary'
+import { buildExecutiveSummarySection, type ExecutiveSummaryInput } from './executiveSummary'
 
 function baseInput(overrides: Partial<ExecutiveSummaryInput> = {}): ExecutiveSummaryInput {
   return {
@@ -51,9 +48,7 @@ describe('buildExecutiveSummarySection', () => {
   })
 
   it('respects USD + en-US producing "$" not "US$"', () => {
-    const result = buildExecutiveSummarySection(
-      baseInput({ currency: 'USD', locale: 'en-US' }),
-    )
+    const result = buildExecutiveSummarySection(baseInput({ currency: 'USD', locale: 'en-US' }))
     const json = JSON.stringify(result)
 
     expect(json).toContain('$')
@@ -86,9 +81,7 @@ describe('buildExecutiveSummarySection', () => {
     const result = buildExecutiveSummarySection(baseInput({ variance: -50_000 }))
     const summaryTable = result[1] as TableNode
     const rows = summaryTable.table?.body ?? []
-    const varianceRow = rows.find((row) =>
-      row.some((cell) => cell.text === 'Variance'),
-    )
+    const varianceRow = rows.find((row) => row.some((cell) => cell.text === 'Variance'))
     expect(varianceRow).toBeDefined()
     const valueCell = varianceRow?.[1] as TableCell
 
@@ -99,9 +92,7 @@ describe('buildExecutiveSummarySection', () => {
     const result = buildExecutiveSummarySection(baseInput({ variance: 50_000 }))
     const summaryTable = result[1] as TableNode
     const rows = summaryTable.table?.body ?? []
-    const varianceRow = rows.find((row) =>
-      row.some((cell) => cell.text === 'Variance'),
-    )
+    const varianceRow = rows.find((row) => row.some((cell) => cell.text === 'Variance'))
     const valueCell = varianceRow?.[1] as TableCell
 
     expect(valueCell.color).toBe('#0f9d58')
