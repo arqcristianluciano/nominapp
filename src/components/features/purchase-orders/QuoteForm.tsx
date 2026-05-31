@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 import type { Supplier } from '@/types/database'
+import { SupplierSelect } from '@/components/features/suppliers/SupplierSelect'
 import { formatRD } from '@/utils/currency'
 import { parseDecimalInput } from '@/utils/decimalInput'
 import { materialsCatalogService, type MaterialCatalogItem } from '@/services/materialsCatalogService'
@@ -117,21 +118,14 @@ export function QuoteForm({ suppliers, onSubmit, onCancel, saving }: Props) {
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2">
           <label className="block text-xs font-medium text-app-muted mb-1">Suplidor *</label>
-          <select
+          <SupplierSelect
+            suppliers={suppliers}
             value={supplierId}
-            onChange={(e) => setSupplierId(e.target.value)}
+            onChange={setSupplierId}
             required
-            className="w-full border border-app-border rounded-lg px-3 py-2 text-sm"
-          >
-            <option value="">Seleccionar…</option>
-            {suppliers
-              .filter((s) => s.is_active)
-              .map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-          </select>
+            placeholder="Seleccionar…"
+            selectClassName="w-full border border-app-border rounded-lg px-3 py-2 text-sm"
+          />
         </div>
         <div>
           <label className="block text-xs font-medium text-app-muted mb-1">N° cotización del suplidor</label>
