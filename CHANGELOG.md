@@ -37,6 +37,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 
 ### Fixed
 
+- En la cubicación mensual por capítulo, los costos imputados solo a una partida (mano de obra y facturas de materiales sin capítulo explícito) ahora se agrupan en el capítulo de esa partida, en lugar de caer en "sin capítulo". El cálculo del capítulo es ahora consistente entre todas las fuentes de costo (inventario, nómina, facturas y CxP).
 - La numeración automática de subpartidas ahora respeta el código de la partida (p. ej. `T2.5`, no `2.5`) y continúa desde el mayor número existente, evitando defaults erróneos como `3.1` y colisiones tras borrar filas (#40).
 - La importación de presupuesto desde Excel asigna y persiste códigos consecutivos por partida a las subpartidas que no traen código, continuando desde el mayor existente y respetando los códigos que sí vengan en el archivo.
 - Modo demo: el cliente mock ahora implementa `removeChannel` y un stub de `storage`, evitando el crash al navegar y permitiendo adjuntar/ver comprobantes en demo.
