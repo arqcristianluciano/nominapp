@@ -27,6 +27,10 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - Autor de cada partida/factura (`created_by`): las partidas de mano de obra y facturas de materiales registran quién las introdujo (migración 052, aditiva, con `DEFAULT auth.uid()` + trigger). El editor muestra "Agregado por …" al corregir una línea. No cambia el modelo de permisos actual; endurecer la RLS a "solo autor o Director" queda como follow-up.
 - Exportar a CSV la distribución de pagos del período (beneficiario, cédula/RNC, banco, cuenta, monto, método, cuenta de origen y estado), apto para banca electrónica u hojas de cálculo.
 - La distribución de pagos captura la cédula/RNC del beneficiario y permite registrar la cuenta de origen interna desde la que sale el pago (migración 056, aditiva).
+- Fuente única de verdad para las categorías de la lista de precios (`src/constants/priceListCategories.ts`), consumida por el formulario, el panel y el generador de códigos.
+- Tests que blindan la consistencia de categorías: el generador de códigos cubre cada categoría y un test verifica que el constraint `category` en `supabase-schema.sql` permite todas las categorías de la UI, atrapando en CI la deriva esquema↔UI que causó el bug de "Ajuste".
+- Regla de ESLint que prohíbe los `catch` cuyo único cuerpo es un `console.*`, para evitar errores silenciados sin feedback al usuario.
+- Migración 060 que formaliza la creación de `price_list_items` (antes solo existía en `supabase-schema.sql`), para que el set de migraciones sea fuente de verdad completa.
 
 ### Changed
 

@@ -19,5 +19,19 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      // Prevent "silent failures": a catch block whose only action is to log to
+      // the console swallows the error without telling the user. Surface it
+      // (toast/notification) in addition to (or instead of) logging.
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            "CatchClause > BlockStatement[body.length=1] > ExpressionStatement > CallExpression[callee.object.name='console']",
+          message:
+            'No silencies errores: un catch cuyo único cuerpo es console.* oculta el fallo al usuario. Muestra un toast/feedback además de loguear.',
+        },
+      ],
+    },
   },
 ])
