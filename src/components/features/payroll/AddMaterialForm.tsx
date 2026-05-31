@@ -6,6 +6,7 @@ import { budgetItemService } from '@/services/budgetItemService'
 import { supplierService } from '@/services/supplierService'
 import { parseDecimalInput } from '@/utils/decimalInput'
 import { isRNC } from '@/utils/validators'
+import { findSupplierByName } from '@/utils/supplierMatch'
 import { sumInvoiceItems } from '@/utils/materialInvoice'
 import { formatRD } from '@/utils/currency'
 
@@ -92,6 +93,18 @@ export function AddMaterialForm({
   async function handleCreateSupplier() {
     if (savingNew || !newName.trim()) return
     setNewError(null)
+    // Evita crear un proveedor que ya existe (ignorando mayúsculas y espacios).
+    const duplicate = findSupplierByName(suppliers, newName)
+    if (duplicate) {
+      if (duplicate.is_active) {
+        setNewError(`Ya existe un proveedor llamado "${duplicate.name}". Selecciónalo en la lista de arriba.`)
+      } else {
+        setNewError(
+          `Ya existe un proveedor llamado "${duplicate.name}", pero está inactivo. Reactívalo desde Proveedores.`,
+        )
+      }
+      return
+    }
     const rncTrimmed = newRnc.trim()
     if (rncTrimmed && !isRNC(rncTrimmed)) {
       setNewError('RNC inválido (9 u 11 dígitos)')
