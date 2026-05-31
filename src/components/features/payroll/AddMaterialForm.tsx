@@ -148,6 +148,9 @@ export function AddMaterialForm({
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+  // Path subido en ESTA sesión y aún no persistido. Se limpia de storage si se
+  // reemplaza, se quita, o se cancela el formulario, para no dejar huérfanos.
+  const sessionPathRef = useRef<string | null>(null)
 
   // Carga las partidas del capítulo seleccionado para imputar la factura a una
   // partida concreta del presupuesto.
@@ -213,6 +216,11 @@ export function AddMaterialForm({
     const localUrl = isImage ? URL.createObjectURL(file) : null
     try {
       const path = await payrollService.uploadInvoiceFile(file, projectId, periodId)
+      // Si se reemplaza un archivo subido en esta sesión, borra el anterior.
+      if (sessionPathRef.current && sessionPathRef.current !== path) {
+        void payrollService.deleteInvoiceFile(sessionPathRef.current)
+      }
+      sessionPathRef.current = path
       setAttachmentPath(path)
       setAttachmentName(file.name)
       setLocalPreviewUrl((prev) => {
@@ -228,12 +236,27 @@ export function AddMaterialForm({
   }
 
   function clearAttachment() {
+    // Si el archivo a quitar fue subido en esta sesión (aún no guardado), bórralo
+    // del bucket. Un comprobante ya persistido se limpia al guardar (servicio).
+    if (sessionPathRef.current) {
+      void payrollService.deleteInvoiceFile(sessionPathRef.current)
+      sessionPathRef.current = null
+    }
     if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl)
     setLocalPreviewUrl(null)
     setAttachmentPath(null)
     setAttachmentName('')
     setUploadError(null)
     if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  // Cancelar: descarta el comprobante subido en esta sesión (no guardado).
+  function handleCancel() {
+    if (sessionPathRef.current) {
+      void payrollService.deleteInvoiceFile(sessionPathRef.current)
+      sessionPathRef.current = null
+    }
+    onCancel()
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -247,6 +270,8 @@ export function AddMaterialForm({
       budget_item_id: budgetItemId || null,
       items: validItems.map((it) => ({ description: it.description.trim().toUpperCase(), amount: it.amount })),
     })
+    // El comprobante quedó persistido en la factura; ya no es huérfano de sesión.
+    sessionPathRef.current = null
   }
 
   return (
@@ -472,7 +497,7 @@ export function AddMaterialForm({
       </div>
 
       <div className="flex justify-end gap-2 pt-2">
-        <button type="button" onClick={onCancel} className="px-4 py-2 text-sm text-app-muted hover:text-app-text">
+        <button type="button" onClick={handleCancel} className="px-4 py-2 text-sm text-app-muted hover:text-app-text">
           Cancelar
         </button>
         <button
