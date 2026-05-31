@@ -346,20 +346,21 @@ describe('budgetCategoryService.delete', () => {
 })
 
 describe('budgetCategoryService.deleteMany', () => {
-  it('con ids vacío retorna sin tocar supabase ni loguear', async () => {
-    await budgetCategoryService.deleteMany([])
+  it('con ids vacío retorna [] sin tocar supabase ni loguear', async () => {
+    const result = await budgetCategoryService.deleteMany([])
+    expect(result).toEqual([])
     expect(fromMock).not.toHaveBeenCalled()
     expect(approvalsLogMock).not.toHaveBeenCalled()
   })
 
-  it('borra el set por id con .in(...) y loguea una auditoría por partida', async () => {
+  it('borra el set por id con .in(...), loguea por partida y devuelve las filas borradas', async () => {
     const categories = [
       { id: 'bc1', name: 'Demoliciones' },
       { id: 'bc2', name: 'Estructura' },
     ]
     const { selectMock, inSelectMock, deleteMock, inDeleteMock } = mockDeleteManyChains(categories)
 
-    await budgetCategoryService.deleteMany(['bc1', 'bc2'])
+    const result = await budgetCategoryService.deleteMany(['bc1', 'bc2'])
 
     expect(fromMock).toHaveBeenCalledTimes(2)
     expect(selectMock).toHaveBeenCalledWith('*')
@@ -381,6 +382,9 @@ describe('budgetCategoryService.deleteMany', () => {
     expect(approvalsLogMock).toHaveBeenCalledWith(
       expect.objectContaining({ entity_id: 'bc2', payload_before: categories[1] }),
     )
+
+    // Devuelve las filas borradas (para poder "deshacer").
+    expect(result).toEqual(categories)
   })
 
   it('propaga error si el delete falla y NO loguea', async () => {
@@ -396,9 +400,67 @@ describe('budgetCategoryService.deleteMany', () => {
     mockDeleteManyChains([{ id: 'bc1' }])
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
-    await expect(budgetCategoryService.deleteMany(['bc1'])).resolves.toBeUndefined()
+    await expect(budgetCategoryService.deleteMany(['bc1'])).resolves.toEqual([{ id: 'bc1' }])
     expect(warnSpy).toHaveBeenCalled()
 
     warnSpy.mockRestore()
+  })
+})
+
+describe('budgetCategoryService.restore', () => {
+  it('con lista vacía retorna [] y NO toca supabase', async () => {
+    const result = await budgetCategoryService.restore('pA', [])
+    expect(result).toEqual([])
+    expect(fromMock).not.toHaveBeenCalled()
+  })
+
+  it('reinserta las partidas con project_id y sus datos, y loguea create (undo)', async () => {
+    const toRestore = [
+      {
+        code: '2 - DEMOLICIONES',
+        name: 'Demoliciones',
+        sort_order: 2,
+        budgeted_amount: 0,
+        start_date: null,
+        end_date: null,
+      },
+    ]
+    const created = [{ id: 'bc-new', project_id: 'pA', ...toRestore[0] }]
+    const { insertMock, selectMock } = mockInsertChain(created)
+
+    const result = await budgetCategoryService.restore('pA', toRestore)
+
+    expect(fromMock).toHaveBeenCalledWith('budget_categories')
+    expect(insertMock).toHaveBeenCalledWith([
+      {
+        project_id: 'pA',
+        code: '2 - DEMOLICIONES',
+        name: 'Demoliciones',
+        sort_order: 2,
+        budgeted_amount: 0,
+        start_date: null,
+        end_date: null,
+      },
+    ])
+    expect(selectMock).toHaveBeenCalledTimes(1)
+    expect(result).toEqual(created)
+
+    expect(approvalsLogMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entity_type: 'budget_category',
+        entity_id: 'bc-new',
+        action: 'create',
+        metadata: { undo: true },
+      }),
+    )
+  })
+
+  it('propaga error de supabase', async () => {
+    mockInsertChain(null, { message: 'restore fail' })
+    await expect(
+      budgetCategoryService.restore('pA', [
+        { code: 'x', name: 'x', sort_order: 1, budgeted_amount: 0, start_date: null, end_date: null },
+      ]),
+    ).rejects.toEqual({ message: 'restore fail' })
   })
 })

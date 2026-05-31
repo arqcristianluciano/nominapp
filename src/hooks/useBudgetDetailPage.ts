@@ -3,7 +3,7 @@ import { useProjectStore } from '@/stores/projectStore'
 import { useBudgetDetail } from '@/hooks/useBudgetDetail'
 import { useBudgetItems, type BulkImportPayload } from '@/hooks/useBudgetItems'
 import { findEmptyCategories } from '@/components/features/budget/emptyCategories'
-import type { BudgetItem, PriceListItem } from '@/types/database'
+import type { BudgetCategory, BudgetItem, PriceListItem } from '@/types/database'
 
 export type BudgetTab = 'presupuesto' | 'precios'
 
@@ -173,15 +173,17 @@ function useEmptyCategoryCleanup(
   const closeEmptyModal = useCallback(() => setShowEmptyModal(false), [])
 
   const removeCategories = useCallback(
-    async (ids: string[]) => {
-      if (ids.length === 0) return
+    async (ids: string[]): Promise<BudgetCategory[]> => {
+      if (ids.length === 0) return []
       setRemovingEmpty(true)
       try {
-        await budget.removeCategories(ids)
+        const removed = await budget.removeCategories(ids)
         budgetItems.dropCategories(ids)
+        return removed
       } catch {
         // budget.removeCategories ya registró el error en budget.error;
         // no propagamos para no dejar promesas sin manejar en la UI.
+        return []
       } finally {
         setRemovingEmpty(false)
       }
@@ -189,20 +191,25 @@ function useEmptyCategoryCleanup(
     [budget, budgetItems],
   )
 
+  // Recibe las filas borradas explícitamente (no las lee de estado) para evitar
+  // cierres obsoletos cuando el botón "Deshacer" se dispara desde un aviso.
+  const undoRemove = useCallback(
+    async (rows: BudgetCategory[]) => {
+      await budget.restoreCategories(rows)
+    },
+    [budget],
+  )
+
   const confirmRemoveEmpty = useCallback(
     async (ids: string[]) => {
-      await removeCategories(ids)
+      const removed = await removeCategories(ids)
       setShowEmptyModal(false)
+      return removed
     },
     [removeCategories],
   )
 
-  const removeCategory = useCallback(
-    async (categoryId: string) => {
-      await removeCategories([categoryId])
-    },
-    [removeCategories],
-  )
+  const removeCategory = useCallback(async (categoryId: string) => removeCategories([categoryId]), [removeCategories])
 
   // Tras importar abrimos el modal; el render lo deja oculto si no hay vacías.
   const promptAfterImport = useCallback(() => setShowEmptyModal(true), [])
@@ -216,6 +223,7 @@ function useEmptyCategoryCleanup(
     confirmRemoveEmpty,
     removeCategory,
     promptAfterImport,
+    undoRemove,
   }
 }
 
@@ -306,5 +314,6 @@ export function useBudgetDetailPage(projectId: string | undefined) {
     confirmRemoveEmpty: cleanup.confirmRemoveEmpty,
     cancelRemoveEmpty: cleanup.closeEmptyModal,
     handleDeleteCategory: cleanup.removeCategory,
+    undoRemove: cleanup.undoRemove,
   }
 }
