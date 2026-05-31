@@ -17,7 +17,8 @@ test('crear solicitud sin partida queda en draft', async ({ page }) => {
   await dialog.getByRole('button', { name: /Crear solicitud/i }).click()
 
   // Después de crear, vuelve al listado y aparece la solicitud nueva.
-  await expect(page.getByText('50 sacos cemento')).toBeVisible({ timeout: 5000 })
+  // El texto puede aparecer en más de un lugar (fila + detalle); basta con uno.
+  await expect(page.getByText('50 sacos cemento').first()).toBeVisible({ timeout: 5000 })
 })
 
 test('ruta /materiales muestra el catálogo global', async ({ page }) => {
