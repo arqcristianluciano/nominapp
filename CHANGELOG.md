@@ -26,10 +26,12 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - Sugerencia de partida al capturar mano de obra, materiales y transacciones: si el capítulo tiene una sola partida se autoselecciona, y se avisa suavemente cuando se deja sin partida.
 - Botón "Devolver a borrador" en el reporte de nómina: la mayor jerarquía (quien aprueba) puede regresar un reporte enviado o aprobado a borrador para que el autor lo corrija. Pide confirmación, quita la aprobación y registra la acción (`return_for_revision`) en la bitácora. Un reporte pagado no se puede devolver.
 - Sección "Historial de cambios" en el reporte de nómina: lista quién y cuándo realizó cada acción auditada (creación, envío, aprobación, devolución a borrador, edición de partidas/facturas en reportes comprometidos), leída de la bitácora de aprobaciones.
-- Autor de cada partida/factura (`created_by`): las partidas de mano de obra y facturas de materiales registran quién las introdujo (migración 052, aditiva, con `DEFAULT auth.uid()` + trigger). El editor muestra "Agregado por …" al corregir una línea. No cambia el modelo de permisos actual; endurecer la RLS a "solo autor o Director" queda como follow-up.
+- Autor de cada partida/factura (`created_by`): las partidas de mano de obra y facturas de materiales registran quién las introdujo (migración 052, aditiva, con `DEFAULT auth.uid()` + trigger). El editor muestra "Agregado por …" al corregir una línea.
 
 ### Changed
 
+- Edición de partidas de mano de obra y facturas de materiales restringida a su autor o al Director (migración 058): además del permiso por etapa del período, ahora solo quien introdujo la línea (o un Director) puede modificarla o borrarla. Las líneas históricas sin autor registrado siguen editables por quien puede editar el período.
+- Rendimiento de RLS (migración 057): las políticas de `project_members` y `user_documents` evalúan `auth.uid()` una sola vez por consulta en lugar de por fila; se agregó el índice faltante en `purchase_requisitions.approved_quote_id`.
 - Números de requisición ahora consecutivos por año (REQ-2026-0001, 0002, …) en lugar de un número aleatorio.
 - `sort_order` de partidas de cubicación se calcula como máximo + 1 para no colisionar al borrar filas.
 - El editor y la impresión de nómina ahora muestran las facturas de materiales detalladas por ítem.
