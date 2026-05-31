@@ -1,5 +1,12 @@
 import { supabase } from '@/lib/supabase'
 import { COMMITTED_PAYROLL_STATUSES } from '@/services/payrollService'
+import {
+  INVENTORY_OUT_TYPE,
+  inventoryOutCost,
+  laborLineCost,
+  materialInvoiceCost,
+  resolveImputedCategory,
+} from '@/utils/costoReal'
 import { round2 } from '@/utils/money'
 
 export interface ImputedCostFilters {
@@ -16,10 +23,13 @@ export interface ImputedCostFilters {
  * Devuelve un mapa `categoryId -> monto`. Cuando la imputación es a nivel de
  * partida (`budget_item_id`) se resuelve a su capítulo a través de budget_items.
  *
- * Sin esto, la columna GASTADO del Presupuesto sólo refleja la tabla
- * `transactions` y los gastos imputados desde los reportes/almacén aparecen
- * como 0. Coincide con el "costo real" usado en la cubicación mensual
- * (`partidaProgressService`).
+ * Las reglas (qué fuentes cuentan, cómo se calcula cada monto y cómo se resuelve
+ * partida→capítulo) viven en `@/utils/costoReal`, fuente única compartida con
+ * `partidaProgressService` y `monthlyReportData`.
+ *
+ * NOTA: este método NO incluye las `transactions`; la columna GASTADO las suma
+ * aparte en `useBudgetDetail`. Ver la advertencia de DOBLE CONTEO en
+ * `@/utils/costoReal`.
  */
 export const budgetSpentService = {
   async getImputedCostByCategory(projectId: string, filters?: ImputedCostFilters): Promise<Record<string, number>> {
@@ -45,7 +55,7 @@ export const budgetSpentService = {
 
     const totals: Record<string, number> = {}
     const add = (categoryId: string | null | undefined, itemId: string | null | undefined, amount: number): void => {
-      const resolved = categoryId ?? (itemId ? itemToCategory.get(itemId) : undefined)
+      const resolved = resolveImputedCategory(categoryId, itemId, itemToCategory)
       if (!resolved || !amount) return
       totals[resolved] = (totals[resolved] ?? 0) + amount
     }
@@ -83,14 +93,14 @@ export const budgetSpentService = {
         budget_category_id: string | null
         budget_item_id: string | null
       }>) {
-        add(ll.budget_category_id, ll.budget_item_id, Number(ll.quantity ?? 0) * Number(ll.unit_price ?? 0))
+        add(ll.budget_category_id, ll.budget_item_id, laborLineCost(ll))
       }
       for (const inv of (materialRes.data ?? []) as Array<{
         amount: number | null
         budget_category_id: string | null
         budget_item_id: string | null
       }>) {
-        add(inv.budget_category_id, inv.budget_item_id, Number(inv.amount ?? 0))
+        add(inv.budget_category_id, inv.budget_item_id, materialInvoiceCost(inv))
       }
     }
 
@@ -99,7 +109,7 @@ export const budgetSpentService = {
       .from('inventory_movements')
       .select('quantity, unit_cost, date, budget_category_id, budget_item_id, type')
       .eq('project_id', projectId)
-      .eq('type', 'out')
+      .eq('type', INVENTORY_OUT_TYPE)
     if (filters?.dateFrom) movementsQuery = movementsQuery.gte('date', filters.dateFrom)
     if (filters?.dateTo) movementsQuery = movementsQuery.lte('date', filters.dateTo)
     const { data: movements, error: movementsError } = await movementsQuery
@@ -111,7 +121,7 @@ export const budgetSpentService = {
       budget_category_id: string | null
       budget_item_id: string | null
     }>) {
-      add(mv.budget_category_id, mv.budget_item_id, Number(mv.quantity ?? 0) * Number(mv.unit_cost ?? 0))
+      add(mv.budget_category_id, mv.budget_item_id, inventoryOutCost(mv))
     }
 
     for (const id of Object.keys(totals)) {
