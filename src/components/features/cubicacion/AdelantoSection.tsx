@@ -49,6 +49,7 @@ export function AdelantoSection({ contractId, adelantos, onRefresh }: Props) {
       onRefresh()
     } catch (err) {
       console.warn('[AdelantoSection] handleCreate failed', err)
+      toastError('No se pudo registrar el adelanto. Inténtalo de nuevo.')
     } finally {
       setSaving(false)
     }

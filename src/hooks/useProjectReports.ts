@@ -3,10 +3,12 @@ import { transactionService } from '@/services/transactionService'
 import { budgetCategoryService } from '@/services/budgetCategoryService'
 import { getProjectsProgress } from '@/services/cubicationService'
 import { calcCashDisponible, calcTotalCxP, calcTotalIncurrido } from '@/utils/financialCalculations'
+import { useToast } from '@/components/ui/Toast'
 import type { Project } from '@/types/database'
 import type { ProjectReport, ReportTotals } from '@/components/features/reports/reportTypes'
 
 export function useProjectReports(projects: Project[]) {
+  const { error: toastError } = useToast()
   const [reports, setReports] = useState<ProjectReport[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -67,6 +69,7 @@ export function useProjectReports(projects: Project[]) {
         setReports(results)
       } catch (err) {
         console.error('useProjectReports loadReports failed', err)
+        toastError('No se pudieron cargar los reportes de proyectos.')
       } finally {
         setLoading(false)
       }
@@ -77,7 +80,7 @@ export function useProjectReports(projects: Project[]) {
       setReports([])
       setLoading(false)
     }
-  }, [projects])
+  }, [projects, toastError])
 
   const totals = useMemo<ReportTotals>(
     () =>

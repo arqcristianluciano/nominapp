@@ -4,6 +4,7 @@ import { requisitionService } from '@/services/requisitionService'
 import { quoteService } from '@/services/quoteService'
 import { supplierService } from '@/services/supplierService'
 import { inventoryService } from '@/services/inventoryService'
+import { useToast } from '@/components/ui/Toast'
 import type { Supplier } from '@/types/database'
 import type { PurchaseRequisition } from '@/types/purchaseOrder'
 
@@ -15,6 +16,7 @@ const MIN_QUOTES = 2
 export function usePurchaseOrderDetail() {
   const { orderId } = useParams<{ orderId: string }>()
   const navigate = useNavigate()
+  const { warning: toastWarning } = useToast()
 
   const [req, setReq] = useState<PurchaseRequisition | null>(null)
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
@@ -141,6 +143,7 @@ export function usePurchaseOrderDetail() {
           attachmentPath = await inventoryService.uploadReceiptAttachment(conduceFile, req.project_id, orderId)
         } catch (err) {
           console.warn('[usePurchaseOrderDetail] subida de conduce falló (no-bloqueante)', err)
+          toastWarning('No se pudo adjuntar el conduce, pero la recepción continuó.')
         }
       }
       await requisitionService.receiveItems(orderId, actor ?? 'Almacenista', receipts, attachmentPath)

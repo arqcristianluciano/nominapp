@@ -4,6 +4,7 @@ import { Modal } from '@/components/ui/Modal'
 import { payrollService } from '@/services/payrollService'
 import { corteService } from '@/services/cubicationService'
 import { formatRD } from '@/utils/currency'
+import { useToast } from '@/components/ui/Toast'
 import type { ContractCorte, ContractPartida, PayrollPeriod } from '@/types/database'
 
 interface Props {
@@ -17,6 +18,7 @@ interface Props {
 }
 
 export function LinkToPayrollModal({ open, onClose, projectId, contractorId, corte, partida, onLinked }: Props) {
+  const { error: toastError } = useToast()
   const [periods, setPeriods] = useState<PayrollPeriod[]>([])
   const [selectedId, setSelectedId] = useState('')
   const [loading, setLoading] = useState(false)
@@ -52,6 +54,7 @@ export function LinkToPayrollModal({ open, onClose, projectId, contractorId, cor
       onClose()
     } catch (err) {
       console.warn('[LinkToPayrollModal] handleLink failed', err)
+      toastError('No se pudo vincular el corte a la nómina. Inténtalo de nuevo.')
     } finally {
       setSaving(false)
     }
