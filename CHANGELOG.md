@@ -37,6 +37,8 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 
 ### Fixed
 
+- Integridad del total de facturas: `material_invoices.amount` se recalcula automáticamente como la suma de sus ítems mediante un trigger en BD (migración 058), blindándolo frente a ediciones directas además de la lógica de la app.
+- E2E (Playwright) en CI como job _advisory_ (no bloqueante hasta estabilizar la suite), con nuevo spec del flujo de factura de materiales con varios ítems y advertencia de comprobante.
 - Comprobantes huérfanos: al eliminar una factura de materiales —o al reemplazar/quitar su comprobante al editarla— el archivo se borra del bucket `invoice-attachments` (antes quedaba huérfano ocupando espacio).
 - Endurecimiento del bucket `invoice-attachments`: ahora valida del lado del servidor que sólo se suban imágenes o PDF de hasta 10 MB (migración 057), como defensa en profundidad además de la validación del cliente.
 - La numeración automática de subpartidas ahora respeta el código de la partida (p. ej. `T2.5`, no `2.5`) y continúa desde el mayor número existente, evitando defaults erróneos como `3.1` y colisiones tras borrar filas (#40).
