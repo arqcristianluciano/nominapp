@@ -53,6 +53,20 @@ export const transactionService = {
     return data as TransactionWithRelations
   },
 
+  // Asigna una misma partida a varias transacciones de una sola vez (back-fill
+  // del histórico). El trigger de la base fuerza el capítulo a partir de la
+  // partida, así que no hace falta enviarlo aquí.
+  async bulkSetPartida(ids: string[], budgetItemId: string) {
+    if (ids.length === 0) return []
+    const { data, error } = await supabase
+      .from('transactions')
+      .update({ budget_item_id: budgetItemId })
+      .in('id', ids)
+      .select(SELECT)
+    if (error) throw error
+    return data as TransactionWithRelations[]
+  },
+
   async delete(id: string) {
     const { error } = await supabase.from('transactions').delete().eq('id', id)
     if (error) throw error

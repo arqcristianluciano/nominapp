@@ -22,28 +22,31 @@ export function useTransactions(projectId: string | undefined) {
   const [dateFrom, setDateFrom] = useState<string>('')
   const [dateTo, setDateTo] = useState<string>('')
 
-  const load = useCallback(async (filters?: { dateFrom?: string; dateTo?: string }) => {
-    if (!projectId) return
-    setLoading(true)
-    setError(null)
-    try {
-      const [txns, categories, supps] = await Promise.all([
-        transactionService.getByProject(projectId, {
-          dateFrom: filters?.dateFrom || undefined,
-          dateTo: filters?.dateTo || undefined,
-        }),
-        budgetCategoryService.initializeForProject(projectId),
-        supplierService.getAll(),
-      ])
-      setTransactions(txns)
-      setBudgetCategories(categories)
-      setSuppliers(supps)
-    } catch (e) {
-      setError(getErrorMessage(e))
-    } finally {
-      setLoading(false)
-    }
-  }, [projectId])
+  const load = useCallback(
+    async (filters?: { dateFrom?: string; dateTo?: string }) => {
+      if (!projectId) return
+      setLoading(true)
+      setError(null)
+      try {
+        const [txns, categories, supps] = await Promise.all([
+          transactionService.getByProject(projectId, {
+            dateFrom: filters?.dateFrom || undefined,
+            dateTo: filters?.dateTo || undefined,
+          }),
+          budgetCategoryService.initializeForProject(projectId),
+          supplierService.getAll(),
+        ])
+        setTransactions(txns)
+        setBudgetCategories(categories)
+        setSuppliers(supps)
+      } catch (e) {
+        setError(getErrorMessage(e))
+      } finally {
+        setLoading(false)
+      }
+    },
+    [projectId],
+  )
 
   const addTransaction = useCallback(async (data: Omit<Transaction, 'id' | 'created_at'>) => {
     setSaving(true)
@@ -71,6 +74,21 @@ export function useTransactions(projectId: string | undefined) {
     }
   }, [])
 
+  const bulkAssignPartida = useCallback(async (ids: string[], budgetItemId: string) => {
+    if (ids.length === 0) return
+    setSaving(true)
+    setError(null)
+    try {
+      const updated = await transactionService.bulkSetPartida(ids, budgetItemId)
+      const byId = new Map(updated.map((t) => [t.id, t]))
+      setTransactions((prev) => prev.map((t) => byId.get(t.id) ?? t))
+    } catch (e) {
+      setError(getErrorMessage(e))
+    } finally {
+      setSaving(false)
+    }
+  }, [])
+
   const deleteTransaction = useCallback(async (id: string) => {
     setSaving(true)
     setError(null)
@@ -84,11 +102,14 @@ export function useTransactions(projectId: string | undefined) {
     }
   }, [])
 
-  const applyDateFilter = useCallback((from: string, to: string) => {
-    setDateFrom(from)
-    setDateTo(to)
-    load({ dateFrom: from, dateTo: to })
-  }, [load])
+  const applyDateFilter = useCallback(
+    (from: string, to: string) => {
+      setDateFrom(from)
+      setDateTo(to)
+      load({ dateFrom: from, dateTo: to })
+    },
+    [load],
+  )
 
   const clearDateFilter = useCallback(() => {
     setDateFrom('')
@@ -99,7 +120,10 @@ export function useTransactions(projectId: string | undefined) {
   const transitos = useMemo(() => calcTransitos(transactions), [transactions])
   const cashDisponible = useMemo(() => calcCashDisponible(transactions), [transactions])
   const totalCxP = useMemo(() => calcTotalCxP(transactions), [transactions])
-  const disponibleNeto = useMemo(() => calcDisponibleNeto(cashDisponible, totalCxP, transitos), [cashDisponible, totalCxP, transitos])
+  const disponibleNeto = useMemo(
+    () => calcDisponibleNeto(cashDisponible, totalCxP, transitos),
+    [cashDisponible, totalCxP, transitos],
+  )
   const totalIncurrido = useMemo(() => calcTotalIncurrido(transactions), [transactions])
 
   return {
@@ -114,6 +138,7 @@ export function useTransactions(projectId: string | undefined) {
     load,
     addTransaction,
     updateTransaction,
+    bulkAssignPartida,
     deleteTransaction,
     applyDateFilter,
     clearDateFilter,

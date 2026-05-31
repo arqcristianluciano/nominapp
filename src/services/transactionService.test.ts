@@ -49,6 +49,18 @@ function mockUpdateChain(data: unknown, error: unknown = null) {
   return { updateMock, eqMock, selectMock, singleMock }
 }
 
+/**
+ * Helper: cadena from('transactions').update(updates).in('id', ids).select(...).
+ * El select resuelve a {data, error} (devuelve array, sin .single()).
+ */
+function mockBulkChain(data: unknown, error: unknown = null) {
+  const selectMock = vi.fn().mockResolvedValue({ data, error })
+  const inMock = vi.fn().mockReturnValue({ select: selectMock })
+  const updateMock = vi.fn().mockReturnValue({ in: inMock })
+  fromMock.mockReturnValueOnce({ update: updateMock })
+  return { updateMock, inMock, selectMock }
+}
+
 const SELECT_WITH_JOINS =
   '*, supplier:suppliers(id, name), budget_category:budget_categories(id, code, name), budget_item:budget_items(id, code, description)'
 
@@ -192,5 +204,35 @@ describe('transactionService.update', () => {
   it('propaga error de supabase', async () => {
     mockUpdateChain(null, { message: 'update fail' })
     await expect(transactionService.update('tx-upd', { total: 1 })).rejects.toEqual({ message: 'update fail' })
+  })
+})
+
+describe('transactionService.bulkSetPartida', () => {
+  it('con ids vacío retorna [] y NO toca supabase', async () => {
+    const result = await transactionService.bulkSetPartida([], 'item-1')
+    expect(result).toEqual([])
+    expect(fromMock).not.toHaveBeenCalled()
+  })
+
+  it('asigna budget_item_id a varias transacciones por id y retorna las filas con joins', async () => {
+    const updatedRows = [
+      { id: 'tx1', budget_item_id: 'item-9', budget_category_id: 'bc9' },
+      { id: 'tx2', budget_item_id: 'item-9', budget_category_id: 'bc9' },
+    ]
+    const { updateMock, inMock, selectMock } = mockBulkChain(updatedRows)
+
+    const result = await transactionService.bulkSetPartida(['tx1', 'tx2'], 'item-9')
+
+    expect(fromMock).toHaveBeenCalledWith('transactions')
+    // No envía budget_category_id: el trigger de la base lo deriva de la partida.
+    expect(updateMock).toHaveBeenCalledWith({ budget_item_id: 'item-9' })
+    expect(inMock).toHaveBeenCalledWith('id', ['tx1', 'tx2'])
+    expect(selectMock).toHaveBeenCalledWith(SELECT_WITH_JOINS)
+    expect(result).toEqual(updatedRows)
+  })
+
+  it('propaga error de supabase', async () => {
+    mockBulkChain(null, { message: 'bulk fail' })
+    await expect(transactionService.bulkSetPartida(['tx1'], 'item-9')).rejects.toEqual({ message: 'bulk fail' })
   })
 })

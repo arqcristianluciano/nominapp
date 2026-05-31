@@ -309,11 +309,10 @@ function TransactionRowComponent({
         <td className="px-2 py-2 text-xs text-app-muted whitespace-nowrap">
           {transaction.budget_category?.code?.split(' - ')[0] || ''}
         </td>
-        <td
-          className="px-2 py-2 text-xs text-app-muted whitespace-nowrap"
-          title={transaction.budget_item?.description || undefined}
-        >
-          {transaction.budget_item?.code || (transaction.budget_item ? '•' : '')}
+        <td className="px-2 py-2 text-xs text-app-muted">
+          <span className="block max-w-[140px] truncate" title={transaction.budget_item?.description || undefined}>
+            {transaction.budget_item ? transaction.budget_item.code || transaction.budget_item.description : ''}
+          </span>
         </td>
         <td className="px-2 py-2 text-xs text-app-text font-medium">{transaction.description}</td>
         <td className="px-2 py-2 text-xs text-app-muted">{transaction.supplier?.name || ''}</td>
