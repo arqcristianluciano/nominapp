@@ -1,7 +1,10 @@
-import { ChevronLeft, ChevronRight, Filter, Plus, X } from 'lucide-react'
+import { useState } from 'react'
+import { ChevronLeft, ChevronRight, Download, Filter, Layers, Plus, X } from 'lucide-react'
 import { TransactionInlineForm } from '@/components/features/control/TransactionInlineForm'
 import { TransactionRow } from '@/components/features/control/TransactionRow'
+import { BulkPartidaForm } from '@/components/features/control/BulkPartidaForm'
 import { formatRD } from '@/utils/currency'
+import { exportToExcel } from '@/utils/excelExport'
 import type { useTransactions } from '@/hooks/useTransactions'
 
 type TxnState = ReturnType<typeof useTransactions>
@@ -47,6 +50,28 @@ export function DiarioTab({
   onPage,
   isCurrentMonth,
 }: Props) {
+  const [showBulk, setShowBulk] = useState(false)
+
+  const handleExport = async () => {
+    const rows = txns.transactions.map((t) => ({
+      Fecha: t.date,
+      Capítulo: t.budget_category?.code ?? '',
+      Partida: t.budget_item ? t.budget_item.code || t.budget_item.description : '',
+      Descripción: t.description,
+      Proveedor: t.supplier?.name ?? '',
+      Cantidad: t.quantity ?? '',
+      Precio: t.unit_price ?? '',
+      Total: t.total,
+      Condición: t.payment_condition ?? '',
+      Factura: t.invoice_number ?? '',
+      Cheque: t.check_number ?? '',
+      Banco: t.bank ?? '',
+      'Fecha canje': t.cashed_date ?? '',
+      Notas: t.notes ?? '',
+    }))
+    await exportToExcel('diario-transacciones', [{ name: 'Diario', rows }])
+  }
+
   return (
     <>
       <div className="flex flex-col sm:flex-row sm:items-center gap-2">
@@ -57,12 +82,35 @@ export function DiarioTab({
           <Filter className="w-4 h-4 sm:w-3.5 sm:h-3.5" /> Filtrar
         </button>
         <button
+          onClick={() => setShowBulk((v) => !v)}
+          className="flex items-center justify-center gap-1.5 w-full sm:w-auto min-h-[44px] sm:min-h-0 px-3 py-2.5 sm:py-1.5 text-sm sm:text-xs text-app-muted border border-app-border rounded-lg hover:bg-app-hover"
+        >
+          <Layers className="w-4 h-4 sm:w-3.5 sm:h-3.5" /> Imputar en lote
+        </button>
+        <button
+          onClick={handleExport}
+          disabled={txns.transactions.length === 0}
+          className="flex items-center justify-center gap-1.5 w-full sm:w-auto min-h-[44px] sm:min-h-0 px-3 py-2.5 sm:py-1.5 text-sm sm:text-xs text-app-muted border border-app-border rounded-lg hover:bg-app-hover disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Download className="w-4 h-4 sm:w-3.5 sm:h-3.5" /> Exportar
+        </button>
+        <button
           onClick={onToggleAdd}
           className="flex items-center justify-center gap-1.5 w-full sm:w-auto min-h-[44px] sm:min-h-0 px-3 py-2.5 sm:py-1.5 bg-blue-600 text-white text-sm sm:text-xs font-semibold sm:font-medium rounded-lg hover:bg-blue-700"
         >
           <Plus className="w-4 h-4 sm:w-3.5 sm:h-3.5" /> Nueva transacción
         </button>
       </div>
+
+      {showBulk && (
+        <BulkPartidaForm
+          budgetCategories={txns.budgetCategories}
+          transactions={txns.transactions}
+          onAssign={txns.bulkAssignPartida}
+          saving={txns.saving}
+          onClose={() => setShowBulk(false)}
+        />
+      )}
 
       {showFilter && (
         <div className="flex flex-wrap items-end gap-2 sm:gap-3 bg-app-surface border border-app-border rounded-lg p-3 shadow-xs">
@@ -127,6 +175,7 @@ export function DiarioTab({
               <tr className="bg-app-bg border-b border-app-border">
                 <th className="px-2 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">Fecha</th>
                 <th className="px-2 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">Cód.</th>
+                <th className="px-2 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">Partida</th>
                 <th className="px-2 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">Descripción</th>
                 <th className="px-2 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">Proveedor</th>
                 <th className="px-2 py-2 text-right text-[10px] font-semibold text-app-muted uppercase">Cant.</th>
@@ -159,7 +208,7 @@ export function DiarioTab({
             </tbody>
             <tfoot>
               <tr className="bg-app-bg border-t border-app-border">
-                <td colSpan={6} className="px-2 py-2 text-xs font-semibold text-app-muted text-right">
+                <td colSpan={7} className="px-2 py-2 text-xs font-semibold text-app-muted text-right">
                   Total ({txns.transactions.length} transacciones):
                 </td>
                 <td className="px-2 py-2 text-xs font-bold text-app-text text-right">

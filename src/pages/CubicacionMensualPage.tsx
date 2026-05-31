@@ -206,8 +206,8 @@ export default function CubicacionMensualPage() {
         <div className="bg-app-surface rounded-xl border border-app-border p-12 text-center">
           <p className="text-base font-semibold text-app-text mb-1">Sin partidas con datos</p>
           <p className="text-sm text-app-muted">
-            Imputa costos (salidas de almacén, mano de obra o facturas de materiales) a una partida para ver aquí el
-            costo real acumulado contra el presupuesto.
+            Imputa costos (salidas de almacén, mano de obra, facturas de materiales o transacciones de CxP) a una
+            partida para ver aquí el costo real acumulado contra el presupuesto.
           </p>
         </div>
       ) : (

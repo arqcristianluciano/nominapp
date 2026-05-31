@@ -104,7 +104,8 @@ export const partidaProgressService = {
   // Cubicación mensual del proyecto (estado deseado, sección 6.6).
   // Para cada capítulo y mes:
   //  - cubicado = Σ (avance ejecutado en el mes × precio presupuestado de la partida)
-  //  - costo_real = Σ (salidas inventario imputadas al cap. + nóminas approved imputadas + material_invoices)
+  //  - costo_real = Σ (salidas inventario imputadas al cap. + nóminas approved imputadas
+  //    + material_invoices + transacciones CxP imputadas), consistente con la vista por partida.
   async getMonthlyCubication(projectId: string): Promise<MonthlyCubicationRow[]> {
     // 1) Capítulos del proyecto
     const { data: categories } = await supabase
@@ -153,6 +154,14 @@ export const partidaProgressService = {
         map.set(key, row)
       }
       return row
+    }
+
+    // Capítulo de un costo: el imputado directamente o, si solo tiene partida,
+    // el capítulo de esa partida. Así un costo imputado solo a partida no cae en
+    // la fila "sin capítulo".
+    function resolveCategory(categoryId: string | null, itemId: string | null): string | null {
+      if (categoryId) return categoryId
+      return itemId ? (itemById.get(itemId)?.budget_category_id ?? null) : null
     }
 
     // 3) Cubicado: partida_progress × precio presupuestado de la partida
@@ -205,9 +214,7 @@ export const partidaProgressService = {
       const month = monthKey(mv.date)
       if (!month) continue
       const value = Number(mv.quantity ?? 0) * Number(mv.unit_cost ?? 0)
-      const itemCat = mv.budget_item_id ? (itemById.get(mv.budget_item_id)?.budget_category_id ?? null) : null
-      const categoryId = mv.budget_category_id ?? itemCat
-      getRow(month, categoryId).costo_real += value
+      getRow(month, resolveCategory(mv.budget_category_id, mv.budget_item_id)).costo_real += value
     }
 
     // 5) Costo real - nóminas aprobadas
@@ -224,33 +231,53 @@ export const partidaProgressService = {
     if (payrollIds.length > 0) {
       const { data: laborItems } = await supabase
         .from('labor_line_items')
-        .select('payroll_period_id, quantity, unit_price, budget_category_id')
+        .select('payroll_period_id, quantity, unit_price, budget_category_id, budget_item_id')
         .in('payroll_period_id', payrollIds)
       for (const ll of (laborItems ?? []) as Array<{
         payroll_period_id: string
         quantity: number | null
         unit_price: number | null
         budget_category_id: string | null
+        budget_item_id: string | null
       }>) {
         const month = payrollMonthById.get(ll.payroll_period_id)
         if (!month) continue
         const subtotal = Number(ll.quantity ?? 0) * Number(ll.unit_price ?? 0)
-        getRow(month, ll.budget_category_id ?? null).costo_real += subtotal
+        getRow(month, resolveCategory(ll.budget_category_id, ll.budget_item_id)).costo_real += subtotal
       }
 
       const { data: invoices } = await supabase
         .from('material_invoices')
-        .select('payroll_period_id, amount, budget_category_id')
+        .select('payroll_period_id, amount, budget_category_id, budget_item_id')
         .in('payroll_period_id', payrollIds)
       for (const inv of (invoices ?? []) as Array<{
         payroll_period_id: string
         amount: number | null
         budget_category_id: string | null
+        budget_item_id: string | null
       }>) {
         const month = payrollMonthById.get(inv.payroll_period_id)
         if (!month) continue
-        getRow(month, inv.budget_category_id ?? null).costo_real += Number(inv.amount ?? 0)
+        getRow(month, resolveCategory(inv.budget_category_id, inv.budget_item_id)).costo_real += Number(inv.amount ?? 0)
       }
+    }
+
+    // 5b) Costo real - transacciones (CxP / diario) imputadas a capítulo/partida.
+    // Consistente con getActualCostByPartida, que ya las incluye. El mes sale de
+    // la fecha de la transacción; el capítulo, de su capítulo o el de su partida.
+    const { data: txns } = await supabase
+      .from('transactions')
+      .select('total, date, budget_category_id, budget_item_id')
+      .eq('project_id', projectId)
+    for (const tx of (txns ?? []) as Array<{
+      total: number | null
+      date: string | null
+      budget_category_id: string | null
+      budget_item_id: string | null
+    }>) {
+      const month = monthKey(tx.date)
+      if (!month) continue
+      getRow(month, resolveCategory(tx.budget_category_id, tx.budget_item_id)).costo_real += Number(tx.total ?? 0)
     }
 
     // 6) Desviación
