@@ -1,52 +1,55 @@
 # NominApp - Historia de Migraciones
 
-Tabla cronologica de todas las migraciones SQL aplicadas sobre el schema de
-Supabase, ubicadas en `supabase/migrations/`. Cada fila refleja un archivo
-del repo; las migraciones 024, 025 y 026 tienen dos archivos por colisiones
-historicas de numeracion (ambos se aplican).
+Tabla cronologica de las migraciones SQL aplicadas sobre el schema de Supabase,
+ubicadas en `supabase/migrations/`. Cada fila refleja un archivo del repo. La
+numeracion fue normalizada a una secuencia unica y correlativa (001..071); cada
+archivo tiene su propio numero, sin repeticiones.
 
-| #   | Nombre                                              | Fecha                                                                                                          | Proposito                                                                    |
-| --- | --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| 001 | schema                                              | 2026-03-25                                                                                                     | Schema base: empresas, proyectos, nominas, contratistas e indirectos.        |
-| 002 | purchase_orders                                     | 2026-03-25                                                                                                     | Tabla `purchase_orders` con estados, totales y vinculo a proyectos.          |
-| 003 | custom_indirects                                    | 2026-05-05                                                                                                     | Agrega `custom_indirects` JSONB en `projects` para gastos personalizados.    |
-| 004 | indirect_active                                     | 2026-05-05                                                                                                     | Flag `is_active` en `indirect_costs` para excluir items sin borrarlos.       |
-| 005 | approvals                                           | 2026-05-19                                                                                                     | Tabla central de aprobaciones append-only (auditoria, regla 7.8).            |
-| 006 | requisition_excess                                  | 2026-05-19                                                                                                     | Solicitudes imputadas a partida y bloqueo por exceso (reglas 7.1/6.2).       |
-| 007 | purchase_orders_release                             | 2026-05-19                                                                                                     | Liberacion de OC + justificacion obligatoria con 1 cotizacion (7.2/7.3).     |
-| 008 | inventory_imputation                                | 2026-05-19                                                                                                     | Salidas/entradas de almacen imputadas a partida y vinculadas a OC.           |
-| 009 | payroll_imputation                                  | 2026-05-19                                                                                                     | Mano de obra imputada a partida para cubicacion mensual (7.6/6.5).           |
-| 010 | seed_mcz_ventures                                   | 2026-05-19                                                                                                     | Seed idempotente de la 6a empresa del grupo (MCZ Ventures).                  |
-| 011 | materials_catalog                                   | 2026-05-19                                                                                                     | Catalogo global `materials_catalog` con codigo unico transversal.            |
-| 012 | budget_dates                                        | 2026-05-19                                                                                                     | Fechas de inicio/fin en capitulos y partidas para cronograma derivado.       |
-| 013 | cash_flow_and_progress                              | 2026-05-19                                                                                                     | `expected_cash_inflows` y `partida_progress` (flujo de caja + avances).      |
-| 014 | budget_versions                                     | 2026-05-19                                                                                                     | Versionado snapshot del presupuesto con motivo y autor (regla 7.7).          |
-| 015 | push_subscriptions                                  | 2026-05-19                                                                                                     | Suscripciones VAPID por usuario para Web Push notifications.                 |
-| 016 | project_members                                     | 2026-05-19                                                                                                     | Tablas `user_profiles` y `project_members` (roles por proyecto).             |
-| 017 | rls_strict                                          | 2026-05-19                                                                                                     | RLS estricta inicial por empresa/proyecto/rol (preparatoria, no activada).   |
-| 018 | backfill_approvals                                  | 2026-05-19                                                                                                     | Backfill historico de approved_by/at hacia tabla `approvals`.                |
-| 019 | missing_obra_tables                                 | 2026-05-19                                                                                                     | Crea bitacora, asistencia, cronograma y otras tablas faltantes en prod.      |
-| 020 | harden_function_search_path                         | 2026-05-19                                                                                                     | Fija `search_path` en funciones SQL (advisor function_search_path_mutable).  |
-| 021 | enable_rls_permissive_baseline                      | 2026-05-19                                                                                                     | Activa RLS en todas las tablas con policy permissive baseline para anon.     |
-| 022 | rls_strict_by_role                                  | 2026-05-19                                                                                                     | RLS estricta por director general o miembro del proyecto (authenticated).    |
-| 023 | fix_auth_users_null_tokens                          | 2026-05-19                                                                                                     | Repara cuentas @nominapp.local con tokens NULL que rompian login.            |
-| 024 | fix_project_members_rls_recursion                   | 2026-05-20                                                                                                     | Elimina recursion infinita en RLS de `project_members` (fix de 022).         |
-| 024 | rename_gerente_to_director_proyecto                 | 2026-05-20                                                                                                     | Renombra rol `gerente_proyecto` -> `director_proyecto` en toda la BD.        |
-| 025 | auto_assign_project_creator                         | 2026-05-20                                                                                                     | Trigger que auto-asigna al creador como miembro del proyecto.                |
-| 025 | rls_strict_by_role_matrix                           | 2026-05-20                                                                                                     | RLS por accion y rol segun matriz de permisos v2 (reemplaza policy de 022).  |
-| 026 | rls_centralize_membership                           | 2026-05-20                                                                                                     | Centraliza chequeo de membresia RLS en helpers SECURITY DEFINER.             |
-| 026 | rls_hygiene                                         | 2026-05-20                                                                                                     | Limpia policies legacy `allow_all_*` y restringe helpers a authenticated.    |
-| 027 | fix_project_creation                                | 2026-05-20                                                                                                     | Arregla creacion de proyectos: rol director + policy INSERT para DP/PL.      |
-| 028 | admin_users_and_capabilities                        | 2026-05-20                                                                                                     | Tablas `roles`, `capabilities`, `role_capabilities` (matriz editable en UI). |
-| 029 | rls_capability_based                                | 2026-05-20                                                                                                     | Reemplaza policies por slug de rol con chequeos basados en capabilities.     |
-| 030 | user_capabilities_rpc                               | 2026-05-20                                                                                                     | RPCs `user_project_capabilities` para cargar permisos en el cliente.         |
-| 031 | fix_project_creator_trigger_timing                  | 2026-05-20                                                                                                     | Cambia trigger del creador a AFTER INSERT (evita violacion de FK).           |
-| 032 | rls_sign_contract_and_indexes                       | 2026-05-20                                                                                                     | Capability `sign_contract` en RLS + indices compuestos en project_members.   |
-| 033 | audit_fixes                                         | 2026-05-20                                                                                                     | Fix race en `cut_number`, agrega `due_date` en transactions e indices CxP.   |
-| 034 | storage_user_documents                              | 2026-05-20                                                                                                     | Bucket privado `user_documents` con RLS por carpeta UID del usuario.         |
-| 035 | legacy_tables_idempotent                            | 2026-05-20                                                                                                     | Declara tablas legadas (`adjustment_contracts`, etc.) idempotentes.          |
-| 036 | user_companies_rpc                                  | 2026-05-20                                                                                                     | RPC `user_companies()` para listar empresas accesibles al usuario.           |
-| 037 | audit_triggers                                      | 2026-05-20                                                                                                     | Triggers AFTER en RBAC (roles/capabilities) que loguean en `approvals`.      |
-| 038 | inventory_lots                                      | 2026-05-20                                                                                                     | Tabla `inventory_lots` para trazabilidad por lote (numero, vencimiento).     |
-| 039 | contractor_hierarchy                                | 2026-05-20                                                                                                     | Agrega `parent_contractor_id` y `hierarchy_level` para subcontratos.         |
-| 050 | `050_purchase_requisition_pendiente_liberacion.sql` | Agrega el estado `pendiente_liberacion` al CHECK de OC: doble aprobación Director → Administrador (regla 7.2). | \n                                                                           |
+| #   | Nombre                                    | Fecha      | Proposito                                                                                                       |
+| --- | ----------------------------------------- | ---------- | --------------------------------------------------------------------------------------------------------------- |
+| 001 | schema                                    | 2026-03-25 | Schema base: empresas, proyectos, nominas, contratistas e indirectos.                                           |
+| 002 | purchase_orders                           | 2026-03-25 | Tabla `purchase_orders` con estados, totales y vinculo a proyectos.                                             |
+| 003 | custom_indirects                          | 2026-05-05 | Agrega `custom_indirects` JSONB en `projects` para gastos personalizados.                                       |
+| 004 | indirect_active                           | 2026-05-05 | Flag `is_active` en `indirect_costs` para excluir items sin borrarlos.                                          |
+| 005 | approvals                                 | 2026-05-19 | Tabla central de aprobaciones append-only (auditoria, regla 7.8).                                               |
+| 006 | requisition_excess                        | 2026-05-19 | Solicitudes imputadas a partida y bloqueo por exceso (reglas 7.1/6.2).                                          |
+| 007 | purchase_orders_release                   | 2026-05-19 | Liberacion de OC + justificacion obligatoria con 1 cotizacion (7.2/7.3).                                        |
+| 008 | inventory_imputation                      | 2026-05-19 | Salidas/entradas de almacen imputadas a partida y vinculadas a OC.                                              |
+| 009 | payroll_imputation                        | 2026-05-19 | Mano de obra imputada a partida para cubicacion mensual (7.6/6.5).                                              |
+| 010 | seed_mcz_ventures                         | 2026-05-19 | Seed idempotente de la 6a empresa del grupo (MCZ Ventures).                                                     |
+| 011 | materials_catalog                         | 2026-05-19 | Catalogo global `materials_catalog` con codigo unico transversal.                                               |
+| 012 | budget_dates                              | 2026-05-19 | Fechas de inicio/fin en capitulos y partidas para cronograma derivado.                                          |
+| 013 | cash_flow_and_progress                    | 2026-05-19 | `expected_cash_inflows` y `partida_progress` (flujo de caja + avances).                                         |
+| 014 | budget_versions                           | 2026-05-19 | Versionado snapshot del presupuesto con motivo y autor (regla 7.7).                                             |
+| 015 | push_subscriptions                        | 2026-05-19 | Suscripciones VAPID por usuario para Web Push notifications.                                                    |
+| 016 | project_members                           | 2026-05-19 | Tablas `user_profiles` y `project_members` (roles por proyecto).                                                |
+| 017 | rls_strict                                | 2026-05-19 | RLS estricta inicial por empresa/proyecto/rol (preparatoria, no activada).                                      |
+| 018 | backfill_approvals                        | 2026-05-19 | Backfill historico de approved_by/at hacia tabla `approvals`.                                                   |
+| 019 | missing_obra_tables                       | 2026-05-19 | Crea bitacora, asistencia, cronograma y otras tablas faltantes en prod.                                         |
+| 020 | harden_function_search_path               | 2026-05-19 | Fija `search_path` en funciones SQL (advisor function_search_path_mutable).                                     |
+| 021 | enable_rls_permissive_baseline            | 2026-05-19 | Activa RLS en todas las tablas con policy permissive baseline para anon.                                        |
+| 022 | rls_strict_by_role                        | 2026-05-19 | RLS estricta por director general o miembro del proyecto (authenticated).                                       |
+| 023 | fix_auth_users_null_tokens                | 2026-05-19 | Repara cuentas @nominapp.local con tokens NULL que rompian login.                                               |
+| 024 | fix_project_members_rls_recursion         | 2026-05-20 | Elimina recursion infinita en RLS de `project_members` (fix de 022).                                            |
+| 025 | rename_gerente_to_director_proyecto       | 2026-05-20 | Renombra rol `gerente_proyecto` -> `director_proyecto` en toda la BD.                                           |
+| 026 | auto_assign_project_creator               | 2026-05-20 | Trigger que auto-asigna al creador como miembro del proyecto.                                                   |
+| 027 | rls_strict_by_role_matrix                 | 2026-05-20 | RLS por accion y rol segun matriz de permisos v2 (reemplaza policy de 022).                                     |
+| 028 | rls_centralize_membership                 | 2026-05-20 | Centraliza chequeo de membresia RLS en helpers SECURITY DEFINER.                                                |
+| 029 | rls_hygiene                               | 2026-05-20 | Limpia policies legacy `allow_all_*` y restringe helpers a authenticated.                                       |
+| 030 | fix_project_creation                      | 2026-05-20 | Arregla creacion de proyectos: rol director + policy INSERT para DP/PL.                                         |
+| 031 | admin_users_and_capabilities              | 2026-05-20 | Tablas `roles`, `capabilities`, `role_capabilities` (matriz editable en UI).                                    |
+| 032 | rls_capability_based                      | 2026-05-20 | Reemplaza policies por slug de rol con chequeos basados en capabilities.                                        |
+| 033 | user_capabilities_rpc                     | 2026-05-20 | RPCs `user_project_capabilities` para cargar permisos en el cliente.                                            |
+| 034 | fix_project_creator_trigger_timing        | 2026-05-20 | Cambia trigger del creador a AFTER INSERT (evita violacion de FK).                                              |
+| 035 | rls_sign_contract_and_indexes             | 2026-05-20 | Capability `sign_contract` en RLS + indices compuestos en project_members.                                      |
+| 036 | audit_fixes                               | 2026-05-20 | Fix race en `cut_number`, agrega `due_date` en transactions e indices CxP.                                      |
+| 037 | storage_user_documents                    | 2026-05-20 | Bucket privado `user_documents` con RLS por carpeta UID del usuario.                                            |
+| 038 | legacy_tables_idempotent                  | 2026-05-20 | Declara tablas legadas (`adjustment_contracts`, etc.) idempotentes.                                             |
+| 039 | user_companies_rpc                        | 2026-05-20 | RPC `user_companies()` para listar empresas accesibles al usuario.                                              |
+| 040 | audit_triggers                            | 2026-05-20 | Triggers AFTER en RBAC (roles/capabilities) que loguean en `approvals`.                                         |
+| 041 | inventory_lots                            | 2026-05-20 | Tabla `inventory_lots` para trazabilidad por lote (numero, vencimiento).                                        |
+| 042 | contractor_hierarchy                      | 2026-05-20 | Agrega `parent_contractor_id` y `hierarchy_level` para subcontratos.                                            |
+| 054 | purchase_requisition_pendiente_liberacion | 2026-05-29 | Agrega el estado `pendiente_liberacion` al CHECK de OC: doble aprobacion Director -> Administrador (regla 7.2). |
+
+> Nota: la tabla documenta en detalle hasta la 042 mas la 054; el resto de las
+> migraciones (043-071) estan en `supabase/migrations/` con nombre descriptivo.

@@ -5,7 +5,7 @@ import type { PriceListCategory } from '@/types/database'
  *
  * IMPORTANT: every value here must also be allowed by the database CHECK
  * constraint on `price_list_items.category` (see `supabase-schema.sql` and
- * migration `050_price_list_allow_adjustment.sql`). If the two drift apart,
+ * migration `053_price_list_allow_adjustment.sql`). If the two drift apart,
  * inserting a price of the missing category fails silently — which is exactly
  * the bug that motivated centralizing this list. The test
  * `priceListCategories.test.ts` guards that the schema and this list agree.
