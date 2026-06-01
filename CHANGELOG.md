@@ -20,16 +20,23 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - Nueva vista "Por partida (acumulado)" en Cubicación: costo real imputado por partida (salidas de almacén, mano de obra y facturas) frente al presupuesto, con exportación a Excel.
 - Edición de partidas de mano de obra y facturas de materiales en el reporte de nómina: cada fila tiene un botón "Editar" con el formulario pre-cargado, evitando tener que borrar y rehacer ante un error. En borrador puede editar quien tiene permiso de edición (quien introduce los datos); en reportes ya enviados/aprobados/pagados solo la mayor jerarquía (Director/quien aprueba), y esas correcciones quedan registradas en la bitácora de aprobaciones.
 - Las transacciones (CxP / diario) ahora se pueden imputar a una partida del presupuesto, además del capítulo (migración 052), y se incluyen en el costo real por partida.
+- El Diario muestra una columna "Partida" y permite editar la partida de transacciones ya existentes en la edición de la fila (antes solo se podía asignar al crear la transacción).
+- Imputación de partida en lote desde el Diario: asigna una partida a todas las transacciones de un capítulo que aún no la tienen, para completar la cobertura del costo por partida en el histórico.
+- Exportación del Diario a Excel (incluye la columna de partida), respetando el filtro de fechas activo.
+- Coherencia capítulo/partida en transacciones garantizada en la base (migración 056): un trigger fuerza el capítulo de la transacción al de su partida, evitando imputaciones inconsistentes por import o edición directa.
+- La vista mensual por capítulo de Cubicación ahora incluye las transacciones (CxP) en el costo real, igual que la vista por partida (antes quedaban fuera), unificando el criterio entre ambos reportes.
 - La vista "Por partida" de Cubicación muestra un indicador de cobertura: qué porcentaje del costo real está imputado a una partida y cuánto quedó sin partida.
 - Sugerencia de partida al capturar mano de obra, materiales y transacciones: si el capítulo tiene una sola partida se autoselecciona, y se avisa suavemente cuando se deja sin partida.
 - Botón "Devolver a borrador" en el reporte de nómina: la mayor jerarquía (quien aprueba) puede regresar un reporte enviado o aprobado a borrador para que el autor lo corrija. Pide confirmación, quita la aprobación y registra la acción (`return_for_revision`) en la bitácora. Un reporte pagado no se puede devolver.
 - Sección "Historial de cambios" en el reporte de nómina: lista quién y cuándo realizó cada acción auditada (creación, envío, aprobación, devolución a borrador, edición de partidas/facturas en reportes comprometidos), leída de la bitácora de aprobaciones.
-- Autor de cada partida/factura (`created_by`): las partidas de mano de obra y facturas de materiales registran quién las introdujo (migración 052, aditiva, con `DEFAULT auth.uid()` + trigger). El editor muestra "Agregado por …" al corregir una línea. No cambia el modelo de permisos actual; endurecer la RLS a "solo autor o Director" queda como follow-up.
+- Autor de cada partida/factura (`created_by`): las partidas de mano de obra y facturas de materiales registran quién las introdujo (migración 052, aditiva, con `DEFAULT auth.uid()` + trigger). El editor muestra "Agregado por …" al corregir una línea.
 - Exportar a CSV la distribución de pagos del período (beneficiario, cédula/RNC, banco, cuenta, monto, método, cuenta de origen y estado), apto para banca electrónica u hojas de cálculo.
 - La distribución de pagos captura la cédula/RNC del beneficiario y permite registrar la cuenta de origen interna desde la que sale el pago (migración 056, aditiva).
 
 ### Changed
 
+- Edición de partidas de mano de obra y facturas de materiales restringida a su autor o al Director (migración 058): además del permiso por etapa del período, ahora solo quien introdujo la línea (o un Director) puede modificarla o borrarla. Las líneas históricas sin autor registrado siguen editables por quien puede editar el período.
+- Rendimiento de RLS (migración 057): las políticas de `project_members` y `user_documents` evalúan `auth.uid()` una sola vez por consulta en lugar de por fila; se agregó el índice faltante en `purchase_requisitions.approved_quote_id`.
 - Números de requisición ahora consecutivos por año (REQ-2026-0001, 0002, …) en lugar de un número aleatorio.
 - `sort_order` de partidas de cubicación se calcula como máximo + 1 para no colisionar al borrar filas.
 - El editor y la impresión de nómina ahora muestran las facturas de materiales detalladas por ítem.
@@ -38,6 +45,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 
 ### Fixed
 
+- En la cubicación mensual por capítulo, los costos imputados solo a una partida (mano de obra y facturas de materiales sin capítulo explícito) ahora se agrupan en el capítulo de esa partida, en lugar de caer en "sin capítulo". El cálculo del capítulo es ahora consistente entre todas las fuentes de costo (inventario, nómina, facturas y CxP).
 - Integridad del total de facturas: `material_invoices.amount` se recalcula automáticamente como la suma de sus ítems mediante un trigger en BD (migración 058), blindándolo frente a ediciones directas además de la lógica de la app.
 - E2E (Playwright) en CI como job _advisory_ (no bloqueante hasta estabilizar la suite), con nuevo spec del flujo de factura de materiales con varios ítems y advertencia de comprobante.
 - Comprobantes huérfanos: al eliminar una factura de materiales —o al reemplazar/quitar su comprobante al editarla— el archivo se borra del bucket `invoice-attachments` (antes quedaba huérfano ocupando espacio).

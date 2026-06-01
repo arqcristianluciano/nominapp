@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase'
 import type { PurchaseRequisition, PurchaseQuote, RequisitionStatus, ReceiptProgress } from '@/types/purchaseOrder'
 import { approvalsService } from '@/services/approvalsService'
 import { pushNotificationService } from '@/services/pushNotificationService'
+import { emailNotificationService } from '@/services/emailNotificationService'
 import { inventoryService } from '@/services/inventoryService'
 import { lotService } from '@/services/lotService'
 
@@ -442,17 +443,19 @@ export const requisitionService = {
     )
   },
 
-  // Notifica (push) al comprador y dirección que llegó mercancía. No bloqueante.
+  // Notifica (push + correo) al comprador y dirección que llegó mercancía. No
+  // bloqueante: cualquier fallo se registra y no interrumpe la recepción.
   notifyReceipt(req: PurchaseRequisition, partial: boolean) {
+    const roles = ['comprador', 'director_proyecto', 'director_general']
+    const title = partial ? 'Recepción parcial de mercancía' : 'Mercancía recibida'
+    const body = `${req.req_number}: ${(req.description ?? '').slice(0, 80)}`
+    const url = `/ordenes-compra/${req.id}`
     void pushNotificationService
-      .notifyProjectRole(
-        req.project_id,
-        ['comprador', 'director_proyecto', 'director_general'],
-        partial ? 'Recepción parcial de mercancía' : 'Mercancía recibida',
-        `${req.req_number}: ${(req.description ?? '').slice(0, 80)}`,
-        `/ordenes-compra/${req.id}`,
-      )
+      .notifyProjectRole(req.project_id, roles, title, body, url)
       .catch((err) => console.warn('[requisitionService] push recepción fallo (no-bloqueante)', err))
+    void emailNotificationService
+      .notifyProjectRole(req.project_id, roles, title, body)
+      .catch((err) => console.warn('[requisitionService] email recepción fallo (no-bloqueante)', err))
   },
 
   // Recepción TOTAL de mercancía: recibe todo el pendiente de la OC de una vez.

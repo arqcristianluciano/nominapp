@@ -4,6 +4,8 @@ import type { InventoryItem, InventoryMovement } from '@/services/inventoryServi
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { InventoryItemForm, InventoryMovementForm } from '@/components/features/inventory/InventoryForms'
 import { InventoryMovementsTable, InventoryStockTable } from '@/components/features/inventory/InventoryTables'
+import { InventoryLotsTable } from '@/components/features/inventory/InventoryLotsTable'
+import type { InventoryLotWithItem } from '@/services/lotService'
 import type { InventoryMovementFormState, InventoryTab } from '@/components/features/inventory/inventoryConfig'
 
 export function InventoryPageHeader({
@@ -128,6 +130,7 @@ interface InventoryContentSectionProps {
   tab: InventoryTab
   items: InventoryItem[]
   movements: InventoryMovement[]
+  lots: InventoryLotWithItem[]
   onDeleteItem: (itemId: string) => void
 }
 
@@ -136,10 +139,12 @@ export function InventoryContentSection({
   tab,
   items,
   movements,
+  lots,
   onDeleteItem,
 }: InventoryContentSectionProps) {
   if (loading) return <InventoryLoadingState />
   if (tab === 'stock') return <InventoryStockTable items={items} onDelete={onDeleteItem} />
+  if (tab === 'lots') return <InventoryLotsTable lots={lots} />
   return <InventoryMovementsTable movements={movements} />
 }
 

@@ -99,10 +99,15 @@ export function useBudgetDetail(projectId: string | undefined) {
 
   const rows = useMemo<BudgetRow[]>(() => {
     return categories.map((category) => {
-      // GASTADO = movimientos de la tabla `transactions` + costo imputado
-      // a este capítulo desde los reportes comprometidos (mano de obra y
-      // facturas de materiales). Sin el segundo término, los gastos imputados
-      // en los reportes no se reflejaban y la columna mostraba 0.
+      // GASTADO = movimientos de la tabla `transactions` + costo imputado a este
+      // capítulo desde reportes comprometidos y almacén (mano de obra, facturas
+      // de materiales y salidas de inventario). Sin el segundo término, los
+      // gastos imputados en los reportes no se reflejaban y la columna mostraba 0.
+      //
+      // ⚠️ DOBLE CONTEO: `transactions` (control financiero) y los ítems
+      // imputados son fuentes INDEPENDIENTES; no se deduplican. Si un mismo gasto
+      // se captura por ambas vías para el mismo capítulo, se sumará dos veces.
+      // Ver `@/utils/costoReal` (fuente única de las reglas de costo real).
       const spent = round2(calcBudgetSpent(transactions, category.id) + (imputedByCategory[category.id] ?? 0))
       return {
         category,

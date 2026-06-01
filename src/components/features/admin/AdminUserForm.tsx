@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { adminService, type AdminUser } from '@/services/adminService'
 import { useToast } from '@/components/ui/Toast'
 import { parseDecimalInput } from '@/utils/decimalInput'
-import { isCedula, isEmail, isPhone } from '@/utils/validators'
+import { isCedula, isEmail, isPhone, isStrongPassword } from '@/utils/validators'
 
 type CreateMode = 'password' | 'invite'
 
@@ -363,6 +363,13 @@ export function AdminUserForm({ mode, initial, onCancel, onSaved }: Props) {
         } else {
           if (!form.password) {
             const msg = t('admin.form.errors.password_required')
+            setFormError(msg)
+            error(msg)
+            setSaving(false)
+            return
+          }
+          if (!isStrongPassword(form.password)) {
+            const msg = t('admin.form.errors.weak_password')
             setFormError(msg)
             error(msg)
             setSaving(false)

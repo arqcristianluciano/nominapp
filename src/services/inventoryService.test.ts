@@ -155,3 +155,35 @@ describe('inventoryService - consumo FIFO de lotes en salidas', () => {
     expect(lots.find((l) => l.lot_number === 'B')?.quantity).toBe(3)
   })
 })
+
+describe('lotService - listByProject', () => {
+  it('lista lotes activos con nombre de material, ordenados por vencimiento y sin los agotados', async () => {
+    const pid = `p1000000-0000-0000-0000-${Date.now().toString().padStart(12, '0')}`
+    const item = await inventoryService.createItem({
+      project_id: pid,
+      name: 'Pintura X',
+      unit: 'gal',
+      current_stock: 0,
+      min_stock: 0,
+      unit_cost: 0,
+    })
+    const mk = (lot_number: string, quantity: number, expiry_date: string) =>
+      lotService.create({
+        item_id: item.id,
+        lot_number,
+        quantity,
+        unit_cost: 1,
+        received_date: '2026-01-01',
+        expiry_date,
+        notes: null,
+      })
+    await mk('L1', 3, '2026-12-01')
+    await mk('L2', 0, '2026-06-01') // agotado → excluido
+    await mk('L3', 5, '2026-03-01') // vence antes → primero
+
+    const result = await lotService.listByProject(pid)
+    expect(result.map((l) => l.lot_number)).toEqual(['L3', 'L1'])
+    expect(result[0].item_name).toBe('Pintura X')
+    expect(result[0].item_unit).toBe('gal')
+  })
+})

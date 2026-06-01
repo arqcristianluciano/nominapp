@@ -51,9 +51,7 @@ export default function RouterErrorBoundary() {
             <RefreshCw className="w-8 h-8 text-blue-600 dark:text-blue-400 animate-spin" />
           </div>
           <h1 className="text-2xl font-black text-app-text mb-2">Actualizando aplicación</h1>
-          <p className="text-sm text-app-muted mb-6">
-            Detectamos una nueva versión publicada. Recargando...
-          </p>
+          <p className="text-sm text-app-muted mb-6">Detectamos una nueva versión publicada. Recargando...</p>
           <button
             onClick={handleReload}
             className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors"
@@ -73,9 +71,7 @@ export default function RouterErrorBoundary() {
           <AlertTriangle className="w-8 h-8 text-red-600 dark:text-red-400" />
         </div>
         <h1 className="text-2xl font-black text-app-text mb-2">Algo salió mal</h1>
-        <p className="text-sm text-app-muted mb-6 break-words font-mono">
-          {getMessage(error)}
-        </p>
+        <p className="text-sm text-app-muted mb-6 break-words font-mono">{getMessage(error)}</p>
         <button
           onClick={handleReload}
           className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors"

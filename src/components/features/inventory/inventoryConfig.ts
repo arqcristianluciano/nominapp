@@ -1,6 +1,6 @@
 import type { AddMovementInput } from '@/services/inventoryService'
 
-export type InventoryTab = 'stock' | 'movements'
+export type InventoryTab = 'stock' | 'movements' | 'lots'
 
 export const EMPTY_ITEM_FORM = {
   name: '',

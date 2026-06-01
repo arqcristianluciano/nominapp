@@ -18,7 +18,7 @@ export type Database = {
       adjustment_contracts: {
         Row: {
           contractor_id: string
-          created_at: string | null
+          created_at: string
           id: string
           notes: string | null
           project_id: string
@@ -27,7 +27,7 @@ export type Database = {
         }
         Insert: {
           contractor_id: string
-          created_at?: string | null
+          created_at?: string
           id?: string
           notes?: string | null
           project_id: string
@@ -36,7 +36,7 @@ export type Database = {
         }
         Update: {
           contractor_id?: string
-          created_at?: string | null
+          created_at?: string
           id?: string
           notes?: string | null
           project_id?: string
@@ -106,7 +106,7 @@ export type Database = {
         Row: {
           activity: string
           contractor_id: string
-          created_at: string | null
+          created_at: string
           date: string
           hours_worked: number
           id: string
@@ -120,7 +120,7 @@ export type Database = {
         Insert: {
           activity: string
           contractor_id: string
-          created_at?: string | null
+          created_at?: string
           date: string
           hours_worked?: number
           id?: string
@@ -134,7 +134,7 @@ export type Database = {
         Update: {
           activity?: string
           contractor_id?: string
-          created_at?: string | null
+          created_at?: string
           date?: string
           hours_worked?: number
           id?: string
@@ -171,7 +171,7 @@ export type Database = {
           id: string
           is_internal: boolean
           owner_name: string
-          project_id: string | null
+          project_id: string
         }
         Insert: {
           account_number: string
@@ -181,7 +181,7 @@ export type Database = {
           id?: string
           is_internal?: boolean
           owner_name: string
-          project_id?: string | null
+          project_id: string
         }
         Update: {
           account_number?: string
@@ -191,7 +191,7 @@ export type Database = {
           id?: string
           is_internal?: boolean
           owner_name?: string
-          project_id?: string | null
+          project_id?: string
         }
         Relationships: [
           {
@@ -205,13 +205,14 @@ export type Database = {
       }
       bitacora_entries: {
         Row: {
-          created_at: string | null
+          created_at: string
           created_by: string
           date: string
           equipment: string | null
           id: string
           incidents: string | null
           notes: string | null
+          photo_url: string | null
           project_id: string
           temp_c: number | null
           visitors: string | null
@@ -220,13 +221,14 @@ export type Database = {
           workforce_count: number
         }
         Insert: {
-          created_at?: string | null
+          created_at?: string
           created_by: string
           date: string
           equipment?: string | null
           id?: string
           incidents?: string | null
           notes?: string | null
+          photo_url?: string | null
           project_id: string
           temp_c?: number | null
           visitors?: string | null
@@ -235,13 +237,14 @@ export type Database = {
           workforce_count?: number
         }
         Update: {
-          created_at?: string | null
+          created_at?: string
           created_by?: string
           date?: string
           equipment?: string | null
           id?: string
           incidents?: string | null
           notes?: string | null
+          photo_url?: string | null
           project_id?: string
           temp_c?: number | null
           visitors?: string | null
@@ -423,21 +426,21 @@ export type Database = {
       }
       companies: {
         Row: {
-          created_at: string | null
+          created_at: string
           id: string
           name: string
           rnc: string | null
           updated_at: string | null
         }
         Insert: {
-          created_at?: string | null
+          created_at?: string
           id?: string
           name: string
           rnc?: string | null
           updated_at?: string | null
         }
         Update: {
-          created_at?: string | null
+          created_at?: string
           id?: string
           name?: string
           rnc?: string | null
@@ -450,7 +453,7 @@ export type Database = {
           advance_date: string
           amount: number
           contract_id: string
-          created_at: string | null
+          created_at: string
           description: string | null
           id: string
         }
@@ -458,7 +461,7 @@ export type Database = {
           advance_date: string
           amount?: number
           contract_id: string
-          created_at?: string | null
+          created_at?: string
           description?: string | null
           id?: string
         }
@@ -466,7 +469,7 @@ export type Database = {
           advance_date?: string
           amount?: number
           contract_id?: string
-          created_at?: string | null
+          created_at?: string
           description?: string | null
           id?: string
         }
@@ -485,7 +488,7 @@ export type Database = {
           amount: number
           approved_by: string | null
           contract_id: string
-          created_at: string | null
+          created_at: string
           cut_date: string
           cut_number: number
           id: string
@@ -502,7 +505,7 @@ export type Database = {
           amount?: number
           approved_by?: string | null
           contract_id: string
-          created_at?: string | null
+          created_at?: string
           cut_date: string
           cut_number?: number
           id?: string
@@ -519,7 +522,7 @@ export type Database = {
           amount?: number
           approved_by?: string | null
           contract_id?: string
-          created_at?: string | null
+          created_at?: string
           cut_date?: string
           cut_number?: number
           id?: string
@@ -648,7 +651,7 @@ export type Database = {
       contractor_documents: {
         Row: {
           contractor_id: string
-          created_at: string | null
+          created_at: string
           doc_type: string
           expiry_date: string | null
           file_ref: string | null
@@ -659,7 +662,7 @@ export type Database = {
         }
         Insert: {
           contractor_id: string
-          created_at?: string | null
+          created_at?: string
           doc_type: string
           expiry_date?: string | null
           file_ref?: string | null
@@ -670,7 +673,7 @@ export type Database = {
         }
         Update: {
           contractor_id?: string
-          created_at?: string | null
+          created_at?: string
           doc_type?: string
           expiry_date?: string | null
           file_ref?: string | null
@@ -692,7 +695,7 @@ export type Database = {
       contractor_loans: {
         Row: {
           contractor_id: string
-          created_at: string | null
+          created_at: string
           disbursed_date: string
           id: string
           installment_amount: number
@@ -704,7 +707,7 @@ export type Database = {
         }
         Insert: {
           contractor_id: string
-          created_at?: string | null
+          created_at?: string
           disbursed_date: string
           id?: string
           installment_amount?: number
@@ -716,7 +719,7 @@ export type Database = {
         }
         Update: {
           contractor_id?: string
-          created_at?: string | null
+          created_at?: string
           disbursed_date?: string
           id?: string
           installment_amount?: number
@@ -741,7 +744,7 @@ export type Database = {
           bank_account: string | null
           bank_name: string | null
           cedula: string | null
-          created_at: string | null
+          created_at: string
           hierarchy_level: number
           id: string
           is_active: boolean
@@ -757,7 +760,7 @@ export type Database = {
           bank_account?: string | null
           bank_name?: string | null
           cedula?: string | null
-          created_at?: string | null
+          created_at?: string
           hierarchy_level?: number
           id?: string
           is_active?: boolean
@@ -773,7 +776,7 @@ export type Database = {
           bank_account?: string | null
           bank_name?: string | null
           cedula?: string | null
-          created_at?: string | null
+          created_at?: string
           hierarchy_level?: number
           id?: string
           is_active?: boolean
@@ -891,7 +894,7 @@ export type Database = {
       }
       inventory_items: {
         Row: {
-          created_at: string | null
+          created_at: string
           current_stock: number
           id: string
           material_catalog_id: string | null
@@ -902,7 +905,7 @@ export type Database = {
           unit_cost: number
         }
         Insert: {
-          created_at?: string | null
+          created_at?: string
           current_stock?: number
           id?: string
           material_catalog_id?: string | null
@@ -913,7 +916,7 @@ export type Database = {
           unit_cost?: number
         }
         Update: {
-          created_at?: string | null
+          created_at?: string
           current_stock?: number
           id?: string
           material_catalog_id?: string | null
@@ -986,9 +989,10 @@ export type Database = {
       }
       inventory_movements: {
         Row: {
+          attachment_path: string | null
           budget_category_id: string | null
           budget_item_id: string | null
-          created_at: string | null
+          created_at: string
           created_by: string | null
           date: string
           id: string
@@ -1004,9 +1008,10 @@ export type Database = {
           unit_cost: number | null
         }
         Insert: {
+          attachment_path?: string | null
           budget_category_id?: string | null
           budget_item_id?: string | null
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           date: string
           id?: string
@@ -1022,9 +1027,10 @@ export type Database = {
           unit_cost?: number | null
         }
         Update: {
+          attachment_path?: string | null
           budget_category_id?: string | null
           budget_item_id?: string | null
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           date?: string
           id?: string
@@ -1096,6 +1102,7 @@ export type Database = {
           budget_category_id: string | null
           budget_item_id: string | null
           contractor_id: string
+          created_by: string | null
           description: string
           id: string
           is_advance: boolean
@@ -1112,6 +1119,7 @@ export type Database = {
           budget_category_id?: string | null
           budget_item_id?: string | null
           contractor_id: string
+          created_by?: string | null
           description: string
           id?: string
           is_advance?: boolean
@@ -1128,6 +1136,7 @@ export type Database = {
           budget_category_id?: string | null
           budget_item_id?: string | null
           contractor_id?: string
+          created_by?: string | null
           description?: string
           id?: string
           is_advance?: boolean
@@ -1175,7 +1184,7 @@ export type Database = {
         Row: {
           amount: number
           contractor_id: string
-          created_at: string | null
+          created_at: string
           id: string
           loan_id: string
           payroll_period_id: string
@@ -1183,7 +1192,7 @@ export type Database = {
         Insert: {
           amount?: number
           contractor_id: string
-          created_at?: string | null
+          created_at?: string
           id?: string
           loan_id: string
           payroll_period_id: string
@@ -1191,7 +1200,7 @@ export type Database = {
         Update: {
           amount?: number
           contractor_id?: string
-          created_at?: string | null
+          created_at?: string
           id?: string
           loan_id?: string
           payroll_period_id?: string
@@ -1220,12 +1229,48 @@ export type Database = {
           },
         ]
       }
+      material_invoice_items: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string
+          id: string
+          material_invoice_id: string
+          sort_order: number
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          description: string
+          id?: string
+          material_invoice_id: string
+          sort_order?: number
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string
+          id?: string
+          material_invoice_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "material_invoice_items_material_invoice_id_fkey"
+            columns: ["material_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "material_invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       material_invoices: {
         Row: {
           amount: number
           attachment_path: string | null
           budget_category_id: string | null
           budget_item_id: string | null
+          created_by: string | null
           description: string
           id: string
           invoice_reference: string | null
@@ -1238,6 +1283,7 @@ export type Database = {
           attachment_path?: string | null
           budget_category_id?: string | null
           budget_item_id?: string | null
+          created_by?: string | null
           description: string
           id?: string
           invoice_reference?: string | null
@@ -1250,6 +1296,7 @@ export type Database = {
           attachment_path?: string | null
           budget_category_id?: string | null
           budget_item_id?: string | null
+          created_by?: string | null
           description?: string
           id?: string
           invoice_reference?: string | null
@@ -1565,7 +1612,7 @@ export type Database = {
         Row: {
           approved_at: string | null
           approved_by: string | null
-          created_at: string | null
+          created_at: string
           grand_total: number
           id: string
           notes: string | null
@@ -1581,7 +1628,7 @@ export type Database = {
         Insert: {
           approved_at?: string | null
           approved_by?: string | null
-          created_at?: string | null
+          created_at?: string
           grand_total?: number
           id?: string
           notes?: string | null
@@ -1597,7 +1644,7 @@ export type Database = {
         Update: {
           approved_at?: string | null
           approved_by?: string | null
-          created_at?: string | null
+          created_at?: string
           grand_total?: number
           id?: string
           notes?: string | null
@@ -1701,8 +1748,8 @@ export type Database = {
         Row: {
           admin_percent: number
           code: string
-          company_id: string | null
-          created_at: string | null
+          company_id: string
+          created_at: string
           created_by: string | null
           custom_indirects: Json
           dt_percent: number
@@ -1717,8 +1764,8 @@ export type Database = {
         Insert: {
           admin_percent?: number
           code: string
-          company_id?: string | null
-          created_at?: string | null
+          company_id: string
+          created_at?: string
           created_by?: string | null
           custom_indirects?: Json
           dt_percent?: number
@@ -1733,8 +1780,8 @@ export type Database = {
         Update: {
           admin_percent?: number
           code?: string
-          company_id?: string | null
-          created_at?: string | null
+          company_id?: string
+          created_at?: string
           created_by?: string | null
           custom_indirects?: Json
           dt_percent?: number
@@ -1806,11 +1853,11 @@ export type Database = {
           approval_code: string | null
           approved_at: string | null
           approved_by: string | null
-          created_at: string | null
+          created_at: string
           id: string
           notes: string | null
           order_number: string
-          project_id: string | null
+          project_id: string
           rejection_reason: string | null
           requested_by: string
           requested_date: string
@@ -1827,11 +1874,11 @@ export type Database = {
           approval_code?: string | null
           approved_at?: string | null
           approved_by?: string | null
-          created_at?: string | null
+          created_at?: string
           id?: string
           notes?: string | null
           order_number: string
-          project_id?: string | null
+          project_id: string
           rejection_reason?: string | null
           requested_by: string
           requested_date?: string
@@ -1848,11 +1895,11 @@ export type Database = {
           approval_code?: string | null
           approved_at?: string | null
           approved_by?: string | null
-          created_at?: string | null
+          created_at?: string
           id?: string
           notes?: string | null
           order_number?: string
-          project_id?: string | null
+          project_id?: string
           rejection_reason?: string | null
           requested_by?: string
           requested_date?: string
@@ -1886,8 +1933,10 @@ export type Database = {
         Row: {
           description: string
           id: string
+          material_catalog_id: string | null
           quantity: number
           quote_id: string
+          received_quantity: number
           subtotal: number
           unit: string
           unit_price: number
@@ -1895,8 +1944,10 @@ export type Database = {
         Insert: {
           description: string
           id?: string
+          material_catalog_id?: string | null
           quantity?: number
           quote_id: string
+          received_quantity?: number
           subtotal?: number
           unit: string
           unit_price?: number
@@ -1904,13 +1955,22 @@ export type Database = {
         Update: {
           description?: string
           id?: string
+          material_catalog_id?: string | null
           quantity?: number
           quote_id?: string
+          received_quantity?: number
           subtotal?: number
           unit?: string
           unit_price?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "purchase_quote_items_material_catalog_id_fkey"
+            columns: ["material_catalog_id"]
+            isOneToOne: false
+            referencedRelation: "materials_catalog"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "purchase_quote_items_quote_id_fkey"
             columns: ["quote_id"]
@@ -1988,7 +2048,7 @@ export type Database = {
           available_quantity_at_request: number | null
           budget_category_id: string | null
           budget_item_id: string | null
-          created_at: string | null
+          created_at: string
           description: string
           excess_motivo: string | null
           id: string
@@ -2023,7 +2083,7 @@ export type Database = {
           available_quantity_at_request?: number | null
           budget_category_id?: string | null
           budget_item_id?: string | null
-          created_at?: string | null
+          created_at?: string
           description: string
           excess_motivo?: string | null
           id?: string
@@ -2058,7 +2118,7 @@ export type Database = {
           available_quantity_at_request?: number | null
           budget_category_id?: string | null
           budget_item_id?: string | null
-          created_at?: string | null
+          created_at?: string
           description?: string
           excess_motivo?: string | null
           id?: string
@@ -2087,6 +2147,13 @@ export type Database = {
           validated_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "purchase_requisitions_approved_quote_id_fkey"
+            columns: ["approved_quote_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_quotes"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "purchase_requisitions_budget_category_id_fkey"
             columns: ["budget_category_id"]
@@ -2262,7 +2329,7 @@ export type Database = {
       schedule_tasks: {
         Row: {
           color: string
-          created_at: string | null
+          created_at: string
           end_date: string
           id: string
           name: string
@@ -2273,7 +2340,7 @@ export type Database = {
         }
         Insert: {
           color?: string
-          created_at?: string | null
+          created_at?: string
           end_date: string
           id?: string
           name: string
@@ -2284,7 +2351,7 @@ export type Database = {
         }
         Update: {
           color?: string
-          created_at?: string | null
+          created_at?: string
           end_date?: string
           id?: string
           name?: string
@@ -2308,7 +2375,7 @@ export type Database = {
           bank_account: string | null
           bank_name: string | null
           contact_phone: string | null
-          created_at: string | null
+          created_at: string
           id: string
           is_active: boolean
           name: string
@@ -2320,7 +2387,7 @@ export type Database = {
           bank_account?: string | null
           bank_name?: string | null
           contact_phone?: string | null
-          created_at?: string | null
+          created_at?: string
           id?: string
           is_active?: boolean
           name: string
@@ -2332,7 +2399,7 @@ export type Database = {
           bank_account?: string | null
           bank_name?: string | null
           contact_phone?: string | null
-          created_at?: string | null
+          created_at?: string
           id?: string
           is_active?: boolean
           name?: string
@@ -2346,9 +2413,10 @@ export type Database = {
         Row: {
           bank: string | null
           budget_category_id: string | null
+          budget_item_id: string | null
           cashed_date: string | null
           check_number: string | null
-          created_at: string | null
+          created_at: string
           date: string
           description: string
           due_date: string | null
@@ -2366,9 +2434,10 @@ export type Database = {
         Insert: {
           bank?: string | null
           budget_category_id?: string | null
+          budget_item_id?: string | null
           cashed_date?: string | null
           check_number?: string | null
-          created_at?: string | null
+          created_at?: string
           date: string
           description: string
           due_date?: string | null
@@ -2386,9 +2455,10 @@ export type Database = {
         Update: {
           bank?: string | null
           budget_category_id?: string | null
+          budget_item_id?: string | null
           cashed_date?: string | null
           check_number?: string | null
-          created_at?: string | null
+          created_at?: string
           date?: string
           description?: string
           due_date?: string | null
@@ -2409,6 +2479,13 @@ export type Database = {
             columns: ["budget_category_id"]
             isOneToOne: false
             referencedRelation: "budget_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_budget_item_id_fkey"
+            columns: ["budget_item_id"]
+            isOneToOne: false
+            referencedRelation: "budget_items"
             referencedColumns: ["id"]
           },
           {
@@ -2544,11 +2621,16 @@ export type Database = {
     Functions: {
       _project_of_budget_category: { Args: { p_id: string }; Returns: string }
       _project_of_contract: { Args: { p_id: string }; Returns: string }
+      _project_of_material_invoice: { Args: { p_id: string }; Returns: string }
       _project_of_mercado_budget: { Args: { p_id: string }; Returns: string }
       _project_of_payroll: { Args: { p_id: string }; Returns: string }
       _project_of_purchase_order: { Args: { p_id: string }; Returns: string }
       _project_of_quote: { Args: { p_id: string }; Returns: string }
       _project_of_requisition: { Args: { p_id: string }; Returns: string }
+      can_edit_payroll_period: {
+        Args: { p_payroll_period_id: string }
+        Returns: boolean
+      }
       current_user_can_access_project: {
         Args: { p_project_id: string }
         Returns: boolean
@@ -2558,6 +2640,14 @@ export type Database = {
         Returns: boolean
       }
       current_user_is_director: { Args: never; Returns: boolean }
+      current_user_sees_contractor: {
+        Args: { p_contractor_id: string }
+        Returns: boolean
+      }
+      current_user_sees_supplier: {
+        Args: { p_supplier_id: string }
+        Returns: boolean
+      }
       is_member_of_project: { Args: { p_project_id: string }; Returns: boolean }
       user_app_capabilities: {
         Args: never

@@ -122,4 +122,15 @@ describe('partidaProgressService', () => {
     expect(coverage.unattributed).toBe(500)
     expect(coverage.total).toBe(9500)
   })
+
+  it('getMonthlyCubication incluye CxP y deriva el capítulo desde la partida', async () => {
+    const rows = await partidaProgressService.getMonthlyCubication(projectId)
+    const may = rows.find((r) => r.month === '2026-05' && r.budget_category_id === categoryId)
+    expect(may).toBeDefined()
+    // 4000 (factura) + 2000 (transacción CxP), ambas imputadas solo a la partida:
+    // el capítulo se deriva de la partida, así que caen en este capítulo (antes
+    // la factura caía en "sin capítulo"). La salida de almacén no tiene fecha,
+    // así que no entra en la vista mensual.
+    expect(may!.costo_real).toBe(6000)
+  })
 })

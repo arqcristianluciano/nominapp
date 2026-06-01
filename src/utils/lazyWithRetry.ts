@@ -48,9 +48,7 @@ function markReloaded(): void {
  * por sesión para evitar loops). Si la recarga ya se intentó, propaga el error
  * original para que lo maneje el ErrorBoundary del router.
  */
-export function lazyWithRetry<T extends ComponentType<unknown>>(
-  factory: () => Promise<{ default: T }>,
-) {
+export function lazyWithRetry<T extends ComponentType<unknown>>(factory: () => Promise<{ default: T }>) {
   return lazy(async () => {
     try {
       const mod = await factory()

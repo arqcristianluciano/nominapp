@@ -7,6 +7,7 @@ import {
   type InventoryItem,
   type InventoryMovement,
 } from '@/services/inventoryService'
+import { lotService, type InventoryLotWithItem } from '@/services/lotService'
 import { useToast } from '@/components/ui/Toast'
 import { useAuthStore } from '@/stores/authStore'
 import { InventoryLowStockAlert } from '@/components/features/inventory/InventoryLowStockAlert'
@@ -33,6 +34,7 @@ export default function InventarioPage() {
   const roles = useProjectRoles(projectId)
   const [items, setItems] = useState<InventoryItem[]>([])
   const [movements, setMovements] = useState<InventoryMovement[]>([])
+  const [lots, setLots] = useState<InventoryLotWithItem[]>([])
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<InventoryTab>('stock')
   const [showItemForm, setShowItemForm] = useState(false)
@@ -46,12 +48,14 @@ export default function InventarioPage() {
   const loadAll = useCallback(async () => {
     setLoading(true)
     try {
-      const [its, movs] = await Promise.all([
+      const [its, movs, lts] = await Promise.all([
         inventoryService.getItems(projectId!),
         inventoryService.getMovements(projectId!),
+        lotService.listByProject(projectId!),
       ])
       setItems(its)
       setMovements(movs)
+      setLots(lts)
     } finally {
       setLoading(false)
     }
@@ -187,6 +191,7 @@ export default function InventarioPage() {
         tab={tab}
         items={items}
         movements={movements}
+        lots={lots}
         onDeleteItem={setDeleteId}
       />
 

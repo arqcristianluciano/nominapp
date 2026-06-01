@@ -266,7 +266,7 @@
       "email": "Email",
       "email_placeholder": "employee@company.com",
       "initial_password": "Initial password",
-      "password_placeholder": "Minimum 6 characters",
+      "password_placeholder": "Min. 8 characters, with uppercase, lowercase and a number",
       "tabs_label": "User creation mode",
       "create_with_password": "Create with password",
       "invite_by_email": "Invite by email",
@@ -306,6 +306,7 @@
         "email_required": "Email is required",
         "invalid_email": "Invalid email",
         "password_required": "Initial password is required",
+        "weak_password": "Password must be at least 8 characters, with uppercase, lowercase and a number",
         "save_failed": "Could not save"
       }
     },
