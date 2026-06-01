@@ -1,5 +1,13 @@
 import { supabase } from '@/lib/supabase'
 import { COMMITTED_PAYROLL_STATUSES } from '@/services/payrollService'
+import {
+  INVENTORY_OUT_TYPE,
+  inventoryOutCost,
+  laborLineCost,
+  materialInvoiceCost,
+  resolveImputedCategory,
+  transactionCost,
+} from '@/utils/costoReal'
 
 export interface PartidaProgress {
   id: string
@@ -123,6 +131,7 @@ export const partidaProgressService = {
       .select('id, budget_category_id, quantity, unit_price')
       .in('budget_category_id', categoryIds.length > 0 ? categoryIds : ['__none__'])
     const itemById = new Map<string, { budget_category_id: string; quantity: number; unit_price: number }>()
+    const itemToCategory = new Map<string, string>()
     for (const it of (items ?? []) as Array<{
       id: string
       budget_category_id: string
@@ -134,6 +143,7 @@ export const partidaProgressService = {
         quantity: Number(it.quantity ?? 0),
         unit_price: Number(it.unit_price ?? 0),
       })
+      itemToCategory.set(it.id, it.budget_category_id)
     }
 
     const map = new Map<string, MonthlyCubicationRow>()
@@ -157,12 +167,9 @@ export const partidaProgressService = {
     }
 
     // Capítulo de un costo: el imputado directamente o, si solo tiene partida,
-    // el capítulo de esa partida. Así un costo imputado solo a partida no cae en
-    // la fila "sin capítulo".
-    function resolveCategory(categoryId: string | null, itemId: string | null): string | null {
-      if (categoryId) return categoryId
-      return itemId ? (itemById.get(itemId)?.budget_category_id ?? null) : null
-    }
+    // el capítulo de esa partida (regla compartida en `@/utils/costoReal`).
+    const resolveCategory = (categoryId: string | null, itemId: string | null): string | null =>
+      resolveImputedCategory(categoryId, itemId, itemToCategory)
 
     // 3) Cubicado: partida_progress × precio presupuestado de la partida
     const progresses = await this.listByProject(projectId)
@@ -203,7 +210,7 @@ export const partidaProgressService = {
       .from('inventory_movements')
       .select('quantity, unit_cost, date, budget_category_id, budget_item_id, type')
       .eq('project_id', projectId)
-      .eq('type', 'out')
+      .eq('type', INVENTORY_OUT_TYPE)
     for (const mv of (movements ?? []) as Array<{
       quantity: number | null
       unit_cost: number | null
@@ -213,8 +220,7 @@ export const partidaProgressService = {
     }>) {
       const month = monthKey(mv.date)
       if (!month) continue
-      const value = Number(mv.quantity ?? 0) * Number(mv.unit_cost ?? 0)
-      getRow(month, resolveCategory(mv.budget_category_id, mv.budget_item_id)).costo_real += value
+      getRow(month, resolveCategory(mv.budget_category_id, mv.budget_item_id)).costo_real += inventoryOutCost(mv)
     }
 
     // 5) Costo real - nóminas aprobadas
@@ -242,8 +248,7 @@ export const partidaProgressService = {
       }>) {
         const month = payrollMonthById.get(ll.payroll_period_id)
         if (!month) continue
-        const subtotal = Number(ll.quantity ?? 0) * Number(ll.unit_price ?? 0)
-        getRow(month, resolveCategory(ll.budget_category_id, ll.budget_item_id)).costo_real += subtotal
+        getRow(month, resolveCategory(ll.budget_category_id, ll.budget_item_id)).costo_real += laborLineCost(ll)
       }
 
       const { data: invoices } = await supabase
@@ -258,7 +263,8 @@ export const partidaProgressService = {
       }>) {
         const month = payrollMonthById.get(inv.payroll_period_id)
         if (!month) continue
-        getRow(month, resolveCategory(inv.budget_category_id, inv.budget_item_id)).costo_real += Number(inv.amount ?? 0)
+        getRow(month, resolveCategory(inv.budget_category_id, inv.budget_item_id)).costo_real +=
+          materialInvoiceCost(inv)
       }
     }
 
@@ -277,7 +283,7 @@ export const partidaProgressService = {
     }>) {
       const month = monthKey(tx.date)
       if (!month) continue
-      getRow(month, resolveCategory(tx.budget_category_id, tx.budget_item_id)).costo_real += Number(tx.total ?? 0)
+      getRow(month, resolveCategory(tx.budget_category_id, tx.budget_item_id)).costo_real += transactionCost(tx)
     }
 
     // 6) Desviación
@@ -360,13 +366,13 @@ export const partidaProgressService = {
       .from('inventory_movements')
       .select('quantity, unit_cost, budget_item_id, type')
       .eq('project_id', projectId)
-      .eq('type', 'out')
+      .eq('type', INVENTORY_OUT_TYPE)
     for (const mv of (movements ?? []) as Array<{
       quantity: number | null
       unit_cost: number | null
       budget_item_id: string | null
     }>) {
-      addCost(mv.budget_item_id, Number(mv.quantity ?? 0) * Number(mv.unit_cost ?? 0))
+      addCost(mv.budget_item_id, inventoryOutCost(mv))
     }
 
     // 4) Mano de obra y facturas de nóminas comprometidas (aprobadas/pagadas)
@@ -387,7 +393,7 @@ export const partidaProgressService = {
         unit_price: number | null
         budget_item_id: string | null
       }>) {
-        addCost(ll.budget_item_id, Number(ll.quantity ?? 0) * Number(ll.unit_price ?? 0))
+        addCost(ll.budget_item_id, laborLineCost(ll))
       }
 
       const { data: invoices } = await supabase
@@ -398,7 +404,7 @@ export const partidaProgressService = {
         amount: number | null
         budget_item_id: string | null
       }>) {
-        addCost(inv.budget_item_id, Number(inv.amount ?? 0))
+        addCost(inv.budget_item_id, materialInvoiceCost(inv))
       }
     }
 
@@ -411,7 +417,7 @@ export const partidaProgressService = {
       total: number | null
       budget_item_id: string | null
     }>) {
-      addCost(tx.budget_item_id, Number(tx.total ?? 0))
+      addCost(tx.budget_item_id, transactionCost(tx))
     }
 
     // 6) Desviación y orden
