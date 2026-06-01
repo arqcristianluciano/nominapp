@@ -473,6 +473,10 @@ export const payrollService = {
       items?: { description: string; amount: number }[]
     },
   ) {
+    // Comprobante actual: si la edición lo cambia/quita, se limpiará de storage.
+    const { data: current } = await supabase.from('material_invoices').select('attachment_path').eq('id', id).single()
+    const oldPath = (current as { attachment_path: string | null } | null)?.attachment_path ?? null
+
     // Patch del encabezado. Si vienen items, recalcula total (amount) y resumen
     // (description) denormalizados y reemplaza los items hijos.
     const headerPatch: Record<string, unknown> = {}
@@ -516,12 +520,23 @@ export const payrollService = {
       .eq('id', id)
       .single()
     if (error) throw error
+
+    // Si el comprobante cambió o se quitó, borra el archivo anterior del bucket.
+    if (updates.attachment_path !== undefined && oldPath && oldPath !== updates.attachment_path) {
+      await this.deleteInvoiceFile(oldPath)
+    }
+
     return sortInvoiceItems(data as MaterialInvoice)
   },
 
   async deleteMaterialInvoice(id: string) {
+    // Recupera el comprobante para limpiarlo de storage tras borrar la factura
+    // (evita archivos huérfanos en el bucket).
+    const { data: existing } = await supabase.from('material_invoices').select('attachment_path').eq('id', id).single()
     const { error } = await supabase.from('material_invoices').delete().eq('id', id)
     if (error) throw error
+    const path = (existing as { attachment_path: string | null } | null)?.attachment_path
+    if (path) await this.deleteInvoiceFile(path)
   },
 
   // === INDIRECT COSTS ===
@@ -592,5 +607,11 @@ export const payrollService = {
     if (error) throw error
     if (!data?.signedUrl) throw new Error('No signed URL returned')
     return data.signedUrl
+  },
+
+  /** Borra (best-effort) un comprobante del bucket. No lanza si falla. */
+  async deleteInvoiceFile(path: string) {
+    const { error } = await supabase.storage.from(INVOICE_BUCKET).remove([path])
+    if (error) console.warn('[payrollService.deleteInvoiceFile] no se pudo borrar el comprobante', error)
   },
 }

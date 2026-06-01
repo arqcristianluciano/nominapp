@@ -75,7 +75,7 @@ export default function BudgetPartidaRow({
     <>
       {/* Fila de partida */}
       <tr
-        className="border-b border-app-border hover:bg-app-hover cursor-pointer"
+        className={`border-b border-app-border hover:bg-app-hover cursor-pointer ${isEmpty ? 'bg-amber-50/40 dark:bg-amber-950/10' : ''}`}
         onClick={() => setExpanded((v) => !v)}
       >
         <td className="px-3 py-2.5 w-8">
@@ -96,6 +96,11 @@ export default function BudgetPartidaRow({
             {hasItems && (
               <span className="text-[10px] text-app-subtle bg-app-chip rounded px-1.5 py-0.5">
                 {items.length} subpartidas
+              </span>
+            )}
+            {isEmpty && (
+              <span className="text-[10px] text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-950/40 rounded px-1.5 py-0.5">
+                vacía
               </span>
             )}
           </div>

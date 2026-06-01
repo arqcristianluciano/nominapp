@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isCedula, isRNC, isPhone, isEmail } from './validators'
+import { isCedula, isRNC, isPhone, isEmail, isStrongPassword } from './validators'
 
 describe('isCedula', () => {
   it('acepta cédula con guiones', () => {
@@ -150,5 +150,32 @@ describe('isEmail', () => {
 
   it('rechaza con doble @', () => {
     expect(isEmail('user@@example.com')).toBe(false)
+  })
+})
+
+describe('isStrongPassword', () => {
+  it('acepta contraseña con 8+ caracteres, mayúscula, minúscula y número', () => {
+    expect(isStrongPassword('Abcdef12')).toBe(true)
+    expect(isStrongPassword('Admin2026!Strong')).toBe(true)
+  })
+
+  it('rechaza si tiene menos de 8 caracteres', () => {
+    expect(isStrongPassword('Abc123')).toBe(false)
+  })
+
+  it('rechaza si le falta mayúscula', () => {
+    expect(isStrongPassword('abcdef12')).toBe(false)
+  })
+
+  it('rechaza si le falta minúscula', () => {
+    expect(isStrongPassword('ABCDEF12')).toBe(false)
+  })
+
+  it('rechaza si le falta número', () => {
+    expect(isStrongPassword('Abcdefgh')).toBe(false)
+  })
+
+  it('rechaza string vacío', () => {
+    expect(isStrongPassword('')).toBe(false)
   })
 })

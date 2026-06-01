@@ -3,15 +3,28 @@ import { CheckCircle2, XCircle, AlertTriangle, Info, X } from 'lucide-react'
 
 type ToastType = 'success' | 'error' | 'warning' | 'info'
 
+interface ToastAction {
+  label: string
+  onClick: () => void
+}
+
+interface ToastOptions {
+  /** Botón de acción opcional (p. ej. "Deshacer"). */
+  action?: ToastAction
+  /** Duración en ms antes de auto-cerrar. Por defecto 3500. */
+  durationMs?: number
+}
+
 interface Toast {
   id: number
   type: ToastType
   message: string
+  action?: ToastAction
 }
 
 interface ToastContextValue {
-  toast: (message: string, type?: ToastType) => void
-  success: (message: string) => void
+  toast: (message: string, type?: ToastType, options?: ToastOptions) => void
+  success: (message: string, options?: ToastOptions) => void
   error: (message: string) => void
   warning: (message: string) => void
   info: (message: string) => void
@@ -49,16 +62,16 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const addToast = useCallback(
-    (message: string, type: ToastType = 'info') => {
+    (message: string, type: ToastType = 'info', options?: ToastOptions) => {
       const id = nextId++
-      setToasts((prev) => [...prev.slice(-4), { id, type, message }])
-      const timer = setTimeout(() => dismiss(id), 3500)
+      setToasts((prev) => [...prev.slice(-4), { id, type, message, action: options?.action }])
+      const timer = setTimeout(() => dismiss(id), options?.durationMs ?? 3500)
       timers.current.set(id, timer)
     },
     [dismiss],
   )
 
-  const success = useCallback((msg: string) => addToast(msg, 'success'), [addToast])
+  const success = useCallback((msg: string, options?: ToastOptions) => addToast(msg, 'success', options), [addToast])
   const error = useCallback((msg: string) => addToast(msg, 'error'), [addToast])
   const warning = useCallback((msg: string) => addToast(msg, 'warning'), [addToast])
   const info = useCallback((msg: string) => addToast(msg, 'info'), [addToast])
@@ -95,6 +108,18 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             >
               <Icon className="w-4 h-4 shrink-0" aria-hidden="true" />
               <p className="flex-1 text-sm font-medium leading-snug">{t.message}</p>
+              {t.action && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    t.action?.onClick()
+                    dismiss(t.id)
+                  }}
+                  className="px-2 py-1 text-xs font-semibold rounded-lg bg-white/20 hover:bg-white/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white transition-colors shrink-0"
+                >
+                  {t.action.label}
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => dismiss(t.id)}

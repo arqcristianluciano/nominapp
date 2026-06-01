@@ -1,7 +1,8 @@
-import { memo, useState } from 'react'
+import { memo, useEffect, useState } from 'react'
 import { Pencil, Trash2, Check, X } from 'lucide-react'
 import type { TransactionWithRelations } from '@/services/transactionService'
-import type { BudgetCategory, Supplier } from '@/types/database'
+import type { BudgetCategory, BudgetItem, Supplier } from '@/types/database'
+import { budgetItemService } from '@/services/budgetItemService'
 import { PAYMENT_CONDITIONS } from '@/constants/indirectCosts'
 import { DOMINICAN_BANKS } from '@/constants/banks'
 import { formatRD } from '@/utils/currency'
@@ -26,6 +27,8 @@ function TransactionRowComponent({
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [date, setDate] = useState(transaction.date)
   const [budgetCategoryId, setBudgetCategoryId] = useState(transaction.budget_category_id || '')
+  const [budgetItemId, setBudgetItemId] = useState(transaction.budget_item_id || '')
+  const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([])
   const [description, setDescription] = useState(transaction.description)
   const [supplierId, setSupplierId] = useState(transaction.supplier_id || '')
   const [quantity, setQuantity] = useState(transaction.quantity ?? '')
@@ -36,6 +39,28 @@ function TransactionRowComponent({
   const [bank, setBank] = useState(transaction.bank || '')
   const [cashedDate, setCashedDate] = useState(transaction.cashed_date || '')
   const [notes, setNotes] = useState(transaction.notes || '')
+
+  // Cargar las partidas del capítulo solo al entrar en edición, para no
+  // disparar una consulta por cada fila al pintar la tabla. A diferencia del
+  // alta, aquí no autoseleccionamos: editar no debe cambiar una partida que el
+  // usuario no tocó.
+  useEffect(() => {
+    if (!editing) return
+    let cancelled = false
+    const promise = budgetCategoryId
+      ? budgetItemService.getByCategoryId(budgetCategoryId)
+      : Promise.resolve([] as BudgetItem[])
+    promise
+      .then((data) => {
+        if (!cancelled) setBudgetItems(data)
+      })
+      .catch(() => {
+        if (!cancelled) setBudgetItems([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [editing, budgetCategoryId])
 
   // Resync local edit state when the underlying transaction changes (e.g. a
   // different row reuses this instance, or the same row gets refreshed/edited
@@ -49,6 +74,7 @@ function TransactionRowComponent({
     transaction.id,
     transaction.date,
     transaction.budget_category_id,
+    transaction.budget_item_id,
     transaction.description,
     transaction.supplier_id,
     transaction.quantity,
@@ -65,6 +91,7 @@ function TransactionRowComponent({
     setSyncedKey(syncKey)
     setDate(transaction.date)
     setBudgetCategoryId(transaction.budget_category_id || '')
+    setBudgetItemId(transaction.budget_item_id || '')
     setDescription(transaction.description)
     setSupplierId(transaction.supplier_id || '')
     setQuantity(transaction.quantity ?? '')
@@ -83,6 +110,7 @@ function TransactionRowComponent({
     onUpdate(transaction.id, {
       date,
       budget_category_id: budgetCategoryId || null,
+      budget_item_id: budgetItemId || null,
       description: description.toUpperCase(),
       supplier_id: supplierId || null,
       quantity: quantity === '' ? null : Number(quantity),
@@ -101,6 +129,7 @@ function TransactionRowComponent({
   const handleCancel = () => {
     setDate(transaction.date)
     setBudgetCategoryId(transaction.budget_category_id || '')
+    setBudgetItemId(transaction.budget_item_id || '')
     setDescription(transaction.description)
     setSupplierId(transaction.supplier_id || '')
     setQuantity(transaction.quantity ?? '')
@@ -129,13 +158,37 @@ function TransactionRowComponent({
         <td className="px-2 py-1.5">
           <select
             value={budgetCategoryId}
-            onChange={(e) => setBudgetCategoryId(e.target.value)}
+            onChange={(e) => {
+              setBudgetCategoryId(e.target.value)
+              setBudgetItemId('')
+            }}
             className={selectClass}
           >
             <option value="">—</option>
             {budgetCategories.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.code}
+              </option>
+            ))}
+          </select>
+        </td>
+        <td className="px-2 py-1.5">
+          <select
+            value={budgetItemId}
+            onChange={(e) => setBudgetItemId(e.target.value)}
+            disabled={!budgetCategoryId}
+            className={`${selectClass} disabled:opacity-50`}
+            title={
+              budgetCategoryId && !budgetItemId
+                ? 'Asigna una partida para el seguimiento de costo por partida'
+                : undefined
+            }
+          >
+            <option value="">—</option>
+            {budgetItems.map((it) => (
+              <option key={it.id} value={it.id}>
+                {it.code ? `[${it.code}] ` : ''}
+                {it.description}
               </option>
             ))}
           </select>
@@ -256,6 +309,11 @@ function TransactionRowComponent({
         <td className="px-2 py-2 text-xs text-app-muted whitespace-nowrap">
           {transaction.budget_category?.code?.split(' - ')[0] || ''}
         </td>
+        <td className="px-2 py-2 text-xs text-app-muted">
+          <span className="block max-w-[140px] truncate" title={transaction.budget_item?.description || undefined}>
+            {transaction.budget_item ? transaction.budget_item.code || transaction.budget_item.description : ''}
+          </span>
+        </td>
         <td className="px-2 py-2 text-xs text-app-text font-medium">{transaction.description}</td>
         <td className="px-2 py-2 text-xs text-app-muted">{transaction.supplier?.name || ''}</td>
         <td className="px-2 py-2 text-xs text-app-muted text-right">{transaction.quantity ?? ''}</td>
@@ -291,7 +349,7 @@ function TransactionRowComponent({
       </tr>
       {confirmDelete && (
         <tr>
-          <td colSpan={13}>
+          <td colSpan={14}>
             <ConfirmModal
               open={confirmDelete}
               title="Eliminar transacción"

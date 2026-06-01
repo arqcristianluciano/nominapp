@@ -16,8 +16,10 @@ test('crear solicitud sin partida queda en draft', async ({ page }) => {
   await dialog.getByPlaceholder('Nombre').fill('cristian')
   await dialog.getByRole('button', { name: /Crear solicitud/i }).click()
 
-  // Después de crear, vuelve al listado y aparece la solicitud nueva.
-  await expect(page.getByText('50 sacos cemento')).toBeVisible({ timeout: 5000 })
+  // Después de crear, vuelve al listado y aparece la solicitud nueva. La lista
+  // renderiza dos vistas (tabla en ≥sm y tarjetas en móvil), ambas presentes en
+  // el DOM; acotamos a la tabla para evitar la doble coincidencia en strict mode.
+  await expect(page.getByRole('table').getByText('50 sacos cemento')).toBeVisible({ timeout: 5000 })
 })
 
 test('ruta /materiales muestra el catálogo global', async ({ page }) => {

@@ -50,14 +50,15 @@ export function useBudgetDetail(projectId: string | undefined) {
     [projectId],
   )
 
-  const removeCategories = useCallback(async (categoryIds: string[]) => {
-    if (categoryIds.length === 0) return
+  const removeCategories = useCallback(async (categoryIds: string[]): Promise<BudgetCategory[]> => {
+    if (categoryIds.length === 0) return []
     setSaving(true)
     setError(null)
     try {
-      await budgetCategoryService.deleteMany(categoryIds)
+      const removedRows = await budgetCategoryService.deleteMany(categoryIds)
       const removed = new Set(categoryIds)
       setCategories((prev) => prev.filter((c) => !removed.has(c.id)))
+      return removedRows
     } catch (e) {
       setError(getErrorMessage(e))
       throw e
@@ -65,6 +66,24 @@ export function useBudgetDetail(projectId: string | undefined) {
       setSaving(false)
     }
   }, [])
+
+  const restoreCategories = useCallback(
+    async (rows: BudgetCategory[]) => {
+      if (!projectId || rows.length === 0) return
+      setSaving(true)
+      setError(null)
+      try {
+        const recreated = await budgetCategoryService.restore(projectId, rows)
+        setCategories((prev) => [...prev, ...recreated].sort((a, b) => a.sort_order - b.sort_order))
+      } catch (e) {
+        setError(getErrorMessage(e))
+        throw e
+      } finally {
+        setSaving(false)
+      }
+    },
+    [projectId],
+  )
 
   const updateBudget = useCallback(async (categoryId: string, amount: number) => {
     setSaving(true)
@@ -80,10 +99,15 @@ export function useBudgetDetail(projectId: string | undefined) {
 
   const rows = useMemo<BudgetRow[]>(() => {
     return categories.map((category) => {
-      // GASTADO = movimientos de la tabla `transactions` + costo imputado
-      // a este capítulo desde los reportes comprometidos (mano de obra y
-      // facturas de materiales). Sin el segundo término, los gastos imputados
-      // en los reportes no se reflejaban y la columna mostraba 0.
+      // GASTADO = movimientos de la tabla `transactions` + costo imputado a este
+      // capítulo desde reportes comprometidos y almacén (mano de obra, facturas
+      // de materiales y salidas de inventario). Sin el segundo término, los
+      // gastos imputados en los reportes no se reflejaban y la columna mostraba 0.
+      //
+      // ⚠️ DOBLE CONTEO: `transactions` (control financiero) y los ítems
+      // imputados son fuentes INDEPENDIENTES; no se deduplican. Si un mismo gasto
+      // se captura por ambas vías para el mismo capítulo, se sumará dos veces.
+      // Ver `@/utils/costoReal` (fuente única de las reglas de costo real).
       const spent = round2(calcBudgetSpent(transactions, category.id) + (imputedByCategory[category.id] ?? 0))
       return {
         category,
@@ -119,5 +143,6 @@ export function useBudgetDetail(projectId: string | undefined) {
     load,
     updateBudget,
     removeCategories,
+    restoreCategories,
   }
 }
