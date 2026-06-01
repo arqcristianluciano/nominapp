@@ -19,6 +19,13 @@ import { cashFlowService } from '@/services/cashFlowService'
 import { COMMITTED_PAYROLL_STATUSES, payrollService } from '@/services/payrollService'
 import { projectService } from '@/services/projectService'
 import { transactionService } from '@/services/transactionService'
+import {
+  INVENTORY_OUT_TYPE,
+  inventoryOutCost,
+  laborLineCost,
+  materialInvoiceCost,
+  transactionCost,
+} from '@/utils/costoReal'
 import type {
   BudgetCategory,
   BudgetItem,
@@ -133,7 +140,7 @@ async function loadInventoryOutMovements(projectId: string, range: MonthRange): 
     .from('inventory_movements')
     .select('quantity, unit_cost, budget_category_id, budget_item_id')
     .eq('project_id', projectId)
-    .eq('type', 'out')
+    .eq('type', INVENTORY_OUT_TYPE)
     .gte('date', range.start)
     .lte('date', range.end)
   if (error) {
@@ -255,21 +262,24 @@ function buildBudgetBreakdown(
     actualByCategory.set(categoryId, (actualByCategory.get(categoryId) ?? 0) + amount)
   }
 
+  // Reglas de monto compartidas en `@/utils/costoReal` (fuente única con
+  // budgetSpentService / partidaProgressService). Ver advertencia de DOBLE
+  // CONTEO allí: transacciones e ítems de reporte/almacén son independientes.
   for (const ll of laborItems) {
-    const subtotal = Number(ll.quantity ?? 0) * Number(ll.unit_price ?? 0)
+    const subtotal = laborLineCost(ll)
     addToItem(ll.budget_item_id, subtotal)
     addToCategory(ll.budget_category_id, subtotal)
   }
   for (const inv of materialInvoices) {
-    const amount = Number(inv.amount ?? 0)
+    const amount = materialInvoiceCost(inv)
     addToItem(inv.budget_item_id, amount)
     addToCategory(inv.budget_category_id, amount)
   }
   for (const tx of monthlyTransactions) {
-    addToCategory(tx.budget_category_id, Number(tx.total ?? 0))
+    addToCategory(tx.budget_category_id, transactionCost(tx))
   }
   for (const mv of inventoryMovements) {
-    const value = Number(mv.quantity ?? 0) * Number(mv.unit_cost ?? 0)
+    const value = inventoryOutCost(mv)
     // Imputación a partida específica; si no, a nivel de capítulo. Se cuenta
     // una sola vez para no duplicar (igual criterio que budgetSpentService).
     if (mv.budget_item_id) addToItem(mv.budget_item_id, value)
@@ -320,11 +330,8 @@ function buildCashflow(
   expectedInflowsInMonth: number,
   plannedOutflowsInMonth: number,
 ): MonthlyReportInput['cashflow'] {
-  const contractorActual = laborItems.reduce(
-    (acc, ll) => acc + Number(ll.quantity ?? 0) * Number(ll.unit_price ?? 0),
-    0,
-  )
-  const materialActualFromInvoices = materialInvoices.reduce((acc, inv) => acc + Number(inv.amount ?? 0), 0)
+  const contractorActual = laborItems.reduce((acc, ll) => acc + laborLineCost(ll), 0)
+  const materialActualFromInvoices = materialInvoices.reduce((acc, inv) => acc + materialInvoiceCost(inv), 0)
   const indirectActual = indirectCosts
     .filter((c) => c.is_active)
     .reduce((acc, c) => acc + Number(c.calculated_amount ?? 0), 0)
@@ -383,7 +390,7 @@ function buildPayrollSummary(laborItems: LaborLineItem[]): MonthlyReportInput['p
   for (const ll of laborItems) {
     const contractorId = ll.contractor_id
     const contractorName = (ll.contractor as Contractor | undefined)?.name ?? 'Contratista sin nombre'
-    const subtotal = Number(ll.quantity ?? 0) * Number(ll.unit_price ?? 0)
+    const subtotal = laborLineCost(ll)
 
     const bucket = byContractor.get(contractorId) ?? {
       contractorName,

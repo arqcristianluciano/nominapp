@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Plus } from 'lucide-react'
 import type { BudgetCategory, BudgetItem, Supplier } from '@/types/database'
+import { SupplierSelect } from '@/components/features/suppliers/SupplierSelect'
 import { PAYMENT_CONDITIONS } from '@/constants/indirectCosts'
 import { DOMINICAN_BANKS } from '@/constants/banks'
 import type { Transaction } from '@/types/database'
@@ -159,16 +160,13 @@ export function TransactionInlineForm({
         </div>
         <div className="col-span-2 sm:col-span-1">
           <label className={labelClass}>Proveedor</label>
-          <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)} className={selectClass}>
-            <option value="">—</option>
-            {suppliers
-              .filter((s) => s.is_active)
-              .map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-          </select>
+          <SupplierSelect
+            suppliers={suppliers}
+            value={supplierId}
+            onChange={setSupplierId}
+            placeholder="—"
+            selectClassName={selectClass}
+          />
         </div>
         <div>
           <label className={labelClass}>Cantidad</label>

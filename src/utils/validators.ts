@@ -69,3 +69,21 @@ export function isEmail(s: string): boolean {
   if (typeof s !== 'string') return false
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.trim())
 }
+
+/**
+ * Longitud mínima exigida a las contraseñas. Debe coincidir con la regla del
+ * servidor (Edge Function admin-create-user) y con minimum_password_length en
+ * supabase/config.toml.
+ */
+export const MIN_PASSWORD_LENGTH = 8
+
+/**
+ * Valida la fortaleza de una contraseña. Misma regla que aplica el servidor:
+ * al menos 8 caracteres, con mayúscula, minúscula y número. Sirve para avisar
+ * al usuario en la pantalla ANTES de enviar (el servidor sigue siendo la
+ * autoridad final).
+ */
+export function isStrongPassword(s: string): boolean {
+  if (typeof s !== 'string') return false
+  return s.length >= MIN_PASSWORD_LENGTH && /[A-Z]/.test(s) && /[a-z]/.test(s) && /[0-9]/.test(s)
+}

@@ -6,7 +6,17 @@ export function BudgetSummaryCards({ spent, budgeted }: { spent: number; budgete
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
       <div className="bg-app-surface rounded-xl border border-app-border p-4">
-        <p className="text-xs text-app-muted">Total gastado</p>
+        <p
+          className="text-xs text-app-muted cursor-help"
+          title={
+            'Suma del control financiero (transacciones) más los gastos imputados desde ' +
+            'reportes comprometidos y almacén (mano de obra, facturas y salidas de inventario). ' +
+            'Nota: las transacciones y los ítems de reporte son fuentes independientes; si un ' +
+            'mismo gasto se registra por ambas vías al mismo capítulo, puede contarse dos veces.'
+          }
+        >
+          Total gastado
+        </p>
         <p className="text-2xl font-semibold text-app-text mt-1">{formatRD(spent)}</p>
       </div>
       <div className="bg-app-surface rounded-xl border border-app-border p-4">
