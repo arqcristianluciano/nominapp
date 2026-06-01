@@ -5,13 +5,19 @@ import { formatRD } from '@/utils/currency'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import PriceListInlineForm from './PriceListInlineForm'
 import { generatePriceCode } from '@/utils/priceCodeGenerator'
+import { PRICE_LIST_CATEGORIES } from '@/constants/priceListCategories'
 
-const CATEGORIES: { value: PriceListCategory; label: string; color: string }[] = [
-  { value: 'material',   label: 'Material',      color: 'bg-blue-100 text-blue-700' },
-  { value: 'labor',      label: 'Mano de obra',  color: 'bg-green-100 text-green-700' },
-  { value: 'equipment',  label: 'Equipo',        color: 'bg-amber-100 text-amber-700' },
-  { value: 'adjustment', label: 'Ajuste',        color: 'bg-purple-100 text-purple-700' },
-]
+const CATEGORY_COLORS: Record<PriceListCategory, string> = {
+  material: 'bg-blue-100 text-blue-700',
+  labor: 'bg-green-100 text-green-700',
+  equipment: 'bg-amber-100 text-amber-700',
+  adjustment: 'bg-purple-100 text-purple-700',
+}
+
+const CATEGORIES: { value: PriceListCategory; label: string; color: string }[] = PRICE_LIST_CATEGORIES.map((c) => ({
+  ...c,
+  color: CATEGORY_COLORS[c.value],
+}))
 
 interface Props {
   projectId: string
@@ -60,9 +66,7 @@ export default function PriceListPanel({ projectId, items, onAdd, onUpdate, onDe
               key={cat}
               onClick={() => setFilterCat(cat as PriceListCategory | 'all')}
               className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                filterCat === cat
-                  ? 'bg-gray-800 text-white'
-                  : 'bg-app-chip text-app-muted hover:bg-app-hover-strong'
+                filterCat === cat ? 'bg-gray-800 text-white' : 'bg-app-chip text-app-muted hover:bg-app-hover-strong'
               }`}
             >
               {cat === 'all' ? 'Todos' : CATEGORIES.find((c) => c.value === cat)?.label}
@@ -120,7 +124,10 @@ export default function PriceListPanel({ projectId, items, onAdd, onUpdate, onDe
                 projectId={projectId}
                 existingItems={items}
                 isNew
-                onSave={async (data) => { await onAdd(data); setShowAddForm(false) }}
+                onSave={async (data) => {
+                  await onAdd(data)
+                  setShowAddForm(false)
+                }}
                 onCancel={() => setShowAddForm(false)}
               />
             )}
@@ -138,13 +145,16 @@ export default function PriceListPanel({ projectId, items, onAdd, onUpdate, onDe
                   projectId={projectId}
                   existingItems={items}
                   initial={{
-                    category:    item.category,
-                    code:        item.code ?? '',
+                    category: item.category,
+                    code: item.code ?? '',
                     description: item.description,
-                    unit:        item.unit,
-                    unit_price:  item.unit_price.toString(),
+                    unit: item.unit,
+                    unit_price: item.unit_price.toString(),
                   }}
-                  onSave={async (data) => { await onUpdate(item.id, data); setEditId(null) }}
+                  onSave={async (data) => {
+                    await onUpdate(item.id, data)
+                    setEditId(null)
+                  }}
                   onCancel={() => setEditId(null)}
                 />
               ) : (
@@ -157,7 +167,9 @@ export default function PriceListPanel({ projectId, items, onAdd, onUpdate, onDe
                   <td className="px-3 py-2 text-xs text-app-subtle font-mono">{item.code ?? '—'}</td>
                   <td className="px-3 py-2 text-xs text-app-text">{item.description}</td>
                   <td className="px-3 py-2 text-xs text-app-muted">{item.unit}</td>
-                  <td className="px-3 py-2 text-xs font-medium text-app-text text-right">{formatRD(item.unit_price)}</td>
+                  <td className="px-3 py-2 text-xs font-medium text-app-text text-right">
+                    {formatRD(item.unit_price)}
+                  </td>
                   <td className="px-3 py-2">
                     <div className="flex items-center justify-end gap-1">
                       <button
@@ -175,7 +187,7 @@ export default function PriceListPanel({ projectId, items, onAdd, onUpdate, onDe
                     </div>
                   </td>
                 </tr>
-              )
+              ),
             )}
           </tbody>
         </table>

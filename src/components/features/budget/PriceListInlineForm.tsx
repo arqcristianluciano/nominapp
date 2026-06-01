@@ -3,14 +3,10 @@ import { Check, X } from 'lucide-react'
 import type { PriceListItem, PriceListCategory } from '@/types/database'
 import { MEASURE_UNITS } from '@/constants/measureUnits'
 import { generatePriceCode } from '@/utils/priceCodeGenerator'
+import { PRICE_LIST_CATEGORIES } from '@/constants/priceListCategories'
 import { useToast } from '@/components/ui/Toast'
 
-const CATEGORIES: { value: PriceListCategory; label: string }[] = [
-  { value: 'material', label: 'Material' },
-  { value: 'labor', label: 'Mano de obra' },
-  { value: 'equipment', label: 'Equipo' },
-  { value: 'adjustment', label: 'Ajuste' },
-]
+const CATEGORIES = PRICE_LIST_CATEGORIES
 
 const EXTRA_UNITS = ['Und', 'Saco', 'QQ', 'Global', 'Día', 'Mes']
 

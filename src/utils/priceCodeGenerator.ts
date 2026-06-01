@@ -1,17 +1,8 @@
 import type { PriceListCategory, PriceListItem } from '@/types/database'
+import { PRICE_LIST_CATEGORY_PREFIX } from '@/constants/priceListCategories'
 
-const PREFIX: Record<PriceListCategory, string> = {
-  material:   'MAT',
-  labor:      'MO',
-  equipment:  'EQ',
-  adjustment: 'AJ',
-}
-
-export function generatePriceCode(
-  category: PriceListCategory,
-  items: PriceListItem[],
-): string {
-  const prefix = PREFIX[category]
+export function generatePriceCode(category: PriceListCategory, items: PriceListItem[]): string {
+  const prefix = PRICE_LIST_CATEGORY_PREFIX[category]
   const existing = items
     .filter((i) => i.category === category)
     .map((i) => {

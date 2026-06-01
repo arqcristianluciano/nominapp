@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { payrollService } from '@/services/payrollService'
 import { projectService } from '@/services/projectService'
+import { useToast } from '@/components/ui/Toast'
 import type { PayrollPeriod, Project } from '@/types/database'
 
 interface GroupedProjectReports {
@@ -11,6 +12,7 @@ interface GroupedProjectReports {
 const OPEN_STATUSES: PayrollPeriod['status'][] = ['draft', 'submitted', 'approved']
 
 export function useReportesObraState() {
+  const { error: toastError } = useToast()
   const [periods, setPeriods] = useState<PayrollPeriod[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
@@ -36,13 +38,14 @@ export function useReportesObraState() {
         }
       } catch (error) {
         console.error('useReportesObraState loadPageData failed', error)
+        toastError('No se pudieron cargar los reportes. Inténtalo de nuevo.')
       } finally {
         setLoading(false)
       }
     }
 
     void loadPageData()
-  }, [])
+  }, [toastError])
 
   const grouped = useMemo<GroupedProjectReports[]>(
     () =>
@@ -52,12 +55,12 @@ export function useReportesObraState() {
           periods: periods.filter((period) => period.project_id === project.id),
         }))
         .filter((group) => group.periods.length > 0),
-    [periods, projects]
+    [periods, projects],
   )
 
   const emptyProjects = useMemo(
     () => projects.filter((project) => !periods.some((period) => period.project_id === project.id)),
-    [periods, projects]
+    [periods, projects],
   )
 
   function toggleExpand(projectId: string) {
@@ -87,15 +90,13 @@ export function useReportesObraState() {
     setClosingProjectId(projectId)
     try {
       const drafts = periods.filter(
-        (period) => period.project_id === projectId && OPEN_STATUSES.includes(period.status)
+        (period) => period.project_id === projectId && OPEN_STATUSES.includes(period.status),
       )
       await Promise.all(drafts.map((period) => payrollService.updatePeriodStatus(period.id, 'paid')))
       setPeriods((prev) =>
         prev.map((period) =>
-          period.project_id === projectId && period.status !== 'paid'
-            ? { ...period, status: 'paid' }
-            : period
-        )
+          period.project_id === projectId && period.status !== 'paid' ? { ...period, status: 'paid' } : period,
+        ),
       )
     } finally {
       setClosingProjectId(null)

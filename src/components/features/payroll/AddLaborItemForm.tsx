@@ -6,6 +6,7 @@ import { contractorService } from '@/services/contractorService'
 import { budgetItemService } from '@/services/budgetItemService'
 import { parseDecimalInput } from '@/utils/decimalInput'
 import { mul, round2 } from '@/utils/money'
+import { useToast } from '@/components/ui/Toast'
 
 const NEW_CONTRACTOR_VALUE = '__NEW__'
 
@@ -44,6 +45,7 @@ export function AddLaborItemForm({
   initialItem,
   submitLabel,
 }: Props) {
+  const { error: toastError } = useToast()
   const isEdit = !!initialItem
   const [contractorId, setContractorId] = useState(initialItem?.contractor_id ?? '')
   const [selectedTaskId, setSelectedTaskId] = useState('')
@@ -122,6 +124,7 @@ export function AddLaborItemForm({
       setNewSpecialty('')
     } catch (err) {
       console.warn('[AddLaborItemForm] handleCreateContractor failed', err)
+      toastError('No se pudo crear el contratista. Inténtalo de nuevo.')
     } finally {
       setSavingNew(false)
     }

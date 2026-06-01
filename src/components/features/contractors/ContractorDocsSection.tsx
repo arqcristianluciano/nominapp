@@ -7,6 +7,7 @@ import {
   type ContractorDocFormData,
 } from '@/services/contractorDocService'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
+import { useToast } from '@/components/ui/Toast'
 import { getErrorMessage } from '@/utils/errors'
 
 interface Props {
@@ -26,6 +27,7 @@ const INITIAL_FORM: DocForm = {
 }
 
 export function ContractorDocsSection({ contractorId, docs, onChange }: Props) {
+  const { error: toastError } = useToast()
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState<DocForm>(INITIAL_FORM)
   const [deleteId, setDeleteId] = useState<string | null>(null)
@@ -42,6 +44,7 @@ export function ContractorDocsSection({ contractorId, docs, onChange }: Props) {
       onChange(await contractorDocService.getByContractor(contractorId))
     } catch (err) {
       console.warn('[ContractorDocsSection] handleSave failed', getErrorMessage(err))
+      toastError('No se pudo guardar el documento. Inténtalo de nuevo.')
     } finally {
       setSaving(false)
     }
