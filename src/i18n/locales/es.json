@@ -266,7 +266,7 @@
       "email": "Email",
       "email_placeholder": "empleado@empresa.com",
       "initial_password": "Contraseña inicial",
-      "password_placeholder": "Mínimo 6 caracteres",
+      "password_placeholder": "Mín. 8 caracteres, con mayúscula, minúscula y número",
       "tabs_label": "Modo de creación de usuario",
       "create_with_password": "Crear con contraseña",
       "invite_by_email": "Invitar por email",
@@ -306,6 +306,7 @@
         "email_required": "El email es obligatorio",
         "invalid_email": "Email inválido",
         "password_required": "La contraseña inicial es obligatoria",
+        "weak_password": "La contraseña debe tener al menos 8 caracteres, con mayúscula, minúscula y número",
         "save_failed": "No se pudo guardar"
       }
     },

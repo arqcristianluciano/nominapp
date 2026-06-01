@@ -1,0 +1,23 @@
+# Configuración de Supabase para nominapp.
+#
+# Este archivo deja ESCRITA la política de contraseñas del proyecto para que
+# quede versionada y se pueda revisar/reproducir. NO contiene claves ni
+# secretos.
+#
+# Política de contraseñas (gratis, sin plan de pago):
+#   - Mínimo 8 caracteres.
+#   - Deben incluir minúscula, mayúscula y número.
+# Coincide con la validación que ya aplica el servidor en la Edge Function
+# admin-create-user y con isStrongPassword() en src/utils/validators.ts.
+#
+# Nota: "protección de contraseñas filtradas" (HaveIBeenPwned) NO se incluye
+# aquí porque requiere el plan Pro (de pago). Queda como mejora futura.
+
+[auth]
+# Longitud mínima de la contraseña.
+minimum_password_length = 8
+
+# Caracteres requeridos. Valor que exige minúscula, mayúscula y dígito.
+# (Opciones válidas: "letters_digits", "lower_upper_letters_digits",
+#  "lower_upper_letters_digits_symbols".)
+password_requirements = "lower_upper_letters_digits"
