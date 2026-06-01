@@ -85,10 +85,5 @@ export const MIN_PASSWORD_LENGTH = 8
  */
 export function isStrongPassword(s: string): boolean {
   if (typeof s !== 'string') return false
-  return (
-    s.length >= MIN_PASSWORD_LENGTH &&
-    /[A-Z]/.test(s) &&
-    /[a-z]/.test(s) &&
-    /[0-9]/.test(s)
-  )
+  return s.length >= MIN_PASSWORD_LENGTH && /[A-Z]/.test(s) && /[a-z]/.test(s) && /[0-9]/.test(s)
 }
