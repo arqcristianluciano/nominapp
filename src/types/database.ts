@@ -315,6 +315,14 @@ export interface ContractAdelanto {
 
 export type LoanStatus = 'active' | 'paid' | 'cancelled'
 
+/** Fila de la tabla relacional bitacora_photos (migración 077). */
+export interface BitacoraPhoto {
+  id: string
+  bitacora_id: string
+  storage_path: string
+  uploaded_at: string
+}
+
 export interface ContractorLoan {
   id: string
   contractor_id: string
@@ -405,6 +413,11 @@ export interface Database {
         Row: ContractAdelanto
         Insert: Omit<ContractAdelanto, 'id' | 'created_at'>
         Update: Partial<ContractAdelanto>
+      }
+      bitacora_photos: {
+        Row: BitacoraPhoto
+        Insert: Omit<BitacoraPhoto, 'id' | 'uploaded_at'>
+        Update: Partial<BitacoraPhoto>
       }
     }
   }

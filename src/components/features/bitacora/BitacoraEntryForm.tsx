@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { Camera, ImagePlus, Loader2, X } from 'lucide-react'
-import { bitacoraService, type BitacoraFormData } from '@/services/bitacoraService'
+import {
+  bitacoraService,
+  validatePhotoFile,
+  type BitacoraFormData,
+  type PendingPhoto,
+} from '@/services/bitacoraService'
 import { WEATHER_OPTIONS } from './bitacoraConfig'
 
 interface Props {
@@ -9,88 +14,154 @@ interface Props {
   editMode: boolean
   onChange: (next: BitacoraFormData) => void
   onCancel: () => void
-  onSave: () => void
+  /** onSave recibe los archivos pendientes para que el caller los suba después de crear/actualizar el registro. */
+  onSave: (pendingPhotos: PendingPhoto[]) => void
 }
 
 const inputCls =
   'w-full px-3 py-2 text-sm border border-app-border rounded-lg bg-app-bg text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500'
 
-export function BitacoraEntryForm({ form, saving, editMode, onChange, onCancel, onSave }: Props) {
-  const cameraInputRef = useRef<HTMLInputElement | null>(null)
-  const galleryInputRef = useRef<HTMLInputElement | null>(null)
-  const [uploading, setUploading] = useState(false)
-  const [uploadError, setUploadError] = useState<string | null>(null)
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null)
+// ─────────────────────────────────────────────────────────────────────────────
+// Sub-componente: preview de una foto pendiente (no subida aún)
+// ─────────────────────────────────────────────────────────────────────────────
+function PendingPhotoCard({
+  photo,
+  onRemove,
+  disabled,
+}: {
+  photo: PendingPhoto
+  onRemove: () => void
+  disabled: boolean
+}) {
+  return (
+    <div className="relative group">
+      <img
+        src={photo.localUrl}
+        alt="Vista previa"
+        className="w-24 h-24 object-cover rounded-lg border border-app-border"
+      />
+      <button
+        type="button"
+        onClick={onRemove}
+        disabled={disabled}
+        aria-label="Quitar foto"
+        className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-0.5 opacity-80 hover:opacity-100 disabled:opacity-40 transition-opacity"
+      >
+        <X className="w-3 h-3" />
+      </button>
+    </div>
+  )
+}
 
-  // Cuando el form trae un photo_url (foto ya subida), pide una signed URL para mostrar la preview.
+// ─────────────────────────────────────────────────────────────────────────────
+// Sub-componente: preview de una foto ya guardada (legacy photo_url)
+// ─────────────────────────────────────────────────────────────────────────────
+function SavedPhotoCard({
+  storagePath,
+  onRemove,
+  disabled,
+}: {
+  storagePath: string
+  onRemove: () => void
+  disabled: boolean
+}) {
+  const [signedUrl, setSignedUrl] = useState<string | null>(null)
+
   useEffect(() => {
     let cancelled = false
-    if (!form.photo_url) {
-      setPreviewUrl(null)
-      return
-    }
-    // Si ya tenemos preview local (subimos en esta sesión), no pedimos signed URL otra vez.
-    if (localPreviewUrl) return
     void bitacoraService
-      .getPhotoUrl(form.photo_url)
+      .getPhotoUrl(storagePath)
       .then((url) => {
-        if (!cancelled) setPreviewUrl(url)
+        if (!cancelled) setSignedUrl(url)
       })
       .catch(() => {
-        if (!cancelled) setPreviewUrl(null)
+        if (!cancelled) setSignedUrl(null)
       })
     return () => {
       cancelled = true
     }
-  }, [form.photo_url, localPreviewUrl])
+  }, [storagePath])
 
-  // Limpia el object URL local cuando se desmonta o cambia.
-  useEffect(() => {
-    return () => {
-      if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl)
-    }
-  }, [localPreviewUrl])
-
-  async function handlePhotoFile(file: File | null | undefined) {
-    if (!file) return
-    if (!form.project_id) {
-      setUploadError('Selecciona un proyecto antes de subir fotos.')
-      return
-    }
-    setUploadError(null)
-    setUploading(true)
-    // Preview local inmediata
-    const localUrl = URL.createObjectURL(file)
-    setLocalPreviewUrl((prev) => {
-      if (prev) URL.revokeObjectURL(prev)
-      return localUrl
-    })
-    try {
-      const path = await bitacoraService.uploadPhoto(form.project_id, file)
-      onChange({ ...form, photo_url: path })
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Error al subir la foto'
-      setUploadError(message)
-      // Limpia preview local si el upload falló.
-      URL.revokeObjectURL(localUrl)
-      setLocalPreviewUrl(null)
-    } finally {
-      setUploading(false)
-    }
+  if (!signedUrl) {
+    return (
+      <div className="w-24 h-24 rounded-lg border border-app-border bg-app-bg flex items-center justify-center text-app-subtle">
+        <Loader2 className="w-4 h-4 animate-spin" />
+      </div>
+    )
   }
 
-  function clearPhoto() {
-    if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl)
-    setLocalPreviewUrl(null)
-    setPreviewUrl(null)
+  return (
+    <div className="relative group">
+      <img src={signedUrl} alt="Foto guardada" className="w-24 h-24 object-cover rounded-lg border border-app-border" />
+      <button
+        type="button"
+        onClick={onRemove}
+        disabled={disabled}
+        aria-label="Quitar foto guardada"
+        className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-0.5 opacity-80 hover:opacity-100 disabled:opacity-40 transition-opacity"
+      >
+        <X className="w-3 h-3" />
+      </button>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Formulario principal
+// ─────────────────────────────────────────────────────────────────────────────
+export function BitacoraEntryForm({ form, saving, editMode, onChange, onCancel, onSave }: Props) {
+  const cameraInputRef = useRef<HTMLInputElement | null>(null)
+  const galleryInputRef = useRef<HTMLInputElement | null>(null)
+
+  /** Fotos seleccionadas aún no subidas al servidor. */
+  const [pendingPhotos, setPendingPhotos] = useState<PendingPhoto[]>([])
+  const [uploadError, setUploadError] = useState<string | null>(null)
+
+  // Limpia los object URLs al desmontar el formulario para liberar memoria.
+  useEffect(() => {
+    return () => {
+      pendingPhotos.forEach((p) => URL.revokeObjectURL(p.localUrl))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  /** Agrega uno o varios archivos seleccionados a la cola de pendientes. */
+  function handleFiles(files: FileList | null) {
+    if (!files || files.length === 0) return
     setUploadError(null)
-    onChange({ ...form, photo_url: null })
+    const newPending: PendingPhoto[] = []
+    for (const file of Array.from(files)) {
+      try {
+        validatePhotoFile(file)
+        newPending.push({ localUrl: URL.createObjectURL(file), file })
+      } catch (err) {
+        setUploadError(err instanceof Error ? err.message : 'Archivo no válido')
+        // Continúa con los demás archivos.
+      }
+    }
+    if (newPending.length > 0) {
+      setPendingPhotos((prev) => [...prev, ...newPending])
+    }
+    // Limpia el input para que se pueda seleccionar el mismo archivo de nuevo.
     if (cameraInputRef.current) cameraInputRef.current.value = ''
     if (galleryInputRef.current) galleryInputRef.current.value = ''
   }
 
-  const displayPreview = localPreviewUrl ?? previewUrl
+  /** Quita una foto pendiente (antes de guardar) y libera el object URL. */
+  function removePending(index: number) {
+    setPendingPhotos((prev) => {
+      const item = prev[index]
+      if (item) URL.revokeObjectURL(item.localUrl)
+      return prev.filter((_, i) => i !== index)
+    })
+  }
+
+  /** Quita la foto legacy (photo_url del form) del registro. */
+  function clearLegacyPhoto() {
+    onChange({ ...form, photo_url: null })
+  }
+
+  const busy = saving
 
   return (
     <div className="bg-app-surface border border-app-border rounded-xl p-4 space-y-3">
@@ -194,66 +265,69 @@ export function BitacoraEntryForm({ form, saving, editMode, onChange, onCancel, 
         />
       </div>
 
-      {/* Bloque de foto */}
+      {/* ── Bloque de fotos ── */}
       <div className="space-y-2">
-        <label className="text-xs text-app-muted block">Foto del avance</label>
+        <label className="text-xs text-app-muted block">Fotos del avance</label>
+
+        {/* Botones de acción */}
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => cameraInputRef.current?.click()}
-            disabled={uploading || saving}
+            disabled={busy}
             className="flex items-center gap-1.5 px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
           >
-            {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
+            <Camera className="w-4 h-4" />
             Tomar foto
           </button>
           <button
             type="button"
             onClick={() => galleryInputRef.current?.click()}
-            disabled={uploading || saving}
+            disabled={busy}
             className="flex items-center gap-1.5 px-3 py-2 text-sm border border-app-border rounded-lg text-app-text hover:bg-app-hover disabled:opacity-50"
           >
             <ImagePlus className="w-4 h-4" />
             Galería
           </button>
-          {form.photo_url && (
-            <button
-              type="button"
-              onClick={clearPhoto}
-              disabled={uploading || saving}
-              className="flex items-center gap-1.5 px-3 py-2 text-sm border border-red-200 dark:border-red-800 rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-50"
-            >
-              <X className="w-4 h-4" />
-              Quitar
-            </button>
-          )}
         </div>
 
+        {/* Input cámara (una sola foto) */}
         <input
           ref={cameraInputRef}
           type="file"
           accept="image/*"
           capture="environment"
           className="hidden"
-          onChange={(e) => void handlePhotoFile(e.target.files?.[0])}
+          onChange={(e) => handleFiles(e.target.files)}
         />
+        {/* Input galería (selección múltiple) */}
         <input
           ref={galleryInputRef}
           type="file"
           accept="image/*"
+          multiple
           className="hidden"
-          onChange={(e) => void handlePhotoFile(e.target.files?.[0])}
+          onChange={(e) => handleFiles(e.target.files)}
         />
 
         {uploadError && <p className="text-xs text-red-600">{uploadError}</p>}
 
-        {displayPreview && (
-          <div className="mt-1">
-            <img
-              src={displayPreview}
-              alt="Foto del avance"
-              className="max-h-48 rounded-lg border border-app-border object-cover"
-            />
+        {/* Grid de previews: foto legacy (photo_url) + fotos pendientes */}
+        {(form.photo_url || pendingPhotos.length > 0) && (
+          <div className="flex flex-wrap gap-2 mt-1">
+            {/* Foto legacy: era la única foto antes de la migración 077 */}
+            {form.photo_url && (
+              <SavedPhotoCard storagePath={form.photo_url} onRemove={clearLegacyPhoto} disabled={busy} />
+            )}
+            {/* Fotos nuevas (pendientes de subir al guardar) */}
+            {pendingPhotos.map((photo, index) => (
+              <PendingPhotoCard
+                key={photo.localUrl}
+                photo={photo}
+                onRemove={() => removePending(index)}
+                disabled={busy}
+              />
+            ))}
           </div>
         )}
       </div>
@@ -262,14 +336,14 @@ export function BitacoraEntryForm({ form, saving, editMode, onChange, onCancel, 
       <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
         <button
           onClick={onCancel}
-          disabled={saving || uploading}
+          disabled={busy}
           className="px-4 py-2 text-sm border border-app-border rounded-lg hover:bg-app-hover text-app-muted disabled:opacity-50"
         >
           Cancelar
         </button>
         <button
-          onClick={onSave}
-          disabled={saving || uploading || !form.work_summary.trim()}
+          onClick={() => onSave(pendingPhotos)}
+          disabled={busy || !form.work_summary.trim()}
           className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium"
         >
           {saving ? 'Guardando...' : 'Guardar'}
