@@ -7,6 +7,7 @@ import { SupplierSelect } from '@/components/features/suppliers/SupplierSelect'
 import { parseDecimalInput } from '@/utils/decimalInput'
 import { sumInvoiceItems } from '@/utils/materialInvoice'
 import { formatRD } from '@/utils/currency'
+import { compressImageFile } from '@/utils/imageCompression'
 
 interface ItemDraft {
   description: string
@@ -162,7 +163,8 @@ export function AddMaterialForm({
     const isImage = file.type.startsWith('image/')
     const localUrl = isImage ? URL.createObjectURL(file) : null
     try {
-      const path = await payrollService.uploadInvoiceFile(file, projectId, periodId)
+      const compressed = await compressImageFile(file)
+      const path = await payrollService.uploadInvoiceFile(compressed, projectId, periodId)
       // Si se reemplaza un archivo subido en esta sesión, borra el anterior.
       if (sessionPathRef.current && sessionPathRef.current !== path) {
         void payrollService.deleteInvoiceFile(sessionPathRef.current)
