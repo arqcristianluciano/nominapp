@@ -3,6 +3,8 @@ import { PurchaseOrderMeta } from '@/components/features/purchase-orders/Purchas
 import { PurchaseOrderActions } from '@/components/features/purchase-orders/PurchaseOrderActions'
 import { PurchaseOrderDetailModals } from '@/components/features/purchase-orders/PurchaseOrderDetailModals'
 import { PurchaseOrderQuotesSection } from '@/components/features/purchase-orders/PurchaseOrderQuotesSection'
+import { Modal } from '@/components/ui/Modal'
+import { RequisitionForm } from '@/components/features/purchase-orders/RequisitionForm'
 import { PurchaseOrderSignatureCard } from '@/components/features/purchase-orders/PurchaseOrderSignatureCard'
 import { ExcessValidationModal } from '@/components/features/purchase-orders/ExcessValidationModal'
 import { ReceiveOrderModal } from '@/components/features/purchase-orders/ReceiveOrderModal'
@@ -37,6 +39,8 @@ export default function PurchaseOrderDetail() {
     canNegotiate,
     missingQuotes,
     canSubmit,
+    editModal,
+    savingEdit,
     setAddQuote,
     setApprovalModal,
     setDeleteQuoteId,
@@ -44,6 +48,7 @@ export default function PurchaseOrderDetail() {
     setExcessModal,
     setConfirmReceive,
     setConfirmReverse,
+    setEditModal,
     handleAddQuote,
     handleNegotiate,
     handleDeleteQuote,
@@ -56,6 +61,7 @@ export default function PurchaseOrderDetail() {
     handleReverseReceipt,
     handleValidateExcess,
     handleDelete,
+    handleEditRequisition,
   } = usePurchaseOrderDetail()
 
   const roles = useProjectRoles(req?.project_id)
@@ -177,6 +183,7 @@ export default function PurchaseOrderDetail() {
               reversingOrder={reversingOrder}
               onSubmitForApproval={handleSubmitForApproval}
               onOpenApproval={() => setApprovalModal(true)}
+              onOpenEdit={canEdit ? () => setEditModal(true) : undefined}
               onPlaceCash={() => handlePlaceOrder('cash', user?.displayName)}
               onPlaceCredit={() => handlePlaceOrder('credit', user?.displayName)}
               onReceive={() => setConfirmReceive(true)}
@@ -233,6 +240,49 @@ export default function PurchaseOrderDetail() {
           onConfirm={() => handleReverseReceipt(user?.displayName)}
           onCancel={() => setConfirmReverse(false)}
         />
+
+        {/* Modal de edición (solo en estados: Borrador / En cotización / Requiere revisión) */}
+        {canEdit && (
+          <Modal open={editModal} onClose={() => setEditModal(false)} title="Editar solicitud de compra">
+            <RequisitionForm
+              projects={req.project ? [req.project] : []}
+              initialValues={{
+                project_id: req.project_id,
+                requested_by: req.requested_by,
+                required_date: req.required_date ?? undefined,
+                notes: req.notes ?? undefined,
+                items: (req.requisition_items ?? []).map((it) => ({
+                  description: it.description,
+                  budget_category_id: it.budget_category_id,
+                  budget_item_id: it.budget_item_id,
+                  resource_type: it.resource_type,
+                  quantity: it.quantity,
+                  unit: it.unit,
+                })),
+              }}
+              onSubmit={async (payload) => {
+                await handleEditRequisition(
+                  {
+                    description: payload.description,
+                    requested_by: payload.requested_by,
+                    required_date: payload.required_date ?? null,
+                    notes: payload.notes ?? null,
+                    budget_item_id: payload.budget_item_id,
+                    budget_category_id: payload.budget_category_id,
+                    quantity_requested: payload.quantity_requested,
+                    unit: payload.unit,
+                    resource_type: payload.resource_type,
+                    items: payload.items,
+                  },
+                  user?.displayName,
+                )
+              }}
+              onCancel={() => setEditModal(false)}
+              saving={savingEdit}
+              submitLabel="Guardar cambios"
+            />
+          </Modal>
+        )}
       </div>
 
       {/* Mobile sticky footer with the primary CTA. Hidden on sm+ where buttons

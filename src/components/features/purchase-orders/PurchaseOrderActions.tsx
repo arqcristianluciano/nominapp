@@ -1,4 +1,4 @@
-import { PackageCheck, RotateCcw, Send, ShieldCheck, Trash2, Truck } from 'lucide-react'
+import { PackageCheck, Pencil, RotateCcw, Send, ShieldCheck, Trash2, Truck } from 'lucide-react'
 
 interface Props {
   canEdit: boolean
@@ -13,6 +13,7 @@ interface Props {
   reversingOrder?: boolean
   onSubmitForApproval: () => void
   onOpenApproval: () => void
+  onOpenEdit?: () => void
   onPlaceCash: () => void
   onPlaceCredit: () => void
   onReceive?: () => void
@@ -33,6 +34,7 @@ export function PurchaseOrderActions({
   reversingOrder = false,
   onSubmitForApproval,
   onOpenApproval,
+  onOpenEdit,
   onPlaceCash,
   onPlaceCredit,
   onReceive,
@@ -61,6 +63,17 @@ export function PurchaseOrderActions({
   // (corrección/devolución) mientras el stock siga disponible.
   const canShowReverse = status === 'received' || partiallyReceived
 
+  // Mostrar botón Editar deshabilitado (con tooltip) en estados post-aprobación.
+  const isPostApproval = [
+    'pending_approval',
+    'pendiente_liberacion',
+    'approved',
+    'ordered',
+    'partially_received',
+    'received',
+    'rejected',
+  ].includes(status)
+
   const hasAnyAction =
     canSubmit ||
     status === 'pending_approval' ||
@@ -68,7 +81,8 @@ export function PurchaseOrderActions({
     awaitingReceipt ||
     (canShowReceive && canReceive) ||
     (canShowReverse && canReverseReceipt) ||
-    canEdit
+    canEdit ||
+    isPostApproval
 
   if (!hasAnyAction) return null
 
@@ -142,6 +156,23 @@ export function PurchaseOrderActions({
           {reversingOrder ? 'Revirtiendo…' : 'Revertir recepción (devolver de almacén)'}
         </button>
       )}
+      {canEdit && onOpenEdit ? (
+        <button
+          onClick={onOpenEdit}
+          className={`${baseBtn} border border-app-border text-app-text hover:bg-app-hover`}
+          title="Editar solicitud"
+        >
+          <Pencil className="w-4 h-4" /> Editar solicitud
+        </button>
+      ) : isPostApproval ? (
+        <button
+          disabled
+          title="No editable: ya aprobada"
+          className={`${baseBtn} border border-app-border text-app-subtle cursor-not-allowed opacity-50`}
+        >
+          <Pencil className="w-4 h-4" /> Editar solicitud
+        </button>
+      ) : null}
       {canEdit && (
         <button
           onClick={onDelete}

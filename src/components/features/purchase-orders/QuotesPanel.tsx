@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { Trash2, Award, Pencil, Check, X } from 'lucide-react'
+import { Trash2, Award, FileDown, Pencil, Check, X } from 'lucide-react'
 import type { PurchaseQuote } from '@/types/purchaseOrder'
 import { formatRD } from '@/utils/currency'
 import { parseDecimalInput } from '@/utils/decimalInput'
+import { quoteService } from '@/services/quoteService'
 
 interface NegotiationState {
   price: string
@@ -157,6 +158,26 @@ export function QuotesPanel({ quotes, approvedQuoteId, canDelete, canNegotiate, 
                 <p className="mt-2 text-xs text-app-muted italic border-t border-app-border pt-2 break-words">
                   {q.notes}
                 </p>
+              )}
+
+              {/* Adjunto de cotización: botón de descarga si existe */}
+              {q.attachment_path && !state?.editing && (
+                <div className="mt-2 border-t border-app-border pt-2">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const url = await quoteService.getAttachmentUrl(q.attachment_path!)
+                        window.open(url, '_blank', 'noopener,noreferrer')
+                      } catch {
+                        // silente — el usuario verá que no abrió
+                      }
+                    }}
+                    className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:underline"
+                  >
+                    <FileDown className="w-3.5 h-3.5" /> Ver cotización adjunta
+                  </button>
+                </div>
               )}
 
               {state?.editing && (

@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Plus, Trash2 } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Paperclip, Plus, Trash2, X } from 'lucide-react'
 import type { Supplier } from '@/types/database'
 import { SupplierSelect } from '@/components/features/suppliers/SupplierSelect'
 import { formatRD } from '@/utils/currency'
@@ -27,6 +27,8 @@ interface QuotePayload {
     unit_price: number
     material_catalog_id?: string | null
   }>
+  // Archivo de cotización adjunto (opcional). Se sube al bucket desde el hook padre.
+  attachmentFile?: File | null
 }
 
 interface Props {
@@ -53,6 +55,9 @@ export function QuoteForm({ suppliers, onSubmit, onCancel, saving }: Props) {
   const [items, setItems] = useState<ItemDraft[]>([emptyItem()])
   const [error, setError] = useState<string | null>(null)
   const [catalog, setCatalog] = useState<MaterialCatalogItem[]>([])
+  // Adjunto de cotización (PDF/JPG/PNG, máx 10 MB)
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     materialsCatalogService
@@ -108,6 +113,7 @@ export function QuoteForm({ suppliers, onSubmit, onCancel, saving }: Props) {
           material_catalog_id: i.material_catalog_id,
         }
       }),
+      attachmentFile: attachmentFile ?? null,
     })
   }
 
@@ -246,6 +252,48 @@ export function QuoteForm({ suppliers, onSubmit, onCancel, saving }: Props) {
           rows={2}
           className="w-full border border-app-border rounded-lg px-3 py-2 text-sm resize-none"
         />
+      </div>
+
+      {/* Adjunto de cotización (PDF / JPG / PNG) */}
+      <div>
+        <label className="block text-xs font-medium text-app-muted mb-1">Adjuntar cotización (opcional)</label>
+        {attachmentFile ? (
+          <div className="flex items-center gap-2 p-2.5 rounded-lg border border-app-border bg-app-bg text-sm">
+            <Paperclip className="w-4 h-4 text-app-subtle shrink-0" />
+            <span className="flex-1 truncate text-app-text">{attachmentFile.name}</span>
+            <button
+              type="button"
+              onClick={() => {
+                setAttachmentFile(null)
+                if (fileRef.current) fileRef.current.value = ''
+              }}
+              title="Quitar archivo"
+              className="inline-flex items-center justify-center w-7 h-7 rounded hover:bg-app-hover text-app-subtle hover:text-red-500"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        ) : (
+          <label className="flex items-center gap-2 cursor-pointer border border-dashed border-app-border rounded-lg px-3 py-2.5 text-sm text-app-muted hover:border-blue-400 hover:bg-blue-50/30 transition-colors">
+            <Paperclip className="w-4 h-4 shrink-0" />
+            <span>Subir cotización (JPG, PNG o PDF · máx. 10 MB)</span>
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".jpg,.jpeg,.png,.pdf"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0] ?? null
+                if (f && f.size > 10 * 1024 * 1024) {
+                  setError('El archivo no puede superar 10 MB.')
+                  e.target.value = ''
+                  return
+                }
+                setAttachmentFile(f)
+              }}
+            />
+          </label>
+        )}
       </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
