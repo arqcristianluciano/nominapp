@@ -2,10 +2,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import * as Sentry from '@sentry/react'
 import { loanService } from '@/services/loanService'
 import { contractorService } from '@/services/contractorService'
-import type { ContractorLoan, Contractor } from '@/types/database'
+import { bankAccountService } from '@/services/bankAccountService'
+import type { BankAccount, ContractorLoan, Contractor, LoanFrecuencia, LoanInstallment } from '@/types/database'
 import { getErrorMessage } from '@/utils/errors'
 
 type LoanCreateInput = Parameters<typeof loanService.create>[0]
+type LoanUpdateInput = Parameters<typeof loanService.update>[1]
 
 interface ToastHandlers {
   success: (message: string) => void
@@ -21,17 +23,25 @@ interface LoansUiState {
   search: string
   showForm: boolean
   cancelTargetId: string | null
+  editLoan: ContractorLoan | null
   setSaving: (value: boolean) => void
   setSearch: (value: string) => void
   setShowForm: (value: boolean) => void
   setCancelTargetId: (value: string | null) => void
+  setEditLoan: (value: ContractorLoan | null) => void
 }
 
 async function fetchLoansData() {
-  const [loans, contractors] = await Promise.all([loanService.getAll(), contractorService.getAll()])
-  // Perf: una sola query para todos los totales pagados en lugar de N queries individuales.
+  const [loans, contractors, bankAccounts] = await Promise.all([
+    loanService.getAll(),
+    contractorService.getAll(),
+    bankAccountService.getAll(),
+  ])
+  // Perf: una sola query para todos los totales pagados (en vez de N).
   const paidMap = await loanService.getTotalPaidByLoans(loans.map((l) => l.id))
-  return { loans, contractors, paidMap }
+  // Una sola query para todos los cronogramas de cuotas.
+  const installmentsMap = await loanService.getInstallmentsByLoans(loans.map((l) => l.id))
+  return { loans, contractors, bankAccounts, paidMap, installmentsMap }
 }
 
 function filterLoans(loans: ContractorLoan[], search: string) {
@@ -45,7 +55,9 @@ function filterLoans(loans: ContractorLoan[], search: string) {
 function useLoansData(onError: (message: string) => void) {
   const [loans, setLoans] = useState<ContractorLoan[]>([])
   const [contractors, setContractors] = useState<Contractor[]>([])
+  const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([])
   const [paidMap, setPaidMap] = useState<Record<string, number>>({})
+  const [installmentsMap, setInstallmentsMap] = useState<Record<string, LoanInstallment[]>>({})
   const [loading, setLoading] = useState(true)
 
   const refresh = useCallback(async () => {
@@ -54,7 +66,9 @@ function useLoansData(onError: (message: string) => void) {
       const data = await fetchLoansData()
       setLoans(data.loans)
       setContractors(data.contractors)
+      setBankAccounts(data.bankAccounts)
       setPaidMap(data.paidMap)
+      setInstallmentsMap(data.installmentsMap)
     } catch (loadError) {
       onError(`No se pudieron cargar préstamos: ${getErrorMessage(loadError)}`)
     } finally {
@@ -66,7 +80,7 @@ function useLoansData(onError: (message: string) => void) {
     void refresh()
   }, [refresh])
 
-  return { loans, contractors, paidMap, loading, refresh }
+  return { loans, contractors, bankAccounts, paidMap, installmentsMap, loading, refresh }
 }
 
 function useLoanFilters(loans: ContractorLoan[], search: string) {
@@ -107,14 +121,28 @@ function useLoansUiState(): LoansUiState {
   const [search, setSearch] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [cancelTargetId, setCancelTargetId] = useState<string | null>(null)
-  return { saving, search, showForm, cancelTargetId, setSaving, setSearch, setShowForm, setCancelTargetId }
+  const [editLoan, setEditLoan] = useState<ContractorLoan | null>(null)
+  return {
+    saving,
+    search,
+    showForm,
+    cancelTargetId,
+    editLoan,
+    setSaving,
+    setSearch,
+    setShowForm,
+    setCancelTargetId,
+    setEditLoan,
+  }
 }
 
 function useLoanHandlers(
   context: LoanActionContext,
+  installmentsMap: Record<string, LoanInstallment[]>,
   setSaving: (value: boolean) => void,
   setShowForm: (value: boolean) => void,
   setCancelTargetId: (value: string | null) => void,
+  setEditLoan: (value: ContractorLoan | null) => void,
 ) {
   const handleCreate = useCallback(
     async (values: LoanCreateInput) => {
@@ -135,6 +163,25 @@ function useLoanHandlers(
     [context, setSaving, setShowForm],
   )
 
+  const handleEdit = useCallback(
+    async (loanId: string, values: LoanUpdateInput) => {
+      setSaving(true)
+      try {
+        await loanService.update(loanId, values)
+        setEditLoan(null)
+        await context.refresh()
+        context.success('Préstamo actualizado correctamente')
+      } catch (err) {
+        console.error('[useLoansPage] handleEdit fallo', err)
+        Sentry.captureException(err, { tags: { area: 'useLoansPage' } })
+        context.error('Error al actualizar el préstamo')
+      } finally {
+        setSaving(false)
+      }
+    },
+    [context, setSaving, setEditLoan],
+  )
+
   const handleMarkPaid = useCallback(async (loanId: string) => markLoanAsPaid(loanId, context), [context])
   const handleCancel = useCallback(
     async (loanId: string) => {
@@ -144,37 +191,57 @@ function useLoanHandlers(
     [context, setCancelTargetId],
   )
 
-  return { handleCreate, handleMarkPaid, handleCancel }
+  /** Calcula si el préstamo a editar tiene al menos una cuota ya pagada */
+  const hasPaidInstallments = useCallback(
+    (loanId: string) => {
+      const insts = installmentsMap[loanId] ?? []
+      return insts.some((i) => i.estado === 'pagada')
+    },
+    [installmentsMap],
+  )
+
+  return { handleCreate, handleEdit, handleMarkPaid, handleCancel, hasPaidInstallments }
 }
 
 export function useLoansPage({ success, error }: ToastHandlers) {
   const ui = useLoansUiState()
-  const { loans, contractors, paidMap, loading, refresh } = useLoansData(error)
+  const { loans, contractors, bankAccounts, paidMap, installmentsMap, loading, refresh } = useLoansData(error)
   const { activeLoans, otherLoans } = useLoanFilters(loans, ui.search)
   const actionContext = useMemo(() => ({ refresh, success, error }), [error, refresh, success])
-  const { handleCreate, handleMarkPaid, handleCancel } = useLoanHandlers(
+  const { handleCreate, handleEdit, handleMarkPaid, handleCancel, hasPaidInstallments } = useLoanHandlers(
     actionContext,
+    installmentsMap,
     ui.setSaving,
     ui.setShowForm,
     ui.setCancelTargetId,
+    ui.setEditLoan,
   )
 
   return {
     loans,
     contractors,
+    bankAccounts,
     paidMap,
+    installmentsMap,
     loading,
     saving: ui.saving,
     search: ui.search,
     showForm: ui.showForm,
     cancelTargetId: ui.cancelTargetId,
+    editLoan: ui.editLoan,
     activeLoans,
     otherLoans,
     setSearch: ui.setSearch,
     setShowForm: ui.setShowForm,
     setCancelTargetId: ui.setCancelTargetId,
+    setEditLoan: ui.setEditLoan,
     handleCreate,
+    handleEdit,
     handleMarkPaid,
     handleCancel,
+    hasPaidInstallments,
   }
 }
+
+// Re-export types for convenience
+export type { LoanFrecuencia }
