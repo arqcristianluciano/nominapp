@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import { isCreditCondition } from '@/utils/financialCalculations'
+import { formatRD } from '@/utils/currency'
 
 export type NotifLevel = 'danger' | 'warning' | 'info'
 
@@ -54,6 +55,28 @@ interface OverdueQualityControlLite {
   project_id: string
 }
 
+/** Cuota de préstamo pendiente con nombre del contratista. */
+interface LoanInstallmentLite {
+  id: string
+  loan_id: string
+  numero_cuota: number
+  fecha_pago_programada: string
+  monto: number
+  loan: {
+    contractor_id: string
+    contractor: { name?: string | null } | null
+  } | null
+}
+
+/** Registro de calidad pendiente de ensayo, para calcular cuándo se debe ensayar. */
+interface QCUpcomingTestLite {
+  id: string
+  element: string
+  pour_date: string
+  test_age: string | null
+  project_id: string
+}
+
 const DAYS_APPROACHING = 15
 const DAYS_OVERDUE = 28
 const CXP_WARNING_DAYS = 30
@@ -61,11 +84,17 @@ const CXP_DANGER_DAYS = 60
 const BUDGET_WARNING_THRESHOLD = 0.8
 const BUDGET_DANGER_THRESHOLD = 1.0
 const DOC_EXPIRY_WARNING_DAYS = 30
+/** Días de anticipación para avisar de cuotas de préstamo próximas a vencer. */
+const LOAN_INSTALLMENT_WARNING_DAYS = 7
+/** Días de anticipación para avisar de ensayos de hormigón próximos (fecha_vaciado + edad). */
+const QC_TEST_WARNING_DAYS = 7
 
 export const notificationService = {
-  /** Calcula y retorna todas las notificaciones del sistema (OCs, calidad, CxP, presupuesto, documentos). */
+  /** Calcula y retorna todas las notificaciones del sistema (OCs, calidad, CxP, presupuesto, documentos, préstamos). */
   async getAll(): Promise<AppNotification[]> {
     const today = new Date()
+    const todayStr = today.toISOString().split('T')[0]
+
     const approachingCutoff = new Date(today)
     approachingCutoff.setDate(approachingCutoff.getDate() - DAYS_APPROACHING)
     const cutoffStr = approachingCutoff.toISOString().split('T')[0]
@@ -73,6 +102,10 @@ export const notificationService = {
     const warningDateStr = new Date(today.getTime() - CXP_WARNING_DAYS * 86400000).toISOString().split('T')[0]
     const dangerDateStr = new Date(today.getTime() - CXP_DANGER_DAYS * 86400000).toISOString().split('T')[0]
     const docExpiryWarning = new Date(today.getTime() + DOC_EXPIRY_WARNING_DAYS * 86400000).toISOString().split('T')[0]
+    // Cuotas: traer las que vencen dentro de LOAN_INSTALLMENT_WARNING_DAYS días, incluyendo ya vencidas (lte = ≤)
+    const loanInstallmentWindowStr = new Date(today.getTime() + LOAN_INSTALLMENT_WARNING_DAYS * 86400000)
+      .toISOString()
+      .split('T')[0]
 
     const [
       poRes,
@@ -84,37 +117,64 @@ export const notificationService = {
       transactionsRes,
       projectsRes,
       docsRes,
+      loanInstallmentsRes,
+      qcUpcomingTestRes,
     ] = await Promise.all([
+      // 0 — OCs pendientes de aprobación / liberación
       supabase
         .from('purchase_requisitions')
         .select('id, req_number, status, project:projects(name)')
         .in('status', ['pending_approval', 'pendiente_liberacion']),
+      // 1 — Ensayos sin resultado y vaciado ya pasado (alerta QC existente por días desde vaciado)
       supabase
         .from('quality_control')
         .select('id, element, pour_date, project_id')
         .is('test_date', null)
         .lte('pour_date', cutoffStr),
+      // 2 — Ensayos fallidos
       supabase
         .from('quality_control')
         .select('id, element, project_id')
         .eq('status', 'failed')
         .order('pour_date', { ascending: false })
         .limit(10),
+      // 3 — CxP vencidas > 60 días sin pagar
       supabase
         .from('transactions')
         .select('id, description, total, date, project_id, payment_condition, supplier:suppliers(name)')
         .lte('date', dangerDateStr)
         .limit(100),
+      // 4 — CxP por vencer (31-60 días sin pagar)
       supabase
         .from('transactions')
         .select('id, description, total, date, project_id, payment_condition, supplier:suppliers(name)')
         .lte('date', warningDateStr)
         .gt('date', dangerDateStr)
         .limit(100),
+      // 5 — Categorías presupuestales
       supabase.from('budget_categories').select('id, project_id, name, budgeted_amount'),
+      // 6 — Transacciones (ejecución presupuestal)
       supabase.from('transactions').select('project_id, total, budget_category:budget_categories(code)'),
+      // 7 — Proyectos
       supabase.from('projects').select('id, name, code'),
+      // 8 — Documentos de contratistas
       supabase.from('contractor_documents').select('*, contractor:contractors(name)'),
+      // 9 — Cuotas de préstamo pendientes que vencen pronto o ya vencieron
+      supabase
+        .from('loan_installments')
+        .select(
+          'id, loan_id, numero_cuota, fecha_pago_programada, monto, loan:contractor_loans(contractor_id, contractor:contractors(name))',
+        )
+        .eq('estado', 'pendiente')
+        .lte('fecha_pago_programada', loanInstallmentWindowStr)
+        .order('fecha_pago_programada', { ascending: true })
+        .limit(50),
+      // 10 — Registros de calidad sin resultado ni fecha de ensayo (para calcular fecha esperada)
+      supabase
+        .from('quality_control')
+        .select('id, element, pour_date, test_age, project_id')
+        .is('test_date', null)
+        .is('status', null),
     ])
 
     if (poRes.error) throw poRes.error
@@ -126,9 +186,12 @@ export const notificationService = {
     if (transactionsRes.error) throw transactionsRes.error
     if (projectsRes.error) throw projectsRes.error
     if (docsRes.error) throw docsRes.error
+    if (loanInstallmentsRes.error) throw loanInstallmentsRes.error
+    if (qcUpcomingTestRes.error) throw qcUpcomingTestRes.error
 
     const notifications: AppNotification[] = []
 
+    // --- Órdenes de compra pendientes ---
     for (const po of (poRes.data || []) as {
       id: string
       req_number: string
@@ -145,6 +208,7 @@ export const notificationService = {
       })
     }
 
+    // --- Ensayos de hormigón sin resultado (por días desde vaciado) ---
     for (const qc of (qcOverdueRes.data || []) as OverdueQualityControlLite[]) {
       const daysSince = Math.floor((today.getTime() - new Date(qc.pour_date).getTime()) / 86_400_000)
       const isOverdue = daysSince >= DAYS_OVERDUE
@@ -169,6 +233,7 @@ export const notificationService = {
       })
     }
 
+    // --- CxP (Cuentas por Pagar) vencidas y por vencer ---
     const dangerCreditTxns = (
       (txnDangerRes.data || []) as Array<TransactionLite & { payment_condition?: string | null }>
     )
@@ -244,7 +309,6 @@ export const notificationService = {
     }
 
     // --- Documentos de contratistas vencidos o por vencer ---
-    const todayStr = today.toISOString().split('T')[0]
     for (const doc of (docsRes.data ?? []) as ContractorDocumentLite[]) {
       if (!doc.expiry_date) continue
       const contractorName = doc.contractor?.name ?? 'Contratista'
@@ -263,6 +327,79 @@ export const notificationService = {
           title: 'Documento por vencer (≤30 días)',
           description: `${contractorName} — ${doc.name}`,
           link: `/contratistas/${doc.contractor_id}`,
+        })
+      }
+    }
+
+    // --- Cuotas de préstamo vencidas o próximas a vencer (≤7 días) ---
+    // Supabase infiere los joins como arrays; casteamos a unknown primero para evitar el error TS.
+    for (const inst of (loanInstallmentsRes.data ?? []) as unknown as LoanInstallmentLite[]) {
+      const contractorName = inst.loan?.contractor?.name ?? 'Contratista'
+      const dueDateMs = new Date(inst.fecha_pago_programada + 'T00:00:00').getTime()
+      const diffDays = Math.ceil((dueDateMs - today.getTime()) / 86400000)
+      const montoFmt = formatRD(inst.monto)
+
+      if (diffDays < 0) {
+        // Ya vencida
+        const overduedays = Math.abs(diffDays)
+        notifications.push({
+          id: `loan-inst-overdue-${inst.id}`,
+          level: 'danger',
+          title: 'Cuota de préstamo vencida',
+          description: `${contractorName} — cuota ${inst.numero_cuota} (${montoFmt}) vencida hace ${overduedays}d`,
+          link: `/prestamos`,
+        })
+      } else {
+        // Por vencer en los próximos días
+        const label = diffDays === 0 ? 'hoy' : `en ${diffDays}d`
+        notifications.push({
+          id: `loan-inst-due-${inst.id}`,
+          level: diffDays <= 2 ? 'danger' : 'warning',
+          title: 'Cuota de préstamo próxima a vencer',
+          description: `${contractorName} — cuota ${inst.numero_cuota} (${montoFmt}) vence ${label}`,
+          link: `/prestamos`,
+        })
+      }
+    }
+
+    // --- Ensayos de hormigón con fecha esperada próxima o vencida (calculado en cliente) ---
+    // Filtra solo los que tienen test_age definida y calcula la fecha esperada del ensayo
+    const qcUpcomingTestIdsAlreadyAlerted = new Set([
+      ...overduIds,
+      ...(qcFailedRes.data ?? []).map((q: { id: string }) => q.id),
+    ])
+    for (const qc of (qcUpcomingTestRes.data ?? []) as QCUpcomingTestLite[]) {
+      // Si ya fue alertado por la lógica existente de "días desde vaciado", no duplicar
+      if (qcUpcomingTestIdsAlreadyAlerted.has(qc.id)) continue
+      if (!qc.test_age) continue
+
+      const ageDays = parseInt(qc.test_age)
+      if (isNaN(ageDays) || ageDays <= 0) continue
+
+      // Fecha esperada de ensayo = fecha de vaciado + edad en días
+      const pourMs = new Date(qc.pour_date + 'T00:00:00').getTime()
+      const expectedTestMs = pourMs + ageDays * 86400000
+      const diffDays = Math.ceil((expectedTestMs - today.getTime()) / 86400000)
+
+      if (diffDays > QC_TEST_WARNING_DAYS) continue // Todavía falta más de 7 días, no alertar
+
+      if (diffDays < 0) {
+        const overduedays = Math.abs(diffDays)
+        notifications.push({
+          id: `qc-test-overdue-${qc.id}`,
+          level: 'danger',
+          title: 'Ensayo de hormigón vencido',
+          description: `${qc.element} — ensayo de ${qc.test_age} días vencido hace ${overduedays}d`,
+          link: `/proyectos/${qc.project_id}/calidad`,
+        })
+      } else {
+        const label = diffDays === 0 ? 'hoy' : `en ${diffDays}d`
+        notifications.push({
+          id: `qc-test-due-${qc.id}`,
+          level: diffDays <= 1 ? 'danger' : 'warning',
+          title: 'Ensayo de hormigón próximo',
+          description: `${qc.element} — ensayo de ${qc.test_age} días se realiza ${label}`,
+          link: `/proyectos/${qc.project_id}/calidad`,
         })
       }
     }
