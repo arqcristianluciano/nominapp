@@ -262,6 +262,35 @@ export type Database = {
           },
         ]
       }
+      bitacora_photos: {
+        Row: {
+          bitacora_id: string
+          id: string
+          storage_path: string
+          uploaded_at: string
+        }
+        Insert: {
+          bitacora_id: string
+          id?: string
+          storage_path: string
+          uploaded_at?: string
+        }
+        Update: {
+          bitacora_id?: string
+          id?: string
+          storage_path?: string
+          uploaded_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bitacora_photos_bitacora_id_fkey"
+            columns: ["bitacora_id"]
+            isOneToOne: false
+            referencedRelation: "bitacora_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       budget_categories: {
         Row: {
           budgeted_amount: number
