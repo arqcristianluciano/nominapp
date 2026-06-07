@@ -5,6 +5,7 @@ import { parseDecimalInput } from '@/utils/decimalInput'
 import { qualityControlService } from '@/services/qualityControlService'
 import { useToast } from '@/components/ui/Toast'
 import { getErrorMessage } from '@/utils/errors'
+import { compressImageFile } from '@/utils/imageCompression'
 
 type FormData = Omit<QualityControl, 'id' | 'status'>
 
@@ -44,7 +45,8 @@ export function QualityControlForm({ initial, projectId, saving, onSubmit, onCan
     setUploading(true)
     setError(null)
     try {
-      const path = await qualityControlService.uploadComprobante(projectId, file)
+      const compressed = await compressImageFile(file)
+      const path = await qualityControlService.uploadComprobante(projectId, compressed)
       setComprobanteUrl(path)
       sessionUploadedPath.current = path
     } catch (uploadError) {

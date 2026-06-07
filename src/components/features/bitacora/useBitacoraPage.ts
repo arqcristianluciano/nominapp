@@ -8,6 +8,7 @@ import {
 import { useToast } from '@/components/ui/Toast'
 import { getErrorMessage } from '@/utils/errors'
 import { useAuthStore } from '@/stores/authStore'
+import { compressImageFile } from '@/utils/imageCompression'
 import { buildBitacoraFormFromEntry, createBitacoraForm } from './bitacoraConfig'
 
 function useBitacoraEntries(projectId?: string) {
@@ -94,7 +95,8 @@ function useBitacoraEditor(projectId: string | undefined, entries: BitacoraEntry
         // Las fotos se suben en serie para no sobrecargar la conexión.
         for (const pending of pendingPhotos) {
           try {
-            const storagePath = await bitacoraService.uploadPhoto(projectId, pending.file)
+            const compressed = await compressImageFile(pending.file)
+            const storagePath = await bitacoraService.uploadPhoto(projectId, compressed)
             await bitacoraService.addPhotoRecord(entryId, storagePath)
           } catch {
             // Si falla una foto, continúa con las demás (el registro ya está guardado).

@@ -309,6 +309,8 @@ export interface ContractAdelanto {
   contract_id: string
   advance_date: string
   amount: number
+  /** Monto ya descontado en nóminas anteriores (migración 080). Siempre >= 0. */
+  deducted_amount: number
   description: string | null
   created_at: string
 }
@@ -387,6 +389,27 @@ export interface ScheduleTask {
   is_milestone: boolean
 }
 
+/** Tipo de movimiento: 'debito' = salida de dinero, 'credito' = entrada de dinero. */
+export type AccountMovementTipo = 'debito' | 'credito'
+
+/** Fuente que generó el movimiento */
+export type AccountMovementOrigen = 'loan_disbursement' | 'loan_repayment' | 'manual'
+
+/** Fila de la tabla account_movements (migración 081). */
+export interface AccountMovement {
+  id: string
+  account_id: string
+  fecha: string
+  tipo: AccountMovementTipo
+  monto: number
+  concepto: string
+  origen: AccountMovementOrigen | string
+  referencia_id: string | null
+  created_at: string
+  /** Relación optional: cuenta bancaria relacionada */
+  account?: BankAccount
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -463,6 +486,26 @@ export interface Database {
         Row: BitacoraPhoto
         Insert: Omit<BitacoraPhoto, 'id' | 'uploaded_at'>
         Update: Partial<BitacoraPhoto>
+      }
+      contractor_loans: {
+        Row: ContractorLoan
+        Insert: Omit<ContractorLoan, 'id' | 'created_at' | 'contractor' | 'disbursement_account'>
+        Update: Partial<ContractorLoan>
+      }
+      loan_installments: {
+        Row: LoanInstallment
+        Insert: Omit<LoanInstallment, 'id' | 'created_at' | 'cuenta_cobro'>
+        Update: Partial<LoanInstallment>
+      }
+      loan_deductions: {
+        Row: LoanDeduction
+        Insert: Omit<LoanDeduction, 'id' | 'created_at' | 'loan'>
+        Update: Partial<LoanDeduction>
+      }
+      account_movements: {
+        Row: AccountMovement
+        Insert: Omit<AccountMovement, 'id' | 'created_at' | 'account'>
+        Update: Partial<AccountMovement>
       }
     }
   }

@@ -1,5 +1,7 @@
+import * as Sentry from '@sentry/react'
 import { supabase } from '@/lib/supabase'
 import type { ContractorLoan, LoanDeduction, LoanFrecuencia, LoanInstallment, LoanStatus } from '@/types/database'
+import { accountMovementService } from '@/services/accountMovementService'
 import { add, div, money, pct, round2 } from '@/utils/money'
 
 /** Cuota fija: capital + interés simple distribuido en N cuotas */
@@ -68,7 +70,8 @@ export const loanService = {
   },
 
   /** Crea un préstamo nuevo calculando la cuota, iniciándolo en estado activo y
-   *  generando el cronograma de cuotas según la frecuencia indicada. */
+   *  generando el cronograma de cuotas según la frecuencia indicada.
+   *  Si hay cuenta de desembolso, registra la salida de dinero en esa cuenta. */
   async create(loan: {
     contractor_id: string
     principal: number
@@ -100,6 +103,27 @@ export const loanService = {
     )
     const { error: insError } = await supabase.from('loan_installments').insert(installmentsToInsert)
     if (insError) throw insError
+
+    // Registra la salida de dinero en la cuenta de desembolso (si se indicó)
+    if (loan.disbursement_account_id) {
+      try {
+        await accountMovementService.create({
+          account_id: loan.disbursement_account_id,
+          fecha: loan.disbursed_date,
+          tipo: 'debito',
+          monto: loan.principal,
+          concepto: `Desembolso de préstamo — ${created.contractor?.name ?? 'contratista'}`,
+          origen: 'loan_disbursement',
+          referencia_id: created.id,
+        })
+      } catch (movErr) {
+        // El préstamo y las cuotas ya se crearon. El movimiento falló de forma aislada;
+        // no se revierte la operación principal para no bloquear al usuario.
+        // Se captura en Sentry para revisión posterior.
+        console.error('[loanService.create] No se pudo registrar movimiento de desembolso:', movErr)
+        Sentry.captureException(movErr, { tags: { area: 'loanService', op: 'create_movement' } })
+      }
+    }
 
     return created
   },
@@ -227,17 +251,53 @@ export const loanService = {
     return map
   },
 
-  /** Marca una cuota como pagada y registra la cuenta de cobro y la fecha real. */
+  /** Marca una cuota como pagada, registra la cuenta de cobro y la fecha real.
+   *  Si hay cuenta de cobro, genera un movimiento de entrada en esa cuenta. */
   async markInstallmentPaid(installmentId: string, fechaPagoReal?: string, cuentaCobroId?: string): Promise<void> {
+    const fechaPago = fechaPagoReal ?? new Date().toISOString().slice(0, 10)
+
+    // Obtener datos de la cuota antes de actualizarla (para el concepto del movimiento)
+    const { data: instData, error: fetchErr } = await supabase
+      .from('loan_installments')
+      .select('*, loan:contractor_loans(principal, contractor:contractors(name))')
+      .eq('id', installmentId)
+      .single()
+    if (fetchErr) throw fetchErr
+    const inst = instData as LoanInstallment & {
+      loan?: { principal: number; contractor?: { name: string } }
+    }
+
+    // Actualizar la cuota como pagada
     const { error } = await supabase
       .from('loan_installments')
       .update({
         estado: 'pagada',
-        fecha_pago_real: fechaPagoReal ?? new Date().toISOString().slice(0, 10),
+        fecha_pago_real: fechaPago,
         cuenta_cobro_id: cuentaCobroId ?? null,
       })
       .eq('id', installmentId)
     if (error) throw error
+
+    // Registrar la entrada de dinero en la cuenta de cobro (si se indicó)
+    if (cuentaCobroId) {
+      const contratistaNombre = inst.loan?.contractor?.name ?? 'contratista'
+      try {
+        await accountMovementService.create({
+          account_id: cuentaCobroId,
+          fecha: fechaPago,
+          tipo: 'credito',
+          monto: inst.monto,
+          concepto: `Cobro cuota #${inst.numero_cuota} — ${contratistaNombre}`,
+          origen: 'loan_repayment',
+          referencia_id: installmentId,
+        })
+      } catch (movErr) {
+        // La cuota ya fue marcada como pagada. El movimiento falló de forma aislada;
+        // no se revierte el pago para no bloquear al usuario.
+        console.error('[loanService.markInstallmentPaid] No se pudo registrar movimiento de cobro:', movErr)
+        Sentry.captureException(movErr, { tags: { area: 'loanService', op: 'repayment_movement' } })
+      }
+    }
   },
 
   // === DEDUCCIONES ===

@@ -8,6 +8,7 @@ import RouterErrorBoundary from '@/components/RouterErrorBoundary'
 import Login from '@/pages/Login'
 import NotFound from '@/pages/NotFound'
 import { lazyWithRetry } from '@/utils/lazyWithRetry'
+import { PageLoader } from '@/components/ui/PageLoader'
 
 const Dashboard = lazyWithRetry(() => import('@/pages/Dashboard'))
 const Projects = lazyWithRetry(() => import('@/pages/Projects'))
@@ -54,7 +55,7 @@ const AdminUsuarios = lazyWithRetry(() => import('@/pages/AdminUsuarios'))
 
 function withSuspense(Component: LazyExoticComponent<ComponentType>) {
   return (
-    <Suspense fallback={<div className="p-6 text-sm text-app-muted">Cargando...</div>}>
+    <Suspense fallback={<PageLoader />}>
       <Component />
     </Suspense>
   )

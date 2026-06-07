@@ -333,9 +333,155 @@ function mockStorageBucket() {
   }
 }
 
+// ---------------------------------------------------------------------------
+// RPC handlers: implementan en JS la lógica de las funciones de Postgres para
+// que el modo demo / tests funcionen sin conexión real a la DB.
+// ---------------------------------------------------------------------------
+
+type RpcArgs = Record<string, unknown>
+type RpcResult = { data: unknown; error: unknown }
+
+function mockRpcInventoryAddMovement(args: RpcArgs): RpcResult {
+  const {
+    p_item_id,
+    p_project_id,
+    p_type,
+    p_quantity,
+    p_date,
+    p_notes = null,
+    p_supplier_id = null,
+    p_budget_item_id = null,
+    p_budget_category_id = null,
+    p_purchase_order_id = null,
+    p_unit_cost = null,
+    p_created_by = null,
+    p_lot_id = null,
+    p_attachment_path = null,
+    p_override_motivo = null,
+  } = args
+
+  const qty = Number(p_quantity)
+  if (!(qty > 0)) {
+    return { data: null, error: { message: 'INVALID_QUANTITY: La cantidad del movimiento debe ser mayor que cero.' } }
+  }
+  if (p_type === 'out' && !p_budget_item_id && !p_budget_category_id) {
+    return {
+      data: null,
+      error: {
+        message: 'OUT_REQUIRES_PARTIDA: Toda salida de almacén debe imputarse a una partida del presupuesto.',
+      },
+    }
+  }
+
+  if (!db['inventory_items']) db['inventory_items'] = []
+  const itemIdx = db['inventory_items'].findIndex((r) => r.id === p_item_id)
+  if (itemIdx < 0) {
+    return { data: null, error: { message: 'ITEM_NOT_FOUND: Material no encontrado.' } }
+  }
+
+  const item = db['inventory_items'][itemIdx]
+  const currentStock = Number(item.current_stock ?? 0)
+  const currentCost = Number(item.unit_cost ?? 0)
+  const delta = p_type === 'in' ? qty : -qty
+  const newStock = currentStock + delta
+
+  if (newStock < 0 && !p_override_motivo) {
+    return {
+      data: null,
+      error: {
+        message: `INSUFFICIENT_STOCK: Stock insuficiente: disponible ${currentStock}, solicitado ${qty}.`,
+      },
+    }
+  }
+
+  // Insertar movimiento
+  if (!db['inventory_movements']) db['inventory_movements'] = []
+  const movementId = generateId()
+  db['inventory_movements'].push({
+    id: movementId,
+    item_id: p_item_id,
+    project_id: p_project_id,
+    type: p_type,
+    quantity: qty,
+    date: p_date,
+    notes: p_notes,
+    supplier_id: p_supplier_id,
+    budget_item_id: p_budget_item_id,
+    budget_category_id: p_budget_category_id,
+    purchase_order_id: p_purchase_order_id,
+    unit_cost: p_unit_cost,
+    created_by: p_created_by,
+    lot_id: p_lot_id,
+    attachment_path: p_attachment_path,
+    override_motivo: p_override_motivo,
+    created_at: new Date().toISOString(),
+  })
+
+  // Recalcular costo promedio ponderado
+  let nextCost = currentCost
+  if (p_type === 'in' && p_unit_cost != null && Number(p_unit_cost) > 0) {
+    const uc = Number(p_unit_cost)
+    const totalQty = currentStock + qty
+    nextCost = totalQty > 0 ? (currentStock * currentCost + qty * uc) / totalQty : uc
+  }
+
+  // Actualizar stock y costo
+  db['inventory_items'][itemIdx] = { ...item, current_stock: newStock, unit_cost: nextCost }
+
+  return { data: movementId, error: null }
+}
+
+function mockRpcIncrementPaymentAmount(args: RpcArgs): RpcResult {
+  const { p_id, p_delta, p_period_cap = null } = args
+
+  const delta = Number(p_delta)
+  if (!(delta > 0)) {
+    return { data: null, error: { message: 'DELTA_NOT_POSITIVE: El monto a sumar debe ser mayor que cero.' } }
+  }
+
+  if (!db['payment_distributions']) db['payment_distributions'] = []
+  const idx = db['payment_distributions'].findIndex((r) => r.id === p_id)
+  if (idx < 0) {
+    return { data: null, error: { message: 'PAYMENT_NOT_FOUND: No se encontró el pago a consolidar.' } }
+  }
+
+  const row = db['payment_distributions'][idx]
+
+  if (p_period_cap !== null) {
+    const cap = Number(p_period_cap)
+    const periodId = row.payroll_period_id
+    const otherSum = db['payment_distributions']
+      .filter((r) => r.payroll_period_id === periodId && r.status !== 'cancelled' && r.id !== p_id)
+      .reduce((s, r) => s + Number(r.amount), 0)
+    if (otherSum + Number(row.amount) + delta > cap + 0.0001) {
+      return {
+        data: null,
+        error: { message: 'EXCEEDS_PERIOD_CAP: El monto excede el total pendiente por distribuir.' },
+      }
+    }
+  }
+
+  const newAmount = Math.round((Number(row.amount) + delta) * 100) / 100
+  db['payment_distributions'][idx] = { ...row, amount: newAmount }
+  return { data: { ...db['payment_distributions'][idx] }, error: null }
+}
+
+const rpcHandlers: Record<string, (args: RpcArgs) => RpcResult> = {
+  rpc_inventory_add_movement: mockRpcInventoryAddMovement,
+  rpc_increment_payment_amount: mockRpcIncrementPaymentAmount,
+}
+
 export const mockSupabase = {
   from(table: string) {
     return new MockQueryBuilder(table)
+  },
+  async rpc(name: string, args?: RpcArgs): Promise<RpcResult> {
+    const handler = rpcHandlers[name]
+    if (!handler) {
+      // Stub genérico: devuelve null sin error para RPCs no implementadas.
+      return { data: null, error: null }
+    }
+    return handler(args ?? {})
   },
   channel(name: string): MockChannel {
     return createMockChannel(name)

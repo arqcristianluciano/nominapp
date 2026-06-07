@@ -5,6 +5,7 @@ import { attendanceService } from '@/services/attendanceService'
 import type { Contractor } from '@/types/database'
 import { useToast } from '@/components/ui/Toast'
 import { getErrorMessage } from '@/utils/errors'
+import { compressImageFile } from '@/utils/imageCompression'
 
 interface Props {
   form: Omit<AttendanceFormData, 'project_id'>
@@ -121,7 +122,8 @@ export function AttendanceForm({ form, contractors, saving, projectId, onChange,
       return localUrl
     })
     try {
-      const path = await attendanceService.uploadPhoto(projectId, file)
+      const compressed = await compressImageFile(file)
+      const path = await attendanceService.uploadPhoto(projectId, compressed)
       onChange({ ...form, photo_url: path })
       success('Foto cargada')
     } catch (uploadError) {
