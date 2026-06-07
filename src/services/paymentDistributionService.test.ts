@@ -25,6 +25,9 @@ interface Chain {
 const tableResults: Record<string, ChainResult[]> = {}
 let defaultResult: ChainResult = { data: null, error: null }
 
+// Cola de resultados para rpc()
+const rpcResults: ChainResult[] = []
+
 function makeChain(table: string): Chain {
   const chain: Chain = {
     select: vi.fn(() => chain),
@@ -52,15 +55,25 @@ const from = vi.fn((table: string) => {
   return c
 })
 
+const rpc = vi.fn(() => {
+  const result = rpcResults.length > 0 ? rpcResults.shift()! : { data: null, error: null }
+  return Promise.resolve(result)
+})
+
 vi.mock('@/lib/supabase', () => ({
-  supabase: { from: (...args: Parameters<typeof from>) => from(...args) },
+  supabase: {
+    from: (...args: Parameters<typeof from>) => from(...args),
+    rpc: (...args: Parameters<typeof rpc>) => rpc(...args),
+  },
 }))
 
 import { paymentDistributionService } from './paymentDistributionService'
 
 beforeEach(() => {
   from.mockClear()
+  rpc.mockClear()
   fromCalls.length = 0
+  rpcResults.length = 0
   for (const k of Object.keys(tableResults)) delete tableResults[k]
   defaultResult = { data: null, error: null }
 })
@@ -175,23 +188,28 @@ describe('paymentDistributionService.getByPeriod', () => {
 
 describe('paymentDistributionService.addAmount', () => {
   it('suma el monto al pago existente y devuelve la fila actualizada', async () => {
+    // Lectura previa (para log de auditoría)
     tableResults.payment_distributions = [
-      { data: { id: 'd1', amount: 100, beneficiary: 'Maestro Pedro' }, error: null }, // lectura previa
-      { data: { id: 'd1', amount: 150, beneficiary: 'Maestro Pedro' }, error: null }, // fila actualizada
+      { data: { id: 'd1', amount: 100, beneficiary: 'Maestro Pedro' }, error: null },
     ]
+    // RPC atómica devuelve la fila con el nuevo monto
+    rpcResults.push({ data: { id: 'd1', amount: 150, beneficiary: 'Maestro Pedro' }, error: null })
 
     const result = await paymentDistributionService.addAmount('d1', 50)
 
-    const pdCalls = fromCalls.filter((c) => c.table === 'payment_distributions')
-    // La segunda llamada a la tabla es el update con el nuevo monto consolidado.
-    expect(pdCalls[1].chain.update).toHaveBeenCalledWith({ amount: 150 })
-    expect(pdCalls[1].chain.eq).toHaveBeenCalledWith('id', 'd1')
+    // Verificar que se llamó al RPC con los parámetros correctos
+    expect(rpc).toHaveBeenCalledWith('rpc_increment_payment_amount', {
+      p_id: 'd1',
+      p_delta: 50,
+      p_period_cap: null,
+    })
     expect(result).toEqual({ id: 'd1', amount: 150, beneficiary: 'Maestro Pedro' })
   })
 
   it('rechaza montos menores o iguales a cero', async () => {
     await expect(paymentDistributionService.addAmount('d1', 0)).rejects.toThrow('mayor que cero')
     expect(from).not.toHaveBeenCalled()
+    expect(rpc).not.toHaveBeenCalled()
   })
 
   it('propaga el error si falla la lectura del pago a consolidar', async () => {
@@ -203,45 +221,35 @@ describe('paymentDistributionService.addAmount', () => {
 
   // A8: cap validation — addAmount debe rechazar si supera el tope del periodo
   it('rechaza si sumar el monto supera el tope del periodo (periodGrandTotal)', async () => {
-    // pago existente: 80; hay otro pago no cancelado de 70; tope: 100
-    // intentar sumar 50 => (70 + 80 + 50) = 200 > 100 → debe fallar
+    // pago existente: 80; tope: 100; intento sumar 50 → RPC rechaza
     tableResults.payment_distributions = [
-      // primera lectura: el pago a consolidar (id: 'd1')
       { data: { id: 'd1', payroll_period_id: 'p1', amount: 80, status: 'pending' }, error: null },
-      // segunda lectura: getByPeriod → filas del periodo
-      {
-        data: [
-          { id: 'd1', payroll_period_id: 'p1', amount: 80, status: 'pending' },
-          { id: 'd2', payroll_period_id: 'p1', amount: 70, status: 'pending' },
-        ],
-        error: null,
-      },
     ]
+    // El RPC devuelve el error EXCEEDS_PERIOD_CAP
+    rpcResults.push({
+      data: null,
+      error: { message: 'EXCEEDS_PERIOD_CAP: El monto excede el total pendiente por distribuir.' },
+    })
 
     await expect(paymentDistributionService.addAmount('d1', 50, 100)).rejects.toThrow('excede el total')
   })
 
-  // A8: filas canceladas no cuentan para el tope
+  // A8: filas canceladas no cuentan para el tope (verificado por el RPC en la DB)
   it('no cuenta filas canceladas al validar el tope en addAmount', async () => {
     // pago existente: 80; hay un pago cancelado de 500 que no debería contar; tope: 150
-    // (80 + 50) = 130 <= 150 → debe pasar
+    // (80 + 50) = 130 <= 150 → el RPC acepta y devuelve la fila actualizada
     tableResults.payment_distributions = [
-      // primera lectura: el pago a consolidar
       { data: { id: 'd1', payroll_period_id: 'p1', amount: 80, status: 'pending' }, error: null },
-      // segunda lectura: getByPeriod → fila cancelada más la propia
-      {
-        data: [
-          { id: 'd1', payroll_period_id: 'p1', amount: 80, status: 'pending' },
-          { id: 'd2', payroll_period_id: 'p1', amount: 500, status: 'cancelled' },
-        ],
-        error: null,
-      },
-      // tercera lectura: update devuelve fila actualizada
-      { data: { id: 'd1', amount: 130, payroll_period_id: 'p1', status: 'pending' }, error: null },
     ]
+    rpcResults.push({ data: { id: 'd1', amount: 130, payroll_period_id: 'p1', status: 'pending' }, error: null })
 
     const result = await paymentDistributionService.addAmount('d1', 50, 150)
     expect(result.amount).toBe(130)
+    expect(rpc).toHaveBeenCalledWith('rpc_increment_payment_amount', {
+      p_id: 'd1',
+      p_delta: 50,
+      p_period_cap: 150,
+    })
   })
 })
 

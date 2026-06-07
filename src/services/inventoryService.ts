@@ -196,16 +196,10 @@ export const inventoryService = {
   },
 
   async addMovement(movement: AddMovementInput): Promise<void> {
-    // C1 (code-side guard): reject movements with quantity <= 0.
-    // Full atomicity requires a DB RPC / atomic increment — NOTE: implement
-    // an RPC (e.g. rpc_inventory_add_movement) with FOR UPDATE or an atomic
-    // UPDATE … SET current_stock = current_stock + delta WHERE id = ?
-    // plus a CHECK current_stock >= 0 constraint on inventory_items.
+    // Validaciones previas al RPC (código de error en TS antes de ir a la DB).
     if (!(Number(movement.quantity) > 0)) {
       throw new InventoryError('INVALID_QUANTITY', 'La cantidad del movimiento debe ser mayor que cero.')
     }
-
-    // Regla 7.4: toda salida debe imputarse a una partida.
     if (movement.type === 'out' && !movement.budget_item_id && !movement.budget_category_id) {
       throw new InventoryError(
         'OUT_REQUIRES_PARTIDA',
@@ -213,25 +207,17 @@ export const inventoryService = {
       )
     }
 
-    const { data: item } = await supabase
+    // Leer el stock actual SOLO para el breadcrumb de Sentry; el RPC hace la
+    // verdadera lectura atómica con FOR UPDATE dentro de la transacción.
+    const { data: itemSnap } = await supabase
       .from('inventory_items')
       .select('id, current_stock, unit_cost')
       .eq('id', movement.item_id)
       .single()
-    if (!item) throw new InventoryError('ITEM_NOT_FOUND', 'Material no encontrado.')
 
-    const currentStock = Number(item.current_stock ?? 0)
-    const currentCost = Number(item.unit_cost ?? 0)
+    const currentStock = Number((itemSnap as { current_stock?: number } | null)?.current_stock ?? 0)
     const delta = movement.type === 'in' ? movement.quantity : -movement.quantity
-    const newStock = currentStock + delta
-
-    // Regla 7.5: stock negativo bloqueado salvo override del Director con motivo.
-    if (newStock < 0 && !movement.override) {
-      throw new InventoryError(
-        'INSUFFICIENT_STOCK',
-        `Stock insuficiente: disponible ${currentStock}, solicitado ${movement.quantity}.`,
-      )
-    }
+    const estimatedNewStock = currentStock + delta
 
     Sentry.addBreadcrumb({
       category: 'inventory',
@@ -245,68 +231,70 @@ export const inventoryService = {
         type: movement.type,
         quantity: movement.quantity,
         currentStock,
-        newStock,
+        estimatedNewStock,
         override: Boolean(movement.override),
         override_motivo: movement.override?.motivo ?? null,
         override_actor: movement.override?.actor ?? null,
       },
     })
 
-    const now = new Date().toISOString()
-    const { data: inserted, error: mvErr } = await supabase
-      .from('inventory_movements')
-      .insert({
-        item_id: movement.item_id,
-        project_id: movement.project_id,
-        type: movement.type,
-        quantity: movement.quantity,
-        date: movement.date,
-        notes: movement.notes ?? null,
-        supplier_id: movement.supplier_id ?? null,
-        budget_item_id: movement.budget_item_id ?? null,
-        budget_category_id: movement.budget_category_id ?? null,
-        purchase_order_id: movement.purchase_order_id ?? null,
-        unit_cost: movement.unit_cost ?? null,
-        created_by: movement.created_by ?? null,
-        lot_id: movement.lot_id ?? null,
-        attachment_path: movement.attachment_path ?? null,
-        override_motivo: movement.override?.motivo ?? null,
-        created_at: now,
-      })
-      .select()
-      .single()
-    if (mvErr) throw mvErr
+    // Llamada atómica al RPC de Postgres: inserta el movimiento y actualiza
+    // stock + costo promedio ponderado en una sola transacción con FOR UPDATE.
+    // El RPC devuelve el id del movimiento insertado o lanza una excepción con
+    // códigos INSUFFICIENT_STOCK / ITEM_NOT_FOUND / OUT_REQUIRES_PARTIDA.
+    const { data: movementId, error: rpcErr } = await supabase.rpc('rpc_inventory_add_movement', {
+      p_item_id: movement.item_id,
+      p_project_id: movement.project_id,
+      p_type: movement.type,
+      p_quantity: movement.quantity,
+      p_date: movement.date,
+      p_notes: movement.notes ?? null,
+      p_supplier_id: movement.supplier_id ?? null,
+      p_budget_item_id: movement.budget_item_id ?? null,
+      p_budget_category_id: movement.budget_category_id ?? null,
+      p_purchase_order_id: movement.purchase_order_id ?? null,
+      p_unit_cost: movement.unit_cost ?? null,
+      p_created_by: movement.created_by ?? null,
+      p_lot_id: movement.lot_id ?? null,
+      p_attachment_path: movement.attachment_path ?? null,
+      p_override_motivo: movement.override?.motivo ?? null,
+    })
 
-    // Recalcular costo promedio ponderado en entradas (sección 6.4 / punto 10).
-    let nextCost = currentCost
-    if (movement.type === 'in' && movement.unit_cost != null && movement.unit_cost > 0) {
-      const incomingValue = movement.quantity * movement.unit_cost
-      const currentValue = currentStock * currentCost
-      const totalQty = currentStock + movement.quantity
-      nextCost = totalQty > 0 ? (currentValue + incomingValue) / totalQty : movement.unit_cost
+    if (rpcErr) {
+      // Traduce los códigos de error del RPC a InventoryError para mantener la
+      // misma interfaz que tenía el código anterior.
+      const msg: string = (rpcErr as { message?: string }).message ?? ''
+      if (msg.startsWith('INSUFFICIENT_STOCK')) {
+        throw new InventoryError('INSUFFICIENT_STOCK', msg.replace('INSUFFICIENT_STOCK: ', ''))
+      }
+      if (msg.startsWith('ITEM_NOT_FOUND')) {
+        throw new InventoryError('ITEM_NOT_FOUND', msg.replace('ITEM_NOT_FOUND: ', ''))
+      }
+      if (msg.startsWith('OUT_REQUIRES_PARTIDA')) {
+        throw new InventoryError('OUT_REQUIRES_PARTIDA', msg.replace('OUT_REQUIRES_PARTIDA: ', ''))
+      }
+      if (msg.startsWith('INVALID_QUANTITY')) {
+        throw new InventoryError('INVALID_QUANTITY', msg.replace('INVALID_QUANTITY: ', ''))
+      }
+      throw rpcErr
     }
 
-    const { error: updateErr } = await supabase
-      .from('inventory_items')
-      .update({ current_stock: newStock, unit_cost: nextCost })
-      .eq('id', movement.item_id)
-    if (updateErr) throw updateErr
-
-    // Consumo FIFO de lotes en las salidas: descuenta de los lotes con stock,
-    // del más antiguo al más nuevo. Solo aplica a materiales que tengan lotes
-    // (los registrados al recibir); el stock sin lote no se ve afectado.
+    // Consumo FIFO de lotes en las salidas (se hace en TS porque depende de
+    // ordered_date y puede tocar múltiples filas de inventory_lots; el RPC ya
+    // actualizó el stock total, aquí solo ajustamos los lotes individualmente).
     if (movement.type === 'out') {
       await consumeLotsFifo(movement.item_id, movement.quantity)
     }
 
+    // Registro de auditoría de override.
     if (movement.override) {
       await approvalsService.log({
         entity_type: 'inventory_movement',
-        entity_id: (inserted as { id: string }).id,
+        entity_id: movementId as string,
         action: 'override_stock',
         actor_display_name: movement.override.actor,
         payload_before: { current_stock: currentStock },
-        payload_after: { new_stock: newStock, quantity_out: movement.quantity },
+        payload_after: { estimated_new_stock: estimatedNewStock, quantity_out: movement.quantity },
         motivo: movement.override.motivo,
         metadata: { item_id: movement.item_id, project_id: movement.project_id },
       })

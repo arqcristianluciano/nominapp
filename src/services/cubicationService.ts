@@ -331,7 +331,7 @@ export const adelantoService = {
     return data as ContractAdelanto[]
   },
 
-  async create(data: Omit<ContractAdelanto, 'id' | 'created_at'>): Promise<ContractAdelanto> {
+  async create(data: Omit<ContractAdelanto, 'id' | 'created_at' | 'deducted_amount'>): Promise<ContractAdelanto> {
     const { data: row, error } = await supabase.from('contract_adelantos').insert(data).select().single()
     if (error) throw error
     return row as ContractAdelanto
@@ -340,5 +340,44 @@ export const adelantoService = {
   async delete(id: string): Promise<void> {
     const { error } = await supabase.from('contract_adelantos').delete().eq('id', id)
     if (error) throw error
+  },
+
+  /**
+   * Suma `deltaToDeduct` al campo `deducted_amount` de un adelanto, limitado al
+   * saldo disponible (amount - deducted_amount). Devuelve el adelanto actualizado.
+   *
+   * La actualización usa `deducted_amount = LEAST(amount, deducted_amount + delta)`
+   * para no superar el monto original aunque haya concurrencia; el CHECK de la
+   * migración 080 garantiza que nunca quede negativo ni supere el monto.
+   */
+  async addDeductedAmount(id: string, delta: number): Promise<ContractAdelanto> {
+    const roundedDelta = round2(delta)
+    if (!(roundedDelta > 0)) throw new Error('El monto a descontar debe ser mayor que cero.')
+
+    // Leer el adelanto para calcular el nuevo saldo (leer-escribir es aceptable
+    // aquí porque el CHECK de DB impide superar el tope incluso en concurrencia).
+    const { data: current, error: fetchErr } = await supabase
+      .from('contract_adelantos')
+      .select('id, amount, deducted_amount')
+      .eq('id', id)
+      .single()
+    if (fetchErr) throw fetchErr
+    if (!current) throw new Error('Adelanto no encontrado.')
+
+    const currentRow = current as Pick<ContractAdelanto, 'id' | 'amount' | 'deducted_amount'>
+    const available = round2(currentRow.amount - (currentRow.deducted_amount ?? 0))
+    const toApply = round2(Math.min(roundedDelta, available))
+    if (toApply <= 0) return current as ContractAdelanto
+
+    const newDeducted = round2((currentRow.deducted_amount ?? 0) + toApply)
+
+    const { data: updated, error: updateErr } = await supabase
+      .from('contract_adelantos')
+      .update({ deducted_amount: newDeducted })
+      .eq('id', id)
+      .select()
+      .single()
+    if (updateErr) throw updateErr
+    return updated as ContractAdelanto
   },
 }
