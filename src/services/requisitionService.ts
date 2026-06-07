@@ -1,6 +1,12 @@
 import * as Sentry from '@sentry/react'
 import { supabase } from '@/lib/supabase'
-import type { PurchaseRequisition, PurchaseQuote, RequisitionStatus, ReceiptProgress } from '@/types/purchaseOrder'
+import type {
+  PurchaseRequisition,
+  PurchaseQuote,
+  RequisitionItem,
+  RequisitionStatus,
+  ReceiptProgress,
+} from '@/types/purchaseOrder'
 import { approvalsService } from '@/services/approvalsService'
 import { pushNotificationService } from '@/services/pushNotificationService'
 import { emailNotificationService } from '@/services/emailNotificationService'
@@ -50,6 +56,16 @@ export interface PartidaAvailability {
   available_quantity: number
 }
 
+// Línea de material en una solicitud (multi-línea). Migración 076.
+export interface RequisitionItemInput {
+  description: string
+  budget_category_id?: string | null
+  budget_item_id?: string | null
+  resource_type?: 'material' | 'labor' | 'equipment' | 'other' | null
+  quantity?: number | null
+  unit?: string | null
+}
+
 export interface CreateRequisitionInput {
   project_id: string
   description: string
@@ -61,6 +77,24 @@ export interface CreateRequisitionInput {
   quantity_requested?: number | null
   unit?: string | null
   resource_type?: 'material' | 'labor' | 'equipment' | 'other' | null
+  // Líneas multi-material (migración 076). Si se envían, el campo
+  // description del encabezado viene de la primera línea.
+  items?: RequisitionItemInput[]
+}
+
+// Input para actualizar una solicitud en estado editable (draft/quoting/needs_revision).
+export interface UpdateRequisitionInput {
+  description?: string
+  requested_by?: string
+  required_date?: string | null
+  notes?: string | null
+  budget_item_id?: string | null
+  budget_category_id?: string | null
+  quantity_requested?: number | null
+  unit?: string | null
+  resource_type?: 'material' | 'labor' | 'equipment' | 'other' | null
+  // Si se pasan items, se reemplazan TODAS las líneas existentes.
+  items?: RequisitionItemInput[]
 }
 
 export const requisitionService = {
@@ -108,19 +142,23 @@ export const requisitionService = {
       .single()
     if (error) throw error
 
-    const { data: quotesData } = await supabase
-      .from('purchase_quotes')
-      .select('*, supplier:suppliers(id, name)')
-      .eq('requisition_id', id)
+    const [quotesData, reqItemsData] = await Promise.all([
+      supabase.from('purchase_quotes').select('*, supplier:suppliers(id, name)').eq('requisition_id', id),
+      supabase.from('purchase_requisition_items').select('*').eq('requisition_id', id).order('sort_order'),
+    ])
 
     const quotes: PurchaseQuote[] = await Promise.all(
-      (quotesData || []).map(async (q: PurchaseQuote) => {
+      (quotesData.data || []).map(async (q: PurchaseQuote) => {
         const { data: items } = await supabase.from('purchase_quote_items').select('*').eq('quote_id', q.id)
         return { ...q, items: items || [] }
       }),
     )
 
-    return { ...reqData, quotes } as PurchaseRequisition
+    return {
+      ...reqData,
+      quotes,
+      requisition_items: (reqItemsData.data ?? []) as RequisitionItem[],
+    } as PurchaseRequisition
   },
 
   // Calcula cuánto queda disponible en una partida para nuevas solicitudes (regla 7.1).
@@ -153,34 +191,63 @@ export const requisitionService = {
     }
   },
 
+  // Guarda líneas de ítems de solicitud. Elimina las anteriores y reinserta.
+  // Solo llamar cuando `items` viene definido en el payload.
+  async _saveRequisitionItems(requisitionId: string, items: RequisitionItemInput[]) {
+    await supabase.from('purchase_requisition_items').delete().eq('requisition_id', requisitionId)
+    if (items.length === 0) return
+    const rows = items.map((it, idx) => ({
+      requisition_id: requisitionId,
+      description: it.description,
+      budget_category_id: it.budget_category_id ?? null,
+      budget_item_id: it.budget_item_id ?? null,
+      resource_type: it.resource_type ?? null,
+      quantity: it.quantity ?? 0,
+      unit: it.unit ?? null,
+      sort_order: idx,
+    }))
+    const { error } = await supabase.from('purchase_requisition_items').insert(rows)
+    if (error) throw error
+  },
+
   async create(payload: CreateRequisitionInput) {
+    // Cuando se usan líneas multi-material, la lógica de excedente se evalúa
+    // contra la partida de la primera línea (o la del encabezado si no hay líneas).
+    const firstItem = payload.items?.[0]
+    const effectiveBudgetItemId = firstItem?.budget_item_id ?? payload.budget_item_id
+    const effectiveQty = firstItem?.quantity ?? payload.quantity_requested
+
     // Si viene imputada a una partida con cantidad, evaluamos excedente.
     let plannedSnapshot: number | null = null
     let availableSnapshot: number | null = null
     let initialStatus: RequisitionStatus = 'draft'
 
-    if (payload.budget_item_id && payload.quantity_requested && payload.quantity_requested > 0) {
-      const avail = await this.getAvailabilityForBudgetItem(payload.budget_item_id)
+    if (effectiveBudgetItemId && effectiveQty && effectiveQty > 0) {
+      const avail = await this.getAvailabilityForBudgetItem(effectiveBudgetItemId)
       plannedSnapshot = avail.planned_quantity
       availableSnapshot = avail.available_quantity
-      if (payload.quantity_requested > avail.available_quantity) {
+      if (effectiveQty > avail.available_quantity) {
         initialStatus = 'pendiente_validacion'
       }
     }
+
+    // El campo description del encabezado toma la descripción de la primera línea
+    // si se usan multi-líneas; de lo contrario usa el campo directo.
+    const headerDescription = firstItem?.description ?? payload.description
 
     const { data, error } = await supabase
       .from('purchase_requisitions')
       .insert({
         project_id: payload.project_id,
-        description: payload.description,
+        description: headerDescription,
         requested_by: payload.requested_by,
         required_date: payload.required_date || null,
         notes: payload.notes || null,
-        budget_item_id: payload.budget_item_id ?? null,
-        budget_category_id: payload.budget_category_id ?? null,
-        quantity_requested: payload.quantity_requested ?? null,
-        unit: payload.unit ?? null,
-        resource_type: payload.resource_type ?? null,
+        budget_item_id: effectiveBudgetItemId ?? null,
+        budget_category_id: firstItem?.budget_category_id ?? payload.budget_category_id ?? null,
+        quantity_requested: effectiveQty ?? null,
+        unit: firstItem?.unit ?? payload.unit ?? null,
+        resource_type: firstItem?.resource_type ?? payload.resource_type ?? null,
         planned_quantity_at_request: plannedSnapshot,
         available_quantity_at_request: availableSnapshot,
         req_number: await nextReqNumber(),
@@ -199,15 +266,32 @@ export const requisitionService = {
     if (error) throw error
     const row = data as PurchaseRequisition
 
+    // Guardar las líneas multi-material si vienen en el payload.
+    if (payload.items && payload.items.length > 0) {
+      await this._saveRequisitionItems(row.id, payload.items)
+    } else {
+      // Compatibilidad: crear línea única a partir de los campos del encabezado.
+      await this._saveRequisitionItems(row.id, [
+        {
+          description: payload.description,
+          budget_category_id: payload.budget_category_id ?? null,
+          budget_item_id: payload.budget_item_id ?? null,
+          resource_type: payload.resource_type ?? null,
+          quantity: payload.quantity_requested ?? 0,
+          unit: payload.unit ?? null,
+        },
+      ])
+    }
+
     await approvalsService.log({
       entity_type: 'purchase_requisition',
       entity_id: row.id,
       action: 'status_change',
       actor_display_name: payload.requested_by,
-      payload_after: { status: row.status, quantity_requested: payload.quantity_requested ?? null },
+      payload_after: { status: row.status, quantity_requested: effectiveQty ?? null },
       motivo:
         initialStatus === 'pendiente_validacion'
-          ? `Solicitud excede plan: solicitado ${payload.quantity_requested} vs disponible ${availableSnapshot}`
+          ? `Solicitud excede plan: solicitado ${effectiveQty} vs disponible ${availableSnapshot}`
           : null,
       metadata: { req_number: row.req_number, project_id: row.project_id },
     })
@@ -230,6 +314,90 @@ export const requisitionService = {
     }
 
     return row
+  },
+
+  // Actualiza una solicitud en estado editable (draft / quoting / needs_revision).
+  // Bloquea la edición en cualquier otro estado. Si el payload trae `items`,
+  // reemplaza las líneas multi-material completas.
+  async update(id: string, payload: UpdateRequisitionInput, actor?: string) {
+    const EDITABLE: RequisitionStatus[] = ['draft', 'quoting', 'needs_revision']
+    const before = await this.getById(id)
+    if (!EDITABLE.includes(before.status)) {
+      throw new Error(
+        `No se puede editar una solicitud en estado "${before.status}". Solo se permite editar en Borrador, En cotización o Requiere revisión.`,
+      )
+    }
+
+    // La lógica de excedente se recalcula si cambia la partida o la cantidad.
+    const firstItem = payload.items?.[0]
+    const effectiveBudgetItemId = firstItem?.budget_item_id ?? payload.budget_item_id ?? before.budget_item_id
+    const effectiveQty = firstItem?.quantity ?? payload.quantity_requested ?? before.quantity_requested
+
+    let plannedSnapshot: number | null = before.planned_quantity_at_request
+    let availableSnapshot: number | null = before.available_quantity_at_request
+    let newStatus: RequisitionStatus = before.status
+
+    // Recalcular disponibilidad solo si cambia la partida o la cantidad
+    const budgetItemChanged =
+      effectiveBudgetItemId &&
+      (effectiveBudgetItemId !== before.budget_item_id || effectiveQty !== before.quantity_requested)
+    if (budgetItemChanged && effectiveBudgetItemId && effectiveQty && Number(effectiveQty) > 0) {
+      const avail = await this.getAvailabilityForBudgetItem(effectiveBudgetItemId)
+      plannedSnapshot = avail.planned_quantity
+      availableSnapshot = avail.available_quantity
+      if (Number(effectiveQty) > avail.available_quantity) {
+        newStatus = 'pendiente_validacion'
+      } else if (before.status === 'pendiente_validacion') {
+        newStatus = 'draft'
+      }
+    }
+
+    const headerDescription = firstItem?.description ?? payload.description ?? before.description
+
+    const updateFields: Record<string, unknown> = {
+      updated_at: new Date().toISOString(),
+      description: headerDescription,
+    }
+    if (payload.requested_by !== undefined) updateFields.requested_by = payload.requested_by
+    if ('required_date' in payload) updateFields.required_date = payload.required_date ?? null
+    if ('notes' in payload) updateFields.notes = payload.notes ?? null
+    if ('budget_item_id' in payload || firstItem?.budget_item_id !== undefined) {
+      updateFields.budget_item_id = effectiveBudgetItemId ?? null
+    }
+    if ('budget_category_id' in payload || firstItem?.budget_category_id !== undefined) {
+      updateFields.budget_category_id = firstItem?.budget_category_id ?? payload.budget_category_id ?? null
+    }
+    if ('quantity_requested' in payload || firstItem?.quantity !== undefined) {
+      updateFields.quantity_requested = effectiveQty ?? null
+    }
+    if ('unit' in payload || firstItem?.unit !== undefined) {
+      updateFields.unit = firstItem?.unit ?? payload.unit ?? null
+    }
+    if ('resource_type' in payload || firstItem?.resource_type !== undefined) {
+      updateFields.resource_type = firstItem?.resource_type ?? payload.resource_type ?? null
+    }
+    if (budgetItemChanged) {
+      updateFields.planned_quantity_at_request = plannedSnapshot
+      updateFields.available_quantity_at_request = availableSnapshot
+      updateFields.status = newStatus
+    }
+
+    const { error } = await supabase.from('purchase_requisitions').update(updateFields).eq('id', id)
+    if (error) throw error
+
+    if (payload.items !== undefined) {
+      await this._saveRequisitionItems(id, payload.items)
+    }
+
+    await approvalsService.log({
+      entity_type: 'purchase_requisition',
+      entity_id: id,
+      action: 'update',
+      actor_display_name: actor,
+      payload_before: { status: before.status, description: before.description },
+      payload_after: { status: newStatus, description: headerDescription },
+      metadata: { req_number: before.req_number, project_id: before.project_id },
+    })
   },
 
   // Validación expresa de Planificación / Director cuando la solicitud excede el plan.

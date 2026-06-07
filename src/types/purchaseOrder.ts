@@ -1,5 +1,20 @@
 import type { Project, Supplier } from './database'
 
+// Línea de material de una solicitud de compra (tabla purchase_requisition_items).
+// Una solicitud puede tener una o más líneas (multi-material). Migración 076.
+export interface RequisitionItem {
+  id: string
+  requisition_id: string
+  description: string
+  budget_category_id: string | null
+  budget_item_id: string | null
+  resource_type: ResourceType | null
+  quantity: number
+  unit: string | null
+  sort_order: number
+  created_at: string
+}
+
 export type RequisitionStatus =
   | 'draft'
   | 'pendiente_validacion'
@@ -53,6 +68,9 @@ export interface PurchaseRequisition {
   received_by: string | null
   project?: Project
   quotes?: PurchaseQuote[]
+  // Líneas multi-material (migración 076). Si está vacío, la app usa la
+  // description/quantity_requested del encabezado como fallback de compatibilidad.
+  requisition_items?: RequisitionItem[]
   // Progreso de recepción (cantidad pedida vs recibida sumando las líneas de la
   // cotización aprobada). Lo calcula requisitionService para listas/detalle.
   receipt_progress?: ReceiptProgress

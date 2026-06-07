@@ -5,8 +5,11 @@ import { budgetItemService } from '@/services/budgetItemService'
 import { requisitionService } from '@/services/requisitionService'
 import { MEASURE_UNITS } from '@/constants/measureUnits'
 import type { ResourceType } from '@/types/purchaseOrder'
-import { AlertTriangle } from 'lucide-react'
+import type { RequisitionItemInput } from '@/services/requisitionService'
+import { AlertTriangle, Plus, Trash2 } from 'lucide-react'
 import { parseDecimalInput } from '@/utils/decimalInput'
+
+// ── Tipos ────────────────────────────────────────────────────────────────────
 
 interface Payload {
   project_id: string
@@ -19,6 +22,20 @@ interface Payload {
   quantity_requested?: number | null
   unit?: string | null
   resource_type?: ResourceType | null
+  items?: RequisitionItemInput[]
+}
+
+// Línea editable en el formulario (en memoria, antes de guardar).
+interface ItemDraft {
+  description: string
+  categoryId: string
+  itemId: string
+  resourceType: ResourceType
+  quantity: string
+  unit: string
+  availability: { planned: number; available: number } | null
+  categories: BudgetCategory[]
+  items: BudgetItem[]
 }
 
 interface Props {
@@ -26,6 +43,16 @@ interface Props {
   onSubmit: (payload: Payload) => Promise<void>
   onCancel: () => void
   saving: boolean
+  // Valores iniciales para modo edición.
+  initialValues?: Partial<{
+    project_id: string
+    description: string
+    requested_by: string
+    required_date: string
+    notes: string
+    items: RequisitionItemInput[]
+  }>
+  submitLabel?: string
 }
 
 const RESOURCE_TYPES: { value: ResourceType; label: string }[] = [
@@ -38,153 +65,164 @@ const RESOURCE_TYPES: { value: ResourceType; label: string }[] = [
 const inputClass =
   'w-full border border-app-border rounded-lg px-3 py-2.5 sm:py-2 text-base sm:text-sm min-h-[44px] sm:min-h-0 focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
 
-interface RequisitionBasicFieldsProps {
-  projects: Project[]
+// ── Componente de una línea de material ──────────────────────────────────────
+
+interface ItemRowProps {
+  draft: ItemDraft
+  index: number
   projectId: string
-  setProjectId: (v: string) => void
-  description: string
-  setDescription: (v: string) => void
-  requiredDate: string
-  setRequiredDate: (v: string) => void
+  total: number
+  onChange: (idx: number, patch: Partial<ItemDraft>) => void
+  onRemove: (idx: number) => void
 }
 
-function RequisitionBasicFields({
-  projects,
-  projectId,
-  setProjectId,
-  description,
-  setDescription,
-  requiredDate,
-  setRequiredDate,
-}: RequisitionBasicFieldsProps) {
+function ItemRow({ draft, index, projectId, total, onChange, onRemove }: ItemRowProps) {
+  const qtyNum = parseDecimalInput(draft.quantity) ?? 0
+  const exceedsPlan = draft.availability ? qtyNum > draft.availability.available : false
+
+  // Cargar capítulos al cambiar el proyecto
+  useEffect(() => {
+    if (!projectId) {
+      onChange(index, { categories: [], categoryId: '', items: [], itemId: '', availability: null })
+      return
+    }
+    let cancelled = false
+    budgetCategoryService
+      .getByProject(projectId)
+      .then((cats) => {
+        if (!cancelled) onChange(index, { categories: cats })
+      })
+      .catch(() => {
+        if (!cancelled) onChange(index, { categories: [] })
+      })
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId])
+
+  // Cargar partidas al cambiar capítulo
+  useEffect(() => {
+    if (!draft.categoryId) {
+      onChange(index, { items: [], itemId: '', availability: null })
+      return
+    }
+    let cancelled = false
+    budgetItemService
+      .getByCategoryId(draft.categoryId)
+      .then((its) => {
+        if (!cancelled) onChange(index, { items: its })
+      })
+      .catch(() => {
+        if (!cancelled) onChange(index, { items: [] })
+      })
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft.categoryId])
+
+  // Calcular disponibilidad al cambiar partida
+  useEffect(() => {
+    if (!draft.itemId) {
+      onChange(index, { availability: null })
+      return
+    }
+    let cancelled = false
+    requisitionService
+      .getAvailabilityForBudgetItem(draft.itemId)
+      .then((a) => {
+        if (cancelled) return
+        const item = draft.items.find((i) => i.id === draft.itemId)
+        onChange(index, {
+          availability: { planned: a.planned_quantity, available: a.available_quantity },
+          unit: item?.unit ?? draft.unit,
+        })
+      })
+      .catch(() => {
+        if (!cancelled) onChange(index, { availability: null })
+      })
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft.itemId])
+
+  const cell = 'border border-app-border rounded-lg px-2 py-2 text-sm w-full focus:ring-2 focus:ring-blue-500'
+
   return (
-    <>
-      <div>
-        <label className="block text-xs font-medium text-app-muted mb-1">Proyecto *</label>
-        <select value={projectId} onChange={(e) => setProjectId(e.target.value)} required className={inputClass}>
-          <option value="">Seleccionar proyecto…</option>
-          {projects.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
+    <div className="bg-app-bg rounded-lg border border-app-border p-3 space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-xs font-medium text-app-muted">Línea {index + 1}</span>
+        {total > 1 && (
+          <button
+            type="button"
+            onClick={() => onRemove(index)}
+            title="Eliminar línea"
+            className="inline-flex items-center justify-center w-8 h-8 rounded text-app-subtle hover:text-red-500 hover:bg-red-50"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
+      {/* Descripción */}
       <div>
-        <label className="block text-xs font-medium text-app-muted mb-1">¿Qué se necesita comprar? *</label>
+        <label className="block text-xs font-medium text-app-muted mb-1">Descripción *</label>
         <input
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          value={draft.description}
+          onChange={(e) => onChange(index, { description: e.target.value })}
           required
           placeholder="Ej: 50 sacos de cemento Portland"
-          className={inputClass}
+          className={cell}
         />
       </div>
 
-      <div>
-        <label className="block text-xs font-medium text-app-muted mb-1">Fecha requerida</label>
-        <input
-          type="date"
-          value={requiredDate}
-          onChange={(e) => setRequiredDate(e.target.value)}
-          className={inputClass}
-        />
-      </div>
-    </>
-  )
-}
-
-interface RequisitionBudgetSelectorsProps {
-  categories: BudgetCategory[]
-  items: BudgetItem[]
-  categoryId: string
-  setCategoryId: (v: string) => void
-  itemId: string
-  setItemId: (v: string) => void
-  projectId: string
-}
-
-function RequisitionBudgetSelectors({
-  categories,
-  items,
-  categoryId,
-  setCategoryId,
-  itemId,
-  setItemId,
-  projectId,
-}: RequisitionBudgetSelectorsProps) {
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-      <div>
-        <label className="block text-xs font-medium text-app-muted mb-1">Capítulo</label>
-        <select
-          value={categoryId}
-          onChange={(e) => setCategoryId(e.target.value)}
-          disabled={!projectId}
-          className={inputClass}
-        >
-          <option value="">— Sin capítulo —</option>
-          {categories.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.code} {c.name}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <label className="block text-xs font-medium text-app-muted mb-1">Partida</label>
-        <select
-          value={itemId}
-          onChange={(e) => setItemId(e.target.value)}
-          disabled={!categoryId}
-          className={inputClass}
-        >
-          <option value="">— Sin partida —</option>
-          {items.map((it) => (
-            <option key={it.id} value={it.id}>
-              {it.code ? `[${it.code}] ` : ''}
-              {it.description}
-            </option>
-          ))}
-        </select>
-      </div>
-    </div>
-  )
-}
-
-interface RequisitionResourceFieldsProps {
-  resourceType: ResourceType
-  setResourceType: (v: ResourceType) => void
-  quantity: string
-  setQuantity: (v: string) => void
-  unit: string
-  setUnit: (v: string) => void
-  availability: { planned: number; available: number } | null
-  qtyNum: number
-  exceedsPlan: boolean
-}
-
-function RequisitionResourceFields({
-  resourceType,
-  setResourceType,
-  quantity,
-  setQuantity,
-  unit,
-  setUnit,
-  availability,
-  qtyNum,
-  exceedsPlan,
-}: RequisitionResourceFieldsProps) {
-  return (
-    <>
-      <div className="grid grid-cols-12 gap-3 sm:gap-4">
-        <div className="col-span-12 sm:col-span-4">
-          <label className="block text-xs font-medium text-app-muted mb-1">Tipo de recurso</label>
+      {/* Capítulo + Partida */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div>
+          <label className="block text-xs font-medium text-app-muted mb-1">Capítulo</label>
           <select
-            value={resourceType}
-            onChange={(e) => setResourceType(e.target.value as ResourceType)}
-            className={inputClass}
+            value={draft.categoryId}
+            onChange={(e) => onChange(index, { categoryId: e.target.value })}
+            disabled={!projectId}
+            className={cell}
+          >
+            <option value="">— Sin capítulo —</option>
+            {draft.categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.code} {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-app-muted mb-1">Partida</label>
+          <select
+            value={draft.itemId}
+            onChange={(e) => onChange(index, { itemId: e.target.value })}
+            disabled={!draft.categoryId}
+            className={cell}
+          >
+            <option value="">— Sin partida —</option>
+            {draft.items.map((it) => (
+              <option key={it.id} value={it.id}>
+                {it.code ? `[${it.code}] ` : ''}
+                {it.description}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Tipo recurso + Cantidad + Unidad */}
+      <div className="grid grid-cols-12 gap-2">
+        <div className="col-span-12 sm:col-span-4">
+          <label className="block text-xs font-medium text-app-muted mb-1">Tipo</label>
+          <select
+            value={draft.resourceType}
+            onChange={(e) => onChange(index, { resourceType: e.target.value as ResourceType })}
+            className={cell}
           >
             {RESOURCE_TYPES.map((r) => (
               <option key={r.value} value={r.value}>
@@ -198,14 +236,14 @@ function RequisitionResourceFields({
           <input
             type="text"
             inputMode="decimal"
-            value={quantity}
-            onChange={(e) => setQuantity(e.target.value)}
-            className={inputClass}
+            value={draft.quantity}
+            onChange={(e) => onChange(index, { quantity: e.target.value })}
+            className={cell}
           />
         </div>
         <div className="col-span-6 sm:col-span-4">
           <label className="block text-xs font-medium text-app-muted mb-1">Unidad</label>
-          <select value={unit} onChange={(e) => setUnit(e.target.value)} className={inputClass}>
+          <select value={draft.unit} onChange={(e) => onChange(index, { unit: e.target.value })} className={cell}>
             {MEASURE_UNITS.map((u) => (
               <option key={u.value} value={u.value}>
                 {u.label}
@@ -215,187 +253,199 @@ function RequisitionResourceFields({
         </div>
       </div>
 
-      {availability && qtyNum > 0 && (
+      {/* Indicador planificado / disponible por línea */}
+      {draft.availability && qtyNum > 0 && (
         <div
-          className={`flex items-start gap-2 p-3 rounded-lg text-xs border ${
+          className={`flex items-start gap-2 p-2.5 rounded-lg text-xs border ${
             exceedsPlan
               ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-200'
               : 'bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-200'
           }`}
         >
-          {exceedsPlan && <AlertTriangle size={14} className="mt-0.5 shrink-0" />}
+          {exceedsPlan && <AlertTriangle size={13} className="mt-0.5 shrink-0" />}
           <div>
             <p>
-              Planificado en partida: <strong>{availability.planned}</strong> · Disponible (plan − ya comprometido):{' '}
-              <strong>{availability.available}</strong>
+              Planificado en partida: <strong>{draft.availability.planned}</strong> · Disponible:{' '}
+              <strong>{draft.availability.available}</strong>
             </p>
             {exceedsPlan && (
-              <p className="mt-1 font-medium">
-                Excede el plan en {(qtyNum - availability.available).toFixed(2)}. La solicitud quedará en "Pendiente
-                validación" hasta que Planificación o el Director la liberen con motivo.
+              <p className="mt-0.5 font-medium">
+                Excede el plan en {(qtyNum - draft.availability.available).toFixed(2)}. La solicitud quedará en
+                "Pendiente validación".
               </p>
             )}
           </div>
         </div>
       )}
-    </>
+    </div>
   )
 }
 
-export function RequisitionForm({ projects, onSubmit, onCancel, saving }: Props) {
-  const [projectId, setProjectId] = useState('')
-  const [description, setDescription] = useState('')
-  const [requestedBy, setRequestedBy] = useState('')
-  const [requiredDate, setRequiredDate] = useState('')
-  const [notes, setNotes] = useState('')
+// ── Formulario principal ──────────────────────────────────────────────────────
 
-  const [categories, setCategories] = useState<BudgetCategory[]>([])
-  const [items, setItems] = useState<BudgetItem[]>([])
-  const [categoryId, setCategoryId] = useState('')
-  const [itemId, setItemId] = useState('')
-  const [resourceType, setResourceType] = useState<ResourceType>('material')
-  const [quantity, setQuantity] = useState('')
-  const [unit, setUnit] = useState('UND')
+const emptyItem = (): ItemDraft => ({
+  description: '',
+  categoryId: '',
+  itemId: '',
+  resourceType: 'material',
+  quantity: '',
+  unit: 'UND',
+  availability: null,
+  categories: [],
+  items: [],
+})
 
-  const [availability, setAvailability] = useState<{
-    planned: number
-    available: number
-  } | null>(null)
-
-  // Cargar capítulos cuando cambia el proyecto.
-  useEffect(() => {
-    let cancelled = false
-    const promise = projectId ? budgetCategoryService.getByProject(projectId) : Promise.resolve([] as BudgetCategory[])
-    promise
-      .then((data) => {
-        if (!cancelled) {
-          setCategories(data)
-          setCategoryId('')
-          setItemId('')
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setCategories([])
-      })
-    return () => {
-      cancelled = true
+export function RequisitionForm({ projects, onSubmit, onCancel, saving, initialValues, submitLabel }: Props) {
+  const [projectId, setProjectId] = useState(initialValues?.project_id ?? '')
+  const [requestedBy, setRequestedBy] = useState(initialValues?.requested_by ?? '')
+  const [requiredDate, setRequiredDate] = useState(initialValues?.required_date ?? '')
+  const [notes, setNotes] = useState(initialValues?.notes ?? '')
+  const [lines, setLines] = useState<ItemDraft[]>(() => {
+    if (initialValues?.items && initialValues.items.length > 0) {
+      return initialValues.items.map((it) => ({
+        description: it.description,
+        categoryId: it.budget_category_id ?? '',
+        itemId: it.budget_item_id ?? '',
+        resourceType: (it.resource_type as ResourceType) ?? 'material',
+        quantity: it.quantity != null ? String(it.quantity) : '',
+        unit: it.unit ?? 'UND',
+        availability: null,
+        categories: [],
+        items: [],
+      }))
     }
-  }, [projectId])
-
-  // Cargar partidas cuando cambia el capítulo.
-  useEffect(() => {
-    let cancelled = false
-    const promise = categoryId ? budgetItemService.getByCategoryId(categoryId) : Promise.resolve([] as BudgetItem[])
-    promise
-      .then((data) => {
-        if (!cancelled) {
-          setItems(data)
-          setItemId('')
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setItems([])
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [categoryId])
-
-  // Auto-llenar unidad al elegir partida y recalcular disponibilidad.
-  useEffect(() => {
-    let cancelled = false
-    const promise = itemId ? requisitionService.getAvailabilityForBudgetItem(itemId) : Promise.resolve(null)
-    promise
-      .then((a) => {
-        if (cancelled) return
-        if (!a) {
-          setAvailability(null)
-          return
-        }
-        const item = items.find((i) => i.id === itemId)
-        if (item) setUnit(item.unit)
-        setAvailability({ planned: a.planned_quantity, available: a.available_quantity })
-      })
-      .catch(() => {
-        if (!cancelled) setAvailability(null)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [itemId, items])
+    return [emptyItem()]
+  })
 
   const [error, setError] = useState<string | null>(null)
 
-  const qtyNum = parseDecimalInput(quantity) ?? 0
-  const exceedsPlan = useMemo(() => {
-    if (!availability) return false
-    return qtyNum > availability.available
-  }, [availability, qtyNum])
+  const updateLine = (idx: number, patch: Partial<ItemDraft>) => {
+    setLines((prev) => prev.map((l, i) => (i === idx ? { ...l, ...patch } : l)))
+  }
+
+  const addLine = () => setLines((prev) => [...prev, emptyItem()])
+
+  const removeLine = (idx: number) => {
+    setLines((prev) => prev.filter((_, i) => i !== idx))
+  }
+
+  const anyExceedsPlan = useMemo(() => {
+    return lines.some((l) => {
+      const q = parseDecimalInput(l.quantity) ?? 0
+      return l.availability && q > l.availability.available
+    })
+  }, [lines])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
 
-    // Cantidad (opcional): si está vacía => null; si tiene contenido y NaN => bloquear.
-    let quantityRequested: number | null = null
-    const qtyTrim = quantity.trim()
-    if (qtyTrim) {
-      const parsed = parseDecimalInput(qtyTrim)
-      if (parsed === null) {
-        setError('Cantidad inválida')
-        return
-      }
-      quantityRequested = parsed > 0 ? parsed : null
+    if (!projectId) {
+      setError('Selecciona un proyecto')
+      return
     }
+
+    const validLines = lines.filter((l) => l.description.trim())
+    if (validLines.length === 0) {
+      setError('Agrega al menos una línea con descripción')
+      return
+    }
+
+    const itemsPayload: RequisitionItemInput[] = validLines.map((l) => {
+      const qty = parseDecimalInput(l.quantity)
+      return {
+        description: l.description.trim(),
+        budget_category_id: l.categoryId || null,
+        budget_item_id: l.itemId || null,
+        resource_type: l.resourceType,
+        quantity: qty !== null && qty > 0 ? qty : null,
+        unit: l.unit || null,
+      }
+    })
+
+    // El encabezado de la solicitud usa la primera línea como referencia.
+    const first = itemsPayload[0]
 
     await onSubmit({
       project_id: projectId,
-      description,
+      description: first.description,
       requested_by: requestedBy,
       required_date: requiredDate || undefined,
       notes: notes || undefined,
-      budget_category_id: categoryId || null,
-      budget_item_id: itemId || null,
-      quantity_requested: quantityRequested,
-      unit: unit || null,
-      resource_type: resourceType,
+      budget_category_id: first.budget_category_id,
+      budget_item_id: first.budget_item_id,
+      quantity_requested: first.quantity,
+      unit: first.unit,
+      resource_type: first.resource_type,
+      items: itemsPayload,
     })
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <RequisitionBasicFields
-        projects={projects}
-        projectId={projectId}
-        setProjectId={setProjectId}
-        description={description}
-        setDescription={setDescription}
-        requiredDate={requiredDate}
-        setRequiredDate={setRequiredDate}
-      />
+      {/* Proyecto */}
+      <div>
+        <label className="block text-xs font-medium text-app-muted mb-1">Proyecto *</label>
+        <select
+          value={projectId}
+          onChange={(e) => setProjectId(e.target.value)}
+          required
+          disabled={!!initialValues?.project_id}
+          className={inputClass}
+        >
+          <option value="">Seleccionar proyecto…</option>
+          {projects.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
+          ))}
+        </select>
+      </div>
 
-      <RequisitionBudgetSelectors
-        categories={categories}
-        items={items}
-        categoryId={categoryId}
-        setCategoryId={setCategoryId}
-        itemId={itemId}
-        setItemId={setItemId}
-        projectId={projectId}
-      />
+      {/* Fecha requerida */}
+      <div>
+        <label className="block text-xs font-medium text-app-muted mb-1">Fecha requerida</label>
+        <input
+          type="date"
+          value={requiredDate}
+          onChange={(e) => setRequiredDate(e.target.value)}
+          className={inputClass}
+        />
+      </div>
 
-      <RequisitionResourceFields
-        resourceType={resourceType}
-        setResourceType={setResourceType}
-        quantity={quantity}
-        setQuantity={setQuantity}
-        unit={unit}
-        setUnit={setUnit}
-        availability={availability}
-        qtyNum={qtyNum}
-        exceedsPlan={exceedsPlan}
-      />
+      {/* Líneas de material */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <label className="text-xs font-medium text-app-muted">Materiales / recursos *</label>
+          <button
+            type="button"
+            onClick={addLine}
+            className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 border border-blue-200 hover:bg-blue-50 px-2 py-1 rounded"
+          >
+            <Plus className="w-3.5 h-3.5" /> Añadir línea
+          </button>
+        </div>
+        <div className="space-y-2">
+          {lines.map((l, idx) => (
+            <ItemRow
+              key={idx}
+              draft={l}
+              index={idx}
+              projectId={projectId}
+              total={lines.length}
+              onChange={updateLine}
+              onRemove={removeLine}
+            />
+          ))}
+        </div>
+        {anyExceedsPlan && (
+          <p className="mt-1 text-xs text-amber-600">
+            Una o más líneas exceden el plan. La solicitud entrará en revisión antes de pasar a cotización.
+          </p>
+        )}
+      </div>
 
+      {/* Solicitado por */}
       <div>
         <label className="block text-xs font-medium text-app-muted mb-1">Solicitado por *</label>
         <input
@@ -407,6 +457,7 @@ export function RequisitionForm({ projects, onSubmit, onCancel, saving }: Props)
         />
       </div>
 
+      {/* Notas */}
       <div>
         <label className="block text-xs font-medium text-app-muted mb-1">Notas</label>
         <textarea
@@ -432,7 +483,7 @@ export function RequisitionForm({ projects, onSubmit, onCancel, saving }: Props)
           disabled={saving}
           className="px-4 py-3 sm:py-2 min-h-[44px] bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 w-full sm:w-auto"
         >
-          {saving ? 'Guardando…' : 'Crear solicitud'}
+          {saving ? 'Guardando…' : (submitLabel ?? 'Crear solicitud')}
         </button>
       </div>
     </form>

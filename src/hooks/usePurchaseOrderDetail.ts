@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { requisitionService } from '@/services/requisitionService'
+import type { UpdateRequisitionInput } from '@/services/requisitionService'
 import { quoteService } from '@/services/quoteService'
 import { supplierService } from '@/services/supplierService'
 import { inventoryService } from '@/services/inventoryService'
@@ -33,6 +34,9 @@ export function usePurchaseOrderDetail() {
   const [confirmReverse, setConfirmReverse] = useState(false)
   const [reversingOrder, setReversingOrder] = useState(false)
   const [conduces, setConduces] = useState<string[]>([])
+  // Estado para el modal de edición de la solicitud (botón Editar).
+  const [editModal, setEditModal] = useState(false)
+  const [savingEdit, setSavingEdit] = useState(false)
 
   const load = useCallback(async () => {
     if (!orderId) return
@@ -59,15 +63,39 @@ export function usePurchaseOrderDetail() {
     load()
   }, [load])
 
-  async function handleAddQuote(payload: Parameters<typeof quoteService.create>[0]) {
-    if (!orderId) return
+  async function handleAddQuote(payload: Parameters<typeof quoteService.create>[0] & { attachmentFile?: File | null }) {
+    if (!orderId || !req) return
     setSavingQuote(true)
     try {
-      await quoteService.create({ ...payload, requisition_id: orderId })
+      const { attachmentFile, ...quotePayload } = payload
+      const quote = await quoteService.create({ ...quotePayload, requisition_id: orderId })
+      // Subir el archivo de cotización si el usuario lo adjuntó (best-effort).
+      if (attachmentFile) {
+        try {
+          const path = await quoteService.uploadAttachment(attachmentFile, req.project_id, orderId, quote.id)
+          await quoteService.saveAttachmentPath(quote.id, path)
+        } catch (err) {
+          console.warn('[usePurchaseOrderDetail] subida de archivo cotización falló (no-bloqueante)', err)
+          toastWarning('No se pudo adjuntar el archivo, pero la cotización se guardó.')
+        }
+      }
       setAddQuote(false)
       await load()
     } finally {
       setSavingQuote(false)
+    }
+  }
+
+  // Edita la solicitud (solo en estados: draft / quoting / needs_revision).
+  async function handleEditRequisition(payload: UpdateRequisitionInput, actor?: string) {
+    if (!orderId) return
+    setSavingEdit(true)
+    try {
+      await requisitionService.update(orderId, payload, actor)
+      setEditModal(false)
+      await load()
+    } finally {
+      setSavingEdit(false)
     }
   }
 
@@ -209,6 +237,8 @@ export function usePurchaseOrderDetail() {
     canNegotiate,
     missingQuotes,
     canSubmit,
+    editModal,
+    savingEdit,
     setAddQuote,
     setApprovalModal,
     setDeleteQuoteId,
@@ -216,6 +246,7 @@ export function usePurchaseOrderDetail() {
     setExcessModal,
     setConfirmReceive,
     setConfirmReverse,
+    setEditModal,
     handleAddQuote,
     handleNegotiate,
     handleDeleteQuote,
@@ -228,5 +259,6 @@ export function usePurchaseOrderDetail() {
     handleReverseReceipt,
     handleValidateExcess,
     handleDelete,
+    handleEditRequisition,
   }
 }
