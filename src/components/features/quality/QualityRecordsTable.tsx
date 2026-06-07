@@ -1,6 +1,31 @@
-import { CalendarClock, CheckCircle2, Clock, FlaskConical, Pencil, Trash2, XCircle } from 'lucide-react'
+import { CalendarClock, CheckCircle2, Clock, FlaskConical, Paperclip, Pencil, Trash2, XCircle } from 'lucide-react'
 import type { QualityControl } from '@/types/database'
 import { calcExpectedTestDate, daysUntilTest } from './qualityUtils'
+import { qualityControlService } from '@/services/qualityControlService'
+import { useToast } from '@/components/ui/Toast'
+
+// Abre el comprobante adjunto (foto/PDF) del ensayo con una URL firmada temporal.
+function ComprobanteButton({ path }: { path: string }) {
+  const { error } = useToast()
+  async function open() {
+    try {
+      const url = await qualityControlService.getComprobanteUrl(path)
+      window.open(url, '_blank', 'noopener,noreferrer')
+    } catch {
+      error('No se pudo abrir el comprobante')
+    }
+  }
+  return (
+    <button
+      onClick={open}
+      aria-label="Ver comprobante"
+      title="Ver comprobante"
+      className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center text-app-subtle hover:text-blue-500"
+    >
+      <Paperclip className="w-3.5 h-3.5" />
+    </button>
+  )
+}
 
 function StatusBadge({ status }: { status: QualityControl['status'] }) {
   if (status === 'passed')
@@ -118,6 +143,7 @@ export function QualityRecordsTable({
                 )}
               </div>
               <div className="flex items-center justify-end gap-1 pt-2 border-t border-app-border">
+                {record.comprobante_url && <ComprobanteButton path={record.comprobante_url} />}
                 <button
                   onClick={() => onEdit(record)}
                   aria-label="Editar ensayo"
@@ -204,6 +230,7 @@ export function QualityRecordsTable({
                   </td>
                   <td className="px-2 py-2.5">
                     <div className="flex items-center gap-1">
+                      {record.comprobante_url && <ComprobanteButton path={record.comprobante_url} />}
                       <button
                         onClick={() => onEdit(record)}
                         aria-label="Editar ensayo"

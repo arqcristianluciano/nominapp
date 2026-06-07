@@ -4,6 +4,8 @@ import type { QualityControl } from '@/types/database'
 type QCInsert = Omit<QualityControl, 'id' | 'status'>
 type QCUpdate = Partial<Omit<QualityControl, 'id'>>
 
+const COMPROBANTE_BUCKET = 'quality-attachments'
+
 function computeStatus(actual?: number | null, expected?: number | null): 'passed' | 'failed' | null {
   if (actual == null || expected == null) return null
   return actual >= expected ? 'passed' : 'failed'
@@ -44,10 +46,30 @@ export const qualityControlService = {
   },
 
   async delete(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('quality_control')
-      .delete()
-      .eq('id', id)
+    const { error } = await supabase.from('quality_control').delete().eq('id', id)
     if (error) throw error
+  },
+
+  // === COMPROBANTE DEL ENSAYO (bucket privado quality-attachments) ===
+
+  // Sube el comprobante (foto o PDF) del ensayo. El path va prefijado por
+  // <projectId> para que la RLS verifique el permiso al proyecto. Devuelve el
+  // path almacenado, que se guarda luego en quality_control.comprobante_url.
+  async uploadComprobante(projectId: string, file: File): Promise<string> {
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+    const path = `${projectId}/${Date.now()}-${safeName}`
+    const { error } = await supabase.storage
+      .from(COMPROBANTE_BUCKET)
+      .upload(path, file, { contentType: file.type || 'application/octet-stream', upsert: false })
+    if (error) throw error
+    return path
+  },
+
+  // URL firmada (privada) para ver/descargar el comprobante.
+  async getComprobanteUrl(path: string, expiresInSec = 60 * 60): Promise<string> {
+    const { data, error } = await supabase.storage.from(COMPROBANTE_BUCKET).createSignedUrl(path, expiresInSec)
+    if (error) throw error
+    if (!data?.signedUrl) throw new Error('No signed URL returned')
+    return data.signedUrl
   },
 }

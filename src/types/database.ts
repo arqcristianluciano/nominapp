@@ -257,6 +257,7 @@ export interface QualityControl {
   laboratory: string | null
   status: 'passed' | 'failed' | null
   notes: string | null
+  comprobante_url: string | null
 }
 
 // --- Módulo de Cubicación (rediseño v2) ---
