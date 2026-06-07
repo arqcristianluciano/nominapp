@@ -12,6 +12,7 @@ interface ScheduleTasksContentProps {
   todayLeft: string | null
   onEdit: (task: ScheduleTask) => void
   onDelete: (taskId: string) => void
+  onAddSubtask: (parentTask: ScheduleTask) => void
 }
 
 function LoadingState() {
@@ -34,9 +35,20 @@ export function ScheduleTasksContent(props: ScheduleTasksContentProps) {
   return (
     <>
       {props.ganttInfo && (
-        <ScheduleGantt tasks={props.tasks} ganttInfo={props.ganttInfo} today={props.today} todayLeft={props.todayLeft} />
+        <ScheduleGantt
+          tasks={props.tasks}
+          ganttInfo={props.ganttInfo}
+          today={props.today}
+          todayLeft={props.todayLeft}
+        />
       )}
-      <ScheduleTaskTable tasks={props.tasks} today={props.today} onEdit={props.onEdit} onDelete={props.onDelete} />
+      <ScheduleTaskTable
+        tasks={props.tasks}
+        today={props.today}
+        onEdit={props.onEdit}
+        onDelete={props.onDelete}
+        onAddSubtask={props.onAddSubtask}
+      />
     </>
   )
 }

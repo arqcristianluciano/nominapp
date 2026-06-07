@@ -12,6 +12,10 @@ export interface GanttInfo {
   months: GanttMonth[]
 }
 
+/**
+ * Build Gantt timeline info from a list of tasks.
+ * Accepts all tasks (including subtasks) to compute the full date range.
+ */
 export function buildGanttInfo(tasks: ScheduleTask[]): GanttInfo | null {
   if (!tasks.length) return null
   const allDates = tasks.flatMap((task) => [new Date(task.start_date), new Date(task.end_date)])

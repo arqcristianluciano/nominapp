@@ -22,6 +22,10 @@ export default function CronogramaPage() {
           form={schedule.form}
           editMode={!!schedule.editId}
           saving={schedule.saving}
+          allTasks={schedule.tasks}
+          editId={schedule.editId}
+          lockedParentId={schedule.lockedParentId}
+          hasChildren={schedule.editingHasChildren}
           onChange={schedule.setForm}
           onCancel={schedule.closeForm}
           onSave={schedule.saveTask}
@@ -35,8 +39,13 @@ export default function CronogramaPage() {
         todayLeft={schedule.todayLeft}
         onEdit={schedule.startEdit}
         onDelete={schedule.setDeleteId}
+        onAddSubtask={schedule.openAddSubtask}
       />
-      <ScheduleDeleteTaskModal deleteId={schedule.deleteId} onConfirm={schedule.confirmDelete} onCancel={() => schedule.setDeleteId(null)} />
+      <ScheduleDeleteTaskModal
+        deleteId={schedule.deleteId}
+        onConfirm={schedule.confirmDelete}
+        onCancel={() => schedule.setDeleteId(null)}
+      />
     </div>
   )
 }
