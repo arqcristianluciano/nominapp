@@ -3,10 +3,7 @@ import type { Supplier } from '@/types/database'
 
 export const supplierService = {
   async getAll() {
-    const { data, error } = await supabase
-      .from('suppliers')
-      .select('*')
-      .order('name')
+    const { data, error } = await supabase.from('suppliers').select('*').order('name')
     if (error) throw error
     return data as Supplier[]
   },
@@ -17,13 +14,10 @@ export const supplierService = {
     contact_phone?: string
     bank_account?: string
     bank_name?: string
+    tipo_cuenta?: 'ahorros' | 'corriente'
     payment_terms?: string
   }) {
-    const { data, error } = await supabase
-      .from('suppliers')
-      .insert(supplier)
-      .select()
-      .single()
+    const { data, error } = await supabase.from('suppliers').insert(supplier).select().single()
     if (error) throw error
     return data as Supplier
   },

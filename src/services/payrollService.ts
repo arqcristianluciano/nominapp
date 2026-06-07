@@ -245,10 +245,15 @@ export const payrollService = {
     const materialsTotal = calcMaterialsTotal(materialInvoices)
     const indirect = calcIndirectCosts(laborTotal, materialsTotal, project)
     const rows = buildIndirectCostRows(project, indirect)
-    const savedIndirect = await this.saveIndirectCosts(periodId, rows)
-    const totalIndirect = savedIndirect
+    await this.saveIndirectCosts(periodId, rows)
+    // El total incluye TODOS los indirectos activos: automáticos + manuales.
+    const { data: allIndirect } = await supabase
+      .from('indirect_costs')
+      .select('calculated_amount, is_active')
+      .eq('payroll_period_id', periodId)
+    const totalIndirect = ((allIndirect || []) as Pick<IndirectCost, 'calculated_amount' | 'is_active'>[])
       .filter((cost) => cost.is_active)
-      .reduce((acc, cost) => acc + cost.calculated_amount, 0)
+      .reduce((acc, cost) => acc + Number(cost.calculated_amount), 0)
 
     await this.updatePeriodTotals(periodId, {
       total_labor: laborTotal,
@@ -552,21 +557,26 @@ export const payrollService = {
       fixed_amount?: number
     }[],
   ) {
+    // Conserva la preferencia is_active de los porcentuales por tipo.
     const { data: existing } = await supabase
       .from('indirect_costs')
       .select('type, is_active')
       .eq('payroll_period_id', periodId)
+      .eq('is_manual', false)
     const activeByType = new Map<string, boolean>()
     for (const r of (existing || []) as Pick<IndirectCost, 'type' | 'is_active'>[]) {
       activeByType.set(r.type, r.is_active)
     }
 
-    await supabase.from('indirect_costs').delete().eq('payroll_period_id', periodId)
+    // Solo se borran y reconstruyen los indirectos AUTOMÁTICOS (porcentuales).
+    // Los manuales (is_manual = true) sobreviven al recálculo intactos.
+    await supabase.from('indirect_costs').delete().eq('payroll_period_id', periodId).eq('is_manual', false)
     if (costs.length === 0) return []
     const rows = costs.map((c) => ({
       ...c,
       payroll_period_id: periodId,
       is_active: activeByType.get(c.type) ?? true,
+      is_manual: false,
     }))
     const { data, error } = await supabase.from('indirect_costs').insert(rows).select()
     if (error) throw error
@@ -582,6 +592,50 @@ export const payrollService = {
       .single()
     if (error) throw error
     return data as IndirectCost
+  },
+
+  /** Agrega un indirecto manual de monto fijo (no se recalcula por porcentaje). */
+  async addManualIndirect(periodId: string, input: { description: string; amount: number }) {
+    const { data, error } = await supabase
+      .from('indirect_costs')
+      .insert({
+        payroll_period_id: periodId,
+        type: 'manual',
+        description: input.description,
+        percentage: null,
+        base_amount: null,
+        calculated_amount: input.amount,
+        fixed_amount: input.amount,
+        is_active: true,
+        is_manual: true,
+      })
+      .select()
+      .single()
+    if (error) throw error
+    return data as IndirectCost
+  },
+
+  /** Edita el concepto o el monto de un indirecto manual. */
+  async updateManualIndirect(id: string, input: { description: string; amount: number }) {
+    const { data, error } = await supabase
+      .from('indirect_costs')
+      .update({
+        description: input.description,
+        calculated_amount: input.amount,
+        fixed_amount: input.amount,
+      })
+      .eq('id', id)
+      .eq('is_manual', true)
+      .select()
+      .single()
+    if (error) throw error
+    return data as IndirectCost
+  },
+
+  /** Elimina un indirecto manual. */
+  async deleteManualIndirect(id: string) {
+    const { error } = await supabase.from('indirect_costs').delete().eq('id', id).eq('is_manual', true)
+    if (error) throw error
   },
 
   // === FILE ATTACHMENTS ===

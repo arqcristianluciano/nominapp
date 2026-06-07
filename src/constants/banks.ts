@@ -12,3 +12,11 @@ export const DOMINICAN_BANKS = [
   'Banco ADOPEM',
   'Caja Chica',
 ] as const
+
+/** Tipos de cuenta bancaria para proveedores (coincide con el CHECK de la BD). */
+export const ACCOUNT_TYPES = [
+  { value: 'ahorros', label: 'Ahorros' },
+  { value: 'corriente', label: 'Corriente' },
+] as const
+
+export type AccountType = (typeof ACCOUNT_TYPES)[number]['value']

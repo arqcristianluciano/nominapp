@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildBankPaymentRows, BANK_PAYMENT_HEADERS } from './bankPaymentExport'
+import { buildBankPaymentSheet, BANK_PAYMENT_HEADERS } from './bankPaymentExport'
 import type { PaymentDistribution } from '@/types/database'
 
 function makeDist(over: Partial<PaymentDistribution> = {}): PaymentDistribution {
@@ -23,43 +23,45 @@ function makeDist(over: Partial<PaymentDistribution> = {}): PaymentDistribution 
   }
 }
 
-describe('buildBankPaymentRows', () => {
-  it('incluye encabezado y una fila por distribución con etiquetas en español', () => {
-    const rows = buildBankPaymentRows([makeDist()])
-    expect(rows[0]).toEqual([...BANK_PAYMENT_HEADERS])
-    expect(rows[1]).toEqual([
-      'Juan Pérez',
-      '001-1234567-8',
-      'Popular',
-      '123',
-      '1000.00',
-      'Transferencia',
-      '',
-      '',
-      'Pendiente',
-    ])
+describe('buildBankPaymentSheet', () => {
+  it('genera una fila por pago con etiquetas en español y monto numérico', () => {
+    const rows = buildBankPaymentSheet([makeDist()])
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toEqual({
+      Beneficiario: 'Juan Pérez',
+      'Cédula/RNC': '001-1234567-8',
+      Banco: 'Popular',
+      Cuenta: '123',
+      Monto: 1000,
+      Método: 'Transferencia',
+      'No. Cheque': '',
+      'Cuenta origen': '',
+      Estado: 'Pendiente',
+    })
+    // El monto va como número real (no texto), para que Excel lo sume.
+    expect(typeof rows[0].Monto).toBe('number')
+  })
+
+  it('las claves de cada fila coinciden con el orden de columnas declarado', () => {
+    const rows = buildBankPaymentSheet([makeDist()])
+    expect(Object.keys(rows[0])).toEqual([...BANK_PAYMENT_HEADERS])
   })
 
   it('resuelve la cuenta de origen, el método cheque y el estado completado', () => {
-    const rows = buildBankPaymentRows(
+    const rows = buildBankPaymentSheet(
       [makeDist({ bank_account_id: 'acc1', payment_method: 'check', check_number: '0042', status: 'completed' })],
       (id) => (id === 'acc1' ? 'Banreservas — 999' : undefined),
     )
-    expect(rows[1]).toEqual([
-      'Juan Pérez',
-      '001-1234567-8',
-      'Popular',
-      '123',
-      '1000.00',
-      'Cheque',
-      '0042',
-      'Banreservas — 999',
-      'Completado',
-    ])
+    expect(rows[0]).toMatchObject({
+      Método: 'Cheque',
+      'No. Cheque': '0042',
+      'Cuenta origen': 'Banreservas — 999',
+      Estado: 'Completado',
+    })
   })
 
   it('normaliza nulos a cadena vacía y deja origen vacío si no resuelve', () => {
-    const rows = buildBankPaymentRows(
+    const rows = buildBankPaymentSheet(
       [
         makeDist({
           beneficiary: null,
@@ -71,6 +73,12 @@ describe('buildBankPaymentRows', () => {
       ],
       () => undefined,
     )
-    expect(rows[1]).toEqual(['', '', '', '', '1000.00', 'Transferencia', '', '', 'Pendiente'])
+    expect(rows[0]).toMatchObject({
+      Beneficiario: '',
+      'Cédula/RNC': '',
+      Banco: '',
+      Cuenta: '',
+      'Cuenta origen': '',
+    })
   })
 })

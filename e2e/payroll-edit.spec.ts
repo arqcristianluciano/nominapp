@@ -54,8 +54,11 @@ test('flujo crear borrador → enviar → devolver a borrador', async ({ page })
   await addDialog.getByRole('button', { name: 'Agregar partida' }).click()
   await expect(page.getByText('Agregar partida de mano de obra')).toHaveCount(0)
 
-  // Enviar para aprobación → aparece "Devolver a borrador" (estado enviado + aprobador).
+  // Enviar para aprobación. Como aún no se ha distribuido ningún pago, aparece
+  // el aviso (no bloqueante) "Aún falta distribuir": se confirma con "Enviar de
+  // todos modos". Luego aparece "Devolver a borrador" (estado enviado + aprobador).
   await page.getByRole('button', { name: 'Enviar para aprobación' }).first().click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Enviar de todos modos' }).click()
   await expect(page.getByRole('button', { name: 'Devolver a borrador' }).first()).toBeVisible()
 
   // Devolver a borrador (botón → modal de confirmación).

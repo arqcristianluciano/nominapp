@@ -172,3 +172,32 @@ describe('paymentDistributionService.getByPeriod', () => {
     })
   })
 })
+
+describe('paymentDistributionService.addAmount', () => {
+  it('suma el monto al pago existente y devuelve la fila actualizada', async () => {
+    tableResults.payment_distributions = [
+      { data: { id: 'd1', amount: 100, beneficiary: 'Maestro Pedro' }, error: null }, // lectura previa
+      { data: { id: 'd1', amount: 150, beneficiary: 'Maestro Pedro' }, error: null }, // fila actualizada
+    ]
+
+    const result = await paymentDistributionService.addAmount('d1', 50)
+
+    const pdCalls = fromCalls.filter((c) => c.table === 'payment_distributions')
+    // La segunda llamada a la tabla es el update con el nuevo monto consolidado.
+    expect(pdCalls[1].chain.update).toHaveBeenCalledWith({ amount: 150 })
+    expect(pdCalls[1].chain.eq).toHaveBeenCalledWith('id', 'd1')
+    expect(result).toEqual({ id: 'd1', amount: 150, beneficiary: 'Maestro Pedro' })
+  })
+
+  it('rechaza montos menores o iguales a cero', async () => {
+    await expect(paymentDistributionService.addAmount('d1', 0)).rejects.toThrow('mayor que cero')
+    expect(from).not.toHaveBeenCalled()
+  })
+
+  it('propaga el error si falla la lectura del pago a consolidar', async () => {
+    tableResults.payment_distributions = [{ data: null, error: { message: 'read boom' } }]
+    await expect(paymentDistributionService.addAmount('d1', 50)).rejects.toMatchObject({
+      message: 'read boom',
+    })
+  })
+})

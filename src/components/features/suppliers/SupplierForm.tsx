@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Supplier } from '@/types/database'
 import { PAYMENT_CONDITIONS } from '@/constants/indirectCosts'
+import { ACCOUNT_TYPES, type AccountType } from '@/constants/banks'
 import { isRNC, isPhone } from '@/utils/validators'
 
 interface Props {
@@ -12,6 +13,7 @@ interface Props {
     contact_phone?: string
     bank_account?: string
     bank_name?: string
+    tipo_cuenta?: AccountType
     payment_terms?: string
   }) => Promise<void>
   onCancel: () => void
@@ -25,6 +27,7 @@ export function SupplierForm({ initial, onSubmit, onCancel, saving }: Props) {
   const [phone, setPhone] = useState(initial?.contact_phone || '')
   const [bankAccount, setBankAccount] = useState(initial?.bank_account || '')
   const [bankName, setBankName] = useState(initial?.bank_name || '')
+  const [accountType, setAccountType] = useState<string>(initial?.tipo_cuenta || '')
   const [terms, setTerms] = useState(initial?.payment_terms || '')
   const [formError, setFormError] = useState<string | null>(null)
 
@@ -50,6 +53,7 @@ export function SupplierForm({ initial, onSubmit, onCancel, saving }: Props) {
       contact_phone: phone || undefined,
       bank_account: bankAccount || undefined,
       bank_name: bankName || undefined,
+      tipo_cuenta: (accountType as AccountType) || undefined,
       payment_terms: terms || undefined,
     })
   }
@@ -110,14 +114,32 @@ export function SupplierForm({ initial, onSubmit, onCancel, saving }: Props) {
             className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
-        <div className="col-span-2">
+        <div>
           <label className="block text-xs font-medium text-app-muted mb-1">{t('suppliers.form.account_number')}</label>
           <input
             type="text"
+            inputMode="numeric"
             value={bankAccount}
-            onChange={(e) => setBankAccount(e.target.value)}
+            onChange={(e) => setBankAccount(e.target.value.replace(/\D/g, ''))}
             className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-app-muted mb-1">{t('suppliers.form.account_type')}</label>
+          <select
+            value={accountType}
+            onChange={(e) => setAccountType(e.target.value)}
+            className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">{t('suppliers.form.select_placeholder')}</option>
+            {ACCOUNT_TYPES.map((a) => (
+              <option key={a.value} value={a.value}>
+                {a.value === 'ahorros'
+                  ? t('suppliers.form.account_type_savings')
+                  : t('suppliers.form.account_type_checking')}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 

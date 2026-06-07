@@ -55,6 +55,8 @@ export interface Supplier {
   contact_phone: string | null
   bank_account: string | null
   bank_name: string | null
+  /** Tipo de cuenta bancaria: 'ahorros' | 'corriente'. NULL si no se declaró. */
+  tipo_cuenta: 'ahorros' | 'corriente' | null
   payment_terms: string | null
   is_active: boolean
   created_at: string
@@ -194,6 +196,8 @@ export interface IndirectCost {
   calculated_amount: number
   fixed_amount: number | null
   is_active: boolean
+  /** true = indirecto agregado a mano (monto fijo); el recálculo no lo toca. */
+  is_manual: boolean
   notes: string | null
 }
 
@@ -253,6 +257,7 @@ export interface QualityControl {
   laboratory: string | null
   status: 'passed' | 'failed' | null
   notes: string | null
+  comprobante_url: string | null
 }
 
 // --- Módulo de Cubicación (rediseño v2) ---

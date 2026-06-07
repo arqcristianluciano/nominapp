@@ -81,6 +81,49 @@ export const paymentDistributionService = {
     return created
   },
 
+  /**
+   * Consolida un pago en otro existente del mismo beneficiario sumando su monto.
+   * Conserva el método, la cuenta de origen y demás datos del pago original; solo
+   * incrementa el importe. Devuelve la fila actualizada.
+   */
+  async addAmount(id: string, delta: number): Promise<PaymentDistribution> {
+    if (delta <= 0) {
+      throw new Error('El monto a sumar debe ser mayor que cero.')
+    }
+
+    const { data: before, error: readError } = await supabase
+      .from('payment_distributions')
+      .select('*')
+      .eq('id', id)
+      .single()
+    if (readError) throw readError
+    if (!before) throw new Error('No se encontró el pago a consolidar.')
+
+    const previous = before as PaymentDistribution
+    const newAmount = previous.amount + delta
+
+    const { data, error } = await supabase
+      .from('payment_distributions')
+      .update({ amount: newAmount })
+      .eq('id', id)
+      .select('*')
+      .single()
+    if (error) throw error
+
+    const updated = data as PaymentDistribution
+    await approvalsService
+      .log({
+        entity_type: 'payment_distribution',
+        entity_id: id,
+        action: 'update',
+        payload_before: { amount: previous.amount },
+        payload_after: { amount: newAmount },
+      })
+      .catch((err) => console.warn('[paymentDistributionService.addAmount] log de auditoria fallo', err))
+
+    return updated
+  },
+
   async updateStatus(id: string, status: 'pending' | 'completed' | 'cancelled'): Promise<void> {
     const { data: before } = await supabase.from('payment_distributions').select('id, status').eq('id', id).single()
 

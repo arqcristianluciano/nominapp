@@ -56,6 +56,7 @@ create table if not exists suppliers (
   contact_phone text,
   bank_account text,
   bank_name text,
+  tipo_cuenta text check (tipo_cuenta is null or tipo_cuenta in ('ahorros', 'corriente')),
   payment_terms text,
   is_active boolean not null default true,
   created_at timestamptz default now(),
@@ -166,6 +167,7 @@ create table if not exists indirect_costs (
   calculated_amount numeric(15,2) not null default 0,
   fixed_amount numeric(15,2),
   is_active boolean not null default true,
+  is_manual boolean not null default false,
   notes text
 );
 

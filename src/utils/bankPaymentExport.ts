@@ -1,4 +1,5 @@
 import type { PaymentDistribution } from '@/types/database'
+import type { ExcelRow } from '@/utils/excelExport'
 
 const METHOD_LABELS: Record<PaymentDistribution['payment_method'], string> = {
   transfer: 'Transferencia',
@@ -29,25 +30,24 @@ export const BANK_PAYMENT_HEADERS = [
 export type SourceAccountResolver = (bankAccountId: string) => string | undefined
 
 /**
- * Construye las filas (encabezado + datos) para exportar la distribución de
- * pagos de un período a CSV, con etiquetas en español y montos sin formato de
- * moneda (aptos para importar en banca electrónica u hojas de cálculo).
+ * Construye las filas (una por pago) para exportar la distribución de pagos de un
+ * período a Excel (.xlsx), con etiquetas en español y el monto como número real
+ * (no texto) para que el banco u hoja de cálculo lo trate como importe y permita
+ * sumarlo. Las claves coinciden con `BANK_PAYMENT_HEADERS` para fijar el orden.
  */
-export function buildBankPaymentRows(
+export function buildBankPaymentSheet(
   distributions: PaymentDistribution[],
   resolveSourceAccount?: SourceAccountResolver,
-): string[][] {
-  const header = [...BANK_PAYMENT_HEADERS]
-  const dataRows = distributions.map((d) => [
-    d.beneficiary ?? '',
-    d.beneficiary_doc ?? '',
-    d.bank_name ?? '',
-    d.bank_account ?? '',
-    d.amount.toFixed(2),
-    METHOD_LABELS[d.payment_method] ?? d.payment_method,
-    d.check_number ?? '',
-    (d.bank_account_id && resolveSourceAccount?.(d.bank_account_id)) || '',
-    STATUS_LABELS[d.status] ?? d.status,
-  ])
-  return [header, ...dataRows]
+): ExcelRow[] {
+  return distributions.map((d) => ({
+    Beneficiario: d.beneficiary ?? '',
+    'Cédula/RNC': d.beneficiary_doc ?? '',
+    Banco: d.bank_name ?? '',
+    Cuenta: d.bank_account ?? '',
+    Monto: d.amount,
+    Método: METHOD_LABELS[d.payment_method] ?? d.payment_method,
+    'No. Cheque': d.check_number ?? '',
+    'Cuenta origen': (d.bank_account_id && resolveSourceAccount?.(d.bank_account_id)) || '',
+    Estado: STATUS_LABELS[d.status] ?? d.status,
+  }))
 }

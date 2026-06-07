@@ -5,6 +5,7 @@ import { supplierService } from '@/services/supplierService'
 import { contractorService } from '@/services/contractorService'
 import { priceListService } from '@/services/priceListService'
 import { budgetCategoryService } from '@/services/budgetCategoryService'
+import { paymentDistributionService } from '@/services/paymentDistributionService'
 import { useProjectRoles } from '@/hooks/useProjectRoles'
 import { PaymentDistributionsSection } from '@/components/features/payments/PaymentDistributionsSection'
 import { LoanDeductionSection } from '@/components/features/payroll/LoanDeductionSection'
@@ -21,6 +22,7 @@ import { IndirectCostsSection } from '@/components/features/payroll/IndirectCost
 import { PayrollHistorySection } from '@/components/features/payroll/PayrollHistorySection'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { canEditPayrollItems, canReturnPayrollToDraft } from '@/utils/payrollItemPermissions'
+import { formatRD } from '@/utils/currency'
 import type {
   BudgetCategory,
   Contractor,
@@ -43,6 +45,8 @@ export default function PayrollEditor() {
   const [editLaborItem, setEditLaborItem] = useState<LaborLineItem | null>(null)
   const [editMaterialInvoice, setEditMaterialInvoice] = useState<MaterialInvoice | null>(null)
   const [confirmReturnToDraft, setConfirmReturnToDraft] = useState(false)
+  // Aviso (no bloqueante) al enviar a aprobación si aún falta repartir dinero.
+  const [submitWarning, setSubmitWarning] = useState<{ remaining: number } | null>(null)
 
   useEffect(() => {
     loadPayroll()
@@ -85,6 +89,26 @@ export default function PayrollEditor() {
     canApprove: roles.canApprovePayroll,
   })
 
+  // Al enviar a aprobación, si aún falta repartir parte del total, se avisa sin
+  // bloquear: el usuario puede enviar igual y terminar la distribución luego.
+  const grandTotal = period.grand_total || 0
+  const handleUpdateStatus = async (status: 'submitted' | 'approved' | 'paid') => {
+    if (status === 'submitted' && grandTotal > 0) {
+      try {
+        const distributions = await paymentDistributionService.getByPeriod(period.id)
+        const distributed = distributions.reduce((sum, d) => sum + d.amount, 0)
+        const remaining = grandTotal - distributed
+        if (remaining > 0.01) {
+          setSubmitWarning({ remaining })
+          return
+        }
+      } catch {
+        // Si la consulta falla, no se bloquea el envío.
+      }
+    }
+    await payroll.updateStatus(status)
+  }
+
   return (
     <div className="space-y-6 max-w-5xl pb-24 sm:pb-0">
       <PayrollEditorHeader
@@ -93,7 +117,7 @@ export default function PayrollEditor() {
         canApprove={roles.canApprovePayroll}
         canReturnToDraft={canReturnToDraft}
         onReturnToDraft={() => setConfirmReturnToDraft(true)}
-        onUpdateStatus={payroll.updateStatus}
+        onUpdateStatus={handleUpdateStatus}
       />
 
       {payroll.error && <div className="text-sm text-red-600 bg-red-50 rounded-lg px-4 py-3">{payroll.error}</div>}
@@ -132,6 +156,9 @@ export default function PayrollEditor() {
         saving={payroll.saving}
         total={period.total_indirect || 0}
         onToggleActive={payroll.setIndirectActive}
+        onAddManual={payroll.addManualIndirect}
+        onUpdateManual={payroll.updateManualIndirect}
+        onDeleteManual={payroll.deleteManualIndirect}
       />
 
       <CubicacionesPayrollSection
@@ -146,8 +173,11 @@ export default function PayrollEditor() {
 
       <PayrollHistorySection periodId={period.id} />
 
-      {(period.status === 'approved' || period.status === 'paid') && (
-        <PaymentDistributionsSection periodId={period.id} grandTotal={period.grand_total || 0} />
+      {/* La distribución de pagos se puede preparar ANTES de aprobar: aparece en
+          cuanto el reporte tiene un total que repartir, y se conserva al aprobar
+          (las distribuciones se guardan por reporte, no dependen del estado). */}
+      {(grandTotal > 0 || period.status === 'approved' || period.status === 'paid') && (
+        <PaymentDistributionsSection periodId={period.id} grandTotal={grandTotal} />
       )}
 
       <PayrollEditorModals
@@ -196,7 +226,7 @@ export default function PayrollEditor() {
         canApprove={roles.canApprovePayroll}
         canReturnToDraft={canReturnToDraft}
         onReturnToDraft={() => setConfirmReturnToDraft(true)}
-        onUpdateStatus={payroll.updateStatus}
+        onUpdateStatus={handleUpdateStatus}
       />
 
       <ConfirmModal
@@ -209,6 +239,23 @@ export default function PayrollEditor() {
           void payroll.returnToDraft()
         }}
         onCancel={() => setConfirmReturnToDraft(false)}
+      />
+
+      <ConfirmModal
+        open={submitWarning !== null}
+        variant="warning"
+        title="Aún falta distribuir pagos"
+        message={
+          submitWarning
+            ? `Todavía falta repartir ${formatRD(submitWarning.remaining)} del total de este reporte. Puedes enviarlo a aprobación de todos modos y terminar de distribuir los pagos más tarde.`
+            : ''
+        }
+        confirmLabel="Enviar de todos modos"
+        cancelLabel="Seguir distribuyendo"
+        onConfirm={() => {
+          void payroll.updateStatus('submitted')
+        }}
+        onCancel={() => setSubmitWarning(null)}
       />
     </div>
   )

@@ -6,11 +6,12 @@ import { bankAccountService } from '@/services/bankAccountService'
 import { DistributionForm, type DistributionFormValues } from './DistributionForm'
 import { DistributionsTable } from './DistributionsTable'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
+import { Modal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { formatRD } from '@/utils/currency'
 import { getErrorMessage } from '@/utils/errors'
-import { buildBankPaymentRows } from '@/utils/bankPaymentExport'
-import { downloadCsv } from '@/utils/csv'
+import { buildBankPaymentSheet, BANK_PAYMENT_HEADERS } from '@/utils/bankPaymentExport'
+import { exportToExcel } from '@/utils/excelExport'
 import type { BankAccount, PaymentDistribution } from '@/types/database'
 
 interface Props {
@@ -25,6 +26,10 @@ export function PaymentDistributionsSection({ periodId, grandTotal }: Props) {
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
   const [toDelete, setToDelete] = useState<PaymentDistribution | null>(null)
+  const [consolidatePrompt, setConsolidatePrompt] = useState<{
+    values: DistributionFormValues
+    existing: PaymentDistribution
+  } | null>(null)
   const { success: toastSuccess, error: toastError } = useToast()
 
   const load = useCallback(async () => {
@@ -65,7 +70,7 @@ export function PaymentDistributionsSection({ periodId, grandTotal }: Props) {
   )
   const resolveSourceAccount = useCallback((id: string) => sourceAccountMap.get(id), [sourceAccountMap])
 
-  async function handleAdd(values: DistributionFormValues) {
+  async function createDistribution(values: DistributionFormValues) {
     setSaving(true)
     try {
       await paymentDistributionService.create(
@@ -94,6 +99,52 @@ export function PaymentDistributionsSection({ periodId, grandTotal }: Props) {
     }
   }
 
+  async function handleAdd(values: DistributionFormValues) {
+    // Si ya hay un pago pendiente para el mismo beneficiario en este reporte,
+    // avisamos y ofrecemos sumarlo al existente en vez de crear otro aparte.
+    const existing = distributions.find(
+      (d) =>
+        d.status === 'pending' &&
+        d.beneficiary_id === values.beneficiary_id &&
+        d.beneficiary_type === values.beneficiary_type,
+    )
+    if (existing) {
+      setConsolidatePrompt({ values, existing })
+      return
+    }
+    await createDistribution(values)
+  }
+
+  async function handleConsolidate() {
+    if (!consolidatePrompt) return
+    const { values, existing } = consolidatePrompt
+    setSaving(true)
+    try {
+      await paymentDistributionService.addAmount(existing.id, values.amount)
+      toastSuccess(`Pago sumado al de ${existing.beneficiary || 'el beneficiario'}.`)
+      setConsolidatePrompt(null)
+      setShowForm(false)
+      await load()
+    } catch (err) {
+      Sentry.captureException(err, { tags: { area: 'PaymentDistributionsSection' } })
+      toastError(`No se pudo consolidar el pago: ${getErrorMessage(err)}`)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleAddSeparate() {
+    if (!consolidatePrompt) return
+    const { values } = consolidatePrompt
+    try {
+      await createDistribution(values)
+      setConsolidatePrompt(null)
+    } catch (err) {
+      Sentry.captureException(err, { tags: { area: 'PaymentDistributionsSection' } })
+      toastError(`No se pudo agregar el pago: ${getErrorMessage(err)}`)
+    }
+  }
+
   async function handleComplete(id: string) {
     try {
       await paymentDistributionService.updateStatus(id, 'completed')
@@ -116,10 +167,15 @@ export function PaymentDistributionsSection({ periodId, grandTotal }: Props) {
     }
   }
 
-  function handleExport() {
-    const rows = buildBankPaymentRows(distributions, resolveSourceAccount)
-    const stamp = new Date().toISOString().slice(0, 10)
-    downloadCsv(`pagos-nomina-${stamp}.csv`, rows)
+  async function handleExport() {
+    try {
+      const rows = buildBankPaymentSheet(distributions, resolveSourceAccount)
+      const stamp = new Date().toISOString().slice(0, 10)
+      await exportToExcel(`pagos-nomina-${stamp}`, [{ name: 'Pagos', rows, header: [...BANK_PAYMENT_HEADERS] }])
+    } catch (err) {
+      Sentry.captureException(err, { tags: { area: 'PaymentDistributionsSection' } })
+      toastError(`No se pudo exportar el archivo de pagos: ${getErrorMessage(err)}`)
+    }
   }
 
   return (
@@ -137,7 +193,7 @@ export function PaymentDistributionsSection({ periodId, grandTotal }: Props) {
             <button
               onClick={handleExport}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-app-surface border border-app-border text-sm font-medium rounded-lg hover:bg-app-hover"
-              title="Exportar pagos a CSV"
+              title="Exportar pagos a Excel"
             >
               <Download className="w-4 h-4" /> Exportar
             </button>
@@ -191,6 +247,54 @@ export function PaymentDistributionsSection({ periodId, grandTotal }: Props) {
         }}
         onCancel={() => setToDelete(null)}
       />
+
+      <Modal
+        open={consolidatePrompt !== null}
+        onClose={() => setConsolidatePrompt(null)}
+        title=""
+        ariaLabel="Ya existe un pago para este beneficiario"
+        width="max-w-md"
+      >
+        {consolidatePrompt && (
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-base font-semibold text-app-text">Ya existe un pago para este beneficiario</h3>
+              <p className="text-sm text-app-muted mt-1 leading-relaxed">
+                {consolidatePrompt.existing.beneficiary || 'Este beneficiario'} ya tiene un pago pendiente de{' '}
+                <span className="font-medium text-app-text">{formatRD(consolidatePrompt.existing.amount)}</span>. Si lo
+                sumas, quedará un solo pago de{' '}
+                <span className="font-medium text-app-text">
+                  {formatRD(consolidatePrompt.existing.amount + consolidatePrompt.values.amount)}
+                </span>
+                .
+              </p>
+            </div>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={handleConsolidate}
+                disabled={saving}
+                className="w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+              >
+                Sumar al pago existente
+              </button>
+              <button
+                onClick={handleAddSeparate}
+                disabled={saving}
+                className="w-full px-4 py-2 text-sm font-medium text-app-text border border-app-border rounded-lg hover:bg-app-hover transition-colors disabled:opacity-50"
+              >
+                Agregar como pago aparte
+              </button>
+              <button
+                onClick={() => setConsolidatePrompt(null)}
+                disabled={saving}
+                className="w-full px-4 py-2 text-sm text-app-muted rounded-lg hover:bg-app-hover transition-colors disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </section>
   )
 }

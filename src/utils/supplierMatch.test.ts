@@ -10,6 +10,7 @@ function makeSupplier(name: string, overrides: Partial<Supplier> = {}): Supplier
     contact_phone: null,
     bank_account: null,
     bank_name: null,
+    tipo_cuenta: null,
     payment_terms: null,
     is_active: true,
     created_at: '2026-01-01T00:00:00Z',

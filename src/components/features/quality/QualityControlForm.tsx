@@ -1,6 +1,10 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import { Camera, FileText, Paperclip, X } from 'lucide-react'
 import type { QualityControl } from '@/types/database'
 import { parseDecimalInput } from '@/utils/decimalInput'
+import { qualityControlService } from '@/services/qualityControlService'
+import { useToast } from '@/components/ui/Toast'
+import { getErrorMessage } from '@/utils/errors'
 
 type FormData = Omit<QualityControl, 'id' | 'status'>
 
@@ -24,7 +28,38 @@ export function QualityControlForm({ initial, projectId, saving, onSubmit, onCan
   const [supplier, setSupplier] = useState(initial?.concrete_supplier || '')
   const [laboratory, setLaboratory] = useState(initial?.laboratory || '')
   const [notes, setNotes] = useState(initial?.notes || '')
+  const [comprobanteUrl, setComprobanteUrl] = useState<string | null>(initial?.comprobante_url || null)
+  const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const cameraInputRef = useRef<HTMLInputElement>(null)
+  const { error: toastError } = useToast()
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = '' // permite volver a elegir el mismo archivo
+    if (!file) return
+    setUploading(true)
+    setError(null)
+    try {
+      const path = await qualityControlService.uploadComprobante(projectId, file)
+      setComprobanteUrl(path)
+    } catch (uploadError) {
+      toastError(`No se pudo subir el comprobante: ${getErrorMessage(uploadError)}`)
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  async function viewComprobante() {
+    if (!comprobanteUrl) return
+    try {
+      const url = await qualityControlService.getComprobanteUrl(comprobanteUrl)
+      window.open(url, '_blank', 'noopener,noreferrer')
+    } catch {
+      toastError('No se pudo abrir el comprobante')
+    }
+  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -65,6 +100,7 @@ export function QualityControlForm({ initial, projectId, saving, onSubmit, onCan
       concrete_supplier: supplier || null,
       laboratory: laboratory || null,
       notes: notes || null,
+      comprobante_url: comprobanteUrl,
     })
   }
 
@@ -153,6 +189,64 @@ export function QualityControlForm({ initial, projectId, saving, onSubmit, onCan
             className={inputClass}
           />
         </div>
+      </div>
+
+      <div>
+        <label className={labelClass}>Comprobante (foto o PDF del resultado)</label>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*,application/pdf"
+          onChange={handleFile}
+          className="hidden"
+        />
+        <input
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={handleFile}
+          className="hidden"
+        />
+        {comprobanteUrl ? (
+          <div className="flex items-center gap-2 rounded-lg border border-app-border px-3 py-2">
+            <button
+              type="button"
+              onClick={viewComprobante}
+              className="inline-flex items-center gap-2 text-sm text-blue-600 hover:underline min-h-[44px]"
+            >
+              <FileText className="w-4 h-4" /> Ver comprobante
+            </button>
+            <button
+              type="button"
+              onClick={() => setComprobanteUrl(null)}
+              aria-label="Quitar comprobante"
+              className="ml-auto p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-app-subtle hover:text-red-500"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        ) : (
+          <div className="flex flex-col sm:flex-row gap-2">
+            <button
+              type="button"
+              onClick={() => cameraInputRef.current?.click()}
+              disabled={uploading}
+              className="inline-flex items-center justify-center gap-2 px-3 py-2 min-h-[44px] text-sm border border-app-border rounded-lg hover:bg-app-hover disabled:opacity-50 w-full sm:w-auto"
+            >
+              <Camera className="w-4 h-4" /> Tomar foto
+            </button>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="inline-flex items-center justify-center gap-2 px-3 py-2 min-h-[44px] text-sm border border-app-border rounded-lg hover:bg-app-hover disabled:opacity-50 w-full sm:w-auto"
+            >
+              <Paperclip className="w-4 h-4" /> Elegir archivo
+            </button>
+            {uploading && <span className="text-xs text-app-muted self-center">Subiendo...</span>}
+          </div>
+        )}
       </div>
 
       <div>
