@@ -55,6 +55,8 @@ export interface Supplier {
   contact_phone: string | null
   bank_account: string | null
   bank_name: string | null
+  /** Tipo de cuenta bancaria: 'ahorros' | 'corriente'. NULL si no se declaró. */
+  tipo_cuenta: 'ahorros' | 'corriente' | null
   payment_terms: string | null
   is_active: boolean
   created_at: string

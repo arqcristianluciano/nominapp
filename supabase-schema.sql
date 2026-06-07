@@ -56,6 +56,7 @@ create table if not exists suppliers (
   contact_phone text,
   bank_account text,
   bank_name text,
+  tipo_cuenta text check (tipo_cuenta is null or tipo_cuenta in ('ahorros', 'corriente')),
   payment_terms text,
   is_active boolean not null default true,
   created_at timestamptz default now(),

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Building2, X } from 'lucide-react'
 import type { Supplier } from '@/types/database'
 import { supplierService } from '@/services/supplierService'
+import { ACCOUNT_TYPES, type AccountType } from '@/constants/banks'
 import { isRNC, isPhone } from '@/utils/validators'
 import { findSupplierByName } from '@/utils/supplierMatch'
 
@@ -31,8 +32,8 @@ const panelInputCls =
 
 /**
  * Selector de proveedor reutilizable con alta rápida ("＋ Agregar proveedor")
- * incrustada: permite crear un proveedor (nombre, RNC, teléfono y banco) sin
- * salir de la pantalla, evita duplicados y valida RNC/teléfono.
+ * incrustada: permite crear un proveedor (nombre, RNC, teléfono, banco, número
+ * y tipo de cuenta) sin salir de la pantalla, evita duplicados y valida RNC/teléfono.
  *
  * Mantiene internamente los proveedores creados en esta sesión para que
  * aparezcan y queden seleccionados aunque el padre no refresque su lista.
@@ -54,6 +55,8 @@ export function SupplierSelect({
   const [newRnc, setNewRnc] = useState('')
   const [newPhone, setNewPhone] = useState('')
   const [newBank, setNewBank] = useState('')
+  const [newAccount, setNewAccount] = useState('')
+  const [newAccountType, setNewAccountType] = useState('')
   const [savingNew, setSavingNew] = useState(false)
   const [newError, setNewError] = useState<string | null>(null)
 
@@ -82,6 +85,8 @@ export function SupplierSelect({
     setNewRnc('')
     setNewPhone('')
     setNewBank('')
+    setNewAccount('')
+    setNewAccountType('')
     setNewError(null)
   }
 
@@ -115,6 +120,8 @@ export function SupplierSelect({
         rnc: rncTrimmed || undefined,
         contact_phone: phoneTrimmed || undefined,
         bank_name: newBank.trim() || undefined,
+        bank_account: newAccount.trim() || undefined,
+        tipo_cuenta: (newAccountType as AccountType) || undefined,
       })
       // Garantiza que aparezca como activo en la lista local aunque el backend
       // simulado no devuelva el valor por defecto.
@@ -127,6 +134,8 @@ export function SupplierSelect({
       setNewRnc('')
       setNewPhone('')
       setNewBank('')
+      setNewAccount('')
+      setNewAccountType('')
     } catch (err) {
       console.warn('[SupplierSelect] handleCreate failed', err)
       setNewError('No se pudo crear el proveedor. Intenta de nuevo.')
@@ -194,6 +203,22 @@ export function SupplierSelect({
             placeholder="Banco (opcional)"
             className={panelInputCls}
           />
+          <input
+            type="text"
+            inputMode="numeric"
+            value={newAccount}
+            onChange={(e) => setNewAccount(e.target.value.replace(/\D/g, ''))}
+            placeholder="Número de cuenta (opcional)"
+            className={panelInputCls}
+          />
+          <select value={newAccountType} onChange={(e) => setNewAccountType(e.target.value)} className={panelInputCls}>
+            <option value="">Tipo de cuenta (opcional)</option>
+            {ACCOUNT_TYPES.map((a) => (
+              <option key={a.value} value={a.value}>
+                {a.label}
+              </option>
+            ))}
+          </select>
           {newError && (
             <div className="text-xs text-red-600 dark:text-red-400" role="alert">
               {newError}
