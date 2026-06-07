@@ -3,6 +3,8 @@ import { Plus, Trash2 } from 'lucide-react'
 import { loanService } from '@/services/loanService'
 import { getCortesByPayroll } from '@/services/cubicationService'
 import { formatRD } from '@/utils/currency'
+import { useToast } from '@/components/ui/Toast'
+import { getErrorMessage } from '@/utils/errors'
 import type { ContractorLoan, LoanDeduction } from '@/types/database'
 
 interface Props {
@@ -17,6 +19,7 @@ interface ActiveLoanOption {
 }
 
 export function LoanDeductionSection({ periodId, isDraft }: Props) {
+  const { error: toastError } = useToast()
   const [deductions, setDeductions] = useState<LoanDeduction[]>([])
   const [activeLoans, setActiveLoans] = useState<ActiveLoanOption[]>([])
   const [loading, setLoading] = useState(true)
@@ -24,31 +27,38 @@ export function LoanDeductionSection({ periodId, isDraft }: Props) {
   const [showAdd, setShowAdd] = useState(false)
   const [selectedLoanId, setSelectedLoanId] = useState('')
   const [amount, setAmount] = useState('')
+  const [addError, setAddError] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
-    const [ded, all, linkedCortes] = await Promise.all([
-      loanService.getDeductionsByPeriod(periodId),
-      loanService.getAll(),
-      getCortesByPayroll(periodId),
-    ])
-    setDeductions(ded)
+    try {
+      const [ded, all, linkedCortes] = await Promise.all([
+        loanService.getDeductionsByPeriod(periodId),
+        loanService.getAll(),
+        getCortesByPayroll(periodId),
+      ])
+      setDeductions(ded)
 
-    const contractorIds =
-      linkedCortes.length > 0 ? new Set(linkedCortes.map((c) => c.contract?.contractor_id).filter(Boolean)) : null
+      const contractorIds =
+        linkedCortes.length > 0 ? new Set(linkedCortes.map((c) => c.contract?.contractor_id).filter(Boolean)) : null
 
-    const active = all.filter(
-      (l) => l.status === 'active' && (contractorIds === null || contractorIds.has(l.contractor_id)),
-    )
-    const totals = await loanService.getTotalPaidByLoans(active.map((l) => l.id))
-    const withBalance: ActiveLoanOption[] = active.map((loan) => {
-      const totalPaid = totals[loan.id] ?? 0
-      const totalOwed = loan.installment_amount * loan.installments
-      return { loan, totalPaid, balance: Math.max(0, totalOwed - totalPaid) }
-    })
-    setActiveLoans(withBalance.filter((o) => o.balance > 0))
-    setLoading(false)
-  }, [periodId])
+      const active = all.filter(
+        (l) => l.status === 'active' && (contractorIds === null || contractorIds.has(l.contractor_id)),
+      )
+      const totals = await loanService.getTotalPaidByLoans(active.map((l) => l.id))
+      const withBalance: ActiveLoanOption[] = active.map((loan) => {
+        const totalPaid = totals[loan.id] ?? 0
+        const totalOwed = loan.installment_amount * loan.installments
+        return { loan, totalPaid, balance: Math.max(0, totalOwed - totalPaid) }
+      })
+      setActiveLoans(withBalance.filter((o) => o.balance > 0))
+    } catch (e) {
+      toastError(getErrorMessage(e))
+    } finally {
+      // B3: el spinner siempre se apaga, sin importar si hubo error.
+      setLoading(false)
+    }
+  }, [periodId, toastError])
 
   useEffect(() => {
     load()
@@ -56,28 +66,49 @@ export function LoanDeductionSection({ periodId, isDraft }: Props) {
 
   const handleAdd = async () => {
     if (!selectedLoanId || !amount) return
-    const loan = activeLoans.find((o) => o.loan.id === selectedLoanId)?.loan
-    if (!loan) return
+    const option = activeLoans.find((o) => o.loan.id === selectedLoanId)
+    if (!option) return
+    const { loan, balance } = option
+
+    // B6: validar monto > 0 y <= saldo pendiente antes de guardar.
+    const parsed = parseFloat(amount)
+    if (isNaN(parsed) || parsed <= 0) {
+      setAddError('El monto debe ser mayor a cero.')
+      return
+    }
+    if (parsed > balance) {
+      setAddError(`El monto no puede superar el saldo pendiente (${formatRD(balance)}).`)
+      return
+    }
+    setAddError(null)
+
     setSaving(true)
     try {
       await loanService.addDeduction({
         loan_id: selectedLoanId,
         payroll_period_id: periodId,
         contractor_id: loan.contractor_id,
-        amount: parseFloat(amount),
+        amount: parsed,
       })
       setShowAdd(false)
       setSelectedLoanId('')
       setAmount('')
       await load()
+    } catch (e) {
+      toastError(getErrorMessage(e))
     } finally {
       setSaving(false)
     }
   }
 
   const handleDelete = async (id: string) => {
-    await loanService.deleteDeduction(id)
-    await load()
+    // B3: envolver en try/catch para mostrar error en lugar de fallar en silencio.
+    try {
+      await loanService.deleteDeduction(id)
+      await load()
+    } catch (e) {
+      toastError(getErrorMessage(e))
+    }
   }
 
   const onLoanSelect = (loanId: string) => {
@@ -137,9 +168,13 @@ export function LoanDeductionSection({ periodId, isDraft }: Props) {
               />
             </div>
           </div>
+          {addError && <p className="text-xs text-red-600 dark:text-red-400">{addError}</p>}
           <div className="flex flex-col sm:flex-row justify-end gap-2">
             <button
-              onClick={() => setShowAdd(false)}
+              onClick={() => {
+                setShowAdd(false)
+                setAddError(null)
+              }}
               className="px-3 py-2 sm:py-1.5 text-sm text-app-muted border border-app-border rounded-lg hover:bg-app-hover min-h-[44px] sm:min-h-0"
             >
               Cancelar

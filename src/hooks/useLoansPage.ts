@@ -29,10 +29,9 @@ interface LoansUiState {
 
 async function fetchLoansData() {
   const [loans, contractors] = await Promise.all([loanService.getAll(), contractorService.getAll()])
-  const paidEntries = await Promise.all(
-    loans.map(async (loan) => [loan.id, await loanService.getTotalPaid(loan.id)] as const),
-  )
-  return { loans, contractors, paidMap: Object.fromEntries(paidEntries) }
+  // Perf: una sola query para todos los totales pagados en lugar de N queries individuales.
+  const paidMap = await loanService.getTotalPaidByLoans(loans.map((l) => l.id))
+  return { loans, contractors, paidMap }
 }
 
 function filterLoans(loans: ContractorLoan[], search: string) {

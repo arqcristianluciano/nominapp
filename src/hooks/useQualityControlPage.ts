@@ -75,6 +75,7 @@ type QualityActionsArgs = {
   projectId?: string
   editing: QualityControl | undefined
   deletingId: string | null
+  records: QualityControl[]
   load: () => Promise<void>
   onError: (message: string) => void
   setSaving: (value: boolean) => void
@@ -90,7 +91,13 @@ function useQualityActions(args: QualityActionsArgs) {
       args.setSaving(true)
       try {
         if (args.editing) {
+          // B4: if the comprobante path changed during editing, delete the old file
+          const oldPath = args.editing.comprobante_url
+          const newPath = data.comprobante_url
           await qualityControlService.update(args.editing.id, data)
+          if (oldPath && oldPath !== newPath) {
+            void qualityControlService.deleteComprobante(oldPath).catch(() => undefined)
+          }
           args.setEditing(undefined)
         } else {
           await qualityControlService.create(data)
@@ -108,9 +115,14 @@ function useQualityActions(args: QualityActionsArgs) {
 
   const confirmDelete = useCallback(async () => {
     if (!args.deletingId) return
+    // B4: read the comprobante_url before deleting the row
+    const recordToDelete = args.records.find((r) => r.id === args.deletingId)
     try {
       await qualityControlService.delete(args.deletingId)
       args.setDeletingId(null)
+      if (recordToDelete?.comprobante_url) {
+        void qualityControlService.deleteComprobante(recordToDelete.comprobante_url).catch(() => undefined)
+      }
       await args.load()
     } catch (deleteError) {
       args.onError(`No se pudo eliminar ensayo: ${getErrorMessage(deleteError)}`)
@@ -130,6 +142,7 @@ export function useQualityControlPage(projectId?: string) {
     projectId,
     editing: modal.editing,
     deletingId: modal.deletingId,
+    records: quality.records,
     load: quality.load,
     onError: error,
     setSaving: modal.setSaving,

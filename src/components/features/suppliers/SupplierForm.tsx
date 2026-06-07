@@ -9,12 +9,12 @@ interface Props {
   initial?: Supplier
   onSubmit: (data: {
     name: string
-    rnc?: string
-    contact_phone?: string
-    bank_account?: string
-    bank_name?: string
-    tipo_cuenta?: AccountType
-    payment_terms?: string
+    rnc?: string | null
+    contact_phone?: string | null
+    bank_account?: string | null
+    bank_name?: string | null
+    tipo_cuenta?: AccountType | null
+    payment_terms?: string | null
   }) => Promise<void>
   onCancel: () => void
   saving: boolean
@@ -48,13 +48,13 @@ export function SupplierForm({ initial, onSubmit, onCancel, saving }: Props) {
     }
 
     await onSubmit({
-      name,
-      rnc: rnc || undefined,
-      contact_phone: phone || undefined,
-      bank_account: bankAccount || undefined,
-      bank_name: bankName || undefined,
-      tipo_cuenta: (accountType as AccountType) || undefined,
-      payment_terms: terms || undefined,
+      name: name.trim().toUpperCase(),
+      rnc: rncTrimmed || null,
+      contact_phone: phoneTrimmed || null,
+      bank_account: bankAccount.trim() || null,
+      bank_name: bankName.trim() || null,
+      tipo_cuenta: (accountType as AccountType) || null,
+      payment_terms: terms || null,
     })
   }
 
@@ -155,7 +155,7 @@ export function SupplierForm({ initial, onSubmit, onCancel, saving }: Props) {
         </button>
         <button
           type="submit"
-          disabled={saving || !name}
+          disabled={saving || !name.trim()}
           className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50"
         >
           {saving ? t('suppliers.form.saving') : initial ? t('suppliers.form.update') : t('suppliers.form.create')}

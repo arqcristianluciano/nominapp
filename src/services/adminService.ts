@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import { approvalsService, type ApprovalAction, type ApprovalEntity } from '@/services/approvalsService'
+import { approvalsService } from '@/services/approvalsService'
 import type { ProjectRole } from '@/hooks/useProjectRoles'
 import { addBreadcrumb } from '@/lib/sentry'
 
@@ -73,14 +73,16 @@ export const adminService = {
       .single()
     if (error) throw error
     const created = data as Role
-    approvalsService
-      .log({
-        entity_type: 'role' as ApprovalEntity,
+    ;(async () => {
+      const { data: authData } = await supabase.auth.getUser()
+      await approvalsService.log({
+        entity_type: 'role',
         entity_id: created.id,
         action: 'create',
+        actor_user_id: authData?.user?.id ?? null,
         payload_after: created,
       })
-      .catch((err) => console.warn('approvalsService.log createRole failed', err))
+    })().catch((err) => console.warn('approvalsService.log createRole failed', err))
     return created
   },
 
@@ -89,11 +91,13 @@ export const adminService = {
     const { data, error } = await supabase.from('roles').update(updates).eq('id', id).select('*').single()
     if (error) throw error
     const after = data as Role
+    const { data: authData } = await supabase.auth.getUser()
     approvalsService
       .log({
-        entity_type: 'role' as ApprovalEntity,
+        entity_type: 'role',
         entity_id: id,
-        action: 'update' as ApprovalAction,
+        action: 'update',
+        actor_user_id: authData?.user?.id ?? null,
         payload_before: beforeRow ? { name: beforeRow.name, description: beforeRow.description } : null,
         payload_after: { name: after.name, description: after.description },
       })
@@ -105,11 +109,13 @@ export const adminService = {
     const { data: beforeRow } = await supabase.from('roles').select('*').eq('id', id).single()
     const { error } = await supabase.from('roles').delete().eq('id', id)
     if (error) throw error
+    const { data: authData } = await supabase.auth.getUser()
     approvalsService
       .log({
-        entity_type: 'role' as ApprovalEntity,
+        entity_type: 'role',
         entity_id: id,
         action: 'delete',
+        actor_user_id: authData?.user?.id ?? null,
         payload_before: beforeRow ?? null,
       })
       .catch((err) => console.warn('approvalsService.log deleteRole failed', err))
@@ -133,12 +139,15 @@ export const adminService = {
     addBreadcrumb('admin', 'grantCapability', { roleId, capabilityId })
     const { error } = await supabase.from('role_capabilities').insert({ role_id: roleId, capability_id: capabilityId })
     if (error && error.code !== '23505') throw error // ignorar duplicate
+    const { data: authData } = await supabase.auth.getUser()
     approvalsService
       .log({
-        entity_type: 'role_capability' as ApprovalEntity,
-        entity_id: `${roleId}:${capabilityId}`,
-        action: 'grant' as ApprovalAction,
+        entity_type: 'role_capability',
+        entity_id: roleId, // UUID real del rol; capability_id va en metadata
+        action: 'grant',
+        actor_user_id: authData?.user?.id ?? null,
         payload_after: { role_id: roleId, capability_id: capabilityId },
+        metadata: { capability_id: capabilityId },
       })
       .catch((err) => console.warn('approvalsService.log grantCapability failed', err))
   },
@@ -151,12 +160,15 @@ export const adminService = {
       .eq('role_id', roleId)
       .eq('capability_id', capabilityId)
     if (error) throw error
+    const { data: authData } = await supabase.auth.getUser()
     approvalsService
       .log({
-        entity_type: 'role_capability' as ApprovalEntity,
-        entity_id: `${roleId}:${capabilityId}`,
-        action: 'revoke' as ApprovalAction,
+        entity_type: 'role_capability',
+        entity_id: roleId, // UUID real del rol; capability_id va en metadata
+        action: 'revoke',
+        actor_user_id: authData?.user?.id ?? null,
         payload_before: { role_id: roleId, capability_id: capabilityId },
+        metadata: { capability_id: capabilityId },
       })
       .catch((err) => console.warn('approvalsService.log revokeCapability failed', err))
   },
@@ -181,11 +193,13 @@ export const adminService = {
     const { data, error } = await supabase.from('user_profiles').update(patch).eq('id', id).select('*').single()
     if (error) throw error
     const after = data as AdminUser
+    const { data: authData } = await supabase.auth.getUser()
     approvalsService
       .log({
-        entity_type: 'user_profile' as ApprovalEntity,
+        entity_type: 'user_profile',
         entity_id: id,
-        action: 'update' as ApprovalAction,
+        action: 'update',
+        actor_user_id: authData?.user?.id ?? null,
         payload_before: beforeRow ?? null,
         payload_after: after,
       })
@@ -196,12 +210,15 @@ export const adminService = {
   async assignProjectRole(userId: string, projectId: string, role: ProjectRole): Promise<void> {
     const { error } = await supabase.from('project_members').upsert({ user_id: userId, project_id: projectId, role })
     if (error) throw error
+    const { data: authData } = await supabase.auth.getUser()
     approvalsService
       .log({
-        entity_type: 'project_member' as ApprovalEntity,
-        entity_id: `${userId}:${projectId}:${role}`,
-        action: 'assign' as ApprovalAction,
+        entity_type: 'project_member',
+        entity_id: userId, // UUID real del usuario; project_id y role van en metadata
+        action: 'assign',
+        actor_user_id: authData?.user?.id ?? null,
         payload_after: { user_id: userId, project_id: projectId, role },
+        metadata: { project_id: projectId, role },
       })
       .catch((err) => console.warn('approvalsService.log assignProjectRole failed', err))
   },
@@ -214,12 +231,15 @@ export const adminService = {
       .eq('project_id', projectId)
       .eq('role', role)
     if (error) throw error
+    const { data: authData } = await supabase.auth.getUser()
     approvalsService
       .log({
-        entity_type: 'project_member' as ApprovalEntity,
-        entity_id: `${userId}:${projectId}:${role}`,
-        action: 'remove' as ApprovalAction,
+        entity_type: 'project_member',
+        entity_id: userId, // UUID real del usuario; project_id y role van en metadata
+        action: 'remove',
+        actor_user_id: authData?.user?.id ?? null,
         payload_before: { user_id: userId, project_id: projectId, role },
+        metadata: { project_id: projectId, role },
       })
       .catch((err) => console.warn('approvalsService.log removeProjectRole failed', err))
   },

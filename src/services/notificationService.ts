@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { isCreditCondition } from '@/utils/financialCalculations'
 
 export type NotifLevel = 'danger' | 'warning' | 'info'
 
@@ -61,15 +62,6 @@ const BUDGET_WARNING_THRESHOLD = 0.8
 const BUDGET_DANGER_THRESHOLD = 1.0
 const DOC_EXPIRY_WARNING_DAYS = 30
 
-function isCreditCondition(value: string | null | undefined): boolean {
-  if (!value) return false
-  const normalized = value
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-  return normalized.includes('credito')
-}
-
 export const notificationService = {
   /** Calcula y retorna todas las notificaciones del sistema (OCs, calidad, CxP, presupuesto, documentos). */
   async getAll(): Promise<AppNotification[]> {
@@ -120,7 +112,7 @@ export const notificationService = {
         .gt('date', dangerDateStr)
         .limit(100),
       supabase.from('budget_categories').select('id, project_id, name, budgeted_amount'),
-      supabase.from('transactions').select('project_id, total, budget_category:budget_categories(code)').limit(500),
+      supabase.from('transactions').select('project_id, total, budget_category:budget_categories(code)'),
       supabase.from('projects').select('id, name, code'),
       supabase.from('contractor_documents').select('*, contractor:contractors(name)'),
     ])

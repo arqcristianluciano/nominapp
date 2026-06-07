@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Banknote, CheckCircle, ChevronDown, ChevronUp, XCircle } from 'lucide-react'
 import type { ContractorLoan } from '@/types/database'
 import { formatRD } from '@/utils/currency'
+import { mul, round2 } from '@/utils/money'
 
 interface LoanTableProps {
   title: string
@@ -21,7 +22,7 @@ const STATUS_COLOR: Record<string, string> = {
 }
 
 function AmortizationTable({ loan, paid }: { loan: ContractorLoan; paid: number }) {
-  const totalOwed = loan.installment_amount * loan.installments
+  const totalOwed = round2(mul(loan.installment_amount, loan.installments))
   const paidInstallments = Math.min(loan.installments, Math.floor(paid / loan.installment_amount))
 
   return (
@@ -87,8 +88,8 @@ function LoanRow({
   showActions?: boolean
 }) {
   const [showAmort, setShowAmort] = useState(false)
-  const totalOwed = loan.installment_amount * loan.installments
-  const balance = Math.max(0, totalOwed - paid)
+  const totalOwed = round2(mul(loan.installment_amount, loan.installments))
+  const balance = Math.max(0, round2(totalOwed - paid))
 
   return (
     <>
@@ -175,8 +176,8 @@ function LoanCard({
   showActions?: boolean
 }) {
   const [showAmort, setShowAmort] = useState(false)
-  const totalOwed = loan.installment_amount * loan.installments
-  const balance = Math.max(0, totalOwed - paid)
+  const totalOwed = round2(mul(loan.installment_amount, loan.installments))
+  const balance = Math.max(0, round2(totalOwed - paid))
 
   return (
     <div>

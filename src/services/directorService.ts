@@ -1,5 +1,8 @@
 import { supabase } from '@/lib/supabase'
 import { COMMITTED_PAYROLL_STATUSES } from '@/services/payrollService'
+import { isCreditCondition } from '@/utils/financialCalculations'
+
+const DEPOSIT_CODE = '19 - DEPOSITOS'
 
 export interface CompanyKPI {
   company_id: string
@@ -46,7 +49,9 @@ export const directorService = {
         .from('payroll_periods')
         .select('project_id, grand_total, status')
         .in('status', COMMITTED_PAYROLL_STATUSES),
-      supabase.from('transactions').select('project_id, total, payment_condition'),
+      supabase
+        .from('transactions')
+        .select('project_id, total, payment_condition, budget_category:budget_categories(code)'),
       supabase.from('purchase_requisitions').select('project_id, status'),
       supabase.from('inventory_items').select('project_id, current_stock, min_stock'),
     ])
@@ -60,7 +65,12 @@ export const directorService = {
     for (const p of (payrolls ?? []) as Array<{ project_id: string; grand_total: number | null }>) {
       actualByProject.set(p.project_id, (actualByProject.get(p.project_id) ?? 0) + Number(p.grand_total ?? 0))
     }
-    for (const t of (transactions ?? []) as Array<{ project_id: string; total: number | null }>) {
+    for (const t of (transactions ?? []) as Array<{
+      project_id: string
+      total: number | null
+      budget_category?: { code?: string | null } | null
+    }>) {
+      if (t.budget_category?.code === DEPOSIT_CODE) continue
       actualByProject.set(t.project_id, (actualByProject.get(t.project_id) ?? 0) + Number(t.total ?? 0))
     }
 
@@ -70,8 +80,8 @@ export const directorService = {
       total: number | null
       payment_condition: string | null
     }>) {
-      const isCredit = (t.payment_condition ?? '').toLowerCase().includes('credito')
-      if (isCredit) cxpByProject.set(t.project_id, (cxpByProject.get(t.project_id) ?? 0) + Number(t.total ?? 0))
+      if (isCreditCondition(t.payment_condition))
+        cxpByProject.set(t.project_id, (cxpByProject.get(t.project_id) ?? 0) + Number(t.total ?? 0))
     }
 
     const pendingReqByProject = new Map<string, number>()
@@ -87,7 +97,7 @@ export const directorService = {
       current_stock: number | null
       min_stock: number | null
     }>) {
-      if (Number(it.current_stock ?? 0) <= Number(it.min_stock ?? 0)) {
+      if (it.min_stock != null && Number(it.min_stock) > 0 && Number(it.current_stock ?? 0) < Number(it.min_stock)) {
         lowStockByProject.set(it.project_id, (lowStockByProject.get(it.project_id) ?? 0) + 1)
       }
     }

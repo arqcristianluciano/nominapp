@@ -8,13 +8,14 @@ import type { BudgetCategory, BudgetItem } from '@/types/database'
 import { useAuthStore } from '@/stores/authStore'
 import { useProjectStore } from '@/stores/projectStore'
 import { useToast } from '@/components/ui/Toast'
+import { todayISO } from '@/utils/dateLocal'
 import { AvancesFormSection, type AvancesFormState } from '@/components/features/avances/AvancesFormSection'
 import { AvancesHistoryTable } from '@/components/features/avances/AvancesHistoryTable'
 
 const EMPTY: AvancesFormState = {
   budget_category_id: '',
   budget_item_id: '',
-  cut_date: new Date().toISOString().split('T')[0],
+  cut_date: todayISO(),
   executed_quantity: '',
   executed_percent: '',
   notes: '',
@@ -77,6 +78,13 @@ export default function AvancesPage() {
     if (!projectId) return
     if (!form.budget_category_id && !form.budget_item_id) return
     if (!form.executed_quantity && !form.executed_percent) return
+    if (form.executed_percent) {
+      const pct = parseFloat(form.executed_percent)
+      if (!isNaN(pct) && pct > 100) {
+        error('El porcentaje ejecutado no puede ser mayor que 100%')
+        return
+      }
+    }
     setSaving(true)
     try {
       await partidaProgressService.addProgress({

@@ -11,6 +11,10 @@ export type ApprovalEntity =
   | 'contract_corte'
   | 'payment_distribution'
   | 'project'
+  | 'role'
+  | 'role_capability'
+  | 'user_profile'
+  | 'project_member'
 
 export type ApprovalAction =
   | 'submit_for_approval'
@@ -29,6 +33,10 @@ export type ApprovalAction =
   | 'delete_cascade'
   | 'update_indirects'
   | 'update' // edición de una partida/factura en un reporte ya comprometido
+  | 'grant' // conceder una capacidad a un rol
+  | 'revoke' // quitar una capacidad de un rol
+  | 'assign' // asignar usuario a proyecto
+  | 'remove' // remover usuario de proyecto
 
 export interface LogApprovalInput {
   entity_type: ApprovalEntity

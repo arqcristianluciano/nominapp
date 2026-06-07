@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import type { PaymentDistribution } from '@/types/database'
 import { approvalsService } from '@/services/approvalsService'
+import { round2 } from '@/utils/money'
 
 /** Beneficiario seleccionable (contratista o proveedor) con sus datos bancarios. */
 export interface Beneficiary {
@@ -53,19 +54,25 @@ export const paymentDistributionService = {
   },
 
   async create(dist: Omit<PaymentDistribution, 'id'>, periodGrandTotal?: number): Promise<PaymentDistribution> {
-    if (dist.amount <= 0) {
+    const amount = round2(dist.amount)
+    if (amount <= 0) {
       throw new Error('El monto debe ser mayor que cero.')
     }
 
     if (periodGrandTotal !== undefined) {
       const current = await this.getByPeriod(dist.payroll_period_id)
-      const currentTotal = current.reduce((sum, row) => sum + row.amount, 0)
-      if (currentTotal + dist.amount > periodGrandTotal + 0.0001) {
+      // A7: exclude cancelled rows from the cap check
+      const currentTotal = current.filter((row) => row.status !== 'cancelled').reduce((sum, row) => sum + row.amount, 0)
+      if (currentTotal + amount > periodGrandTotal + 0.0001) {
         throw new Error('El monto excede el total pendiente por distribuir.')
       }
     }
 
-    const { data, error } = await supabase.from('payment_distributions').insert(dist).select('*').single()
+    const { data, error } = await supabase
+      .from('payment_distributions')
+      .insert({ ...dist, amount })
+      .select('*')
+      .single()
     if (error) throw error
 
     const created = data as PaymentDistribution
@@ -85,9 +92,15 @@ export const paymentDistributionService = {
    * Consolida un pago en otro existente del mismo beneficiario sumando su monto.
    * Conserva el método, la cuenta de origen y demás datos del pago original; solo
    * incrementa el importe. Devuelve la fila actualizada.
+   *
+   * @param periodGrandTotal — cuando se pasa, valida que la suma de todos los pagos
+   *   no cancelados del período no supere este tope. NOTE: la validación usa
+   *   leer-luego-escribir; para atomicidad completa se requiere un RPC / incremento
+   *   atómico en la base de datos (e.g. `rpc('increment_payment_amount', {id, delta})`).
    */
-  async addAmount(id: string, delta: number): Promise<PaymentDistribution> {
-    if (delta <= 0) {
+  async addAmount(id: string, delta: number, periodGrandTotal?: number): Promise<PaymentDistribution> {
+    const roundedDelta = round2(delta)
+    if (roundedDelta <= 0) {
       throw new Error('El monto a sumar debe ser mayor que cero.')
     }
 
@@ -100,7 +113,19 @@ export const paymentDistributionService = {
     if (!before) throw new Error('No se encontró el pago a consolidar.')
 
     const previous = before as PaymentDistribution
-    const newAmount = previous.amount + delta
+
+    // A8: validate grand-total cap if provided
+    if (periodGrandTotal !== undefined) {
+      const siblings = await this.getByPeriod(previous.payroll_period_id)
+      const otherTotal = siblings
+        .filter((row) => row.status !== 'cancelled' && row.id !== id)
+        .reduce((sum, row) => sum + row.amount, 0)
+      if (otherTotal + previous.amount + roundedDelta > periodGrandTotal + 0.0001) {
+        throw new Error('El monto excede el total pendiente por distribuir.')
+      }
+    }
+
+    const newAmount = round2(previous.amount + roundedDelta)
 
     const { data, error } = await supabase
       .from('payment_distributions')

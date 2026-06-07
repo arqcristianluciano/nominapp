@@ -1,6 +1,7 @@
 import type { TransactionWithRelations } from '@/services/transactionService'
 import { calcCxPDetails } from '@/utils/financialCalculations'
 import { formatRD } from '@/utils/currency'
+import { parseDateLocal } from '@/utils/dateLocal'
 import { MessageCircle } from 'lucide-react'
 
 function buildWhatsAppLink(supplierName: string, amount: number, invoiceNo: string | null, days: number): string {
@@ -11,7 +12,7 @@ function buildWhatsAppLink(supplierName: string, amount: number, invoiceNo: stri
 }
 
 function daysSince(dateStr: string): number {
-  return Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000)
+  return Math.floor((Date.now() - parseDateLocal(dateStr).getTime()) / 86400000)
 }
 
 function agingBucket(days: number): { label: string; cls: string } {

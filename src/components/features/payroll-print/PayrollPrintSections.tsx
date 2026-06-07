@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { ArrowLeft, Printer } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { formatNumber, formatRD } from '@/utils/currency'
+import { parseDateLocal } from '@/utils/dateLocal'
 import type { IndirectCost, LaborLineItem, LoanDeduction, MaterialInvoice, PayrollPeriod } from '@/types/database'
 
 export function PayrollPrintTopBar({ periodId, ready = true }: { periodId: string; ready?: boolean }) {
@@ -29,7 +30,8 @@ export function PayrollPrintTopBar({ periodId, ready = true }: { periodId: strin
 
 export function PayrollPrintHeader({ period }: { period: PayrollPeriod }) {
   const project = period.project
-  const reportDate = new Date(period.report_date).toLocaleDateString('es-DO', {
+  // E: parseDateLocal evita el desfase de un día que causa new Date() con zona UTC.
+  const reportDate = parseDateLocal(period.report_date).toLocaleDateString('es-DO', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',

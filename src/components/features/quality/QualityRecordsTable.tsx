@@ -3,6 +3,7 @@ import type { QualityControl } from '@/types/database'
 import { calcExpectedTestDate, daysUntilTest } from './qualityUtils'
 import { qualityControlService } from '@/services/qualityControlService'
 import { useToast } from '@/components/ui/Toast'
+import { parseDateLocal } from '@/utils/dateLocal'
 
 // Abre el comprobante adjunto (foto/PDF) del ensayo con una URL firmada temporal.
 function ComprobanteButton({ path }: { path: string }) {
@@ -10,7 +11,8 @@ function ComprobanteButton({ path }: { path: string }) {
   async function open() {
     try {
       const url = await qualityControlService.getComprobanteUrl(path)
-      window.open(url, '_blank', 'noopener,noreferrer')
+      const tab = window.open(url, '_blank', 'noopener,noreferrer')
+      if (!tab) error('El navegador bloqueó la ventana. Permite ventanas emergentes e intenta de nuevo.')
     } catch {
       error('No se pudo abrir el comprobante')
     }
@@ -91,7 +93,7 @@ export function QualityRecordsTable({
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-app-text text-sm break-words">{record.element}</p>
                   <p className="text-xs text-app-muted mt-0.5">
-                    Colada: {new Date(record.pour_date).toLocaleDateString('es-DO')}
+                    Colada: {parseDateLocal(record.pour_date).toLocaleDateString('es-DO')}
                   </p>
                 </div>
                 <StatusBadge status={record.status} />
@@ -194,7 +196,7 @@ export function QualityRecordsTable({
                 <tr key={record.id} className="hover:bg-app-hover">
                   <td className="px-3 py-2.5 font-medium text-app-text text-xs">{record.element}</td>
                   <td className="px-3 py-2.5 text-app-muted text-xs">
-                    {new Date(record.pour_date).toLocaleDateString('es-DO')}
+                    {parseDateLocal(record.pour_date).toLocaleDateString('es-DO')}
                   </td>
                   <td className="px-3 py-2.5 text-app-muted text-xs hidden sm:table-cell">{record.test_age || '—'}</td>
                   <td className="px-3 py-2.5 text-xs hidden lg:table-cell">

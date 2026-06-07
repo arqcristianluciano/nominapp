@@ -263,17 +263,25 @@ function buildBudgetBreakdown(
   }
 
   // Reglas de monto compartidas en `@/utils/costoReal` (fuente única con
-  // budgetSpentService / partidaProgressService). Ver advertencia de DOBLE
-  // CONTEO allí: transacciones e ítems de reporte/almacén son independientes.
+  // budgetSpentService / partidaProgressService).
+  // IMPORTANTE: labor e invoices con budget_item_id sólo se acumulan a nivel
+  // de ítem; NO se duplican al nivel de capítulo (los ítems ya suben al
+  // capítulo en el reduce de itemsActual más abajo).
   for (const ll of laborItems) {
     const subtotal = laborLineCost(ll)
-    addToItem(ll.budget_item_id, subtotal)
-    addToCategory(ll.budget_category_id, subtotal)
+    if (ll.budget_item_id) {
+      addToItem(ll.budget_item_id, subtotal)
+    } else {
+      addToCategory(ll.budget_category_id, subtotal)
+    }
   }
   for (const inv of materialInvoices) {
     const amount = materialInvoiceCost(inv)
-    addToItem(inv.budget_item_id, amount)
-    addToCategory(inv.budget_category_id, amount)
+    if (inv.budget_item_id) {
+      addToItem(inv.budget_item_id, amount)
+    } else {
+      addToCategory(inv.budget_category_id, amount)
+    }
   }
   for (const tx of monthlyTransactions) {
     addToCategory(tx.budget_category_id, transactionCost(tx))
@@ -486,7 +494,10 @@ export async function loadMonthlyReportData(projectId: string, yearMonth: string
 
   const totalInvested = committedPayrolls.reduce((acc, p) => acc + Number(p.grand_total ?? 0), 0)
 
-  const monthlyTransactionsTotal = monthlyTransactions.reduce((acc, t) => acc + Number(t.total ?? 0), 0)
+  const DEPOSIT_CODE = '19 - DEPOSITOS'
+  const monthlyTransactionsTotal = monthlyTransactions
+    .filter((t) => t.budget_category?.code !== DEPOSIT_CODE)
+    .reduce((acc, t) => acc + Number(t.total ?? 0), 0)
   const projectGrandTotal = totalInvested + monthlyTransactionsTotal
 
   const variance = totalBudget - totalInvested

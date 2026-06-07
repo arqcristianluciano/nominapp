@@ -116,6 +116,18 @@ export function AddMaterialForm({
     }
   }, [localPreviewUrl])
 
+  // Al desmontar sin haber completado el guardado (ej: cerrar el modal con la X
+  // o haciendo clic fuera), borra el comprobante subido en esta sesión para
+  // evitar archivos huérfanos en el bucket.
+  useEffect(() => {
+    return () => {
+      if (sessionPathRef.current) {
+        void payrollService.deleteInvoiceFile(sessionPathRef.current)
+        sessionPathRef.current = null
+      }
+    }
+  }, [])
+
   const validItems = items
     .map((it) => ({ description: it.description, amount: parseDecimalInput(it.amount) }))
     .filter(

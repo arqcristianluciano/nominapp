@@ -36,13 +36,18 @@ export function PrestamoSection({ contractorId }: Props) {
   const [cancelId, setCancelId] = useState<string | null>(null)
 
   const load = useCallback(async () => {
-    const data = await loanService.getByContractor(contractorId)
-    setLoans(data)
-    const totals = await loanService.getTotalPaidByLoans(data.map((l) => l.id))
-    const paid: Record<string, number> = {}
-    for (const l of data) paid[l.id] = totals[l.id] ?? 0
-    setPaidMap(paid)
-  }, [contractorId])
+    try {
+      const data = await loanService.getByContractor(contractorId)
+      setLoans(data)
+      const totals = await loanService.getTotalPaidByLoans(data.map((l) => l.id))
+      const paid: Record<string, number> = {}
+      for (const l of data) paid[l.id] = totals[l.id] ?? 0
+      setPaidMap(paid)
+    } catch (err) {
+      console.warn('[PrestamoSection] load failed', err)
+      toastError('No se pudieron cargar los préstamos. Inténtalo de nuevo.')
+    }
+  }, [contractorId, toastError])
 
   useEffect(() => {
     load()
@@ -100,14 +105,25 @@ export function PrestamoSection({ contractorId }: Props) {
   }
 
   async function handleMarkPaid(id: string) {
-    await loanService.updateStatus(id, 'paid')
-    await load()
+    try {
+      await loanService.updateStatus(id, 'paid')
+      await load()
+    } catch (err) {
+      console.warn('[PrestamoSection] handleMarkPaid failed', err)
+      toastError('No se pudo marcar el préstamo como pagado. Inténtalo de nuevo.')
+    }
   }
 
   async function handleCancel(id: string) {
-    await loanService.updateStatus(id, 'cancelled')
-    setCancelId(null)
-    await load()
+    try {
+      await loanService.updateStatus(id, 'cancelled')
+      setCancelId(null)
+      await load()
+    } catch (err) {
+      console.warn('[PrestamoSection] handleCancel failed', err)
+      toastError('No se pudo cancelar el préstamo. Inténtalo de nuevo.')
+      setCancelId(null)
+    }
   }
 
   const principal = parseDecimalInput(form.principal) ?? 0

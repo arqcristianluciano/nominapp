@@ -9,8 +9,6 @@ interface GroupedProjectReports {
   periods: PayrollPeriod[]
 }
 
-const OPEN_STATUSES: PayrollPeriod['status'][] = ['draft', 'submitted', 'approved']
-
 export function useReportesObraState() {
   const { error: toastError } = useToast()
   const [periods, setPeriods] = useState<PayrollPeriod[]>([])
@@ -89,13 +87,13 @@ export function useReportesObraState() {
   async function handleMarkAllPaid(projectId: string) {
     setClosingProjectId(projectId)
     try {
-      const drafts = periods.filter(
-        (period) => period.project_id === projectId && OPEN_STATUSES.includes(period.status),
-      )
-      await Promise.all(drafts.map((period) => payrollService.updatePeriodStatus(period.id, 'paid')))
+      // A10: solo se marcan como pagados los reportes YA aprobados; los borradores
+      // y enviados requieren pasar por el flujo de aprobación primero.
+      const approved = periods.filter((period) => period.project_id === projectId && period.status === 'approved')
+      await Promise.all(approved.map((period) => payrollService.updatePeriodStatus(period.id, 'paid')))
       setPeriods((prev) =>
         prev.map((period) =>
-          period.project_id === projectId && period.status !== 'paid' ? { ...period, status: 'paid' } : period,
+          period.project_id === projectId && period.status === 'approved' ? { ...period, status: 'paid' } : period,
         ),
       )
     } finally {

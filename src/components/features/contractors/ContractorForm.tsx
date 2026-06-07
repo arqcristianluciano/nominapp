@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Contractor } from '@/types/database'
 import { contractorService } from '@/services/contractorService'
@@ -6,6 +6,9 @@ import { isCedula, isPhone } from '@/utils/validators'
 
 interface Props {
   initial?: Contractor
+  /** Lista de contratistas ya cargada por el padre. Si se provee, evita una
+   *  consulta duplicada. Si no se provee, el formulario la carga por su cuenta. */
+  contractors?: Contractor[]
   onSubmit: (data: {
     name: string
     specialty?: string
@@ -21,7 +24,7 @@ interface Props {
   saving: boolean
 }
 
-export function ContractorForm({ initial, onSubmit, onCancel, saving }: Props) {
+export function ContractorForm({ initial, contractors: contractorsProp, onSubmit, onCancel, saving }: Props) {
   const { t } = useTranslation()
   const [name, setName] = useState(initial?.name || '')
   const [specialty, setSpecialty] = useState(initial?.specialty || '')
@@ -32,24 +35,31 @@ export function ContractorForm({ initial, onSubmit, onCancel, saving }: Props) {
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'check' | 'transfer'>(initial?.payment_method || 'cash')
   const [notes, setNotes] = useState(initial?.notes || '')
   const [parentContractorId, setParentContractorId] = useState<string>(initial?.parent_contractor_id ?? '')
-  const [parentOptions, setParentOptions] = useState<Contractor[]>([])
+  const [fetchedContractors, setFetchedContractors] = useState<Contractor[]>([])
   const [formError, setFormError] = useState<string | null>(null)
 
   useEffect(() => {
+    // Si el padre ya proveyó la lista, no hace falta pedirla otra vez.
+    if (contractorsProp) return
     let cancelled = false
     contractorService
       .getAll()
       .then((all) => {
-        if (cancelled) return
-        setParentOptions(all.filter((c) => c.id !== initial?.id))
+        if (!cancelled) setFetchedContractors(all)
       })
       .catch(() => {
-        if (!cancelled) setParentOptions([])
+        if (!cancelled) setFetchedContractors([])
       })
     return () => {
       cancelled = true
     }
-  }, [initial?.id])
+  }, [contractorsProp])
+
+  // Lista para el selector de "contratista padre" (excluye al propio contratista en edición).
+  const parentOptions = useMemo(
+    () => (contractorsProp ?? fetchedContractors).filter((c) => c.id !== initial?.id),
+    [contractorsProp, fetchedContractors, initial?.id],
+  )
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()

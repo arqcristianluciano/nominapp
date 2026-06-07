@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import type { Beneficiary } from '@/services/paymentDistributionService'
 import type { BankAccount } from '@/types/database'
 import { getErrorMessage } from '@/utils/errors'
+import { round2 } from '@/utils/money'
 
 const PAYMENT_METHODS = [
   { value: 'transfer', label: 'Transferencia' },
@@ -66,7 +67,7 @@ export function DistributionForm({ beneficiaries, sourceAccounts, pendiente, sav
       setError('Selecciona un beneficiario.')
       return
     }
-    const numericAmount = Number(amount)
+    const numericAmount = round2(Number(amount))
     if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
       setError('El monto debe ser mayor que cero.')
       return

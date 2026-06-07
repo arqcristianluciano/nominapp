@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { adminService, type AdminUser } from '@/services/adminService'
+import { useAuthStore } from '@/stores/authStore'
 import { useToast } from '@/components/ui/Toast'
 import { parseDecimalInput } from '@/utils/decimalInput'
 import { isCedula, isEmail, isPhone, isStrongPassword } from '@/utils/validators'
@@ -87,7 +88,8 @@ function CredentialsSection({ form, set, createMode }: CredentialsSectionProps) 
           <label className={label}>{t('admin.form.initial_password')} *</label>
           <input
             className={input}
-            type="text"
+            type="password"
+            autoComplete="new-password"
             required
             value={form.password}
             onChange={(e) => set('password', e.target.value)}
@@ -288,6 +290,8 @@ export function AdminUserForm({ mode, initial, onCancel, onSaved }: Props) {
   const [formError, setFormError] = useState<string | null>(null)
   const [createMode, setCreateMode] = useState<CreateMode>('password')
   const { error } = useToast()
+  const currentUserId = useAuthStore((s) => s.user?.id)
+  const refreshUser = useAuthStore((s) => s.refreshUser)
 
   const isCreate = mode === 'create'
   const isInvite = isCreate && createMode === 'invite'
@@ -404,6 +408,9 @@ export function AdminUserForm({ mode, initial, onCancel, onSaved }: Props) {
           payment_terms: form.payment_terms.trim() || null,
           is_active: form.is_active,
         })
+        // D6: si el usuario editó su propio perfil, refrescamos la sesión para
+        // que los cambios apliquen sin tener que cerrar y volver a entrar.
+        if (initial.id === currentUserId) await refreshUser()
       }
       await onSaved()
     } catch (err) {

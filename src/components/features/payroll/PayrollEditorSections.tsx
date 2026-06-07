@@ -1,5 +1,6 @@
 import { ArrowLeft, CheckCircle, CreditCard, Printer, RotateCcw, Send } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { parseDateLocal } from '@/utils/dateLocal'
 import { Modal } from '@/components/ui/Modal'
 import { AddLaborItemForm } from '@/components/features/payroll/AddLaborItemForm'
 import { AddMaterialForm } from '@/components/features/payroll/AddMaterialForm'
@@ -68,7 +69,7 @@ export function PayrollEditorHeader({
               Reporte No. {period.period_number}
             </h1>
             <p className="text-xs sm:text-sm text-app-muted mt-0.5 truncate">
-              {new Date(period.report_date).toLocaleDateString('es-DO', {
+              {parseDateLocal(period.report_date).toLocaleDateString('es-DO', {
                 year: 'numeric',
                 month: 'long',
                 day: 'numeric',

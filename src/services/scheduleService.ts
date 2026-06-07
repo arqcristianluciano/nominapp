@@ -47,7 +47,17 @@ export const scheduleService = {
 
   getOverallProgress(tasks: ScheduleTask[]): number {
     if (!tasks.length) return 0
-    return Math.round(tasks.reduce((sum, t) => sum + t.progress, 0) / tasks.length)
+    let weightedSum = 0
+    let totalDays = 0
+    for (const t of tasks) {
+      const duration = Math.max(
+        1,
+        Math.ceil((new Date(t.end_date).getTime() - new Date(t.start_date).getTime()) / 86400000),
+      )
+      weightedSum += t.progress * duration
+      totalDays += duration
+    }
+    return Math.round(weightedSum / totalDays)
   },
 
   getDelayedTasks(tasks: ScheduleTask[]): ScheduleTask[] {

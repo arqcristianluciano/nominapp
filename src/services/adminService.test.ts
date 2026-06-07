@@ -42,11 +42,19 @@ const chain: Chain = {
 const from = vi.fn(() => chain)
 const invoke = vi.fn()
 
+const getUser = vi.fn().mockResolvedValue({ data: { user: { id: 'actor-uuid' } } })
+
 vi.mock('@/lib/supabase', () => ({
   supabase: {
     from: (...args: Parameters<typeof from>) => from(...args),
     functions: { invoke: (...args: Parameters<typeof invoke>) => invoke(...args) },
+    auth: { getUser: (...args: unknown[]) => getUser(...args) },
   },
+}))
+
+vi.mock('@/lib/sentry', () => ({ addBreadcrumb: vi.fn() }))
+vi.mock('@/services/approvalsService', () => ({
+  approvalsService: { log: vi.fn().mockResolvedValue(undefined) },
 }))
 
 // Import despues del mock para que el servicio reciba el modulo mockeado.
@@ -63,6 +71,8 @@ beforeEach(() => {
   chain.single.mockClear()
   from.mockClear()
   invoke.mockClear()
+  getUser.mockClear()
+  getUser.mockResolvedValue({ data: { user: { id: 'actor-uuid' } } })
   chain._result = { data: null, error: null }
 
   // Re-encadenar (vi mantiene la implementacion pero conviene asegurarlo).

@@ -44,7 +44,8 @@ interface Props {
   onDelete: (entryId: string) => void
 }
 
-function PhotoThumb({ path, alt }: { path: string; alt: string }) {
+// Fetches a signed URL once per path, shared between thumb and full view.
+function useSignedPhotoUrl(path: string): string | null {
   const [url, setUrl] = useState<string | null>(null)
   useEffect(() => {
     let cancelled = false
@@ -60,6 +61,11 @@ function PhotoThumb({ path, alt }: { path: string; alt: string }) {
       cancelled = true
     }
   }, [path])
+  return url
+}
+
+function PhotoThumb({ path, alt }: { path: string; alt: string }) {
+  const url = useSignedPhotoUrl(path)
   if (!url) {
     return (
       <div className="flex items-center justify-center w-12 h-12 rounded-md border border-app-border bg-app-bg text-app-subtle">
@@ -71,21 +77,7 @@ function PhotoThumb({ path, alt }: { path: string; alt: string }) {
 }
 
 function PhotoFull({ path, alt }: { path: string; alt: string }) {
-  const [url, setUrl] = useState<string | null>(null)
-  useEffect(() => {
-    let cancelled = false
-    void bitacoraService
-      .getPhotoUrl(path)
-      .then((signed) => {
-        if (!cancelled) setUrl(signed)
-      })
-      .catch(() => {
-        if (!cancelled) setUrl(null)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [path])
+  const url = useSignedPhotoUrl(path)
   if (!url) return null
   return (
     <a href={url} target="_blank" rel="noopener noreferrer" className="inline-block">
@@ -118,22 +110,23 @@ export function BitacoraEntriesList({ entries, expandedId, onToggleExpand, onEdi
   const totalPages = Math.max(1, Math.ceil(filteredEntries.length / PAGE_SIZE))
   const needsPagination = filteredEntries.length > PAGE_SIZE
 
-  // Reset page cuando cambian filtros (computado en render — evita warning de set-state-in-effect).
+  // Reset page when filters or entry list change (patrón recomendado de React:
+  // ajustar estado durante el render en vez de en un efecto).
   const filtersKey = `${dateFrom}|${dateTo}|${currentWeekOnly}|${entries.length}`
   const [prevFiltersKey, setPrevFiltersKey] = useState(filtersKey)
   if (prevFiltersKey !== filtersKey) {
     setPrevFiltersKey(filtersKey)
     setPage(0)
   }
-  if (page > totalPages - 1) {
-    setPage(Math.max(0, totalPages - 1))
-  }
+
+  // Clamp page index so it never exceeds valid range.
+  const clampedPage = Math.min(page, Math.max(0, totalPages - 1))
 
   const visibleEntries = useMemo(() => {
     if (!needsPagination) return filteredEntries
-    const start = page * PAGE_SIZE
+    const start = clampedPage * PAGE_SIZE
     return filteredEntries.slice(start, start + PAGE_SIZE)
-  }, [filteredEntries, needsPagination, page])
+  }, [clampedPage, filteredEntries, needsPagination])
 
   const clearFilters = () => {
     setDateFrom('')
@@ -317,19 +310,19 @@ export function BitacoraEntriesList({ entries, expandedId, onToggleExpand, onEdi
           <button
             type="button"
             onClick={() => setPage((p) => Math.max(0, p - 1))}
-            disabled={page === 0}
+            disabled={clampedPage === 0}
             className="flex items-center gap-1 px-3 py-1.5 text-xs border border-app-border rounded-lg text-app-muted hover:bg-app-hover disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <ChevronLeft className="w-3.5 h-3.5" />
             Anterior
           </button>
           <span className="text-xs text-app-muted">
-            Página {page + 1} de {totalPages}
+            Página {clampedPage + 1} de {totalPages}
           </span>
           <button
             type="button"
             onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-            disabled={page >= totalPages - 1}
+            disabled={clampedPage >= totalPages - 1}
             className="flex items-center gap-1 px-3 py-1.5 text-xs border border-app-border rounded-lg text-app-muted hover:bg-app-hover disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Siguiente

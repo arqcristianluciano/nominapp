@@ -132,7 +132,7 @@ export function QuotesPanel({ quotes, approvedQuoteId, canDelete, canNegotiate, 
                 </div>
                 <div className="flex justify-between gap-2 text-app-muted">
                   <span>ITBIS ({q.tax_percent}%)</span>
-                  <span className="whitespace-nowrap">{formatRD((q.subtotal * q.tax_percent) / 100)}</span>
+                  <span className="whitespace-nowrap">{formatRD(q.total - q.subtotal)}</span>
                 </div>
                 <div
                   className={`flex justify-between gap-2 font-semibold text-sm pt-1 ${

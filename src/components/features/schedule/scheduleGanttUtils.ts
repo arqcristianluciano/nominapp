@@ -17,8 +17,8 @@ export function buildGanttInfo(tasks: ScheduleTask[]): GanttInfo | null {
   const allDates = tasks.flatMap((task) => [new Date(task.start_date), new Date(task.end_date)])
   const minDate = new Date(Math.min(...allDates.map((date) => date.getTime())))
   const maxDate = new Date(Math.max(...allDates.map((date) => date.getTime())))
-  minDate.setDate(1)
-  maxDate.setMonth(maxDate.getMonth() + 1, 0)
+  minDate.setUTCDate(1)
+  maxDate.setUTCMonth(maxDate.getUTCMonth() + 1, 0)
   const totalDays = Math.ceil((maxDate.getTime() - minDate.getTime()) / 86400000) + 1
 
   const months: GanttMonth[] = []
@@ -33,7 +33,7 @@ export function buildGanttInfo(tasks: ScheduleTask[]): GanttInfo | null {
       left: (startOffset / totalDays) * 100,
       width: ((endOffset - startOffset + 1) / totalDays) * 100,
     })
-    cursor.setMonth(cursor.getMonth() + 1)
+    cursor.setUTCMonth(cursor.getUTCMonth() + 1)
   }
 
   return { minDate, totalDays, months }
