@@ -1,15 +1,18 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Banknote, CheckCircle, ChevronDown, ChevronUp, XCircle } from 'lucide-react'
-import type { ContractorLoan } from '@/types/database'
+import { Banknote, CheckCircle, ChevronDown, ChevronUp, Pencil, XCircle } from 'lucide-react'
+import type { ContractorLoan, LoanInstallment } from '@/types/database'
 import { formatRD } from '@/utils/currency'
+import { mul, round2 } from '@/utils/money'
 
 interface LoanTableProps {
   title: string
   loans: ContractorLoan[]
   paidMap: Record<string, number>
+  installmentsMap: Record<string, LoanInstallment[]>
   onMarkPaid?: (id: string) => void
   onCancel?: (id: string) => void
+  onEdit?: (loan: ContractorLoan) => void
   showActions?: boolean
 }
 
@@ -20,10 +23,81 @@ const STATUS_COLOR: Record<string, string> = {
   cancelled: 'bg-app-chip text-app-muted',
 }
 
-function AmortizationTable({ loan, paid }: { loan: ContractorLoan; paid: number }) {
-  const totalOwed = loan.installment_amount * loan.installments
-  const paidInstallments = Math.min(loan.installments, Math.floor(paid / loan.installment_amount))
+const FRECUENCIA_LABEL: Record<string, string> = {
+  semanal: 'Semanal',
+  quincenal: 'Quincenal',
+  mensual: 'Mensual',
+}
 
+function formatDate(dateStr: string): string {
+  const [year, month, day] = dateStr.split('-')
+  return `${day}/${month}/${year}`
+}
+
+/** Tabla de cronograma usando cuotas reales de la BD si existen,
+ *  o calculadas en cliente como respaldo (para préstamos viejos sin cronograma). */
+function InstallmentSchedule({
+  loan,
+  paid,
+  installments,
+}: {
+  loan: ContractorLoan
+  paid: number
+  installments: LoanInstallment[]
+}) {
+  const totalOwed = round2(mul(loan.installment_amount, loan.installments))
+
+  if (installments.length === 0) {
+    // Fallback para préstamos anteriores a la migración (sin cronograma en BD)
+    const paidInstallments = Math.min(loan.installments, Math.floor(paid / loan.installment_amount))
+    return (
+      <div className="px-4 pb-4">
+        <p className="text-xs text-app-muted mb-2 italic">Cronograma estimado (préstamo sin fechas registradas)</p>
+        <div className="rounded-lg border border-app-border overflow-hidden">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="bg-app-bg border-b border-app-border">
+                <th className="text-center px-3 py-2 font-semibold text-app-subtle uppercase">Cuota</th>
+                <th className="text-right px-3 py-2 font-semibold text-app-subtle uppercase">Monto</th>
+                <th className="text-center px-3 py-2 font-semibold text-app-subtle uppercase">Estado</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-app-border">
+              {Array.from({ length: loan.installments }, (_, idx) => {
+                const num = idx + 1
+                const isPaid = num <= paidInstallments
+                return (
+                  <tr key={num} className={isPaid ? 'bg-emerald-50/50 dark:bg-emerald-950/10' : 'hover:bg-app-hover'}>
+                    <td className="text-center px-3 py-1.5 text-app-muted font-mono">#{num}</td>
+                    <td className="text-right px-3 py-1.5 font-medium text-app-text">
+                      {formatRD(loan.installment_amount)}
+                    </td>
+                    <td className="text-center px-3 py-1.5">
+                      {isPaid ? (
+                        <span className="text-emerald-600 font-semibold">Pagado</span>
+                      ) : (
+                        <span className="text-app-subtle">Pendiente</span>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+            <tfoot>
+              <tr className="bg-app-bg border-t border-app-border">
+                <td className="px-3 py-2 text-app-muted font-semibold text-right" colSpan={2}>
+                  Total:
+                </td>
+                <td className="px-3 py-2 font-bold text-app-text text-right">{formatRD(totalOwed)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    )
+  }
+
+  // Cronograma real desde BD
   return (
     <div className="px-4 pb-4">
       <div className="rounded-lg border border-app-border overflow-hidden">
@@ -31,37 +105,43 @@ function AmortizationTable({ loan, paid }: { loan: ContractorLoan; paid: number 
           <thead>
             <tr className="bg-app-bg border-b border-app-border">
               <th className="text-center px-3 py-2 font-semibold text-app-subtle uppercase">Cuota</th>
+              <th className="text-left px-3 py-2 font-semibold text-app-subtle uppercase hidden sm:table-cell">
+                Fecha programada
+              </th>
+              <th className="text-left px-3 py-2 font-semibold text-app-subtle uppercase hidden sm:table-cell">
+                Fecha de pago
+              </th>
               <th className="text-right px-3 py-2 font-semibold text-app-subtle uppercase">Monto</th>
               <th className="text-center px-3 py-2 font-semibold text-app-subtle uppercase">Estado</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-app-border">
-            {Array.from({ length: loan.installments }, (_, idx) => {
-              const installment = idx + 1
-              const isPaid = installment <= paidInstallments
-              return (
-                <tr
-                  key={installment}
-                  className={isPaid ? 'bg-emerald-50/50 dark:bg-emerald-950/10' : 'hover:bg-app-hover'}
-                >
-                  <td className="text-center px-3 py-1.5 text-app-muted font-mono">#{installment}</td>
-                  <td className="text-right px-3 py-1.5 font-medium text-app-text">
-                    {formatRD(loan.installment_amount)}
-                  </td>
-                  <td className="text-center px-3 py-1.5">
-                    {isPaid ? (
-                      <span className="text-emerald-600 font-semibold">✓ Pagado</span>
-                    ) : (
-                      <span className="text-app-subtle">Pendiente</span>
-                    )}
-                  </td>
-                </tr>
-              )
-            })}
+            {installments.map((inst) => (
+              <tr
+                key={inst.id}
+                className={inst.estado === 'pagada' ? 'bg-emerald-50/50 dark:bg-emerald-950/10' : 'hover:bg-app-hover'}
+              >
+                <td className="text-center px-3 py-1.5 text-app-muted font-mono">#{inst.numero_cuota}</td>
+                <td className="text-left px-3 py-1.5 text-app-muted hidden sm:table-cell">
+                  {formatDate(inst.fecha_pago_programada)}
+                </td>
+                <td className="text-left px-3 py-1.5 text-app-muted hidden sm:table-cell">
+                  {inst.fecha_pago_real ? formatDate(inst.fecha_pago_real) : '—'}
+                </td>
+                <td className="text-right px-3 py-1.5 font-medium text-app-text">{formatRD(inst.monto)}</td>
+                <td className="text-center px-3 py-1.5">
+                  {inst.estado === 'pagada' ? (
+                    <span className="text-emerald-600 font-semibold">Pagada</span>
+                  ) : (
+                    <span className="text-app-subtle">Pendiente</span>
+                  )}
+                </td>
+              </tr>
+            ))}
           </tbody>
           <tfoot>
             <tr className="bg-app-bg border-t border-app-border">
-              <td className="px-3 py-2 text-app-muted font-semibold text-right" colSpan={2}>
+              <td className="px-3 py-2 text-app-muted font-semibold text-right" colSpan={4}>
                 Total:
               </td>
               <td className="px-3 py-2 font-bold text-app-text text-right">{formatRD(totalOwed)}</td>
@@ -76,19 +156,23 @@ function AmortizationTable({ loan, paid }: { loan: ContractorLoan; paid: number 
 function LoanRow({
   loan,
   paid,
+  installments,
   onMarkPaid,
   onCancel,
+  onEdit,
   showActions,
 }: {
   loan: ContractorLoan
   paid: number
+  installments: LoanInstallment[]
   onMarkPaid?: (id: string) => void
   onCancel?: (id: string) => void
+  onEdit?: (loan: ContractorLoan) => void
   showActions?: boolean
 }) {
-  const [showAmort, setShowAmort] = useState(false)
-  const totalOwed = loan.installment_amount * loan.installments
-  const balance = Math.max(0, totalOwed - paid)
+  const [showSchedule, setShowSchedule] = useState(false)
+  const totalOwed = round2(mul(loan.installment_amount, loan.installments))
+  const balance = Math.max(0, round2(totalOwed - paid))
 
   return (
     <>
@@ -102,6 +186,11 @@ function LoanRow({
               {loan.contractor?.name ?? '—'}
             </Link>
             {loan.notes && <p className="text-[11px] text-app-subtle mt-0.5">{loan.notes}</p>}
+            {loan.frecuencia && (
+              <p className="text-[11px] text-app-subtle mt-0.5">
+                {FRECUENCIA_LABEL[loan.frecuencia] ?? loan.frecuencia}
+              </p>
+            )}
           </div>
         </td>
         <td className="px-4 py-3.5 text-right text-sm text-app-muted hidden sm:table-cell">
@@ -123,14 +212,21 @@ function LoanRow({
         <td className="px-2 py-3.5">
           <div className="flex items-center justify-end gap-1">
             <button
-              onClick={() => setShowAmort((value) => !value)}
-              title="Ver amortización"
+              onClick={() => setShowSchedule((v) => !v)}
+              title="Ver cronograma"
               className="p-1.5 rounded-lg text-app-subtle hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors"
             >
-              {showAmort ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              {showSchedule ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </button>
             {showActions && (
               <>
+                <button
+                  onClick={() => onEdit?.(loan)}
+                  title="Editar préstamo"
+                  className="p-1.5 rounded-lg text-app-subtle hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 opacity-0 group-hover:opacity-100 transition-all"
+                >
+                  <Pencil className="w-4 h-4" />
+                </button>
                 <button
                   onClick={() => onMarkPaid?.(loan.id)}
                   title="Marcar pagado"
@@ -150,10 +246,10 @@ function LoanRow({
           </div>
         </td>
       </tr>
-      {showAmort && (
+      {showSchedule && (
         <tr>
           <td colSpan={8} className="bg-app-bg">
-            <AmortizationTable loan={loan} paid={paid} />
+            <InstallmentSchedule loan={loan} paid={paid} installments={installments} />
           </td>
         </tr>
       )}
@@ -164,19 +260,23 @@ function LoanRow({
 function LoanCard({
   loan,
   paid,
+  installments,
   onMarkPaid,
   onCancel,
+  onEdit,
   showActions,
 }: {
   loan: ContractorLoan
   paid: number
+  installments: LoanInstallment[]
   onMarkPaid?: (id: string) => void
   onCancel?: (id: string) => void
+  onEdit?: (loan: ContractorLoan) => void
   showActions?: boolean
 }) {
-  const [showAmort, setShowAmort] = useState(false)
-  const totalOwed = loan.installment_amount * loan.installments
-  const balance = Math.max(0, totalOwed - paid)
+  const [showSchedule, setShowSchedule] = useState(false)
+  const totalOwed = round2(mul(loan.installment_amount, loan.installments))
+  const balance = Math.max(0, round2(totalOwed - paid))
 
   return (
     <div>
@@ -189,6 +289,9 @@ function LoanCard({
             {loan.contractor?.name ?? '—'}
           </Link>
           {loan.notes && <p className="text-[11px] text-app-subtle mt-0.5">{loan.notes}</p>}
+          {loan.frecuencia && (
+            <p className="text-[11px] text-app-subtle mt-0.5">{FRECUENCIA_LABEL[loan.frecuencia] ?? loan.frecuencia}</p>
+          )}
           <p className="text-xs text-app-muted mt-1">
             Cuota: <span className="font-semibold text-app-text">{formatRD(loan.installment_amount)}</span>
           </p>
@@ -205,14 +308,21 @@ function LoanCard({
           </span>
           <div className="flex items-center gap-1">
             <button
-              onClick={() => setShowAmort((value) => !value)}
-              title="Ver amortización"
+              onClick={() => setShowSchedule((v) => !v)}
+              title="Ver cronograma"
               className="p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-app-subtle hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors"
             >
-              {showAmort ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              {showSchedule ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </button>
             {showActions && (
               <>
+                <button
+                  onClick={() => onEdit?.(loan)}
+                  title="Editar préstamo"
+                  className="p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-app-subtle hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors"
+                >
+                  <Pencil className="w-4 h-4" />
+                </button>
                 <button
                   onClick={() => onMarkPaid?.(loan.id)}
                   title="Marcar pagado"
@@ -232,16 +342,25 @@ function LoanCard({
           </div>
         </div>
       </div>
-      {showAmort && (
+      {showSchedule && (
         <div className="bg-app-bg">
-          <AmortizationTable loan={loan} paid={paid} />
+          <InstallmentSchedule loan={loan} paid={paid} installments={installments} />
         </div>
       )}
     </div>
   )
 }
 
-export function LoanTable({ title, loans, paidMap, onMarkPaid, onCancel, showActions }: LoanTableProps) {
+export function LoanTable({
+  title,
+  loans,
+  paidMap,
+  installmentsMap,
+  onMarkPaid,
+  onCancel,
+  onEdit,
+  showActions,
+}: LoanTableProps) {
   if (loans.length === 0) {
     return (
       <section>
@@ -282,7 +401,7 @@ export function LoanTable({ title, loans, paidMap, onMarkPaid, onCancel, showAct
               <th className="text-center px-4 py-3 text-xs font-semibold text-app-subtle uppercase tracking-wide">
                 Estado
               </th>
-              <th className="w-28" />
+              <th className="w-32" />
             </tr>
           </thead>
           <tbody className="divide-y divide-app-border">
@@ -291,8 +410,10 @@ export function LoanTable({ title, loans, paidMap, onMarkPaid, onCancel, showAct
                 key={loan.id}
                 loan={loan}
                 paid={paidMap[loan.id] ?? 0}
+                installments={installmentsMap[loan.id] ?? []}
                 onMarkPaid={onMarkPaid}
                 onCancel={onCancel}
+                onEdit={onEdit}
                 showActions={showActions}
               />
             ))}
@@ -304,8 +425,10 @@ export function LoanTable({ title, loans, paidMap, onMarkPaid, onCancel, showAct
               key={loan.id}
               loan={loan}
               paid={paidMap[loan.id] ?? 0}
+              installments={installmentsMap[loan.id] ?? []}
               onMarkPaid={onMarkPaid}
               onCancel={onCancel}
+              onEdit={onEdit}
               showActions={showActions}
             />
           ))}

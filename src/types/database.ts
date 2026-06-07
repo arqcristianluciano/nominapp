@@ -314,6 +314,8 @@ export interface ContractAdelanto {
 }
 
 export type LoanStatus = 'active' | 'paid' | 'cancelled'
+export type LoanFrecuencia = 'semanal' | 'quincenal' | 'mensual'
+export type LoanInstallmentEstado = 'pendiente' | 'pagada'
 
 export interface ContractorLoan {
   id: string
@@ -324,9 +326,25 @@ export interface ContractorLoan {
   installment_amount: number
   disbursed_date: string
   status: LoanStatus
+  frecuencia: LoanFrecuencia
+  disbursement_account_id: string | null
   notes: string | null
   created_at: string
   contractor?: Contractor
+  disbursement_account?: BankAccount
+}
+
+export interface LoanInstallment {
+  id: string
+  loan_id: string
+  numero_cuota: number
+  fecha_pago_programada: string
+  fecha_pago_real: string | null
+  monto: number
+  estado: LoanInstallmentEstado
+  cuenta_cobro_id: string | null
+  created_at: string
+  cuenta_cobro?: BankAccount
 }
 
 export interface LoanDeduction {
