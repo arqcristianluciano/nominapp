@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { EMPTY_SCHEDULE_FORM } from '@/components/features/schedule/scheduleConfig'
 import { buildGanttInfo, getTodayLeft } from '@/components/features/schedule/scheduleGanttUtils'
-import { scheduleService, type ScheduleTask, type ScheduleTaskFormData } from '@/services/scheduleService'
+import {
+  scheduleService,
+  wouldCreateParentCycle,
+  wouldCreatePredecessorCycle,
+  type ScheduleTask,
+  type ScheduleTaskFormData,
+} from '@/services/scheduleService'
 import { useToast } from '@/components/ui/Toast'
 import { getErrorMessage } from '@/utils/errors'
 
@@ -15,6 +21,10 @@ function buildFormFromTask(task: ScheduleTask): ScheduleForm {
     progress: task.progress,
     color: task.color,
     notes: task.notes ?? '',
+    parent_task_id: task.parent_task_id,
+    task_number: task.task_number,
+    predecessor_id: task.predecessor_id,
+    is_milestone: task.is_milestone,
   }
 }
 
@@ -52,22 +62,38 @@ function useScheduleFormState() {
   const [editId, setEditId] = useState<string | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  /** When not null, the form is opened in "add subtask" mode with this parent locked. */
+  const [lockedParentId, setLockedParentId] = useState<string | null>(null)
 
   const openCreate = useCallback(() => {
     setShowForm(true)
     setEditId(null)
+    setLockedParentId(null)
     setForm({ ...EMPTY_SCHEDULE_FORM })
+  }, [])
+
+  const openAddSubtask = useCallback((parentTask: ScheduleTask) => {
+    setShowForm(true)
+    setEditId(null)
+    setLockedParentId(parentTask.id)
+    setForm({
+      ...EMPTY_SCHEDULE_FORM,
+      parent_task_id: parentTask.id,
+      color: parentTask.color,
+    })
   }, [])
 
   const startEdit = useCallback((task: ScheduleTask) => {
     setForm(buildFormFromTask(task))
     setEditId(task.id)
+    setLockedParentId(null)
     setShowForm(true)
   }, [])
 
   const closeForm = useCallback(() => {
     setShowForm(false)
     setEditId(null)
+    setLockedParentId(null)
   }, [])
 
   return {
@@ -76,10 +102,12 @@ function useScheduleFormState() {
     editId,
     deleteId,
     saving,
+    lockedParentId,
     setForm,
     setDeleteId,
     setSaving,
     openCreate,
+    openAddSubtask,
     startEdit,
     closeForm,
   }
@@ -87,6 +115,7 @@ function useScheduleFormState() {
 
 function useScheduleEditor(
   projectId: string | undefined,
+  tasks: ScheduleTask[],
   load: () => Promise<void>,
   onError: (message: string) => void,
 ) {
@@ -94,7 +123,25 @@ function useScheduleEditor(
   const { form, editId, deleteId, setForm, setDeleteId, setSaving, closeForm } = state
 
   const saveTask = useCallback(async () => {
-    if (!projectId || !form.name.trim() || !form.end_date) return
+    if (!projectId || !form.name.trim()) return
+    // Validation: needs end_date unless it has children (dates are derived then)
+    const hasChildrenInDb = editId ? tasks.some((t) => t.parent_task_id === editId) : false
+    if (!hasChildrenInDb && !form.end_date) return
+
+    // Cycle checks
+    if (editId && form.parent_task_id) {
+      if (wouldCreateParentCycle(tasks, editId, form.parent_task_id)) {
+        onError('No se puede asignar esta tarea padre: crearía un ciclo en la jerarquía.')
+        return
+      }
+    }
+    if (editId && form.predecessor_id) {
+      if (wouldCreatePredecessorCycle(tasks, editId, form.predecessor_id)) {
+        onError('No se puede asignar esta predecesora: crearía un ciclo en las dependencias.')
+        return
+      }
+    }
+
     setSaving(true)
     try {
       const payload = { ...form, project_id: projectId }
@@ -108,7 +155,7 @@ function useScheduleEditor(
     } finally {
       setSaving(false)
     }
-  }, [closeForm, editId, form, load, onError, projectId, setForm, setSaving])
+  }, [closeForm, editId, form, load, onError, projectId, setForm, setSaving, tasks])
 
   const confirmDelete = useCallback(async () => {
     if (!deleteId) return
@@ -127,12 +174,18 @@ function useScheduleEditor(
 export function useSchedulePage(projectId?: string) {
   const { error } = useToast()
   const { tasks, loading, load } = useScheduleTasks(projectId)
-  const editor = useScheduleEditor(projectId, load, error)
+  const editor = useScheduleEditor(projectId, tasks, load, error)
   const overall = useMemo(() => scheduleService.getOverallProgress(tasks), [tasks])
   const delayed = useMemo(() => scheduleService.getDelayedTasks(tasks), [tasks])
   const ganttInfo = useMemo(() => buildGanttInfo(tasks), [tasks])
   const today = useMemo(() => new Date().toISOString().split('T')[0], [])
   const todayLeft = useMemo(() => getTodayLeft(ganttInfo, today), [ganttInfo, today])
+
+  /** True when the task currently in the edit form has children (locks date fields). */
+  const editingHasChildren = useMemo(
+    () => (editor.editId ? tasks.some((t) => t.parent_task_id === editor.editId) : false),
+    [editor.editId, tasks],
+  )
 
   return {
     tasks,
@@ -142,6 +195,7 @@ export function useSchedulePage(projectId?: string) {
     ganttInfo,
     today,
     todayLeft,
+    editingHasChildren,
     ...editor,
   }
 }

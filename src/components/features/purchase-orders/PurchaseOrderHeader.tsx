@@ -20,8 +20,27 @@ export function PurchaseOrderHeader({ req }: { req: PurchaseRequisition }) {
           </span>
           {progress && <ReceiptProgressBadge progress={progress} />}
         </div>
-        <p className="text-sm text-app-muted mt-0.5">{req.description}</p>
-        {req.quantity_requested != null && (
+        {/* Si hay líneas multi-material, mostrarlas; si no, la descripción del encabezado */}
+        {req.requisition_items && req.requisition_items.length > 1 ? (
+          <ul className="mt-1 space-y-0.5">
+            {req.requisition_items.map((it, i) => (
+              <li key={it.id ?? i} className="text-sm text-app-muted flex items-baseline gap-1">
+                <span className="text-app-subtle text-xs shrink-0">{i + 1}.</span>
+                <span>
+                  {it.description}
+                  {it.quantity && it.quantity > 0 ? (
+                    <span className="text-xs text-app-subtle ml-1">
+                      · {formatNumber(it.quantity)} {it.unit ?? ''}
+                    </span>
+                  ) : null}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-app-muted mt-0.5">{req.description}</p>
+        )}
+        {req.quantity_requested != null && (!req.requisition_items || req.requisition_items.length <= 1) && (
           <p className="text-xs text-app-subtle mt-1">
             Solicitado: <strong>{formatNumber(req.quantity_requested)}</strong> {req.unit ?? ''}
             {req.planned_quantity_at_request != null && (

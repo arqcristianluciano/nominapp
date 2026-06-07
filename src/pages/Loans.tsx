@@ -9,20 +9,26 @@ export default function Loans() {
   const {
     loans,
     contractors,
+    bankAccounts,
     paidMap,
+    installmentsMap,
     loading,
     saving,
     search,
     showForm,
     cancelTargetId,
+    editLoan,
     activeLoans,
     otherLoans,
     setSearch,
     setShowForm,
     setCancelTargetId,
+    setEditLoan,
     handleCreate,
+    handleEdit,
     handleMarkPaid,
     handleCancel,
+    hasPaidInstallments,
   } = useLoansPage({ success, error })
 
   return (
@@ -38,12 +44,14 @@ export default function Loans() {
             title="Préstamos activos"
             loans={activeLoans}
             paidMap={paidMap}
+            installmentsMap={installmentsMap}
             onMarkPaid={handleMarkPaid}
             onCancel={(id) => setCancelTargetId(id)}
+            onEdit={(loan) => setEditLoan(loan)}
             showActions
           />
           {otherLoans.length > 0 && (
-            <LoanTable title="Historial" loans={otherLoans} paidMap={paidMap} />
+            <LoanTable title="Historial" loans={otherLoans} paidMap={paidMap} installmentsMap={installmentsMap} />
           )}
         </>
       )}
@@ -51,12 +59,17 @@ export default function Loans() {
       <LoansModals
         showForm={showForm}
         contractors={contractors}
+        bankAccounts={bankAccounts}
         saving={saving}
         cancelTargetId={cancelTargetId}
+        editLoan={editLoan}
+        hasPaidInstallments={editLoan ? hasPaidInstallments(editLoan.id) : false}
         onCloseForm={() => setShowForm(false)}
         onSubmitForm={handleCreate}
+        onSubmitEdit={(values) => (editLoan ? handleEdit(editLoan.id, values) : Promise.resolve())}
         onConfirmCancel={handleCancel}
         onCancelConfirm={() => setCancelTargetId(null)}
+        onCloseEdit={() => setEditLoan(null)}
       />
     </div>
   )

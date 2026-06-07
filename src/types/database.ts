@@ -314,6 +314,16 @@ export interface ContractAdelanto {
 }
 
 export type LoanStatus = 'active' | 'paid' | 'cancelled'
+export type LoanFrecuencia = 'semanal' | 'quincenal' | 'mensual'
+export type LoanInstallmentEstado = 'pendiente' | 'pagada'
+
+/** Fila de la tabla relacional bitacora_photos (migración 077). */
+export interface BitacoraPhoto {
+  id: string
+  bitacora_id: string
+  storage_path: string
+  uploaded_at: string
+}
 
 export interface ContractorLoan {
   id: string
@@ -324,9 +334,25 @@ export interface ContractorLoan {
   installment_amount: number
   disbursed_date: string
   status: LoanStatus
+  frecuencia: LoanFrecuencia
+  disbursement_account_id: string | null
   notes: string | null
   created_at: string
   contractor?: Contractor
+  disbursement_account?: BankAccount
+}
+
+export interface LoanInstallment {
+  id: string
+  loan_id: string
+  numero_cuota: number
+  fecha_pago_programada: string
+  fecha_pago_real: string | null
+  monto: number
+  estado: LoanInstallmentEstado
+  cuenta_cobro_id: string | null
+  created_at: string
+  cuenta_cobro?: BankAccount
 }
 
 export interface LoanDeduction {
@@ -337,6 +363,28 @@ export interface LoanDeduction {
   amount: number
   created_at: string
   loan?: ContractorLoan
+}
+
+// ---- Schedule tasks (table: schedule_tasks, migration 076 adds hierarchy) ----
+
+export interface ScheduleTask {
+  id: string
+  project_id: string
+  name: string
+  start_date: string
+  end_date: string
+  progress: number
+  color: string
+  notes: string | null
+  created_at: string
+  /** uuid referencing another schedule_tasks row (added by migration 076). */
+  parent_task_id: string | null
+  /** Sequential number within the project (added by migration 076). */
+  task_number: number | null
+  /** uuid referencing predecessor task (added by migration 076). */
+  predecessor_id: string | null
+  /** Whether this task is a milestone (added by migration 076). */
+  is_milestone: boolean
 }
 
 export interface Database {
@@ -405,6 +453,16 @@ export interface Database {
         Row: ContractAdelanto
         Insert: Omit<ContractAdelanto, 'id' | 'created_at'>
         Update: Partial<ContractAdelanto>
+      }
+      schedule_tasks: {
+        Row: ScheduleTask
+        Insert: Omit<ScheduleTask, 'id' | 'created_at'>
+        Update: Partial<ScheduleTask>
+      }
+      bitacora_photos: {
+        Row: BitacoraPhoto
+        Insert: Omit<BitacoraPhoto, 'id' | 'uploaded_at'>
+        Update: Partial<BitacoraPhoto>
       }
     }
   }

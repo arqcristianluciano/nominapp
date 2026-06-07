@@ -12,7 +12,7 @@ import {
   Users,
   X,
 } from 'lucide-react'
-import { bitacoraService, type BitacoraEntry } from '@/services/bitacoraService'
+import { bitacoraService, type BitacoraEntry, type BitacoraPhoto } from '@/services/bitacoraService'
 import { parseDateLocal, todayISO } from '@/utils/dateLocal'
 import { WEATHER_OPTIONS } from './bitacoraConfig'
 
@@ -44,8 +44,12 @@ interface Props {
   onDelete: (entryId: string) => void
 }
 
-// Fetches a signed URL once per path, shared between thumb and full view.
-function useSignedPhotoUrl(path: string): string | null {
+// ─────────────────────────────────────────────────────────────────────────────
+// Componente: foto individual con signed URL (thumbnail o full)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Hook para obtener la signed URL de un storage path. */
+function useSignedUrl(path: string): string | null {
   const [url, setUrl] = useState<string | null>(null)
   useEffect(() => {
     let cancelled = false
@@ -65,7 +69,7 @@ function useSignedPhotoUrl(path: string): string | null {
 }
 
 function PhotoThumb({ path, alt }: { path: string; alt: string }) {
-  const url = useSignedPhotoUrl(path)
+  const url = useSignedUrl(path)
   if (!url) {
     return (
       <div className="flex items-center justify-center w-12 h-12 rounded-md border border-app-border bg-app-bg text-app-subtle">
@@ -77,7 +81,7 @@ function PhotoThumb({ path, alt }: { path: string; alt: string }) {
 }
 
 function PhotoFull({ path, alt }: { path: string; alt: string }) {
-  const url = useSignedPhotoUrl(path)
+  const url = useSignedUrl(path)
   if (!url) return null
   return (
     <a href={url} target="_blank" rel="noopener noreferrer" className="inline-block">
@@ -86,6 +90,114 @@ function PhotoFull({ path, alt }: { path: string; alt: string }) {
   )
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Hook: carga las fotos de bitacora_photos cuando el registro se expande.
+// También incluye el photo_url legacy (si existe y no está ya en bitacora_photos).
+// ─────────────────────────────────────────────────────────────────────────────
+function useEntryPhotos(entry: BitacoraEntry, isExpanded: boolean): string[] {
+  const [paths, setPaths] = useState<string[]>([])
+
+  useEffect(() => {
+    if (!isExpanded) return
+    let cancelled = false
+
+    void bitacoraService
+      .getPhotos(entry.id)
+      .then((photos: BitacoraPhoto[]) => {
+        if (cancelled) return
+        const fromTable = photos.map((p) => p.storage_path)
+        // Incluye photo_url legacy solo si no fue migrada a bitacora_photos por el backfill.
+        const allPaths =
+          entry.photo_url && !fromTable.includes(entry.photo_url)
+            ? [entry.photo_url, ...fromTable]
+            : fromTable.length > 0
+              ? fromTable
+              : entry.photo_url
+                ? [entry.photo_url]
+                : []
+        setPaths(allPaths)
+      })
+      .catch(() => {
+        // Fallback: usa solo el photo_url legacy si la consulta falla.
+        if (!cancelled) setPaths(entry.photo_url ? [entry.photo_url] : [])
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [entry.id, entry.photo_url, isExpanded])
+
+  return paths
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Componente: panel expandido de un registro
+// ─────────────────────────────────────────────────────────────────────────────
+function EntryDetail({ entry, onEdit, onDelete }: { entry: BitacoraEntry; onEdit: () => void; onDelete: () => void }) {
+  const photoPaths = useEntryPhotos(entry, true)
+
+  return (
+    <div className="px-4 pb-4 border-t border-app-border/50 pt-3 space-y-3">
+      <p className="text-sm text-app-text whitespace-pre-wrap">{entry.work_summary}</p>
+
+      {/* Galería de fotos */}
+      {photoPaths.length > 0 && (
+        <div className="flex flex-wrap gap-3">
+          {photoPaths.map((path) => (
+            <PhotoFull key={path} path={path} alt={`Foto ${entry.date}`} />
+          ))}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-xs">
+        {entry.equipment && (
+          <div className="flex gap-2">
+            <span className="text-app-muted font-medium shrink-0">Equipos:</span>
+            <span className="text-app-text">{entry.equipment}</span>
+          </div>
+        )}
+        {entry.visitors && (
+          <div className="flex gap-2">
+            <span className="text-app-muted font-medium shrink-0">Visitas:</span>
+            <span className="text-app-text">{entry.visitors}</span>
+          </div>
+        )}
+        {entry.incidents && (
+          <div className="flex gap-2">
+            <span className="text-yellow-600 font-medium shrink-0">Incidentes:</span>
+            <span className="text-app-text">{entry.incidents}</span>
+          </div>
+        )}
+        {entry.notes && (
+          <div className="flex gap-2">
+            <span className="text-app-muted font-medium shrink-0">Notas:</span>
+            <span className="text-app-text">{entry.notes}</span>
+          </div>
+        )}
+      </div>
+      <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-1">
+        <button
+          onClick={onEdit}
+          className="flex items-center justify-center gap-1 px-3 py-1.5 text-xs border border-app-border rounded-lg hover:bg-app-hover text-app-muted"
+        >
+          <Pencil className="w-3.5 h-3.5" />
+          Editar
+        </button>
+        <button
+          onClick={onDelete}
+          className="flex items-center justify-center gap-1 px-3 py-1.5 text-xs border border-red-200 dark:border-red-800 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 text-red-600"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+          Eliminar
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Componente principal: lista de registros
+// ─────────────────────────────────────────────────────────────────────────────
 export function BitacoraEntriesList({ entries, expandedId, onToggleExpand, onEdit, onDelete }: Props) {
   const [dateFrom, setDateFrom] = useState<string>('')
   const [dateTo, setDateTo] = useState<string>('')
@@ -110,23 +222,22 @@ export function BitacoraEntriesList({ entries, expandedId, onToggleExpand, onEdi
   const totalPages = Math.max(1, Math.ceil(filteredEntries.length / PAGE_SIZE))
   const needsPagination = filteredEntries.length > PAGE_SIZE
 
-  // Reset page when filters or entry list change (patrón recomendado de React:
-  // ajustar estado durante el render en vez de en un efecto).
+  // Reset page cuando cambian filtros (computado en render — evita warning de set-state-in-effect).
   const filtersKey = `${dateFrom}|${dateTo}|${currentWeekOnly}|${entries.length}`
   const [prevFiltersKey, setPrevFiltersKey] = useState(filtersKey)
   if (prevFiltersKey !== filtersKey) {
     setPrevFiltersKey(filtersKey)
     setPage(0)
   }
-
-  // Clamp page index so it never exceeds valid range.
-  const clampedPage = Math.min(page, Math.max(0, totalPages - 1))
+  if (page > totalPages - 1) {
+    setPage(Math.max(0, totalPages - 1))
+  }
 
   const visibleEntries = useMemo(() => {
     if (!needsPagination) return filteredEntries
-    const start = clampedPage * PAGE_SIZE
+    const start = page * PAGE_SIZE
     return filteredEntries.slice(start, start + PAGE_SIZE)
-  }, [clampedPage, filteredEntries, needsPagination])
+  }, [filteredEntries, needsPagination, page])
 
   const clearFilters = () => {
     setDateFrom('')
@@ -207,6 +318,8 @@ export function BitacoraEntriesList({ entries, expandedId, onToggleExpand, onEdi
             year: 'numeric',
           })
           const isExpanded = expandedId === entry.id
+          // Para el thumbnail de la tarjeta usamos photo_url (rápido, sin consulta extra).
+          const thumbPath = entry.photo_url
           return (
             <div key={entry.id} className="bg-app-surface border border-app-border rounded-xl overflow-hidden">
               <button
@@ -217,8 +330,8 @@ export function BitacoraEntriesList({ entries, expandedId, onToggleExpand, onEdi
                 <div className="px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
                   {/* Fila 1 mobile / izquierda en desktop: fecha + clima + thumbnail foto */}
                   <div className="flex items-center gap-3 min-w-0 sm:flex-1">
-                    {entry.photo_url ? (
-                      <PhotoThumb path={entry.photo_url} alt={`Foto ${entry.date}`} />
+                    {thumbPath ? (
+                      <PhotoThumb path={thumbPath} alt={`Foto ${entry.date}`} />
                     ) : (
                       <div className="hidden sm:flex items-center gap-2 text-app-muted shrink-0">
                         <WeatherIcon weather={entry.weather} />
@@ -253,52 +366,7 @@ export function BitacoraEntriesList({ entries, expandedId, onToggleExpand, onEdi
               </button>
 
               {isExpanded && (
-                <div className="px-4 pb-4 border-t border-app-border/50 pt-3 space-y-3">
-                  <p className="text-sm text-app-text whitespace-pre-wrap">{entry.work_summary}</p>
-                  {entry.photo_url && <PhotoFull path={entry.photo_url} alt={`Foto ${entry.date}`} />}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-xs">
-                    {entry.equipment && (
-                      <div className="flex gap-2">
-                        <span className="text-app-muted font-medium shrink-0">Equipos:</span>
-                        <span className="text-app-text">{entry.equipment}</span>
-                      </div>
-                    )}
-                    {entry.visitors && (
-                      <div className="flex gap-2">
-                        <span className="text-app-muted font-medium shrink-0">Visitas:</span>
-                        <span className="text-app-text">{entry.visitors}</span>
-                      </div>
-                    )}
-                    {entry.incidents && (
-                      <div className="flex gap-2">
-                        <span className="text-yellow-600 font-medium shrink-0">Incidentes:</span>
-                        <span className="text-app-text">{entry.incidents}</span>
-                      </div>
-                    )}
-                    {entry.notes && (
-                      <div className="flex gap-2">
-                        <span className="text-app-muted font-medium shrink-0">Notas:</span>
-                        <span className="text-app-text">{entry.notes}</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-1">
-                    <button
-                      onClick={() => onEdit(entry)}
-                      className="flex items-center justify-center gap-1 px-3 py-1.5 text-xs border border-app-border rounded-lg hover:bg-app-hover text-app-muted"
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
-                      Editar
-                    </button>
-                    <button
-                      onClick={() => onDelete(entry.id)}
-                      className="flex items-center justify-center gap-1 px-3 py-1.5 text-xs border border-red-200 dark:border-red-800 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 text-red-600"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      Eliminar
-                    </button>
-                  </div>
-                </div>
+                <EntryDetail entry={entry} onEdit={() => onEdit(entry)} onDelete={() => onDelete(entry.id)} />
               )}
             </div>
           )
@@ -310,19 +378,19 @@ export function BitacoraEntriesList({ entries, expandedId, onToggleExpand, onEdi
           <button
             type="button"
             onClick={() => setPage((p) => Math.max(0, p - 1))}
-            disabled={clampedPage === 0}
+            disabled={page === 0}
             className="flex items-center gap-1 px-3 py-1.5 text-xs border border-app-border rounded-lg text-app-muted hover:bg-app-hover disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <ChevronLeft className="w-3.5 h-3.5" />
             Anterior
           </button>
           <span className="text-xs text-app-muted">
-            Página {clampedPage + 1} de {totalPages}
+            Página {page + 1} de {totalPages}
           </span>
           <button
             type="button"
             onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-            disabled={clampedPage >= totalPages - 1}
+            disabled={page >= totalPages - 1}
             className="flex items-center gap-1 px-3 py-1.5 text-xs border border-app-border rounded-lg text-app-muted hover:bg-app-hover disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Siguiente

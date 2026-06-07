@@ -37,7 +37,9 @@ export function PurchaseOrderDetailModals({
   deleteQuoteId: string | null
   confirmDeleteReq: boolean
   onCloseAddQuote: () => void
-  onSubmitQuote: (payload: Parameters<typeof quoteService.create>[0]) => Promise<void>
+  onSubmitQuote: (
+    payload: Parameters<typeof quoteService.create>[0] & { attachmentFile?: File | null },
+  ) => Promise<void>
   onCloseApproval: () => void
   onApprove: (
     quoteId: string,
@@ -58,7 +60,8 @@ export function PurchaseOrderDetailModals({
         <QuoteForm
           suppliers={suppliers}
           onSubmit={async (payload) => {
-            await onSubmitQuote({ ...payload, requisition_id: orderId })
+            const { attachmentFile, ...rest } = payload
+            await onSubmitQuote({ ...rest, requisition_id: orderId, attachmentFile })
           }}
           onCancel={onCloseAddQuote}
           saving={savingQuote}
