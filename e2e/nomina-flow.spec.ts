@@ -62,12 +62,15 @@ test('flujo de nómina: crear, agregar partida, enviar y aprobar', async ({ page
   // El mensaje "No hay partidas..." debe haber desaparecido.
   await expect(page.getByText('No hay partidas de mano de obra registradas')).toHaveCount(0)
 
-  // 6) Enviar la nómina (draft -> submitted). Al enviar, el aprobador ve el
-  // botón "Aprobar reporte" (confirma el estado enviado sin depender del badge).
+  // 6) Enviar la nómina (draft -> submitted). Como aún no se distribuyó ningún
+  // pago, primero aparece el aviso (no bloqueante) "Aún falta distribuir": se
+  // confirma con "Enviar de todos modos". Al enviar, el aprobador ve el botón
+  // "Aprobar reporte" (confirma el estado enviado sin depender del badge).
   await page
     .getByRole('button', { name: /Enviar para aprobación/i })
     .first()
     .click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Enviar de todos modos' }).click()
   await expect(page.getByRole('button', { name: /Aprobar reporte/i }).first()).toBeVisible({ timeout: 5000 })
 
   // 7) Aprobar la nómina (submitted -> approved). Tras aprobar aparece
