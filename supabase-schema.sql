@@ -167,6 +167,7 @@ create table if not exists indirect_costs (
   calculated_amount numeric(15,2) not null default 0,
   fixed_amount numeric(15,2),
   is_active boolean not null default true,
+  is_manual boolean not null default false,
   notes text
 );
 

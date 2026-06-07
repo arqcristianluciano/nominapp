@@ -853,6 +853,7 @@ export type Database = {
           fixed_amount: number | null
           id: string
           is_active: boolean
+          is_manual: boolean
           notes: string | null
           payroll_period_id: string
           percentage: number | null
@@ -865,6 +866,7 @@ export type Database = {
           fixed_amount?: number | null
           id?: string
           is_active?: boolean
+          is_manual?: boolean
           notes?: string | null
           payroll_period_id: string
           percentage?: number | null
@@ -877,6 +879,7 @@ export type Database = {
           fixed_amount?: number | null
           id?: string
           is_active?: boolean
+          is_manual?: boolean
           notes?: string | null
           payroll_period_id?: string
           percentage?: number | null

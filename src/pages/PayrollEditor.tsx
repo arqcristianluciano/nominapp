@@ -132,6 +132,9 @@ export default function PayrollEditor() {
         saving={payroll.saving}
         total={period.total_indirect || 0}
         onToggleActive={payroll.setIndirectActive}
+        onAddManual={payroll.addManualIndirect}
+        onUpdateManual={payroll.updateManualIndirect}
+        onDeleteManual={payroll.deleteManualIndirect}
       />
 
       <CubicacionesPayrollSection

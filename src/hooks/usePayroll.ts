@@ -77,14 +77,15 @@ export function usePayroll(periodId: string | undefined) {
       const indirect = calcIndirectCosts(laborTotal, materialsTotal, project)
 
       const costRows = buildIndirectCostRows(project, indirect)
-      const activeByType = new Map(indirectCosts.map((c) => [c.type, c.is_active]))
-      const totalActive = costRows
-        .filter((r) => activeByType.get(r.type) !== false)
-        .reduce((acc, r) => acc + r.calculated_amount, 0)
+      // saveIndirectCosts solo reconstruye los porcentuales (automáticos) y
+      // respeta su preferencia is_active; los manuales sobreviven en la BD.
+      const saved = await payrollService.saveIndirectCosts(periodId, costRows)
+      const manual = indirectCosts.filter((c) => c.is_manual)
+      const merged = [...saved, ...manual]
+      const totalActive = merged.filter((c) => c.is_active).reduce((acc, c) => acc + c.calculated_amount, 0)
       const grandTotal = calcGrandTotal(laborTotal, materialsTotal, totalActive)
 
-      const saved = await payrollService.saveIndirectCosts(periodId, costRows)
-      setIndirectCosts(saved)
+      setIndirectCosts(merged)
       await payrollService.updatePeriodTotals(periodId, {
         total_labor: laborTotal,
         total_materials: materialsTotal,
@@ -107,11 +108,12 @@ export function usePayroll(periodId: string | undefined) {
     [periodId, indirectCosts],
   )
 
-  const setIndirectActive = useCallback(
-    async (id: string, isActive: boolean) => {
+  // Persiste un nuevo arreglo de indirectos: recalcula total_indirect (solo
+  // los activos) y grand_total sin tocar labor/materiales. Reutilizado por el
+  // checkbox de activar/desactivar y por los indirectos manuales.
+  const persistIndirect = useCallback(
+    async (next: IndirectCost[]) => {
       if (!period || !periodId) return
-      const updated = await payrollService.setIndirectActive(id, isActive)
-      const next = indirectCosts.map((c) => (c.id === id ? updated : c))
       const total = next.filter((c) => c.is_active).reduce((a, c) => a + c.calculated_amount, 0)
       const grand = calcGrandTotal(period.total_labor, period.total_materials, total)
       await payrollService.updatePeriodTotals(periodId, {
@@ -123,7 +125,67 @@ export function usePayroll(periodId: string | undefined) {
       setIndirectCosts(next)
       setPeriod((prev) => (prev ? { ...prev, total_indirect: total, grand_total: grand } : null))
     },
-    [indirectCosts, period, periodId],
+    [period, periodId],
+  )
+
+  const setIndirectActive = useCallback(
+    async (id: string, isActive: boolean) => {
+      if (!period || !periodId) return
+      const updated = await payrollService.setIndirectActive(id, isActive)
+      await persistIndirect(indirectCosts.map((c) => (c.id === id ? updated : c)))
+    },
+    [indirectCosts, period, periodId, persistIndirect],
+  )
+
+  const addManualIndirect = useCallback(
+    async (input: { description: string; amount: number }) => {
+      if (!period || !periodId) return
+      setSaving(true)
+      setError(null)
+      try {
+        const created = await payrollService.addManualIndirect(periodId, input)
+        await persistIndirect([...indirectCosts, created])
+      } catch (e) {
+        setError(getErrorMessage(e))
+      } finally {
+        setSaving(false)
+      }
+    },
+    [indirectCosts, period, periodId, persistIndirect],
+  )
+
+  const updateManualIndirect = useCallback(
+    async (id: string, input: { description: string; amount: number }) => {
+      if (!period || !periodId) return
+      setSaving(true)
+      setError(null)
+      try {
+        const updated = await payrollService.updateManualIndirect(id, input)
+        await persistIndirect(indirectCosts.map((c) => (c.id === id ? updated : c)))
+      } catch (e) {
+        setError(getErrorMessage(e))
+      } finally {
+        setSaving(false)
+      }
+    },
+    [indirectCosts, period, periodId, persistIndirect],
+  )
+
+  const deleteManualIndirect = useCallback(
+    async (id: string) => {
+      if (!period || !periodId) return
+      setSaving(true)
+      setError(null)
+      try {
+        await payrollService.deleteManualIndirect(id)
+        await persistIndirect(indirectCosts.filter((c) => c.id !== id))
+      } catch (e) {
+        setError(getErrorMessage(e))
+      } finally {
+        setSaving(false)
+      }
+    },
+    [indirectCosts, period, periodId, persistIndirect],
   )
 
   const addLaborItem = useCallback(
@@ -355,6 +417,9 @@ export function usePayroll(periodId: string | undefined) {
     updateStatus,
     returnToDraft,
     setIndirectActive,
+    addManualIndirect,
+    updateManualIndirect,
+    deleteManualIndirect,
     recalculateTotals,
   }
 }

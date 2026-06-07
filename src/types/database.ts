@@ -196,6 +196,8 @@ export interface IndirectCost {
   calculated_amount: number
   fixed_amount: number | null
   is_active: boolean
+  /** true = indirecto agregado a mano (monto fijo); el recálculo no lo toca. */
+  is_manual: boolean
   notes: string | null
 }
 
