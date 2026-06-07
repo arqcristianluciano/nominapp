@@ -2,10 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // ---- Mock @/lib/supabase ------------------------------------------------
 //
-// notificationService.getAll lanza un Promise.all con 9 queries en este
+// notificationService.getAll lanza un Promise.all con 11 queries en este
 // orden exacto:
 //   0  purchase_requisitions (po)
-//   1  quality_control overdue
+//   1  quality_control overdue (sin test_date y pour_date pasado)
 //   2  quality_control failed
 //   3  transactions CxP danger (>60d)
 //   4  transactions CxP warning (31-60d)
@@ -13,6 +13,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 //   6  transactions (ejecución presupuestal)
 //   7  projects
 //   8  contractor_documents
+//   9  loan_installments (cuotas pendientes próximas/vencidas)
+//  10  quality_control upcoming test (sin test_date ni status, para fecha esperada)
 //
 // Cada query encadena .select(...).eq/lte/gt/is/order/limit(...). El último
 // eslabón se "awaitea" (es un thenable) y debe resolver { data, error }.
@@ -83,10 +85,12 @@ vi.mock('@/lib/supabase', () => ({
 // Import DESPUÉS del mock para que el service vea el módulo mockeado.
 import { notificationService } from './notificationService'
 
-/** Configura las 9 respuestas del Promise.all en orden. Falta = []. */
+const TOTAL_QUERIES = 11
+
+/** Configura las 11 respuestas del Promise.all en orden. Falta = []. */
 function setQueryResults(results: Partial<Record<number, QueryResult>>) {
   resultsQueue = []
-  for (let i = 0; i < 9; i++) {
+  for (let i = 0; i < TOTAL_QUERIES; i++) {
     resultsQueue[i] = results[i] ?? { data: [], error: null }
   }
 }
@@ -105,7 +109,7 @@ describe('notificationService.getAll', () => {
     const notifications = await notificationService.getAll()
 
     expect(notifications).toEqual([])
-    expect(fromMock).toHaveBeenCalledTimes(9)
+    expect(fromMock).toHaveBeenCalledTimes(TOTAL_QUERIES)
   })
 
   it('con "stock bajo" (purchase_requisition pendiente: nivel warning) emite notificación', async () => {
@@ -178,5 +182,165 @@ describe('notificationService.getAll', () => {
     rejectAtIndex = 3
 
     await expect(notificationService.getAll()).rejects.toThrow(/mock supabase rejection at index 3/)
+  })
+
+  it('con cuota de préstamo vencida emite notificación loan-inst-overdue', async () => {
+    // Query 9 es loan_installments pendientes próximas/vencidas.
+    const pastDate = '2020-06-01' // mucho antes de hoy
+    setQueryResults({
+      9: {
+        data: [
+          {
+            id: 'inst-1',
+            loan_id: 'loan-1',
+            numero_cuota: 3,
+            fecha_pago_programada: pastDate,
+            monto: 5000,
+            loan: {
+              contractor_id: 'cont-1',
+              contractor: { name: 'Juan Pérez' },
+            },
+          },
+        ],
+        error: null,
+      },
+    })
+
+    const notifications = await notificationService.getAll()
+
+    const loanNotif = notifications.find((n) => n.id.startsWith('loan-inst-overdue-'))
+    expect(loanNotif).toBeDefined()
+    expect(loanNotif).toMatchObject({
+      id: 'loan-inst-overdue-inst-1',
+      level: 'danger',
+      title: 'Cuota de préstamo vencida',
+      link: '/prestamos',
+    })
+    expect(loanNotif!.description).toContain('Juan Pérez')
+    expect(loanNotif!.description).toContain('cuota 3')
+  })
+
+  it('con cuota de préstamo próxima (≤7 días) emite notificación loan-inst-due warning', async () => {
+    // Query 9: cuota que vence en 5 días
+    const futureDate = new Date(Date.now() + 5 * 86400000).toISOString().split('T')[0]
+    setQueryResults({
+      9: {
+        data: [
+          {
+            id: 'inst-2',
+            loan_id: 'loan-2',
+            numero_cuota: 1,
+            fecha_pago_programada: futureDate,
+            monto: 12000,
+            loan: {
+              contractor_id: 'cont-2',
+              contractor: { name: 'María López' },
+            },
+          },
+        ],
+        error: null,
+      },
+    })
+
+    const notifications = await notificationService.getAll()
+
+    const loanNotif = notifications.find((n) => n.id.startsWith('loan-inst-due-'))
+    expect(loanNotif).toBeDefined()
+    expect(loanNotif).toMatchObject({
+      id: 'loan-inst-due-inst-2',
+      level: 'warning',
+      title: 'Cuota de préstamo próxima a vencer',
+      link: '/prestamos',
+    })
+    expect(loanNotif!.description).toContain('María López')
+    expect(loanNotif!.description).toContain('cuota 1')
+  })
+
+  it('con ensayo de hormigón cuya fecha esperada ya venció emite notificación qc-test-overdue', async () => {
+    // Query 10: registro de calidad sin result, con test_age que ya venció
+    // Pour date: hace 35 días, test_age: "28 días" → fecha esperada = hace 7 días
+    const pourDate = new Date(Date.now() - 35 * 86400000).toISOString().split('T')[0]
+    setQueryResults({
+      10: {
+        data: [
+          {
+            id: 'qc-upcoming-1',
+            element: 'Columna C-1',
+            pour_date: pourDate,
+            test_age: '28 días',
+            project_id: 'proj-2',
+          },
+        ],
+        error: null,
+      },
+    })
+
+    const notifications = await notificationService.getAll()
+
+    const qcNotif = notifications.find((n) => n.id.startsWith('qc-test-overdue-'))
+    expect(qcNotif).toBeDefined()
+    expect(qcNotif).toMatchObject({
+      id: 'qc-test-overdue-qc-upcoming-1',
+      level: 'danger',
+      title: 'Ensayo de hormigón vencido',
+      link: '/proyectos/proj-2/calidad',
+    })
+    expect(qcNotif!.description).toContain('Columna C-1')
+    expect(qcNotif!.description).toContain('28 días')
+  })
+
+  it('con ensayo de hormigón cuya fecha esperada es en ≤7 días emite notificación qc-test-due', async () => {
+    // Pour date: hace 25 días, test_age: "28 días" → fecha esperada = en 3 días
+    const pourDate = new Date(Date.now() - 25 * 86400000).toISOString().split('T')[0]
+    setQueryResults({
+      10: {
+        data: [
+          {
+            id: 'qc-upcoming-2',
+            element: 'Viga V-3',
+            pour_date: pourDate,
+            test_age: '28 días',
+            project_id: 'proj-3',
+          },
+        ],
+        error: null,
+      },
+    })
+
+    const notifications = await notificationService.getAll()
+
+    const qcNotif = notifications.find((n) => n.id.startsWith('qc-test-due-'))
+    expect(qcNotif).toBeDefined()
+    expect(qcNotif).toMatchObject({
+      id: 'qc-test-due-qc-upcoming-2',
+      level: 'warning',
+      title: 'Ensayo de hormigón próximo',
+      link: '/proyectos/proj-3/calidad',
+    })
+    expect(qcNotif!.description).toContain('Viga V-3')
+  })
+
+  it('ensayo sin test_age no genera alerta qc-test', async () => {
+    // Si no hay test_age, no se puede calcular la fecha esperada → sin alerta
+    const pourDate = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0]
+    setQueryResults({
+      10: {
+        data: [
+          {
+            id: 'qc-nage-1',
+            element: 'Losa L-1',
+            pour_date: pourDate,
+            test_age: null,
+            project_id: 'proj-4',
+          },
+        ],
+        error: null,
+      },
+    })
+
+    const notifications = await notificationService.getAll()
+
+    const qcNotif = notifications.find((n) => n.id.startsWith('qc-test-'))
+    expect(qcNotif).toBeUndefined()
   })
 })
