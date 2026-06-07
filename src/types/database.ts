@@ -314,6 +314,8 @@ export interface ContractAdelanto {
 }
 
 export type LoanStatus = 'active' | 'paid' | 'cancelled'
+export type LoanFrecuencia = 'semanal' | 'quincenal' | 'mensual'
+export type LoanInstallmentEstado = 'pendiente' | 'pagada'
 
 export interface ContractorLoan {
   id: string
@@ -324,9 +326,25 @@ export interface ContractorLoan {
   installment_amount: number
   disbursed_date: string
   status: LoanStatus
+  frecuencia: LoanFrecuencia
+  disbursement_account_id: string | null
   notes: string | null
   created_at: string
   contractor?: Contractor
+  disbursement_account?: BankAccount
+}
+
+export interface LoanInstallment {
+  id: string
+  loan_id: string
+  numero_cuota: number
+  fecha_pago_programada: string
+  fecha_pago_real: string | null
+  monto: number
+  estado: LoanInstallmentEstado
+  cuenta_cobro_id: string | null
+  created_at: string
+  cuenta_cobro?: BankAccount
 }
 
 export interface LoanDeduction {
@@ -337,6 +355,27 @@ export interface LoanDeduction {
   amount: number
   created_at: string
   loan?: ContractorLoan
+}
+
+/** Tipo de movimiento: 'debito' = salida de dinero, 'credito' = entrada de dinero. */
+export type AccountMovementTipo = 'debito' | 'credito'
+
+/** Fuente que generó el movimiento */
+export type AccountMovementOrigen = 'loan_disbursement' | 'loan_repayment' | 'manual'
+
+/** Fila de la tabla account_movements (migración 081). */
+export interface AccountMovement {
+  id: string
+  account_id: string
+  fecha: string
+  tipo: AccountMovementTipo
+  monto: number
+  concepto: string
+  origen: AccountMovementOrigen | string
+  referencia_id: string | null
+  created_at: string
+  /** Relación optional: cuenta bancaria relacionada */
+  account?: BankAccount
 }
 
 export interface Database {
@@ -405,6 +444,26 @@ export interface Database {
         Row: ContractAdelanto
         Insert: Omit<ContractAdelanto, 'id' | 'created_at'>
         Update: Partial<ContractAdelanto>
+      }
+      contractor_loans: {
+        Row: ContractorLoan
+        Insert: Omit<ContractorLoan, 'id' | 'created_at' | 'contractor' | 'disbursement_account'>
+        Update: Partial<ContractorLoan>
+      }
+      loan_installments: {
+        Row: LoanInstallment
+        Insert: Omit<LoanInstallment, 'id' | 'created_at' | 'cuenta_cobro'>
+        Update: Partial<LoanInstallment>
+      }
+      loan_deductions: {
+        Row: LoanDeduction
+        Insert: Omit<LoanDeduction, 'id' | 'created_at' | 'loan'>
+        Update: Partial<LoanDeduction>
+      }
+      account_movements: {
+        Row: AccountMovement
+        Insert: Omit<AccountMovement, 'id' | 'created_at' | 'account'>
+        Update: Partial<AccountMovement>
       }
     }
   }

@@ -1,5 +1,7 @@
+import * as Sentry from '@sentry/react'
 import { supabase } from '@/lib/supabase'
-import type { ContractorLoan, LoanDeduction, LoanStatus } from '@/types/database'
+import type { ContractorLoan, LoanDeduction, LoanFrecuencia, LoanInstallment, LoanStatus } from '@/types/database'
+import { accountMovementService } from '@/services/accountMovementService'
 import { add, div, money, pct, round2 } from '@/utils/money'
 
 /** Cuota fija: capital + interés simple distribuido en N cuotas */
@@ -8,6 +10,41 @@ export function calcInstallmentAmount(principal: number, interestRate: number, i
   const base = money(principal)
   const totalInterest = pct(base, interestRate)
   return round2(div(add(base, totalInterest), installments))
+}
+
+/** Calcula la fecha de una cuota a partir de la fecha de desembolso, frecuencia y número de cuota. */
+export function calcInstallmentDate(disbursedDate: string, frecuencia: LoanFrecuencia, numeroCuota: number): string {
+  const base = new Date(disbursedDate + 'T00:00:00')
+  if (frecuencia === 'semanal') {
+    base.setDate(base.getDate() + numeroCuota * 7)
+  } else if (frecuencia === 'quincenal') {
+    base.setDate(base.getDate() + numeroCuota * 15)
+  } else {
+    // mensual: suma meses exactos
+    base.setMonth(base.getMonth() + numeroCuota)
+  }
+  return base.toISOString().slice(0, 10)
+}
+
+/** Genera el array de cuotas a insertar para un préstamo recién creado. */
+function buildInstallments(
+  loanId: string,
+  disbursedDate: string,
+  frecuencia: LoanFrecuencia,
+  installments: number,
+  installmentAmount: number,
+): Array<{
+  loan_id: string
+  numero_cuota: number
+  fecha_pago_programada: string
+  monto: number
+}> {
+  return Array.from({ length: installments }, (_, idx) => ({
+    loan_id: loanId,
+    numero_cuota: idx + 1,
+    fecha_pago_programada: calcInstallmentDate(disbursedDate, frecuencia, idx + 1),
+    monto: installmentAmount,
+  }))
 }
 
 export const loanService = {
@@ -32,23 +69,63 @@ export const loanService = {
     return data as ContractorLoan[]
   },
 
-  /** Crea un préstamo nuevo calculando la cuota e iniciándolo en estado activo. */
+  /** Crea un préstamo nuevo calculando la cuota, iniciándolo en estado activo y
+   *  generando el cronograma de cuotas según la frecuencia indicada.
+   *  Si hay cuenta de desembolso, registra la salida de dinero en esa cuenta. */
   async create(loan: {
     contractor_id: string
     principal: number
     interest_rate: number
     installments: number
     disbursed_date: string
+    frecuencia?: LoanFrecuencia
+    disbursement_account_id?: string | null
     notes?: string
   }): Promise<ContractorLoan> {
+    const frecuencia: LoanFrecuencia = loan.frecuencia ?? 'mensual'
     const installment_amount = calcInstallmentAmount(loan.principal, loan.interest_rate, loan.installments)
+
     const { data, error } = await supabase
       .from('contractor_loans')
-      .insert({ ...loan, installment_amount, status: 'active' })
+      .insert({ ...loan, frecuencia, installment_amount, status: 'active' })
       .select('*, contractor:contractors(*)')
       .single()
     if (error) throw error
-    return data as ContractorLoan
+    const created = data as ContractorLoan
+
+    // Genera cronograma de cuotas
+    const installmentsToInsert = buildInstallments(
+      created.id,
+      created.disbursed_date,
+      frecuencia,
+      created.installments,
+      installment_amount,
+    )
+    const { error: insError } = await supabase.from('loan_installments').insert(installmentsToInsert)
+    if (insError) throw insError
+
+    // Registra la salida de dinero en la cuenta de desembolso (si se indicó)
+    if (loan.disbursement_account_id) {
+      try {
+        await accountMovementService.create({
+          account_id: loan.disbursement_account_id,
+          fecha: loan.disbursed_date,
+          tipo: 'debito',
+          monto: loan.principal,
+          concepto: `Desembolso de préstamo — ${created.contractor?.name ?? 'contratista'}`,
+          origen: 'loan_disbursement',
+          referencia_id: created.id,
+        })
+      } catch (movErr) {
+        // El préstamo y las cuotas ya se crearon. El movimiento falló de forma aislada;
+        // no se revierte la operación principal para no bloquear al usuario.
+        // Se captura en Sentry para revisión posterior.
+        console.error('[loanService.create] No se pudo registrar movimiento de desembolso:', movErr)
+        Sentry.captureException(movErr, { tags: { area: 'loanService', op: 'create_movement' } })
+      }
+    }
+
+    return created
   },
 
   /** Actualiza el estado de un préstamo. */
@@ -57,10 +134,170 @@ export const loanService = {
     if (error) throw error
   },
 
+  /** Edita los campos del préstamo. Si cambian cuotas, frecuencia o monto, regenera
+   *  SOLO las cuotas pendientes (las ya pagadas se preservan). */
+  async update(
+    id: string,
+    updates: {
+      principal?: number
+      interest_rate?: number
+      installments?: number
+      frecuencia?: LoanFrecuencia
+      disbursement_account_id?: string | null
+      notes?: string | null
+    },
+  ): Promise<ContractorLoan> {
+    // Recuperar el estado actual del préstamo
+    const { data: current, error: fetchErr } = await supabase.from('contractor_loans').select('*').eq('id', id).single()
+    if (fetchErr) throw fetchErr
+    const currentLoan = current as ContractorLoan
+
+    const newPrincipal = updates.principal ?? currentLoan.principal
+    const newRate = updates.interest_rate ?? currentLoan.interest_rate
+    const newInstallments = updates.installments ?? currentLoan.installments
+    const newFrecuencia: LoanFrecuencia = updates.frecuencia ?? currentLoan.frecuencia
+    const newInstallmentAmount = calcInstallmentAmount(newPrincipal, newRate, newInstallments)
+
+    const { data, error } = await supabase
+      .from('contractor_loans')
+      .update({
+        ...updates,
+        frecuencia: newFrecuencia,
+        installment_amount: newInstallmentAmount,
+      })
+      .eq('id', id)
+      .select('*, contractor:contractors(*)')
+      .single()
+    if (error) throw error
+    const updated = data as ContractorLoan
+
+    // Determinar si hay que regenerar cuotas
+    const scheduleChanged =
+      updates.installments !== undefined ||
+      updates.frecuencia !== undefined ||
+      updates.principal !== undefined ||
+      updates.interest_rate !== undefined
+
+    if (scheduleChanged) {
+      // Encontrar cuotas ya pagadas para preservarlas
+      const { data: existingRaw, error: fetchInstErr } = await supabase
+        .from('loan_installments')
+        .select('numero_cuota, estado')
+        .eq('loan_id', id)
+      if (fetchInstErr) throw fetchInstErr
+      const existing = (existingRaw ?? []) as Array<{ numero_cuota: number; estado: string }>
+      const paidNumbers = new Set(existing.filter((i) => i.estado === 'pagada').map((i) => i.numero_cuota))
+
+      // Borrar solo las cuotas pendientes
+      const { error: delErr } = await supabase
+        .from('loan_installments')
+        .delete()
+        .eq('loan_id', id)
+        .eq('estado', 'pendiente')
+      if (delErr) throw delErr
+
+      // Insertar las nuevas cuotas para los números no pagados
+      const newInstallmentsToInsert = buildInstallments(
+        id,
+        updated.disbursed_date,
+        newFrecuencia,
+        newInstallments,
+        newInstallmentAmount,
+      ).filter((inst) => !paidNumbers.has(inst.numero_cuota))
+
+      if (newInstallmentsToInsert.length > 0) {
+        const { error: insErr } = await supabase.from('loan_installments').insert(newInstallmentsToInsert)
+        if (insErr) throw insErr
+      }
+    }
+
+    return updated
+  },
+
   /** Elimina un préstamo por id. */
   async delete(id: string): Promise<void> {
     const { error } = await supabase.from('contractor_loans').delete().eq('id', id)
     if (error) throw error
+  },
+
+  // === CRONOGRAMA DE CUOTAS ===
+
+  /** Lista las cuotas de un préstamo ordenadas por número de cuota. */
+  async getInstallments(loanId: string): Promise<LoanInstallment[]> {
+    const { data, error } = await supabase
+      .from('loan_installments')
+      .select('*, cuenta_cobro:bank_accounts(*)')
+      .eq('loan_id', loanId)
+      .order('numero_cuota', { ascending: true })
+    if (error) throw error
+    return data as LoanInstallment[]
+  },
+
+  /** Lista las cuotas de múltiples préstamos en una sola query.
+   *  Devuelve `{ [loanId]: LoanInstallment[] }`. */
+  async getInstallmentsByLoans(loanIds: string[]): Promise<Record<string, LoanInstallment[]>> {
+    if (loanIds.length === 0) return {}
+    const { data, error } = await supabase
+      .from('loan_installments')
+      .select('*')
+      .in('loan_id', loanIds)
+      .order('numero_cuota', { ascending: true })
+    if (error) throw error
+    const map: Record<string, LoanInstallment[]> = {}
+    for (const row of (data ?? []) as LoanInstallment[]) {
+      if (!map[row.loan_id]) map[row.loan_id] = []
+      map[row.loan_id].push(row)
+    }
+    return map
+  },
+
+  /** Marca una cuota como pagada, registra la cuenta de cobro y la fecha real.
+   *  Si hay cuenta de cobro, genera un movimiento de entrada en esa cuenta. */
+  async markInstallmentPaid(installmentId: string, fechaPagoReal?: string, cuentaCobroId?: string): Promise<void> {
+    const fechaPago = fechaPagoReal ?? new Date().toISOString().slice(0, 10)
+
+    // Obtener datos de la cuota antes de actualizarla (para el concepto del movimiento)
+    const { data: instData, error: fetchErr } = await supabase
+      .from('loan_installments')
+      .select('*, loan:contractor_loans(principal, contractor:contractors(name))')
+      .eq('id', installmentId)
+      .single()
+    if (fetchErr) throw fetchErr
+    const inst = instData as LoanInstallment & {
+      loan?: { principal: number; contractor?: { name: string } }
+    }
+
+    // Actualizar la cuota como pagada
+    const { error } = await supabase
+      .from('loan_installments')
+      .update({
+        estado: 'pagada',
+        fecha_pago_real: fechaPago,
+        cuenta_cobro_id: cuentaCobroId ?? null,
+      })
+      .eq('id', installmentId)
+    if (error) throw error
+
+    // Registrar la entrada de dinero en la cuenta de cobro (si se indicó)
+    if (cuentaCobroId) {
+      const contratistaNombre = inst.loan?.contractor?.name ?? 'contratista'
+      try {
+        await accountMovementService.create({
+          account_id: cuentaCobroId,
+          fecha: fechaPago,
+          tipo: 'credito',
+          monto: inst.monto,
+          concepto: `Cobro cuota #${inst.numero_cuota} — ${contratistaNombre}`,
+          origen: 'loan_repayment',
+          referencia_id: installmentId,
+        })
+      } catch (movErr) {
+        // La cuota ya fue marcada como pagada. El movimiento falló de forma aislada;
+        // no se revierte el pago para no bloquear al usuario.
+        console.error('[loanService.markInstallmentPaid] No se pudo registrar movimiento de cobro:', movErr)
+        Sentry.captureException(movErr, { tags: { area: 'loanService', op: 'repayment_movement' } })
+      }
+    }
   },
 
   // === DEDUCCIONES ===
