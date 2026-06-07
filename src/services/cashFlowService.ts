@@ -1,5 +1,8 @@
 import { supabase } from '@/lib/supabase'
 import { COMMITTED_PAYROLL_STATUSES } from '@/services/payrollService'
+import { round2 } from '@/utils/money'
+
+const DEPOSIT_CODE = '19 - DEPOSITOS'
 
 export interface ExpectedInflow {
   id: string
@@ -109,11 +112,23 @@ export const cashFlowService = {
     }
 
     // 3) Real - transactions (libro diario).
-    const { data: transactions } = await supabase.from('transactions').select('total, date').eq('project_id', projectId)
-    for (const t of (transactions ?? []) as Array<{ total: number | null; date: string | null }>) {
+    const { data: transactions } = await supabase
+      .from('transactions')
+      .select('total, date, budget_category:budget_categories(code)')
+      .eq('project_id', projectId)
+    for (const t of (transactions ?? []) as Array<{
+      total: number | null
+      date: string | null
+      budget_category?: { code?: string | null } | null
+    }>) {
       const key = monthKey(t.date)
       if (!key) continue
-      ensureRow(map, key).actual_outflow += Number(t.total ?? 0)
+      const isDeposit = t.budget_category?.code === DEPOSIT_CODE
+      if (isDeposit) {
+        ensureRow(map, key).actual_inflow += Number(t.total ?? 0)
+      } else {
+        ensureRow(map, key).actual_outflow += Number(t.total ?? 0)
+      }
     }
 
     // 4) Planificado - ingresos esperados.
@@ -126,8 +141,8 @@ export const cashFlowService = {
 
     // Net = inflow - outflow
     for (const row of map.values()) {
-      row.net_planned = row.planned_inflow - row.planned_outflow
-      row.net_actual = row.actual_inflow - row.actual_outflow
+      row.net_planned = round2(row.planned_inflow - row.planned_outflow)
+      row.net_actual = round2(row.actual_inflow - row.actual_outflow)
     }
 
     return Array.from(map.values()).sort((a, b) => a.month.localeCompare(b.month))

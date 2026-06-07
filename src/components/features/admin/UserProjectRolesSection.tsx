@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react
 import { Plus, X, Loader2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { adminService, type AdminUser } from '@/services/adminService'
+import { useAuthStore } from '@/stores/authStore'
 import { Modal } from '@/components/ui/Modal'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { useToast } from '@/components/ui/Toast'
@@ -46,6 +47,14 @@ export function UserProjectRolesSection({ user, onRefresh }: Props) {
   const [removing, setRemoving] = useState<{ projectId: string; role: ProjectRole } | undefined>()
   const [busyKey, setBusyKey] = useState<string | null>(null)
   const { success, error } = useToast()
+  const currentUserId = useAuthStore((s) => s.user?.id)
+  const refreshUser = useAuthStore((s) => s.refreshUser)
+
+  // D6: si se cambian los roles del propio usuario, refrescamos la sesión para
+  // que los permisos apliquen sin cerrar y volver a abrir sesión.
+  const refreshSessionIfSelf = useCallback(async () => {
+    if (user.id === currentUserId) await refreshUser()
+  }, [user.id, currentUserId, refreshUser])
 
   const loadProjects = useCallback(async () => {
     setLoadingProjects(true)
@@ -90,6 +99,7 @@ export function UserProjectRolesSection({ user, onRefresh }: Props) {
     try {
       await adminService.removeProjectRole(user.id, projectId, role)
       success('Asignación eliminada')
+      await refreshSessionIfSelf()
       onRefresh()
     } catch (err) {
       error(err instanceof Error ? err.message : 'No se pudo eliminar la asignación')
@@ -164,9 +174,10 @@ export function UserProjectRolesSection({ user, onRefresh }: Props) {
           projects={allProjects}
           existing={memberships}
           onCancel={() => setShowAssign(false)}
-          onSaved={() => {
+          onSaved={async () => {
             setShowAssign(false)
             success('Asignación creada')
+            await refreshSessionIfSelf()
             onRefresh()
           }}
         />

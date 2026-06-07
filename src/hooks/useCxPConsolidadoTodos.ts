@@ -42,16 +42,21 @@ export function useCxPConsolidadoTodos() {
   }, [fetchProjects])
 
   useEffect(() => {
+    let cancelled = false
+
     async function loadAll() {
       if (activeProjects.length === 0) {
-        setError(null)
-        setLoading(false)
+        if (!cancelled) {
+          setError(null)
+          setLoading(false)
+        }
         return
       }
 
       try {
         const projectIds = activeProjects.map((project) => project.id)
         const allTransactions = await transactionService.getByProjects(projectIds)
+        if (cancelled) return
 
         const transactionsByProject = new Map<string, typeof allTransactions>()
         for (const tx of allTransactions) {
@@ -72,19 +77,26 @@ export function useCxPConsolidadoTodos() {
             total: cxpItems.reduce((sum, item) => sum + item.pending, 0),
           })
         }
-        setGroups(results)
-        setError(null)
+        if (!cancelled) {
+          setGroups(results)
+          setError(null)
+        }
       } catch (err) {
-        console.warn('[useCxPConsolidadoTodos] load failed', err)
-        setError(getErrorMessage(err))
-        setGroups([])
+        if (!cancelled) {
+          console.warn('[useCxPConsolidadoTodos] load failed', err)
+          setError(getErrorMessage(err))
+          setGroups([])
+        }
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     }
 
     setLoading(true)
     loadAll()
+    return () => {
+      cancelled = true
+    }
   }, [activeProjects])
 
   return {

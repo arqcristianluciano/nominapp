@@ -10,12 +10,12 @@ export const supplierService = {
 
   async create(supplier: {
     name: string
-    rnc?: string
-    contact_phone?: string
-    bank_account?: string
-    bank_name?: string
-    tipo_cuenta?: 'ahorros' | 'corriente'
-    payment_terms?: string
+    rnc?: string | null
+    contact_phone?: string | null
+    bank_account?: string | null
+    bank_name?: string | null
+    tipo_cuenta?: 'ahorros' | 'corriente' | null
+    payment_terms?: string | null
   }) {
     const { data, error } = await supabase.from('suppliers').insert(supplier).select().single()
     if (error) throw error

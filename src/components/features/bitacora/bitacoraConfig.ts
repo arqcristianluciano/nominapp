@@ -1,5 +1,6 @@
 import { Cloud, CloudRain, Sun } from 'lucide-react'
 import type { BitacoraEntry, BitacoraFormData } from '@/services/bitacoraService'
+import { todayISO } from '@/utils/dateLocal'
 
 export const WEATHER_OPTIONS = [
   { value: 'soleado', label: 'Soleado', icon: Sun },
@@ -10,7 +11,7 @@ export const WEATHER_OPTIONS = [
 
 export const EMPTY_BITACORA_FORM: BitacoraFormData = {
   project_id: '',
-  date: new Date().toISOString().split('T')[0],
+  date: todayISO(),
   weather: 'soleado',
   temp_c: 30,
   work_summary: '',
@@ -20,11 +21,12 @@ export const EMPTY_BITACORA_FORM: BitacoraFormData = {
   incidents: '',
   notes: '',
   photo_url: null,
-  created_by: 'Admin',
+  // B5: created_by is injected by the caller (useBitacoraPage) from the auth store
+  created_by: '',
 }
 
-export function createBitacoraForm(projectId: string): BitacoraFormData {
-  return { ...EMPTY_BITACORA_FORM, project_id: projectId }
+export function createBitacoraForm(projectId: string, createdBy = ''): BitacoraFormData {
+  return { ...EMPTY_BITACORA_FORM, project_id: projectId, created_by: createdBy }
 }
 
 export function buildBitacoraFormFromEntry(entry: BitacoraEntry): BitacoraFormData {

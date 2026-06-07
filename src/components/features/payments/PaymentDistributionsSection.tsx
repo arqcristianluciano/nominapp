@@ -61,7 +61,8 @@ export function PaymentDistributionsSection({ periodId, grandTotal }: Props) {
       })
   }, [load, periodId, toastError])
 
-  const totalDistributed = distributions.reduce((sum, d) => sum + d.amount, 0)
+  // A7: exclude cancelled distributions so "falta distribuir" is accurate
+  const totalDistributed = distributions.filter((d) => d.status !== 'cancelled').reduce((sum, d) => sum + d.amount, 0)
   const pendiente = grandTotal - totalDistributed
 
   const sourceAccountMap = useMemo(
@@ -102,9 +103,11 @@ export function PaymentDistributionsSection({ periodId, grandTotal }: Props) {
   async function handleAdd(values: DistributionFormValues) {
     // Si ya hay un pago pendiente para el mismo beneficiario en este reporte,
     // avisamos y ofrecemos sumarlo al existente en vez de crear otro aparte.
+    // A9: require beneficiary_id !== null to avoid merging unrelated null-id rows
     const existing = distributions.find(
       (d) =>
         d.status === 'pending' &&
+        d.beneficiary_id !== null &&
         d.beneficiary_id === values.beneficiary_id &&
         d.beneficiary_type === values.beneficiary_type,
     )
@@ -120,7 +123,8 @@ export function PaymentDistributionsSection({ periodId, grandTotal }: Props) {
     const { values, existing } = consolidatePrompt
     setSaving(true)
     try {
-      await paymentDistributionService.addAmount(existing.id, values.amount)
+      // A8: pass grandTotal so addAmount can enforce the period cap
+      await paymentDistributionService.addAmount(existing.id, values.amount, grandTotal)
       toastSuccess(`Pago sumado al de ${existing.beneficiary || 'el beneficiario'}.`)
       setConsolidatePrompt(null)
       setShowForm(false)
@@ -136,12 +140,15 @@ export function PaymentDistributionsSection({ periodId, grandTotal }: Props) {
   async function handleAddSeparate() {
     if (!consolidatePrompt) return
     const { values } = consolidatePrompt
+    setSaving(true)
     try {
       await createDistribution(values)
       setConsolidatePrompt(null)
     } catch (err) {
       Sentry.captureException(err, { tags: { area: 'PaymentDistributionsSection' } })
       toastError(`No se pudo agregar el pago: ${getErrorMessage(err)}`)
+    } finally {
+      setSaving(false)
     }
   }
 

@@ -23,6 +23,10 @@ const ACTION_LABEL: Record<ApprovalAction, string> = {
   delete_cascade: 'Eliminación en cascada',
   update_indirects: 'Actualización de indirectos',
   update: 'Edición de partida/factura',
+  grant: 'Permiso otorgado',
+  revoke: 'Permiso retirado',
+  assign: 'Rol asignado',
+  remove: 'Rol retirado',
 }
 
 const ENTITY_LABEL: Record<string, string> = {
@@ -36,6 +40,10 @@ const ENTITY_LABEL: Record<string, string> = {
   contract_corte: 'Corte de contrato',
   payment_distribution: 'Distribución de pago',
   project: 'Proyecto',
+  role: 'Rol',
+  role_capability: 'Permiso de rol',
+  user_profile: 'Usuario',
+  project_member: 'Miembro de proyecto',
 }
 
 const PAGE_SIZE = 100

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ArrowLeft, Printer, Pencil, Check } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { formatRD } from '@/utils/currency'
@@ -16,8 +16,10 @@ export function ContratoFirmaTopBar({
   contratoId: string
   ready?: boolean
 }) {
+  const hasPrinted = useRef(false)
   useEffect(() => {
-    if (!ready) return
+    if (!ready || hasPrinted.current) return
+    hasPrinted.current = true
     // small delay para asegurar render
     const t = setTimeout(() => window.print(), 300)
     return () => clearTimeout(t)

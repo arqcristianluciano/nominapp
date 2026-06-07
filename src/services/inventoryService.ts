@@ -56,7 +56,7 @@ export interface AddMovementInput {
 }
 
 export class InventoryError extends Error {
-  code: 'OUT_REQUIRES_PARTIDA' | 'INSUFFICIENT_STOCK' | 'ITEM_NOT_FOUND'
+  code: 'OUT_REQUIRES_PARTIDA' | 'INSUFFICIENT_STOCK' | 'ITEM_NOT_FOUND' | 'INVALID_QUANTITY' | 'HAS_STOCK_OR_MOVEMENTS'
   constructor(code: InventoryError['code'], message: string) {
     super(message)
     this.code = code
@@ -155,6 +155,32 @@ export const inventoryService = {
   },
 
   async deleteItem(id: string): Promise<void> {
+    // C2: refuse to delete if the item still has stock or any movements.
+    // DB-side complement: add ON DELETE RESTRICT on inventory_movements.item_id
+    // and inventory_lots.item_id (replace current ON DELETE CASCADE).
+    const { data: item, error: fetchErr } = await supabase
+      .from('inventory_items')
+      .select('id, current_stock')
+      .eq('id', id)
+      .single()
+    if (fetchErr) throw fetchErr
+    if (item && Number(item.current_stock) !== 0) {
+      throw new InventoryError(
+        'HAS_STOCK_OR_MOVEMENTS',
+        'No se puede eliminar un material que tiene stock. Primero ajusta el stock a cero.',
+      )
+    }
+    const { count, error: mvCountErr } = await supabase
+      .from('inventory_movements')
+      .select('id', { count: 'exact', head: true })
+      .eq('item_id', id)
+    if (mvCountErr) throw mvCountErr
+    if ((count ?? 0) > 0) {
+      throw new InventoryError(
+        'HAS_STOCK_OR_MOVEMENTS',
+        'No se puede eliminar un material que tiene historial de movimientos.',
+      )
+    }
     const { error } = await supabase.from('inventory_items').delete().eq('id', id)
     if (error) throw error
   },
@@ -170,6 +196,15 @@ export const inventoryService = {
   },
 
   async addMovement(movement: AddMovementInput): Promise<void> {
+    // C1 (code-side guard): reject movements with quantity <= 0.
+    // Full atomicity requires a DB RPC / atomic increment — NOTE: implement
+    // an RPC (e.g. rpc_inventory_add_movement) with FOR UPDATE or an atomic
+    // UPDATE … SET current_stock = current_stock + delta WHERE id = ?
+    // plus a CHECK current_stock >= 0 constraint on inventory_items.
+    if (!(Number(movement.quantity) > 0)) {
+      throw new InventoryError('INVALID_QUANTITY', 'La cantidad del movimiento debe ser mayor que cero.')
+    }
+
     // Regla 7.4: toda salida debe imputarse a una partida.
     if (movement.type === 'out' && !movement.budget_item_id && !movement.budget_category_id) {
       throw new InventoryError(
@@ -279,7 +314,8 @@ export const inventoryService = {
   },
 
   getLowStockItems(items: InventoryItem[]): InventoryItem[] {
-    return items.filter((i) => i.current_stock <= i.min_stock)
+    // C4: use strict < and skip items that have no meaningful min_stock threshold.
+    return items.filter((i) => i.min_stock > 0 && i.current_stock < i.min_stock)
   },
 
   // Expuesto para pruebas/reuso: consumo FIFO de lotes de un material.
@@ -291,7 +327,7 @@ export const inventoryService = {
   // que la RLS verifique el permiso al proyecto. Devuelve el path almacenado.
   async uploadReceiptAttachment(file: File, projectId: string, purchaseOrderId: string): Promise<string> {
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
-    const path = `${projectId}/${purchaseOrderId}/${Date.now()}-${safeName}`
+    const path = `${projectId}/${purchaseOrderId}/${crypto.randomUUID()}-${safeName}`
     const { error } = await supabase.storage
       .from(RECEIPT_BUCKET)
       .upload(path, file, { contentType: file.type || 'application/octet-stream', upsert: false })
@@ -329,5 +365,19 @@ async function consumeLotsFifo(itemId: string, quantity: number): Promise<void> 
       .update({ quantity: available - take })
       .eq('id', lot.id)
     remaining -= take
+  }
+  // C1: if lots didn't cover the full quantity, the remainder came from
+  // stock without a lot (legacy entries). Log a warning so it can be
+  // investigated; this is not an error but indicates untracked stock.
+  if (remaining > 0) {
+    Sentry.addBreadcrumb({
+      category: 'inventory',
+      message: 'consumeLotsFifo: unmatched quantity after FIFO (stock without lot)',
+      level: 'warning',
+      data: { itemId, unmatchedQty: remaining },
+    })
+    console.warn(
+      `[inventoryService] consumeLotsFifo: item ${itemId} — ${remaining} unit(s) consumed from stock without a lot`,
+    )
   }
 }

@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { ArrowLeft, Printer } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { formatRD } from '@/utils/currency'
@@ -16,8 +16,10 @@ export function ContractPrintTopBar({
   contratoId: string
   ready?: boolean
 }) {
+  const hasPrinted = useRef(false)
   useEffect(() => {
-    if (!ready) return
+    if (!ready || hasPrinted.current) return
+    hasPrinted.current = true
     // small delay para asegurar render
     const t = setTimeout(() => window.print(), 300)
     return () => clearTimeout(t)
@@ -86,12 +88,15 @@ export function ContractPrintSummary({
   acordado,
   acumulado,
   retenido,
+  adelantosTotal = 0,
 }: {
   acordado: number
   acumulado: number
   retenido: number
+  adelantosTotal?: number
 }) {
-  const pendiente = acordado - acumulado
+  const pendienteRaw = acordado - acumulado - adelantosTotal
+  const pendiente = pendienteRaw < 0 ? 0 : pendienteRaw
   return (
     <div className="grid grid-cols-4 gap-4 text-center">
       {[

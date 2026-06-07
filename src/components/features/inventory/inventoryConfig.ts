@@ -28,7 +28,7 @@ export type InventoryMovementFormState = Pick<
 export const EMPTY_MOVEMENT_FORM: InventoryMovementFormState = {
   item_id: '',
   type: 'in',
-  quantity: 1,
+  quantity: 0,
   date: new Date().toISOString().split('T')[0],
   supplier_id: null,
   notes: '',

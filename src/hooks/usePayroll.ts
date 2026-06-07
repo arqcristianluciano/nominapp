@@ -10,6 +10,7 @@ import {
   buildIndirectCostRows,
 } from '@/utils/calculations'
 import { getErrorMessage } from '@/utils/errors'
+import { round2 } from '@/utils/money'
 import type { PayrollPeriod, LaborLineItem, MaterialInvoice, IndirectCost, Project } from '@/types/database'
 
 // Registra en la bitácora de aprobaciones la edición de una partida/factura
@@ -80,9 +81,11 @@ export function usePayroll(periodId: string | undefined) {
       // saveIndirectCosts solo reconstruye los porcentuales (automáticos) y
       // respeta su preferencia is_active; los manuales sobreviven en la BD.
       const saved = await payrollService.saveIndirectCosts(periodId, costRows)
-      const manual = indirectCosts.filter((c) => c.is_manual)
+      // Leer los manuales frescos de la BD para evitar usar un cierre viejo.
+      const allCurrent = await payrollService.getIndirectCosts(periodId)
+      const manual = allCurrent.filter((c) => c.is_manual)
       const merged = [...saved, ...manual]
-      const totalActive = merged.filter((c) => c.is_active).reduce((acc, c) => acc + c.calculated_amount, 0)
+      const totalActive = round2(merged.filter((c) => c.is_active).reduce((acc, c) => acc + c.calculated_amount, 0))
       const grandTotal = calcGrandTotal(laborTotal, materialsTotal, totalActive)
 
       setIndirectCosts(merged)
@@ -105,7 +108,7 @@ export function usePayroll(periodId: string | undefined) {
           : null,
       )
     },
-    [periodId, indirectCosts],
+    [periodId],
   )
 
   // Persiste un nuevo arreglo de indirectos: recalcula total_indirect (solo
@@ -114,7 +117,7 @@ export function usePayroll(periodId: string | undefined) {
   const persistIndirect = useCallback(
     async (next: IndirectCost[]) => {
       if (!period || !periodId) return
-      const total = next.filter((c) => c.is_active).reduce((a, c) => a + c.calculated_amount, 0)
+      const total = round2(next.filter((c) => c.is_active).reduce((a, c) => a + c.calculated_amount, 0))
       const grand = calcGrandTotal(period.total_labor, period.total_materials, total)
       await payrollService.updatePeriodTotals(periodId, {
         total_labor: period.total_labor,
@@ -281,6 +284,7 @@ export function usePayroll(periodId: string | undefined) {
         await recalcTotals(laborItems, updated, period?.project as Project)
       } catch (e) {
         setError(getErrorMessage(e))
+        throw e
       } finally {
         setSaving(false)
       }
@@ -300,6 +304,7 @@ export function usePayroll(periodId: string | undefined) {
         await recalcTotals(laborItems, invoices, period?.project as Project)
       } catch (e) {
         setError(getErrorMessage(e))
+        throw e
       } finally {
         setSaving(false)
       }

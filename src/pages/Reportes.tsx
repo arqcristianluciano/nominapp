@@ -6,7 +6,9 @@ import { ReportsSummaryCards } from '@/components/features/reports/ReportsSummar
 import { CubicationsTable, FinancialSummaryTable } from '@/components/features/reports/ReportsTables'
 import { ReporteMensualModal } from '@/components/features/reports/ReporteMensualModal'
 import { Modal } from '@/components/ui/Modal'
-import { downloadPdf, generateMonthlyReport, type MonthlyReportInput } from '@/services/reports/pdfReportService'
+import { downloadPdf, generateMonthlyReport } from '@/services/reports/pdfReportService'
+import { loadMonthlyReportData } from '@/services/reports/monthlyReportData'
+import { getErrorMessage } from '@/utils/errors'
 
 const MONTH_NAMES = [
   'Enero',
@@ -92,46 +94,15 @@ export default function Reportes() {
     }
     setGeneratingPdf(true)
     try {
-      const input: MonthlyReportInput = {
-        project: {
-          id: selectedProject.id,
-          name: selectedProject.name,
-          companyName: selectedProject.company?.name,
-        },
-        month: parsed,
-        executiveSummary: {
-          totalBudget: 0,
-          totalInvested: 0,
-          variance: 0,
-          progressPercent: 0,
-          projectGrandTotal: 0,
-          daysWorked: 0,
-          activeContractors: 0,
-          partidasInProgress: 0,
-          materialsReceived: 0,
-          monthlyTransactions: 0,
-        },
-        budgetBreakdown: { categories: [] },
-        cashflow: {
-          collections: { expected: 0, actual: 0 },
-          contractorPayments: { expected: 0, actual: 0 },
-          supplierPayments: { expected: 0, actual: 0 },
-          releasedPurchaseOrders: { expected: 0, actual: 0 },
-          indirects: { expected: 0, actual: 0 },
-        },
-        payroll: {
-          totalPaid: 0,
-          entriesCount: 0,
-        },
-      }
+      const yearMonth = `${parsed.year}-${String(parsed.month).padStart(2, '0')}`
+      const input = await loadMonthlyReportData(selectedProject.id, yearMonth)
       const doc = generateMonthlyReport(input)
-      const monthLabel = `${parsed.year}-${String(parsed.month).padStart(2, '0')}`
-      const filename = `reporte-mensual-${selectedProject.code || selectedProject.id}-${monthLabel}.pdf`
+      const filename = `reporte-mensual-${selectedProject.code || selectedProject.id}-${yearMonth}.pdf`
       downloadPdf(doc, filename)
       setMonthlyDialogOpen(false)
     } catch (err) {
       console.error('[Reportes] handleGenerateMonthlyPdf failed', err)
-      setPdfError('No se pudo generar el reporte mensual. Intenta de nuevo.')
+      setPdfError(getErrorMessage(err) || 'No se pudo generar el reporte mensual. Intenta de nuevo.')
     } finally {
       setGeneratingPdf(false)
     }

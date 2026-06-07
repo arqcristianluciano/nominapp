@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { BudgetCategory, BudgetItem } from '@/types/database'
 
 export interface AvancesFormState {
@@ -31,6 +32,18 @@ export function AvancesFormSection({
   onCancel,
   onSave,
 }: AvancesFormSectionProps) {
+  const [percentError, setPercentError] = useState<string | null>(null)
+
+  function handlePercentChange(value: string) {
+    const num = parseFloat(value)
+    if (value && !isNaN(num) && num > 100) {
+      setPercentError('El porcentaje no puede ser mayor que 100%')
+    } else {
+      setPercentError(null)
+    }
+    setForm({ ...form, executed_percent: value, executed_quantity: '' })
+  }
+
   return (
     <div className="bg-app-surface border border-app-border rounded-xl p-3 sm:p-4 space-y-3">
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
@@ -96,10 +109,11 @@ export function AvancesFormSection({
             min={0}
             max={100}
             value={form.executed_percent}
-            onChange={(e) => setForm({ ...form, executed_percent: e.target.value, executed_quantity: '' })}
+            onChange={(e) => handlePercentChange(e.target.value)}
             placeholder="ej: 30"
-            className={INPUT_CLASS}
+            className={`${INPUT_CLASS}${percentError ? ' border-red-500 focus:ring-red-500' : ''}`}
           />
+          {percentError && <p className="text-xs text-red-600 mt-1">{percentError}</p>}
         </div>
         <div className="sm:col-span-4">
           <label className="text-xs text-app-muted block mb-1">Observaciones</label>
@@ -122,6 +136,7 @@ export function AvancesFormSection({
           onClick={onSave}
           disabled={
             saving ||
+            !!percentError ||
             (!form.budget_category_id && !form.budget_item_id) ||
             (!form.executed_quantity && !form.executed_percent)
           }

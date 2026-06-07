@@ -19,7 +19,11 @@ export default function CubicacionImprimirPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (contratoId) contractService.getById(contratoId).then(setContrato).finally(() => setLoading(false))
+    if (contratoId)
+      contractService
+        .getById(contratoId)
+        .then(setContrato)
+        .finally(() => setLoading(false))
   }, [contratoId])
 
   if (loading) return <div className="p-8 text-sm">Cargando...</div>
@@ -29,14 +33,17 @@ export default function CubicacionImprimirPage() {
   const cortes: ContractCorte[] = contrato.cortes ?? []
   const adelantos: ContractAdelanto[] = contrato.adelantos ?? []
 
+  const nonDraftCortes = cortes.filter((c) => c.status !== 'draft')
   const acordado = partidas.reduce((s, p) => s + p.agreed_quantity * p.unit_price, 0)
-  const acumulado = cortes.reduce((s, c) => s + c.amount, 0)
-  const retenido = cortes.reduce((s, c) => s + c.retention_amount, 0)
+  const acumulado = nonDraftCortes.reduce((s, c) => s + c.amount, 0)
+  const retenido = nonDraftCortes.reduce((s, c) => s + c.retention_amount, 0)
   const adelantosTotal = adelantos.reduce((s, a) => s + a.amount, 0)
 
   const printDate = new Date().toLocaleDateString('es-DO', { year: 'numeric', month: 'long', day: 'numeric' })
 
-  function acumuladoPartida(pid: string) { return cortes.filter((c) => c.partida_id === pid).reduce((s, c) => s + c.amount, 0) }
+  function acumuladoPartida(pid: string) {
+    return nonDraftCortes.filter((c) => c.partida_id === pid).reduce((s, c) => s + c.amount, 0)
+  }
 
   return (
     <div>
@@ -44,8 +51,18 @@ export default function CubicacionImprimirPage() {
 
       <div className="max-w-4xl mx-auto p-8 print:p-6 space-y-6 text-sm">
         <ContractPrintHeader contrato={contrato} printDate={printDate} />
-        <ContractPrintSummary acordado={acordado} acumulado={acumulado} retenido={retenido} />
-        <ContractPartidasTable partidas={partidas} acumuladoPorPartida={acumuladoPartida} acordado={acordado} acumulado={acumulado} />
+        <ContractPrintSummary
+          acordado={acordado}
+          acumulado={acumulado}
+          retenido={retenido}
+          adelantosTotal={adelantosTotal}
+        />
+        <ContractPartidasTable
+          partidas={partidas}
+          acumuladoPorPartida={acumuladoPartida}
+          acordado={acordado}
+          acumulado={acumulado}
+        />
         <ContractCutsTable cortes={cortes} partidas={partidas} />
         <ContractAdvancesTable adelantos={adelantos} total={adelantosTotal} />
         <ContractPrintSignatures contractorName={contrato.contractor?.name || 'Contratista'} />

@@ -80,8 +80,12 @@ export default function MaterialsCatalogPage() {
   }
 
   async function handleToggleActive(item: MaterialCatalogItem) {
-    await materialsCatalogService.setActive(item.id, !item.is_active)
-    await load()
+    try {
+      await materialsCatalogService.setActive(item.id, !item.is_active)
+      await load()
+    } catch (err) {
+      error(getErrorMessage(err) || 'No se pudo actualizar el estado del material')
+    }
   }
 
   const input =

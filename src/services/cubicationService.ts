@@ -30,9 +30,10 @@ function computeSummary(
   cortes: ContractCorte[],
   adelantos: ContractAdelanto[] = [],
 ): Omit<ContractSummary, keyof AdjustmentContract> {
+  const nonDraftCortes = cortes.filter((c) => c.status !== 'draft')
   const acordado = round2(sumBy(partidas, (p) => mul(p.agreed_quantity, p.unit_price)))
-  const acumulado = round2(sumBy(cortes, (c) => c.amount))
-  const retenido = round2(sumBy(cortes, (c) => c.retention_amount))
+  const acumulado = round2(sumBy(nonDraftCortes, (c) => c.amount))
+  const retenido = round2(sumBy(nonDraftCortes, (c) => c.retention_amount))
   const total_adelantos = round2(sumBy(adelantos, (a) => a.amount))
   const pendienteRaw = round2(sub(sub(acordado, acumulado), total_adelantos))
   return {
@@ -230,9 +231,19 @@ export const corteService = {
 export async function getProjectsProgress(): Promise<
   Record<string, { acordado: number; acumulado: number; contractor_count: number; avg_completion: number }>
 > {
-  const { data: contracts } = await supabase.from('adjustment_contracts').select('id, project_id')
-  const { data: partidas } = await supabase.from('contract_partidas').select('contract_id, unit_price, agreed_quantity')
-  const { data: cortes } = await supabase.from('contract_cortes').select('contract_id, amount')
+  const { data: contracts, error: contractsError } = await supabase
+    .from('adjustment_contracts')
+    .select('id, project_id')
+  if (contractsError) throw contractsError
+  const { data: partidas, error: partidasError } = await supabase
+    .from('contract_partidas')
+    .select('contract_id, unit_price, agreed_quantity')
+  if (partidasError) throw partidasError
+  const { data: cortes, error: cortesError } = await supabase
+    .from('contract_cortes')
+    .select('contract_id, amount, status')
+    .neq('status', 'draft')
+  if (cortesError) throw cortesError
   if (!contracts) return {}
 
   const result: Record<
@@ -242,7 +253,7 @@ export async function getProjectsProgress(): Promise<
 
   type ContractRow = { id: string; project_id: string }
   type PartidaRow = { contract_id: string; unit_price: number; agreed_quantity: number }
-  type CorteRow = { contract_id: string; amount: number }
+  type CorteRow = { contract_id: string; amount: number; status: string }
 
   const partidasArr = (partidas ?? []) as PartidaRow[]
   const cortesArr = (cortes ?? []) as CorteRow[]
@@ -254,13 +265,17 @@ export async function getProjectsProgress(): Promise<
 
     const cPartidas = partidasArr.filter((p) => p.contract_id === contract.id)
     const cCortes = cortesArr.filter((c) => c.contract_id === contract.id)
-    result[pid].acordado += cPartidas.reduce((s, p) => s + p.unit_price * p.agreed_quantity, 0)
-    result[pid].acumulado += cCortes.reduce((s, c) => s + c.amount, 0)
+    result[pid].acordado = round2(
+      result[pid].acordado + sumBy(cPartidas, (p) => mul(p.unit_price, p.agreed_quantity)).toNumber(),
+    )
+    result[pid].acumulado = round2(result[pid].acumulado + sumBy(cCortes, (c) => c.amount).toNumber())
   }
 
   for (const pid of Object.keys(result)) {
     const g = result[pid]
-    g.avg_completion = g.acordado > 0 ? Math.min((g.acumulado / g.acordado) * 100, 100) : 0
+    g.acordado = round2(g.acordado)
+    g.acumulado = round2(g.acumulado)
+    g.avg_completion = g.acordado > 0 ? Math.min(round2((g.acumulado / g.acordado) * 100), 100) : 0
   }
   return result
 }

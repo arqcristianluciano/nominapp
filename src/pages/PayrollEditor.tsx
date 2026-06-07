@@ -197,8 +197,12 @@ export default function PayrollEditor() {
         onCloseEditLabor={() => setEditLaborItem(null)}
         onCloseEditMaterial={() => setEditMaterialInvoice(null)}
         onAddMaterial={async (invoice) => {
-          await payroll.addMaterialInvoice(invoice)
-          setShowAddMaterial(false)
+          try {
+            await payroll.addMaterialInvoice(invoice)
+            setShowAddMaterial(false)
+          } catch {
+            // El hook ya muestra el error; mantenemos el modal abierto.
+          }
         }}
         onAddLabor={async (item) => {
           await payroll.addLaborItem(item)
@@ -212,8 +216,12 @@ export default function PayrollEditor() {
         }}
         onUpdateMaterial={async (invoice) => {
           if (editMaterialInvoice) {
-            await payroll.updateMaterialInvoice(editMaterialInvoice.id, invoice)
-            setEditMaterialInvoice(null)
+            try {
+              await payroll.updateMaterialInvoice(editMaterialInvoice.id, invoice)
+              setEditMaterialInvoice(null)
+            } catch {
+              // El hook ya muestra el error; mantenemos el modal abierto.
+            }
           }
         }}
         onContractorCreated={(contractor) => setContractors((prev) => [contractor, ...prev])}

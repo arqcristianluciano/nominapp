@@ -4,6 +4,8 @@ import { HardHat, Users } from 'lucide-react'
 import { Breadcrumb } from '@/components/ui/Breadcrumb'
 import { contractorService } from '@/services/contractorService'
 import { contractorDocService, type ContractorDocument } from '@/services/contractorDocService'
+import { useToast } from '@/components/ui/Toast'
+import { getErrorMessage } from '@/utils/errors'
 import { ContractorDocsSection } from '@/components/features/contractors/ContractorDocsSection'
 import type { Contractor } from '@/types/database'
 import { ContractorProfileCard } from '@/components/features/contractors/ContractorProfileCard'
@@ -27,6 +29,7 @@ const safeNumber = (value: unknown): number => {
 
 export default function ContractorDetail() {
   const { contractorId } = useParams<{ contractorId: string }>()
+  const { error: toastError } = useToast()
   const [contractor, setContractor] = useState<ContractorWithHierarchy | null>(null)
   const [allContractors, setAllContractors] = useState<ContractorWithHierarchy[]>([])
   const [items, setItems] = useState<LaborItem[]>([])
@@ -52,10 +55,13 @@ export default function ContractorDetail() {
       setCubications(cubs as unknown as Cubication[])
       setProjectMap(pmap as Record<string, ProjectLite>)
       setDocs(docList)
+    } catch (e) {
+      // B3: mostrar error al usuario si falla alguna de las cargas paralelas.
+      toastError(getErrorMessage(e))
     } finally {
       setLoading(false)
     }
-  }, [contractorId])
+  }, [contractorId, toastError])
 
   useEffect(() => {
     load()

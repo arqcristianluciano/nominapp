@@ -7,6 +7,7 @@ import {
   type InventoryItem,
   type InventoryMovement,
 } from '@/services/inventoryService'
+import { getErrorMessage } from '@/utils/errors'
 import { lotService, type InventoryLotWithItem } from '@/services/lotService'
 import { useToast } from '@/components/ui/Toast'
 import { useAuthStore } from '@/stores/authStore'
@@ -152,9 +153,18 @@ export default function InventarioPage() {
 
   async function handleDelete() {
     if (!deleteId) return
-    await inventoryService.deleteItem(deleteId)
-    setDeleteId(null)
-    await loadAll()
+    try {
+      await inventoryService.deleteItem(deleteId)
+      setDeleteId(null)
+      await loadAll()
+    } catch (e) {
+      setDeleteId(null)
+      if (e instanceof InventoryError && e.code === 'HAS_STOCK_OR_MOVEMENTS') {
+        toastError(e.message)
+      } else {
+        toastError(getErrorMessage(e) || 'No se pudo eliminar el material')
+      }
+    }
   }
 
   return (

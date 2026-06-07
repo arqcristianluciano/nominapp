@@ -166,11 +166,7 @@ export interface ReportChromeOptions {
 }
 
 function formatGenerationDate(date: Date, locale: string): string {
-  return new Intl.NumberFormat(locale).format(0) // touch Intl to keep tree-shaking honest
-    ? new Intl.DateTimeFormat(locale, {
-        dateStyle: 'long',
-      }).format(date)
-    : date.toISOString()
+  return new Intl.DateTimeFormat(locale, { dateStyle: 'long' }).format(date)
 }
 
 /**

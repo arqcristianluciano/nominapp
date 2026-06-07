@@ -72,4 +72,10 @@ export const qualityControlService = {
     if (!data?.signedUrl) throw new Error('No signed URL returned')
     return data.signedUrl
   },
+
+  // B4: Elimina un comprobante del bucket para evitar archivos huérfanos.
+  async deleteComprobante(path: string): Promise<void> {
+    const { error } = await supabase.storage.from(COMPROBANTE_BUCKET).remove([path])
+    if (error) throw error
+  },
 }

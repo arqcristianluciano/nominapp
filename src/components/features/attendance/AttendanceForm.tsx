@@ -136,6 +136,10 @@ export function AttendanceForm({ form, contractors, saving, projectId, onChange,
   }
 
   function handleRemovePhoto() {
+    // B4: if a photo was already uploaded this session (photo_url is set), delete it from storage
+    if (form.photo_url) {
+      void attendanceService.deletePhoto(form.photo_url).catch(() => undefined)
+    }
     if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl)
     setLocalPreviewUrl(null)
     setPreviewUrl(null)

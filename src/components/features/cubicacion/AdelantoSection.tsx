@@ -56,9 +56,15 @@ export function AdelantoSection({ contractId, adelantos, onRefresh }: Props) {
   }
 
   async function handleDelete(id: string) {
-    await adelantoService.delete(id)
-    setDeleteId(null)
-    onRefresh()
+    try {
+      await adelantoService.delete(id)
+      setDeleteId(null)
+      onRefresh()
+    } catch (err) {
+      console.warn('[AdelantoSection] handleDelete failed', err)
+      toastError('No se pudo eliminar el adelanto. Inténtalo de nuevo.')
+      setDeleteId(null)
+    }
   }
 
   const inputCls =

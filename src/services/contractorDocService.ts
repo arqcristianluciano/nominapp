@@ -17,12 +17,12 @@ export interface ContractorDocument {
 export type ContractorDocFormData = Omit<ContractorDocument, 'id' | 'created_at'>
 
 const DOC_TYPES = [
-  { value: 'cedula',    label: 'Cédula de identidad' },
-  { value: 'seguro',    label: 'Seguro riesgos laborales' },
-  { value: 'contrato',  label: 'Contrato de servicios' },
-  { value: 'licencia',  label: 'Licencia profesional (CODIA)' },
-  { value: 'poliza',    label: 'Póliza de seguro' },
-  { value: 'otro',      label: 'Otro documento' },
+  { value: 'cedula', label: 'Cédula de identidad' },
+  { value: 'seguro', label: 'Seguro riesgos laborales' },
+  { value: 'contrato', label: 'Contrato de servicios' },
+  { value: 'licencia', label: 'Licencia profesional (CODIA)' },
+  { value: 'poliza', label: 'Póliza de seguro' },
+  { value: 'otro', label: 'Otro documento' },
 ]
 
 export { DOC_TYPES }
@@ -63,7 +63,7 @@ export const contractorDocService = {
 
   async getAllExpiring(): Promise<ContractorDocument[]> {
     const { data, error } = await supabase.from('contractor_documents').select('*')
-    if (error) return []
+    if (error) throw error
     return (data ?? []).filter((d: ContractorDocument) => d.status === 'expiring' || d.status === 'expired')
   },
 }

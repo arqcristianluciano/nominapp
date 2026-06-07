@@ -272,6 +272,12 @@ export const requisitionService = {
 
   async submitForApproval(id: string, actor?: string) {
     const before = await this.getById(id)
+    const SUBMITTABLE: RequisitionStatus[] = ['draft', 'quoting', 'needs_revision']
+    if (!SUBMITTABLE.includes(before.status)) {
+      throw new Error(
+        `Solo se puede enviar a aprobación una solicitud en borrador, cotización o revisión (estado actual: ${before.status}).`,
+      )
+    }
     const { error } = await supabase
       .from('purchase_requisitions')
       .update({ status: 'pending_approval', updated_at: new Date().toISOString() })
@@ -505,12 +511,25 @@ export const requisitionService = {
 
     const today = new Date().toISOString().slice(0, 10)
     const supplierId = approvedQuote?.supplier_id ?? null
+    // NOTE: full atomicity requires a DB transaction (BEGIN/COMMIT). The re-read
+    // below reduces (but does not eliminate) the race window for concurrent receipts.
+    // The permanent fix is a Postgres RPC that does the read+validate+update atomically.
     const EPS = 1e-9
     for (const r of valid) {
       const it = byId.get(r.quote_item_id)
       if (!it) throw new Error('Línea de cotización no encontrada.')
+
+      // Re-read the line's received_quantity from DB so we validate against the
+      // latest committed value, not the potentially stale in-memory snapshot.
+      const { data: freshLine, error: freshErr } = await supabase
+        .from('purchase_quote_items')
+        .select('received_quantity')
+        .eq('id', it.id)
+        .single()
+      if (freshErr) throw freshErr
+
       const ordered = Number(it.quantity)
-      const received = Number(it.received_quantity ?? 0)
+      const received = Number(freshLine?.received_quantity ?? 0)
       const remaining = ordered - received
       if (Number(r.quantity) > remaining + EPS) {
         throw new Error(
@@ -693,7 +712,11 @@ export const requisitionService = {
     const approvedQuote = (before.quotes ?? []).find((q) => q.id === before.approved_quote_id)
     for (const it of approvedQuote?.items ?? []) {
       if (Number(it.received_quantity ?? 0) !== 0) {
-        await supabase.from('purchase_quote_items').update({ received_quantity: 0 }).eq('id', it.id)
+        const { error: resetErr } = await supabase
+          .from('purchase_quote_items')
+          .update({ received_quantity: 0 })
+          .eq('id', it.id)
+        if (resetErr) throw resetErr
       }
     }
 

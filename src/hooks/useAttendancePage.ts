@@ -5,6 +5,7 @@ import type { Contractor } from '@/types/database'
 import { ATTENDANCE_PAGE_SIZE, EMPTY_ATTENDANCE_FORM } from '@/components/features/attendance/attendanceConfig'
 import { useToast } from '@/components/ui/Toast'
 import { getErrorMessage } from '@/utils/errors'
+import { todayISO } from '@/utils/dateLocal'
 
 interface UseAttendancePageResult {
   records: AttendanceRecord[]
@@ -80,8 +81,7 @@ export function useAttendancePage(projectId: string | undefined): UseAttendanceP
 
   const todaySummary = useMemo(() => {
     const summaryByDate = attendanceService.summarizeByDate(records)
-    const today = new Date().toISOString().split('T')[0]
-    return summaryByDate[today]
+    return summaryByDate[todayISO()]
   }, [records])
 
   const openForm = useCallback(() => setShowForm(true), [])
@@ -104,6 +104,7 @@ export function useAttendancePage(projectId: string | undefined): UseAttendanceP
     if (!projectId || !form.contractor_id || !form.activity.trim()) return
 
     setSaving(true)
+    const uploadedPhotoUrl = form.photo_url
     try {
       await attendanceService.create({ ...form, project_id: projectId })
       setShowForm(false)
@@ -111,6 +112,10 @@ export function useAttendancePage(projectId: string | undefined): UseAttendanceP
       await loadAll()
     } catch (saveError) {
       error(`No se pudo registrar asistencia: ${getErrorMessage(saveError)}`)
+      // B4: delete orphan photo when the row failed to save
+      if (uploadedPhotoUrl) {
+        void attendanceService.deletePhoto(uploadedPhotoUrl).catch(() => undefined)
+      }
     } finally {
       setSaving(false)
     }
@@ -118,14 +123,19 @@ export function useAttendancePage(projectId: string | undefined): UseAttendanceP
 
   const handleDelete = useCallback(async () => {
     if (!deleteId) return
+    // B4: look up the photo_url from the in-memory list before deleting the row
+    const recordToDelete = records.find((r) => r.id === deleteId)
     try {
       await attendanceService.delete(deleteId)
       setDeleteId(null)
+      if (recordToDelete?.photo_url) {
+        void attendanceService.deletePhoto(recordToDelete.photo_url).catch(() => undefined)
+      }
       await loadAll()
     } catch (deleteError) {
       error(`No se pudo eliminar asistencia: ${getErrorMessage(deleteError)}`)
     }
-  }, [deleteId, error, loadAll])
+  }, [deleteId, error, loadAll, records])
 
   return {
     records,

@@ -45,7 +45,8 @@ export function CxPConsolidadoGroups({ groups }: { groups: CxPProjectGroup[] }) 
   return (
     <div className="space-y-4">
       {groups.map((group) => {
-        const seenKeys = new Map<string, number>()
+        const seenKeysMobile = new Map<string, number>()
+        const seenKeysDesktop = new Map<string, number>()
         return (
           <div key={group.projectId} className="bg-app-surface rounded-xl border border-app-border overflow-hidden">
             <div className="bg-app-bg px-3 sm:px-4 py-3 border-b border-app-border flex items-start sm:items-center justify-between gap-3">
@@ -62,8 +63,8 @@ export function CxPConsolidadoGroups({ groups }: { groups: CxPProjectGroup[] }) 
             <div className="md:hidden p-3 space-y-3">
               {group.items.map((item) => {
                 const baseKey = `${item.supplierId ?? 'nosupplier'}-${item.invoiceNumber ?? 'noinvoice'}-${item.date}`
-                const dup = seenKeys.get(baseKey) ?? 0
-                seenKeys.set(baseKey, dup + 1)
+                const dup = seenKeysMobile.get(baseKey) ?? 0
+                seenKeysMobile.set(baseKey, dup + 1)
                 const rowKey = dup === 0 ? baseKey : `${baseKey}#${dup}`
                 return (
                   <div key={rowKey} className="bg-app-bg/40 rounded-lg border border-app-border p-3">
@@ -113,8 +114,8 @@ export function CxPConsolidadoGroups({ groups }: { groups: CxPProjectGroup[] }) 
                 <tbody>
                   {group.items.map((item) => {
                     const baseKey = `${item.supplierId ?? 'nosupplier'}-${item.invoiceNumber ?? 'noinvoice'}-${item.date}`
-                    const dup = seenKeys.get(baseKey) ?? 0
-                    seenKeys.set(baseKey, dup + 1)
+                    const dup = seenKeysDesktop.get(baseKey) ?? 0
+                    seenKeysDesktop.set(baseKey, dup + 1)
                     const rowKey = dup === 0 ? baseKey : `${baseKey}#${dup}`
                     return (
                       <tr key={rowKey} className="border-b border-app-border hover:bg-app-hover">

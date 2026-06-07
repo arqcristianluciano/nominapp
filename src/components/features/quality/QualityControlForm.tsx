@@ -31,6 +31,8 @@ export function QualityControlForm({ initial, projectId, saving, onSubmit, onCan
   const [comprobanteUrl, setComprobanteUrl] = useState<string | null>(initial?.comprobante_url || null)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Track the path of any file uploaded during this session so we can clean it up.
+  const sessionUploadedPath = useRef<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
   const { error: toastError } = useToast()
@@ -44,6 +46,7 @@ export function QualityControlForm({ initial, projectId, saving, onSubmit, onCan
     try {
       const path = await qualityControlService.uploadComprobante(projectId, file)
       setComprobanteUrl(path)
+      sessionUploadedPath.current = path
     } catch (uploadError) {
       toastError(`No se pudo subir el comprobante: ${getErrorMessage(uploadError)}`)
     } finally {
@@ -55,7 +58,8 @@ export function QualityControlForm({ initial, projectId, saving, onSubmit, onCan
     if (!comprobanteUrl) return
     try {
       const url = await qualityControlService.getComprobanteUrl(comprobanteUrl)
-      window.open(url, '_blank', 'noopener,noreferrer')
+      const tab = window.open(url, '_blank', 'noopener,noreferrer')
+      if (!tab) toastError('El navegador bloqueó la ventana. Permite ventanas emergentes e intenta de nuevo.')
     } catch {
       toastError('No se pudo abrir el comprobante')
     }
@@ -219,7 +223,15 @@ export function QualityControlForm({ initial, projectId, saving, onSubmit, onCan
             </button>
             <button
               type="button"
-              onClick={() => setComprobanteUrl(null)}
+              onClick={() => {
+                // B4: if the file was uploaded this session (not from initial), delete it from storage
+                const pathToRemove = comprobanteUrl
+                if (pathToRemove && pathToRemove === sessionUploadedPath.current) {
+                  void qualityControlService.deleteComprobante(pathToRemove).catch(() => undefined)
+                  sessionUploadedPath.current = null
+                }
+                setComprobanteUrl(null)
+              }}
               aria-label="Quitar comprobante"
               className="ml-auto p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-app-subtle hover:text-red-500"
             >

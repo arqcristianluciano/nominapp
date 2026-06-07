@@ -112,6 +112,9 @@ export const offlineQueue = {
 // Procesador genérico: el caller registra los handlers por kind.
 export type MutationHandler = (payload: unknown) => Promise<void>
 
+/** Máximo de intentos antes de descartar un item de la cola. */
+const MAX_RETRIES = 5
+
 export class OfflineQueueProcessor {
   private handlers = new Map<MutationKind, MutationHandler>()
   private running = false
@@ -129,6 +132,12 @@ export class OfflineQueueProcessor {
       let processed = 0
       let failed = 0
       for (const item of items) {
+        // Descartar items que ya agotaron su presupuesto de reintentos.
+        if (item.retry_count >= MAX_RETRIES) {
+          await offlineQueue.remove(item.id)
+          failed += 1
+          continue
+        }
         const handler = this.handlers.get(item.kind)
         if (!handler) continue
         try {

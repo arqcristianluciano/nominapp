@@ -6,6 +6,7 @@ import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { useToast } from '@/components/ui/Toast'
 import { formatRD } from '@/utils/currency'
 import { parseDecimalInput } from '@/utils/decimalInput'
+import { round2, sumBy } from '@/utils/money'
 import type { ContractPartida, ContractCorte, PriceListItem } from '@/types/database'
 
 interface Props {
@@ -466,7 +467,12 @@ export function PartidaSection({ contractId, projectId, partidas, cortes, onRefr
   }
 
   function acumuladoForPartida(partidaId: string) {
-    return cortes.filter((c) => c.partida_id === partidaId).reduce((s, c) => s + c.amount, 0)
+    return round2(
+      sumBy(
+        cortes.filter((c) => c.partida_id === partidaId && c.status !== 'draft'),
+        (c) => c.amount,
+      ),
+    )
   }
 
   function startEdit(p: ContractPartida) {
@@ -527,9 +533,15 @@ export function PartidaSection({ contractId, projectId, partidas, cortes, onRefr
   }
 
   async function handleDelete(id: string) {
-    await partidaService.delete(id)
-    setDeleteId(null)
-    onRefresh()
+    try {
+      await partidaService.delete(id)
+      setDeleteId(null)
+      onRefresh()
+    } catch (err) {
+      console.warn('[PartidaSection] handleDelete failed', err)
+      toastError('No se pudo eliminar la partida. Inténtalo de nuevo.')
+      setDeleteId(null)
+    }
   }
 
   const parsedUnitPriceForDiff = form.unit_price ? parseDecimalInput(form.unit_price) : null

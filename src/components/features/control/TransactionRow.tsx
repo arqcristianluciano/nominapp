@@ -115,7 +115,7 @@ function TransactionRowComponent({
       supplier_id: supplierId || null,
       quantity: quantity === '' ? null : Number(quantity),
       unit_price: unitPrice === '' ? null : Number(unitPrice),
-      total: total || transaction.total,
+      total: total,
       payment_condition: paymentCondition || null,
       invoice_number: invoiceNumber || null,
       check_number: checkNumber || null,

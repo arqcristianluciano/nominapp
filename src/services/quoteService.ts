@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import type { PurchaseQuote } from '@/types/purchaseOrder'
+import { round2 } from '@/utils/money'
 
 type CreateQuotePayload = {
   requisition_id: string
@@ -19,8 +20,8 @@ type CreateQuotePayload = {
 
 export const quoteService = {
   async create(payload: CreateQuotePayload) {
-    const subtotal = payload.items.reduce((s, i) => s + i.quantity * i.unit_price, 0)
-    const total = subtotal * (1 + payload.tax_percent / 100)
+    const subtotal = round2(payload.items.reduce((s, i) => s + i.quantity * i.unit_price, 0))
+    const total = round2(subtotal * (1 + payload.tax_percent / 100))
 
     const { data: quote, error } = await supabase
       .from('purchase_quotes')
@@ -44,7 +45,7 @@ export const quoteService = {
       quantity: i.quantity,
       unit: i.unit,
       unit_price: i.unit_price,
-      subtotal: i.quantity * i.unit_price,
+      subtotal: round2(i.quantity * i.unit_price),
       material_catalog_id: i.material_catalog_id ?? null,
     }))
     const { error: itemErr } = await supabase.from('purchase_quote_items').insert(itemRows)

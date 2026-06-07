@@ -70,7 +70,8 @@ export function CorteSection({
     }
     setSaving(true)
     try {
-      const nextNum = cortes.length > 0 ? Math.max(...cortes.map((c) => c.cut_number)) + 1 : 1
+      const partidaCortes = cortes.filter((c) => c.partida_id === form.partida_id)
+      const nextNum = partidaCortes.length > 0 ? Math.max(...partidaCortes.map((c) => c.cut_number)) + 1 : 1
       await corteService.create(
         {
           contract_id: contractId,

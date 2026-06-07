@@ -308,7 +308,8 @@ export const payrollService = {
         sort_order: i + 1,
         notes: item.notes,
       }))
-      await supabase.from('labor_line_items').insert(laborRows)
+      const { error: laborInsertError } = await supabase.from('labor_line_items').insert(laborRows)
+      if (laborInsertError) throw laborInsertError
     }
 
     for (const inv of materialInvoices) {
@@ -330,7 +331,7 @@ export const payrollService = {
 
       const items = inv.items ?? []
       if (items.length > 0) {
-        await supabase.from('material_invoice_items').insert(
+        const { error: itemsInsertError } = await supabase.from('material_invoice_items').insert(
           items.map((it, i) => ({
             material_invoice_id: newInvoice.id,
             description: it.description,
@@ -338,6 +339,7 @@ export const payrollService = {
             sort_order: it.sort_order ?? i,
           })),
         )
+        if (itemsInsertError) throw itemsInsertError
       }
     }
 
@@ -546,6 +548,12 @@ export const payrollService = {
 
   // === INDIRECT COSTS ===
 
+  async getIndirectCosts(periodId: string): Promise<IndirectCost[]> {
+    const { data, error } = await supabase.from('indirect_costs').select('*').eq('payroll_period_id', periodId)
+    if (error) throw error
+    return (data ?? []) as IndirectCost[]
+  },
+
   async saveIndirectCosts(
     periodId: string,
     costs: {
@@ -570,7 +578,13 @@ export const payrollService = {
 
     // Solo se borran y reconstruyen los indirectos AUTOMÁTICOS (porcentuales).
     // Los manuales (is_manual = true) sobreviven al recálculo intactos.
-    await supabase.from('indirect_costs').delete().eq('payroll_period_id', periodId).eq('is_manual', false)
+    // A11: si el DELETE falla, abortamos antes de insertar para evitar duplicados.
+    const { error: deleteError } = await supabase
+      .from('indirect_costs')
+      .delete()
+      .eq('payroll_period_id', periodId)
+      .eq('is_manual', false)
+    if (deleteError) throw deleteError
     if (costs.length === 0) return []
     const rows = costs.map((c) => ({
       ...c,
@@ -634,8 +648,14 @@ export const payrollService = {
 
   /** Elimina un indirecto manual. */
   async deleteManualIndirect(id: string) {
-    const { error } = await supabase.from('indirect_costs').delete().eq('id', id).eq('is_manual', true)
+    const { data, error } = await supabase
+      .from('indirect_costs')
+      .delete()
+      .eq('id', id)
+      .eq('is_manual', true)
+      .select('id')
     if (error) throw error
+    if (!data || data.length === 0) throw new Error('No se encontró el indirecto manual a eliminar.')
   },
 
   // === FILE ATTACHMENTS ===

@@ -7,6 +7,8 @@ import {
   adelantoService,
 } from '@/services/cubicationService'
 import { payrollService } from '@/services/payrollService'
+import { supabase } from '@/lib/supabase'
+import { round2 } from '@/utils/money'
 import { formatRD, formatNumber } from '@/utils/currency'
 import { CorteAdelantoConfirm } from './CorteAdelantoConfirm'
 import type { ContractCorte, AdjustmentContract } from '@/types/database'
@@ -47,7 +49,9 @@ export function CubicacionesPayrollSection({
     setLoading(false)
   }, [periodId, projectId, isDraft])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    load()
+  }, [load])
 
   async function doLink(corte: LinkedCorte, deductAdelantos: boolean) {
     if (!corte.partida || !corte.contract) return
@@ -89,9 +93,27 @@ export function CubicacionesPayrollSection({
   async function handleLink(corte: LinkedCorte) {
     if (!corte.partida || !corte.contract) return
     const adelantos = await adelantoService.getByContract(corte.contract_id)
-    const total = adelantos.reduce((s, a) => s + a.amount, 0)
-    if (total > 0) {
-      setPendingAdelantoTotal(total)
+    const totalAdelantos = round2(adelantos.reduce((s, a) => s + a.amount, 0))
+    if (totalAdelantos <= 0) {
+      await doLink(corte, false)
+      return
+    }
+    // Compute already-deducted amount: sum of existing advance-deduction labor items
+    // for this contractor across all payroll periods (negative unit_price entries).
+    // This prevents offering a deduction that was already applied in a prior payroll.
+    // NOTE: A complete fix requires a DB-level "deducted" flag on contract_adelantos
+    // (see audit finding A6). This is the best mitigation achievable at code level.
+    const { data: existingDeductions } = await supabase
+      .from('labor_line_items')
+      .select('quantity, unit_price')
+      .eq('contractor_id', corte.contract.contractor_id)
+      .eq('is_advance_deduction', true)
+    const alreadyDeducted = round2(
+      (existingDeductions ?? []).reduce((s, d) => s + Math.abs(d.quantity * d.unit_price), 0),
+    )
+    const remaining = round2(Math.max(0, totalAdelantos - alreadyDeducted))
+    if (remaining > 0) {
+      setPendingAdelantoTotal(remaining)
       setPendingCorte(corte)
     } else {
       await doLink(corte, false)
@@ -105,7 +127,9 @@ export function CubicacionesPayrollSection({
       await onCorteLinked()
       await onRecalculateTotals()
       await load()
-    } finally { setUnlinking(null) }
+    } finally {
+      setUnlinking(null)
+    }
   }
 
   const totalLinked = linked.reduce((s, c) => s + c.amount, 0)
@@ -155,17 +179,25 @@ export function CubicacionesPayrollSection({
                 <tr key={c.id} className="hover:bg-app-hover">
                   <td className="px-4 py-2.5">
                     <p className="text-app-text font-medium text-xs">{c.contract?.contractor?.name ?? '—'}</p>
-                    <p className="text-app-muted text-xs mt-0.5">Corte #{c.cut_number} · {c.partida?.description ?? '—'}</p>
+                    <p className="text-app-muted text-xs mt-0.5">
+                      Corte #{c.cut_number} · {c.partida?.description ?? '—'}
+                    </p>
                   </td>
                   <td className="px-4 py-2.5 text-right text-app-muted hidden sm:table-cell">
                     {formatNumber(c.measured_quantity)} {c.partida?.unit}
                   </td>
                   <td className="px-4 py-2.5 text-right font-medium text-app-text">{formatRD(c.amount)}</td>
-                  <td className="px-4 py-2.5 text-right text-amber-600 hidden md:table-cell">{formatRD(c.retention_amount)}</td>
+                  <td className="px-4 py-2.5 text-right text-amber-600 hidden md:table-cell">
+                    {formatRD(c.retention_amount)}
+                  </td>
                   {isDraft && (
                     <td className="px-2 py-2.5">
-                      <button onClick={() => handleUnlink(c)} disabled={unlinking === c.id} title="Desvincular corte"
-                        className="p-1 text-app-subtle hover:text-red-500 disabled:opacity-40">
+                      <button
+                        onClick={() => handleUnlink(c)}
+                        disabled={unlinking === c.id}
+                        title="Desvincular corte"
+                        className="p-1 text-app-subtle hover:text-red-500 disabled:opacity-40"
+                      >
                         <Link2Off className="w-3.5 h-3.5" />
                       </button>
                     </td>
@@ -185,7 +217,8 @@ export function CubicacionesPayrollSection({
 
       <div className="bg-teal-50 dark:bg-teal-950/20 rounded-lg px-4 py-3 flex justify-between items-center">
         <span className="text-sm font-medium text-teal-900 dark:text-teal-200">
-          Total cubicaciones{totalRetenido > 0 && <span className="font-normal text-xs ml-1">(ret. {formatRD(totalRetenido)})</span>}
+          Total cubicaciones
+          {totalRetenido > 0 && <span className="font-normal text-xs ml-1">(ret. {formatRD(totalRetenido)})</span>}
         </span>
         <span className="text-sm font-semibold text-teal-900 dark:text-teal-200">{formatRD(totalLinked)}</span>
       </div>
@@ -203,12 +236,15 @@ export function CubicacionesPayrollSection({
                     {c.contract?.contractor?.name ?? '—'} — Corte #{c.cut_number}
                   </p>
                   <p className="text-xs text-app-muted mt-0.5">
-                    {c.partida?.description} · {formatNumber(c.measured_quantity)} {c.partida?.unit}
-                    · Neto: {formatRD(c.amount - c.retention_amount)}
+                    {c.partida?.description} · {formatNumber(c.measured_quantity)} {c.partida?.unit}· Neto:{' '}
+                    {formatRD(c.amount - c.retention_amount)}
                   </p>
                 </div>
-                <button onClick={() => handleLink(c)} disabled={linking}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium rounded-lg disabled:opacity-50 shrink-0 ml-3">
+                <button
+                  onClick={() => handleLink(c)}
+                  disabled={linking}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium rounded-lg disabled:opacity-50 shrink-0 ml-3"
+                >
                   <Link2 className="w-3.5 h-3.5" />
                   {linking ? 'Vinculando...' : 'Vincular'}
                 </button>
@@ -221,7 +257,10 @@ export function CubicacionesPayrollSection({
       {pendingCorte && (
         <CorteAdelantoConfirm
           open={!!pendingCorte}
-          onClose={() => { setPendingCorte(null); setPendingAdelantoTotal(0) }}
+          onClose={() => {
+            setPendingCorte(null)
+            setPendingAdelantoTotal(0)
+          }}
           corte={pendingCorte}
           adelantoTotal={pendingAdelantoTotal}
           linking={linking}

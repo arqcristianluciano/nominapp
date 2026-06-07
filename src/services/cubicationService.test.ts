@@ -9,9 +9,10 @@ import type { ContractAdelanto, ContractCorte, ContractPartida } from '@/types/d
 // aislamiento. Si cambia la fórmula en el service, este wrapper debe
 // actualizarse en paralelo.
 function computeSummary(partidas: ContractPartida[], cortes: ContractCorte[], adelantos: ContractAdelanto[] = []) {
+  const nonDraftCortes = cortes.filter((c) => c.status !== 'draft')
   const acordado = round2(sumBy(partidas, (p) => mul(p.agreed_quantity, p.unit_price)))
-  const acumulado = round2(sumBy(cortes, (c) => c.amount))
-  const retenido = round2(sumBy(cortes, (c) => c.retention_amount))
+  const acumulado = round2(sumBy(nonDraftCortes, (c) => c.amount))
+  const retenido = round2(sumBy(nonDraftCortes, (c) => c.retention_amount))
   const total_adelantos = round2(sumBy(adelantos, (a) => a.amount))
   const pendienteRaw = round2(sub(sub(acordado, acumulado), total_adelantos))
   return {
@@ -141,5 +142,19 @@ describe('cubicationService.computeSummary', () => {
     const summary = computeSummary(partidas, cortes)
     expect(summary.total_adelantos).toBe(0)
     expect(summary.pendiente).toBe(300)
+  })
+
+  it('7. (A5) cortes en borrador no cuentan en acumulado ni retenido', () => {
+    const partidas = [makePartida({ agreed_quantity: 100, unit_price: 100 })] // acordado 10000
+    const cortes = [
+      makeCorte({ amount: 3000, retention_amount: 300, status: 'approved' }),
+      makeCorte({ amount: 2000, retention_amount: 200, status: 'draft' }), // debe ignorarse
+    ]
+    const summary = computeSummary(partidas, cortes)
+    // Solo el corte aprobado cuenta
+    expect(summary.acumulado).toBe(3000)
+    expect(summary.retenido).toBe(300)
+    // completion_percent calculado solo sobre aprobados
+    expect(summary.completion_percent).toBe(30)
   })
 })
