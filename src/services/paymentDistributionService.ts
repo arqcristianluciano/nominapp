@@ -93,10 +93,12 @@ export const paymentDistributionService = {
    * Conserva el método, la cuenta de origen y demás datos del pago original; solo
    * incrementa el importe. Devuelve la fila actualizada.
    *
-   * @param periodGrandTotal — cuando se pasa, valida que la suma de todos los pagos
-   *   no cancelados del período no supere este tope. NOTE: la validación usa
-   *   leer-luego-escribir; para atomicidad completa se requiere un RPC / incremento
-   *   atómico en la base de datos (e.g. `rpc('increment_payment_amount', {id, delta})`).
+   * Usa el RPC `rpc_increment_payment_amount` para que el incremento y la
+   * verificación del tope del período ocurran en una sola transacción atómica
+   * con FOR UPDATE, eliminando la condición de carrera leer-luego-escribir.
+   *
+   * @param periodGrandTotal — cuando se pasa, el RPC valida que la suma de todos
+   *   los pagos no cancelados del período no supere este tope.
    */
   async addAmount(id: string, delta: number, periodGrandTotal?: number): Promise<PaymentDistribution> {
     const roundedDelta = round2(delta)
@@ -104,6 +106,8 @@ export const paymentDistributionService = {
       throw new Error('El monto a sumar debe ser mayor que cero.')
     }
 
+    // Leer el estado previo SOLO para el log de auditoría; el RPC hace la
+    // verificación real de forma atómica con FOR UPDATE.
     const { data: before, error: readError } = await supabase
       .from('payment_distributions')
       .select('*')
@@ -114,35 +118,37 @@ export const paymentDistributionService = {
 
     const previous = before as PaymentDistribution
 
-    // A8: validate grand-total cap if provided
-    if (periodGrandTotal !== undefined) {
-      const siblings = await this.getByPeriod(previous.payroll_period_id)
-      const otherTotal = siblings
-        .filter((row) => row.status !== 'cancelled' && row.id !== id)
-        .reduce((sum, row) => sum + row.amount, 0)
-      if (otherTotal + previous.amount + roundedDelta > periodGrandTotal + 0.0001) {
+    // Llamada atómica: bloquea la fila con FOR UPDATE, verifica el tope del
+    // período y aplica el incremento, todo en la misma transacción de Postgres.
+    const { data: rpcResult, error: rpcErr } = await supabase.rpc('rpc_increment_payment_amount', {
+      p_id: id,
+      p_delta: roundedDelta,
+      p_period_cap: periodGrandTotal ?? null,
+    })
+
+    if (rpcErr) {
+      const msg: string = (rpcErr as { message?: string }).message ?? ''
+      if (msg.startsWith('EXCEEDS_PERIOD_CAP')) {
         throw new Error('El monto excede el total pendiente por distribuir.')
       }
+      if (msg.startsWith('PAYMENT_NOT_FOUND')) {
+        throw new Error('No se encontró el pago a consolidar.')
+      }
+      if (msg.startsWith('DELTA_NOT_POSITIVE')) {
+        throw new Error('El monto a sumar debe ser mayor que cero.')
+      }
+      throw rpcErr
     }
 
-    const newAmount = round2(previous.amount + roundedDelta)
+    const updated = (typeof rpcResult === 'string' ? JSON.parse(rpcResult) : rpcResult) as PaymentDistribution
 
-    const { data, error } = await supabase
-      .from('payment_distributions')
-      .update({ amount: newAmount })
-      .eq('id', id)
-      .select('*')
-      .single()
-    if (error) throw error
-
-    const updated = data as PaymentDistribution
     await approvalsService
       .log({
         entity_type: 'payment_distribution',
         entity_id: id,
         action: 'update',
         payload_before: { amount: previous.amount },
-        payload_after: { amount: newAmount },
+        payload_after: { amount: updated.amount },
       })
       .catch((err) => console.warn('[paymentDistributionService.addAmount] log de auditoria fallo', err))
 

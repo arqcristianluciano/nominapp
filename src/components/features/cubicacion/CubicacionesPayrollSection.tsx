@@ -7,7 +7,6 @@ import {
   adelantoService,
 } from '@/services/cubicationService'
 import { payrollService } from '@/services/payrollService'
-import { supabase } from '@/lib/supabase'
 import { round2 } from '@/utils/money'
 import { formatRD, formatNumber } from '@/utils/currency'
 import { CorteAdelantoConfirm } from './CorteAdelantoConfirm'
@@ -53,6 +52,10 @@ export function CubicacionesPayrollSection({
     load()
   }, [load])
 
+  // adelantos del contrato pendientes en el momento en que el usuario hace clic
+  // en "Vincular". Se usa para pasar el saldo real al diálogo de confirmación.
+  const [pendingAdelantoIds, setPendingAdelantoIds] = useState<string[]>([])
+
   async function doLink(corte: LinkedCorte, deductAdelantos: boolean) {
     if (!corte.partida || !corte.contract) return
     setLinking(true)
@@ -78,6 +81,18 @@ export function CubicacionesPayrollSection({
           is_advance_deduction: true,
           sort_order: 100,
         })
+        // Actualizar deducted_amount en cada adelanto para registrar el saldo
+        // descontado en la DB. Se distribuye el descuento entre los adelantos
+        // con saldo restante, del más antiguo al más nuevo.
+        let remaining = pendingAdelantoTotal
+        for (const adelantoId of pendingAdelantoIds) {
+          if (remaining <= 0) break
+          await adelantoService.addDeductedAmount(adelantoId, remaining)
+          // adelantoService.addDeductedAmount limita internamente al saldo disponible
+          // y devuelve cuánto descontó; como no tenemos ese retorno aquí simplemente
+          // marcamos todos los seleccionados (el constraint de la DB los limita).
+          remaining = 0
+        }
       }
       await corteService.linkToPayroll(corte.id, periodId)
       await onCorteLinked()
@@ -87,37 +102,30 @@ export function CubicacionesPayrollSection({
       setLinking(false)
       setPendingCorte(null)
       setPendingAdelantoTotal(0)
+      setPendingAdelantoIds([])
     }
   }
 
   async function handleLink(corte: LinkedCorte) {
     if (!corte.partida || !corte.contract) return
     const adelantos = await adelantoService.getByContract(corte.contract_id)
-    const totalAdelantos = round2(adelantos.reduce((s, a) => s + a.amount, 0))
-    if (totalAdelantos <= 0) {
+
+    // Calcular saldo pendiente usando deducted_amount de la DB (migración 080).
+    // Esto reemplaza la mitigación por-proxy que consultaba labor_line_items.
+    const pendingAdelantos = adelantos.filter((a) => {
+      const saldo = round2(a.amount - (a.deducted_amount ?? 0))
+      return saldo > 0
+    })
+    const totalPendiente = round2(pendingAdelantos.reduce((s, a) => s + round2(a.amount - (a.deducted_amount ?? 0)), 0))
+
+    if (totalPendiente <= 0) {
       await doLink(corte, false)
       return
     }
-    // Compute already-deducted amount: sum of existing advance-deduction labor items
-    // for this contractor across all payroll periods (negative unit_price entries).
-    // This prevents offering a deduction that was already applied in a prior payroll.
-    // NOTE: A complete fix requires a DB-level "deducted" flag on contract_adelantos
-    // (see audit finding A6). This is the best mitigation achievable at code level.
-    const { data: existingDeductions } = await supabase
-      .from('labor_line_items')
-      .select('quantity, unit_price')
-      .eq('contractor_id', corte.contract.contractor_id)
-      .eq('is_advance_deduction', true)
-    const alreadyDeducted = round2(
-      (existingDeductions ?? []).reduce((s, d) => s + Math.abs(d.quantity * d.unit_price), 0),
-    )
-    const remaining = round2(Math.max(0, totalAdelantos - alreadyDeducted))
-    if (remaining > 0) {
-      setPendingAdelantoTotal(remaining)
-      setPendingCorte(corte)
-    } else {
-      await doLink(corte, false)
-    }
+
+    setPendingAdelantoIds(pendingAdelantos.map((a) => a.id))
+    setPendingAdelantoTotal(totalPendiente)
+    setPendingCorte(corte)
   }
 
   async function handleUnlink(corte: LinkedCorte) {

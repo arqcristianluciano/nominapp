@@ -67,6 +67,7 @@ function makeAdelanto(overrides: Partial<ContractAdelanto> = {}): ContractAdelan
     contract_id: 'contract-1',
     advance_date: '2026-05-01',
     amount: 0,
+    deducted_amount: 0,
     description: null,
     created_at: '2026-05-01T00:00:00Z',
     ...overrides,

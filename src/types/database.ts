@@ -309,6 +309,8 @@ export interface ContractAdelanto {
   contract_id: string
   advance_date: string
   amount: number
+  /** Monto ya descontado en nóminas anteriores (migración 080). Siempre >= 0. */
+  deducted_amount: number
   description: string | null
   created_at: string
 }
