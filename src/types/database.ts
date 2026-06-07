@@ -339,6 +339,28 @@ export interface LoanDeduction {
   loan?: ContractorLoan
 }
 
+// ---- Schedule tasks (table: schedule_tasks, migration 076 adds hierarchy) ----
+
+export interface ScheduleTask {
+  id: string
+  project_id: string
+  name: string
+  start_date: string
+  end_date: string
+  progress: number
+  color: string
+  notes: string | null
+  created_at: string
+  /** uuid referencing another schedule_tasks row (added by migration 076). */
+  parent_task_id: string | null
+  /** Sequential number within the project (added by migration 076). */
+  task_number: number | null
+  /** uuid referencing predecessor task (added by migration 076). */
+  predecessor_id: string | null
+  /** Whether this task is a milestone (added by migration 076). */
+  is_milestone: boolean
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -405,6 +427,11 @@ export interface Database {
         Row: ContractAdelanto
         Insert: Omit<ContractAdelanto, 'id' | 'created_at'>
         Update: Partial<ContractAdelanto>
+      }
+      schedule_tasks: {
+        Row: ScheduleTask
+        Insert: Omit<ScheduleTask, 'id' | 'created_at'>
+        Update: Partial<ScheduleTask>
       }
     }
   }

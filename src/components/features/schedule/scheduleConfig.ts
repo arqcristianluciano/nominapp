@@ -9,4 +9,8 @@ export const EMPTY_SCHEDULE_FORM: Omit<ScheduleTaskFormData, 'project_id'> = {
   progress: 0,
   color: '#3b82f6',
   notes: '',
+  parent_task_id: null,
+  task_number: null,
+  predecessor_id: null,
+  is_milestone: false,
 }
