@@ -10,8 +10,8 @@ import { Modal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { formatRD } from '@/utils/currency'
 import { getErrorMessage } from '@/utils/errors'
-import { buildBankPaymentRows } from '@/utils/bankPaymentExport'
-import { downloadCsv } from '@/utils/csv'
+import { buildBankPaymentSheet, BANK_PAYMENT_HEADERS } from '@/utils/bankPaymentExport'
+import { exportToExcel } from '@/utils/excelExport'
 import type { BankAccount, PaymentDistribution } from '@/types/database'
 
 interface Props {
@@ -167,10 +167,15 @@ export function PaymentDistributionsSection({ periodId, grandTotal }: Props) {
     }
   }
 
-  function handleExport() {
-    const rows = buildBankPaymentRows(distributions, resolveSourceAccount)
-    const stamp = new Date().toISOString().slice(0, 10)
-    downloadCsv(`pagos-nomina-${stamp}.csv`, rows)
+  async function handleExport() {
+    try {
+      const rows = buildBankPaymentSheet(distributions, resolveSourceAccount)
+      const stamp = new Date().toISOString().slice(0, 10)
+      await exportToExcel(`pagos-nomina-${stamp}`, [{ name: 'Pagos', rows, header: [...BANK_PAYMENT_HEADERS] }])
+    } catch (err) {
+      Sentry.captureException(err, { tags: { area: 'PaymentDistributionsSection' } })
+      toastError(`No se pudo exportar el archivo de pagos: ${getErrorMessage(err)}`)
+    }
   }
 
   return (
@@ -188,7 +193,7 @@ export function PaymentDistributionsSection({ periodId, grandTotal }: Props) {
             <button
               onClick={handleExport}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-app-surface border border-app-border text-sm font-medium rounded-lg hover:bg-app-hover"
-              title="Exportar pagos a CSV"
+              title="Exportar pagos a Excel"
             >
               <Download className="w-4 h-4" /> Exportar
             </button>
