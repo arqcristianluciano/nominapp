@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Camera, ImagePlus, Loader2, X } from 'lucide-react'
 import { bitacoraService, type BitacoraFormData } from '@/services/bitacoraService'
 import { WEATHER_OPTIONS } from './bitacoraConfig'
+import { compressImageFile } from '@/utils/imageCompression'
 
 interface Props {
   form: BitacoraFormData
@@ -67,7 +68,8 @@ export function BitacoraEntryForm({ form, saving, editMode, onChange, onCancel, 
       return localUrl
     })
     try {
-      const path = await bitacoraService.uploadPhoto(form.project_id, file)
+      const compressed = await compressImageFile(file)
+      const path = await bitacoraService.uploadPhoto(form.project_id, compressed)
       onChange({ ...form, photo_url: path })
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error al subir la foto'
