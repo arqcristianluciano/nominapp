@@ -32,16 +32,19 @@
     }
   },
   "header": {
-    "searchPlaceholder": "Buscar proyectos, contratistas...",
+    "searchPlaceholder": "Buscar proyectos, contratistas, suplidores...",
     "searchPlaceholderMobile": "Buscar...",
     "searchTitle": "Buscar",
     "noResults": "Sin resultados para \"{{query}}\"",
     "searchLoadError": "No se pudo cargar la búsqueda",
+    "searching": "Buscando...",
     "logout": "Cerrar sesión",
     "types": {
       "proyecto": "Proyecto",
       "contratista": "Contratista",
-      "suplidor": "Suplidor"
+      "suplidor": "Suplidor",
+      "prestamo": "Préstamo",
+      "contrato": "Cubicación"
     }
   },
   "common": {

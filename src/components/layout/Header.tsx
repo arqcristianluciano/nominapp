@@ -1,11 +1,10 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { LogOut, Menu, Search, X } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { useProjectStore } from '@/stores/projectStore'
-import { supplierService } from '@/services/supplierService'
-import { contractorService } from '@/services/contractorService'
+import { loadSearchIndex, filterIndex, type GlobalSearchResult } from '@/services/globalSearchService'
 import { NotificationDropdown } from './NotificationDropdown'
 import { ThemeToggle } from './ThemeToggle'
 import { LanguageSwitcher } from './LanguageSwitcher'
@@ -14,18 +13,14 @@ interface HeaderProps {
   onMenuClick: () => void
 }
 
-interface SearchResult {
-  type: 'proyecto' | 'contratista' | 'suplidor'
-  id: string
-  name: string
-  detail?: string
-  url: string
-}
+type SearchResultType = GlobalSearchResult['type']
 
-const TYPE_COLOR: Record<string, string> = {
+const TYPE_COLOR: Record<SearchResultType, string> = {
   proyecto: 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300',
   contratista: 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300',
   suplidor: 'bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300',
+  prestamo: 'bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-300',
+  contrato: 'bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300',
 }
 
 function userInitials(displayName: string): string {
@@ -34,73 +29,178 @@ function userInitials(displayName: string): string {
   return displayName.slice(0, 2).toUpperCase() || '?'
 }
 
+/** Agrupa los resultados por tipo manteniendo el orden canónico. */
+function groupByType(results: GlobalSearchResult[]): Array<{ type: SearchResultType; items: GlobalSearchResult[] }> {
+  const order: SearchResultType[] = ['proyecto', 'contratista', 'suplidor', 'contrato', 'prestamo']
+  const map = new Map<SearchResultType, GlobalSearchResult[]>()
+  for (const r of results) {
+    if (!map.has(r.type)) map.set(r.type, [])
+    map.get(r.type)!.push(r)
+  }
+  return order.flatMap((type) => {
+    const items = map.get(type)
+    return items && items.length > 0 ? [{ type, items }] : []
+  })
+}
+
+// ---------------------------------------------------------------------------
+// SearchDropdown: componente puro para renderizar el contenido del dropdown.
+// Se define fuera de Header para que el linter no lo clasifique como
+// "componente creado durante el render".
+// ---------------------------------------------------------------------------
+interface SearchDropdownProps {
+  isSearching: boolean
+  noResults: boolean
+  searchLoadError: boolean
+  debouncedQuery: string
+  groupedResults: Array<{ type: SearchResultType; items: GlobalSearchResult[] }>
+  onSelect: (url: string) => void
+  t: (key: string, opts?: Record<string, unknown>) => string
+}
+
+function SearchDropdown({
+  isSearching,
+  noResults,
+  searchLoadError,
+  debouncedQuery,
+  groupedResults,
+  onSelect,
+  t,
+}: SearchDropdownProps) {
+  if (isSearching) {
+    return (
+      <div className="px-4 py-3 text-sm text-app-muted flex items-center gap-2">
+        <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+        {t('header.searching')}
+      </div>
+    )
+  }
+  if (noResults) {
+    return (
+      <div className="px-4 py-3 text-sm text-app-muted">
+        {searchLoadError && (
+          <p className="mb-1 text-xs text-red-500 dark:text-red-400">{t('header.searchLoadError')}</p>
+        )}
+        {t('header.noResults', { query: debouncedQuery })}
+      </div>
+    )
+  }
+  return (
+    <>
+      {groupedResults.map(({ type, items }) => (
+        <div key={type}>
+          <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-app-subtle bg-app-bg border-b border-app-border">
+            {t(`header.types.${type}`)}
+          </div>
+          {items.map((item) => (
+            <button
+              key={`${item.type}-${item.id}`}
+              onClick={() => onSelect(item.url)}
+              className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-app-hover text-left transition-colors"
+            >
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-app-text truncate">{item.name}</p>
+                {item.detail && <p className="text-xs text-app-muted truncate">{item.detail}</p>}
+              </div>
+              <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full shrink-0 ${TYPE_COLOR[item.type]}`}>
+                {t(`header.types.${item.type}`)}
+              </span>
+            </button>
+          ))}
+        </div>
+      ))}
+    </>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Hook: carga el índice de búsqueda una sola vez (sin disparar setState dentro
+// del cuerpo del effect — el estado inicial ya es `true` para indexLoading).
+// ---------------------------------------------------------------------------
+function useSearchIndex() {
+  // indexLoading comienza en true para que el spinner aparezca desde el primer
+  // carácter antes de que la carga termine.
+  const [searchIndex, setSearchIndex] = useState<Awaited<ReturnType<typeof loadSearchIndex>> | null>(null)
+  const [indexLoading, setIndexLoading] = useState(true)
+  const [searchLoadError, setSearchLoadError] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    loadSearchIndex()
+      .then((index) => {
+        if (!cancelled) {
+          setSearchIndex(index)
+          setSearchLoadError(false)
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load search index', err)
+        if (!cancelled) setSearchLoadError(true)
+      })
+      .finally(() => {
+        if (!cancelled) setIndexLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  return { searchIndex, indexLoading, searchLoadError }
+}
+
+// ---------------------------------------------------------------------------
+// Header principal
+// ---------------------------------------------------------------------------
 export function Header({ onMenuClick }: HeaderProps) {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
   const { projects } = useProjectStore()
+
   const [query, setQuery] = useState('')
+  const [debouncedQuery, setDebouncedQuery] = useState('')
   const [showResults, setShowResults] = useState(false)
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
-  const [indexedSuppliers, setIndexedSuppliers] = useState<Array<{ id: string; name: string; rnc: string | null }>>([])
-  const [indexedContractors, setIndexedContractors] = useState<
-    Array<{ id: string; name: string; specialty: string | null }>
-  >([])
-  const [searchLoadError, setSearchLoadError] = useState(false)
+
+  const { searchIndex, indexLoading, searchLoadError } = useSearchIndex()
+
   const inputRef = useRef<HTMLInputElement>(null)
   const mobileInputRef = useRef<HTMLInputElement>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
   const mobileWrapperRef = useRef<HTMLDivElement>(null)
 
+  // Debounce: actualiza debouncedQuery 250 ms después de que el usuario para de escribir
   useEffect(() => {
-    async function loadSearchDirectory() {
-      try {
-        const [suppliers, contractors] = await Promise.all([supplierService.getAll(), contractorService.getAll()])
-        setIndexedSuppliers(suppliers.map((s) => ({ id: s.id, name: s.name, rnc: s.rnc })))
-        setIndexedContractors(contractors.map((c) => ({ id: c.id, name: c.name, specialty: c.specialty })))
-        setSearchLoadError(false)
-      } catch (err) {
-        console.error('Failed to load search directory', err)
-        setSearchLoadError(true)
-      }
-    }
-    loadSearchDirectory()
-  }, [])
+    const id = setTimeout(() => setDebouncedQuery(query), 250)
+    return () => clearTimeout(id)
+  }, [query])
 
-  const allItems = useMemo<SearchResult[]>(
-    () => [
-      ...projects.map((p) => ({
-        type: 'proyecto' as const,
+  const projectsForIndex = useMemo(
+    () =>
+      projects.map((p) => ({
         id: p.id,
         name: p.name,
-        detail: p.location || p.code,
-        url: `/proyectos/${p.id}`,
+        code: p.code,
+        location: p.location,
       })),
-      ...indexedContractors.map((c) => ({
-        type: 'contratista' as const,
-        id: c.id,
-        name: c.name,
-        detail: c.specialty || '',
-        url: `/contratistas/${c.id}`,
-      })),
-      ...indexedSuppliers.map((s) => ({
-        type: 'suplidor' as const,
-        id: s.id,
-        name: s.name,
-        detail: s.rnc || '',
-        url: '/suplidores',
-      })),
-    ],
-    [projects, indexedContractors, indexedSuppliers],
+    [projects],
   )
 
-  const results = useMemo(() => {
-    if (!query.trim()) return []
-    const q = query.toLowerCase()
-    return allItems.filter((item) => item.name.toLowerCase().includes(q)).slice(0, 8)
-  }, [query, allItems])
+  const results = useMemo<GlobalSearchResult[]>(() => {
+    if (!debouncedQuery.trim() || !searchIndex) return []
+    return filterIndex(searchIndex, projectsForIndex, debouncedQuery)
+  }, [debouncedQuery, searchIndex, projectsForIndex])
 
+  const groupedResults = useMemo(() => groupByType(results), [results])
+
+  // Indicadores derivados para el dropdown
+  const isSearching = debouncedQuery.trim().length > 0 && (indexLoading || query !== debouncedQuery)
+  const noResults =
+    debouncedQuery.trim().length > 0 && !indexLoading && query === debouncedQuery && results.length === 0
+  const dropdownVisible = showResults && debouncedQuery.trim().length > 0
+
+  // Click fuera cierra el dropdown
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       const target = e.target as Node
@@ -108,6 +208,7 @@ export function Header({ onMenuClick }: HeaderProps) {
       if (mobileWrapperRef.current && !mobileWrapperRef.current.contains(target)) {
         setMobileSearchOpen(false)
         setQuery('')
+        setDebouncedQuery('')
       }
     }
     function handleKeyDown(e: KeyboardEvent) {
@@ -126,6 +227,7 @@ export function Header({ onMenuClick }: HeaderProps) {
         setShowResults(false)
         setMobileSearchOpen(false)
         setQuery('')
+        setDebouncedQuery('')
         inputRef.current?.blur()
       }
     }
@@ -143,44 +245,31 @@ export function Header({ onMenuClick }: HeaderProps) {
     return () => clearTimeout(id)
   }, [mobileSearchOpen])
 
-  function handleSelect(url: string) {
-    navigate(url)
-    setQuery('')
-    setShowResults(false)
-    setMobileSearchOpen(false)
-  }
+  const handleSelect = useCallback(
+    (url: string) => {
+      navigate(url)
+      setQuery('')
+      setDebouncedQuery('')
+      setShowResults(false)
+      setMobileSearchOpen(false)
+    },
+    [navigate],
+  )
 
   function clearSearch() {
     setQuery('')
+    setDebouncedQuery('')
     setShowResults(false)
     inputRef.current?.focus()
   }
 
-  const dropdownContent =
-    results.length === 0 ? (
-      <div className="px-4 py-3 text-sm text-app-muted">
-        {searchLoadError && (
-          <p className="mb-1 text-xs text-red-500 dark:text-red-400">{t('header.searchLoadError')}</p>
-        )}
-        {t('header.noResults', { query })}
-      </div>
-    ) : (
-      results.map((item) => (
-        <button
-          key={`${item.type}-${item.id}`}
-          onClick={() => handleSelect(item.url)}
-          className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-app-hover text-left transition-colors"
-        >
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-app-text truncate">{item.name}</p>
-            {item.detail && <p className="text-xs text-app-muted truncate">{item.detail}</p>}
-          </div>
-          <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full shrink-0 ${TYPE_COLOR[item.type]}`}>
-            {t(`header.types.${item.type}`)}
-          </span>
-        </button>
-      ))
-    )
+  const dropdownProps: Omit<SearchDropdownProps, 'onSelect' | 't'> = {
+    isSearching,
+    noResults,
+    searchLoadError,
+    debouncedQuery,
+    groupedResults,
+  }
 
   return (
     <>
@@ -220,9 +309,9 @@ export function Header({ onMenuClick }: HeaderProps) {
               Ctrl K
             </kbd>
           )}
-          {showResults && query && (
+          {dropdownVisible && (
             <div className="absolute top-full left-0 right-0 mt-1 bg-app-surface border border-app-border rounded-xl shadow-md max-h-80 overflow-y-auto z-50 divide-y divide-app-border">
-              {dropdownContent}
+              <SearchDropdown {...dropdownProps} onSelect={handleSelect} t={t} />
             </div>
           )}
         </div>
@@ -290,6 +379,7 @@ export function Header({ onMenuClick }: HeaderProps) {
                 onClick={() => {
                   setMobileSearchOpen(false)
                   setQuery('')
+                  setDebouncedQuery('')
                 }}
                 className="p-2 rounded-lg text-app-muted hover:text-app-text"
               >
@@ -297,9 +387,9 @@ export function Header({ onMenuClick }: HeaderProps) {
               </button>
             </div>
 
-            {query && (
+            {debouncedQuery.trim().length > 0 && (
               <div className="mt-2 bg-app-surface border border-app-border rounded-xl overflow-hidden max-h-96 overflow-y-auto divide-y divide-app-border">
-                {dropdownContent}
+                <SearchDropdown {...dropdownProps} onSelect={handleSelect} t={t} />
               </div>
             )}
           </div>
