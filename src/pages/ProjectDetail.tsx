@@ -5,6 +5,8 @@ import { ProjectBudgetSummary } from '@/components/features/projects/ProjectBudg
 import { ProjectModulesGrid } from '@/components/features/projects/ProjectModulesGrid'
 import { ProjectPayrollSection } from '@/components/features/projects/ProjectPayrollSection'
 import { ProjectRecentTransactions } from '@/components/features/projects/ProjectRecentTransactions'
+import { ProjectDocumentsSection } from '@/components/features/projects/ProjectDocumentsSection'
+import { ProjectTendencias } from '@/components/features/projects/ProjectTendencias'
 
 export default function ProjectDetail() {
   const {
@@ -48,6 +50,8 @@ export default function ProjectDetail() {
       <ProjectModulesGrid projectId={projectId} />
       <ProjectBudgetSummary projectId={projectId} totalBudget={totalBudget} totalInvested={totalInvested} />
       <ProjectRecentTransactions projectId={projectId} transactions={recentTxns} />
+      <ProjectTendencias projectId={projectId} />
+      <ProjectDocumentsSection projectId={projectId} />
       <ProjectPayrollSection
         projectId={projectId}
         loading={loading}

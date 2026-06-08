@@ -507,6 +507,26 @@ export interface Database {
         Insert: Omit<AccountMovement, 'id' | 'created_at' | 'account'>
         Update: Partial<AccountMovement>
       }
+      project_documents: {
+        Row: ProjectDocument
+        Insert: Omit<ProjectDocument, 'id' | 'created_at'>
+        Update: Partial<ProjectDocument>
+      }
     }
   }
+}
+
+// ─── Documentos de proyecto ───────────────────────────────────────────────────
+
+export type ProjectDocumentType = 'plano' | 'contrato' | 'permiso' | 'otro'
+
+export interface ProjectDocument {
+  id: string
+  project_id: string
+  name: string
+  storage_path: string
+  doc_type: ProjectDocumentType | null
+  size_bytes: number | null
+  uploaded_by: string | null
+  created_at: string
 }
