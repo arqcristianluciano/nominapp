@@ -56,3 +56,33 @@ de crédito de la cuenta de Claude (centavos por arreglo).
 
 **Pendiente / notas:** Mover los proyectos fuera de OneDrive (causa
 tropiezos con el historial). Las apps siguen en línea con normalidad.
+
+## 2026-06-08 (tarde) — Prueba completa de la app y arreglos
+
+**Qué se hizo:** Recorrí NominApp de principio a fin creando datos de prueba
+(un proyecto, un suplidor, un contratista y una orden de compra) y revisé cada
+módulo, incluyendo modo claro y oscuro.
+
+**Arreglos dejados en propuestas de cambio (PR), verificados (tipos, pruebas y
+build en verde):**
+- PR #104: el Reporte consolidado ya no sale en cero; calcula igual que la
+  pantalla de Presupuesto de cada proyecto.
+- PR #105: el préstamo marcado "Pagado" ya no muestra saldo pendiente; y la
+  etiqueta del Panel "Total invertido" ahora dice "Invertido en nóminas".
+
+**Hallazgos:**
+- F1: pareció que las listas no se refrescaban al crear, pero el código sí
+  vuelve a consultar la lista; fue un artefacto de tiempo de la prueba. No se
+  tocó código (ya está correcto).
+- Modo claro/oscuro: revisado en 13 pantallas, sin textos ilegibles ni colores
+  rotos.
+- No se encontraron errores graves ni pérdida de datos.
+
+**Qué cambió para Cristian:** dos correcciones listas para publicar (PR #104 y
+#105) y un reporte detallado (REPORTE_QA_2026-06-08.md).
+
+**Pendiente:** revisar a fondo (con datos encadenados) cubicaciones con cortes y
+adelantos, generar un reporte de nómina completo, recepción de órdenes con
+conduces y el flujo de cotización/aprobación de compras. Quedaron 4 registros de
+prueba en la base (PRUEBA QA CLAUDE, FERRETERIA QA PRUEBA, MAESTRO QA PRUEBA,
+REQ-2026-9154) que Cristian puede borrar con un clic cuando quiera.
