@@ -18,6 +18,8 @@ import { buildAppendixSection } from './sections/appendix'
 import type { AppendixInput, AppendixTransaction } from './sections/appendix'
 import type { BudgetBreakdownInput } from './sections/budgetBreakdown'
 import type { CashflowInput } from './sections/cashflow'
+import { buildClientReportContent } from './sections/clientReport'
+import type { ClientReportInput } from './sections/clientReport'
 import { buildCoverPage } from './sections/cover'
 import type { CoverInput } from './sections/cover'
 import type { ExecutiveSummaryInput } from './sections/executiveSummary'
@@ -395,6 +397,69 @@ export function generateMonthlyReport(input: MonthlyReportInput): TCreatedPdf {
       // Appendix last (starts with pageBreak:'before').
       ...buildAppendixSection(appendixInput),
     ],
+  }
+
+  return buildDocument(docDefinition)
+}
+
+/* -------------------------------------------------------------------------- */
+/* Client report                                                              */
+/* -------------------------------------------------------------------------- */
+
+export type { ClientReportInput }
+
+/**
+ * Generates a client-facing "Reporte para Cliente" PDF.
+ *
+ * This report is designed for external stakeholders (clients, investors).
+ * It intentionally omits internal cost details:
+ *  - No unit prices or supplier rates.
+ *  - No contractor-level payroll breakdown.
+ *  - No internal variance analysis at partida/item level.
+ *  - No bank account information.
+ *  - No deposit category amounts.
+ *
+ * What it does include:
+ *  - Project name, client name and generation date (cover page).
+ *  - Overall construction progress percentage.
+ *  - High-level financial summary (budget vs. executed, % spent).
+ *  - Schedule milestones with status (completed / in-progress / pending).
+ *  - Optional site photos (up to 6).
+ *
+ * @param input Data assembled by {@link loadClientReportData}.
+ * @returns A `TCreatedPdf` ready to be downloaded or further processed.
+ */
+export function generateClientReport(input: ClientReportInput): TCreatedPdf {
+  const generatedAt = input.generatedAt ?? new Date()
+
+  const chrome: ReportChromeOptions = {
+    companyName: input.companyName ?? 'NominApp',
+    generatedAt,
+  }
+
+  const docDefinition: TDocumentDefinitions = {
+    info: {
+      title: `Reporte para Cliente - ${input.projectName}`,
+      author: chrome.companyName,
+      subject: 'Reporte de avance para cliente',
+      creator: 'NominApp',
+      producer: 'NominApp',
+    },
+    pageSize: 'LETTER',
+    pageMargins: [40, 80, 40, 60],
+    defaultStyle: {
+      font: 'Roboto',
+      fontSize: 10,
+      color: '#202124',
+    },
+    styles: {
+      h1: { fontSize: 20, bold: true, margin: [0, 0, 0, 12] },
+      h2: { fontSize: 16, bold: true, margin: [0, 12, 0, 8] },
+      sectionTitle: { fontSize: 14, bold: true, margin: [0, 0, 0, 8] },
+    },
+    header: buildHeader(chrome),
+    footer: (currentPage, pageCount) => buildPageFooter(currentPage, pageCount, input.projectName),
+    content: buildClientReportContent(input),
   }
 
   return buildDocument(docDefinition)
