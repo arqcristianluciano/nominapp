@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import * as Sentry from '@sentry/react'
 import { useProjectStore } from '@/stores/projectStore'
 import { dashboardService } from '@/services/dashboardService'
+import { directorService, type ProjectKPI } from '@/services/directorService'
 import { corteService, getProjectsProgress } from '@/services/cubicationService'
 import type { AdjustmentContract, ContractCorte } from '@/types/database'
 
@@ -60,18 +61,21 @@ export function useDashboardData() {
   const [activities, setActivities] = useState<DashboardActivity[]>([])
   const [progressMap, setProgressMap] = useState<Record<string, ProjectProgress>>({})
   const [pendingCortes, setPendingCortes] = useState<PendingCorteItem[]>([])
+  const [projectKpiMap, setProjectKpiMap] = useState<Record<string, ProjectKPI>>({})
 
   useEffect(() => {
     let cancelled = false
 
     async function run() {
-      const [projectsResult, kpisResult, activityResult, progressResult, cortesResult] = await Promise.allSettled([
-        fetchProjects(),
-        dashboardService.getKPIs(),
-        dashboardService.getRecentActivity(),
-        getProjectsProgress(),
-        corteService.getPendingApproved(),
-      ])
+      const [projectsResult, kpisResult, activityResult, progressResult, cortesResult, projectKpisResult] =
+        await Promise.allSettled([
+          fetchProjects(),
+          dashboardService.getKPIs(),
+          dashboardService.getRecentActivity(),
+          getProjectsProgress(),
+          corteService.getPendingApproved(),
+          directorService.getProjectKPIs(),
+        ])
 
       if (cancelled) return
 
@@ -125,6 +129,19 @@ export function useDashboardData() {
           tags: { area: 'useDashboardData', sub: 'getPendingApproved' },
         })
       }
+
+      if (projectKpisResult.status === 'fulfilled') {
+        const map: Record<string, ProjectKPI> = {}
+        for (const kpi of projectKpisResult.value) {
+          map[kpi.project_id] = kpi
+        }
+        setProjectKpiMap(map)
+      } else {
+        console.error('[useDashboardData] getProjectKPIs fallo', projectKpisResult.reason)
+        Sentry.captureException(projectKpisResult.reason, {
+          tags: { area: 'useDashboardData', sub: 'getProjectKPIs' },
+        })
+      }
     }
 
     run()
@@ -145,5 +162,6 @@ export function useDashboardData() {
     activities,
     progressMap,
     pendingCortes,
+    projectKpiMap,
   }
 }
