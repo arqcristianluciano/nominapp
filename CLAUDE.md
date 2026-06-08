@@ -21,19 +21,26 @@ acción dentro de este proyecto. Síguelas siempre, sin excepción.
 - Ejemplo incorrecto: "Agregué un endpoint REST que persiste un objeto
   Payslip en la base de datos."
 
-## 3. Decisiones en formato numerado
+## 3. Preguntas siempre interactivas (con opciones para elegir)
 
-- Cada vez que necesites que Cristian tome una decisión, presenta las
-  opciones con números **1, 2, 3...** para que pueda responder solo
-  con el número.
-- Una opción por línea, frases cortas.
+- Cada vez que necesites que Cristian tome una decisión, usa SIEMPRE
+  la herramienta de preguntas interactivas (AskUserQuestion) para que
+  él elija una respuesta entre opciones con un solo clic.
+- Nunca hagas preguntas abiertas en texto plano si puedes dar opciones.
+- Describe cada opción en lenguaje simple, explicando qué pasaría si
+  la elige.
+- Solo si la herramienta interactiva no está disponible, presenta las
+  opciones numeradas **1, 2, 3...** (una por línea, frases cortas) para
+  que pueda responder solo con el número.
 
 ## 4. Recomienda siempre una opción
 
 - En cada grupo de opciones, **di claramente cuál recomiendas tú**
   y por qué, en una sola frase sencilla.
-- Marca la recomendada de forma visible (por ejemplo:
-  "👉 Recomiendo la 2 porque...").
+- Pon la opción recomendada de primera en la lista y márcala con
+  "(Recomendado)".
+- Si la decisión es puramente técnica y no afecta lo que Cristian ve
+  o usa, decide tú y solo avísale en una frase simple.
 
 ## 5. Pide confirmación antes de acciones irreversibles
 
