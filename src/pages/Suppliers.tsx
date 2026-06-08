@@ -12,13 +12,18 @@ import {
   SuppliersSearch,
   SuppliersTable,
 } from '@/components/features/suppliers/SuppliersSections'
+import SupplierExcelImportModal from '@/components/features/suppliers/SupplierExcelImportModal'
+import type { ParsedSupplierRow } from '@/components/features/suppliers/parseSupplierExcel'
+import { useAppRoles } from '@/hooks/useAppRoles'
 
 export default function Suppliers() {
   const { t } = useTranslation()
+  const { canWriteSuppliers } = useAppRoles()
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [showForm, setShowForm] = useState(false)
+  const [showImport, setShowImport] = useState(false)
   const [editing, setEditing] = useState<Supplier | undefined>()
   const [saving, setSaving] = useState(false)
   const { success, error } = useToast()
@@ -71,6 +76,35 @@ export default function Suppliers() {
     [editing, error, load, success, t],
   )
 
+  const handleImport = useCallback(
+    async (rows: ParsedSupplierRow[]): Promise<{ created: number; skipped: number }> => {
+      let created = 0
+      let skipped = 0
+      for (const row of rows) {
+        try {
+          await supplierService.create({
+            name: row.name,
+            rnc: row.rnc,
+            contact_phone: row.contact_phone,
+            bank_name: row.bank_name,
+            bank_account: row.bank_account,
+            tipo_cuenta: row.tipo_cuenta,
+            payment_terms: row.payment_terms,
+          })
+          created++
+        } catch {
+          skipped++
+        }
+      }
+      await load()
+      if (created > 0) {
+        success(`${created} ${created === 1 ? 'proveedor importado' : 'proveedores importados'} correctamente`)
+      }
+      return { created, skipped }
+    },
+    [load, success],
+  )
+
   const normalizedSearch = useMemo(() => search.toLowerCase(), [search])
 
   const filtered = useMemo(
@@ -91,10 +125,19 @@ export default function Suppliers() {
   const openCreateModal = useCallback(() => setShowForm(true), [])
   const closeCreateModal = useCallback(() => setShowForm(false), [])
   const closeEditModal = useCallback(() => setEditing(undefined), [])
+  const openImportModal = useCallback(() => setShowImport(true), [])
+  const closeImportModal = useCallback(() => setShowImport(false), [])
+
+  const existingNames = useMemo(() => suppliers.map((s) => s.name), [suppliers])
 
   return (
     <div className="space-y-6">
-      <SuppliersHeader total={suppliers.length} active={activeCount} onNew={openCreateModal} />
+      <SuppliersHeader
+        total={suppliers.length}
+        active={activeCount}
+        onNew={openCreateModal}
+        onImport={canWriteSuppliers ? openImportModal : undefined}
+      />
       <SuppliersSearch value={search} onChange={setSearch} />
 
       {loading ? (
@@ -113,6 +156,10 @@ export default function Suppliers() {
           <SupplierForm initial={editing} onSubmit={handleUpdate} onCancel={closeEditModal} saving={saving} />
         )}
       </Modal>
+
+      {showImport && (
+        <SupplierExcelImportModal existingNames={existingNames} onImport={handleImport} onClose={closeImportModal} />
+      )}
     </div>
   )
 }

@@ -1,11 +1,21 @@
-import { ChevronRight, HardHat, Pencil, Phone, Plus, Search } from 'lucide-react'
+import { ChevronRight, FileSpreadsheet, HardHat, Pencil, Phone, Plus, Search } from 'lucide-react'
 import { useCallback, useMemo, type MouseEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import type { Contractor } from '@/types/database'
 import { useAppRoles } from '@/hooks/useAppRoles'
 
-export function ContractorsHeader({ total, active, onNew }: { total: number; active: number; onNew: () => void }) {
+export function ContractorsHeader({
+  total,
+  active,
+  onNew,
+  onImport,
+}: {
+  total: number
+  active: number
+  onNew: () => void
+  onImport?: () => void
+}) {
   const { t } = useTranslation()
   const { canWriteContractors } = useAppRoles()
   return (
@@ -22,12 +32,22 @@ export function ContractorsHeader({ total, active, onNew }: { total: number; act
         </div>
       </div>
       {canWriteContractors && (
-        <button
-          onClick={onNew}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 active:scale-[0.97] transition-all shadow-sm shadow-blue-600/20 shrink-0"
-        >
-          <Plus className="w-4 h-4" /> {t('contractors.new')}
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          {onImport && (
+            <button
+              onClick={onImport}
+              className="flex items-center gap-2 px-4 py-2 bg-app-surface border border-app-border text-app-text text-sm font-semibold rounded-xl hover:bg-app-hover active:scale-[0.97] transition-all shadow-sm"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-green-600" /> Importar Excel
+            </button>
+          )}
+          <button
+            onClick={onNew}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 active:scale-[0.97] transition-all shadow-sm shadow-blue-600/20"
+          >
+            <Plus className="w-4 h-4" /> {t('contractors.new')}
+          </button>
+        </div>
       )}
     </div>
   )

@@ -1,10 +1,20 @@
-import { Pencil, Plus, Search, Truck } from 'lucide-react'
+import { FileSpreadsheet, Pencil, Plus, Search, Truck } from 'lucide-react'
 import { useCallback, useMemo, type MouseEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Supplier } from '@/types/database'
 import { useAppRoles } from '@/hooks/useAppRoles'
 
-export function SuppliersHeader({ total, active, onNew }: { total: number; active: number; onNew: () => void }) {
+export function SuppliersHeader({
+  total,
+  active,
+  onNew,
+  onImport,
+}: {
+  total: number
+  active: number
+  onNew: () => void
+  onImport?: () => void
+}) {
   const { t } = useTranslation()
   const { canWriteSuppliers } = useAppRoles()
   return (
@@ -21,12 +31,22 @@ export function SuppliersHeader({ total, active, onNew }: { total: number; activ
         </div>
       </div>
       {canWriteSuppliers && (
-        <button
-          onClick={onNew}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 active:scale-[0.97] transition-all shadow-sm shadow-blue-600/20 shrink-0"
-        >
-          <Plus className="w-4 h-4" /> {t('suppliers.new')}
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          {onImport && (
+            <button
+              onClick={onImport}
+              className="flex items-center gap-2 px-4 py-2 bg-app-surface border border-app-border text-app-text text-sm font-semibold rounded-xl hover:bg-app-hover active:scale-[0.97] transition-all shadow-sm"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-green-600" /> Importar Excel
+            </button>
+          )}
+          <button
+            onClick={onNew}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 active:scale-[0.97] transition-all shadow-sm shadow-blue-600/20"
+          >
+            <Plus className="w-4 h-4" /> {t('suppliers.new')}
+          </button>
+        </div>
       )}
     </div>
   )

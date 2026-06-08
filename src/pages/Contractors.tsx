@@ -12,15 +12,20 @@ import {
   ContractorsSearch,
   EmptyContractorsState,
 } from '@/components/features/contractors/ContractorsSections'
+import ContractorExcelImportModal from '@/components/features/contractors/ContractorExcelImportModal'
+import type { ParsedContractorRow } from '@/components/features/contractors/parseContractorExcel'
+import { useAppRoles } from '@/hooks/useAppRoles'
 
 type CreateContractorInput = Parameters<typeof contractorService.create>[0]
 
 export default function Contractors() {
   const { t } = useTranslation()
+  const { canWriteContractors } = useAppRoles()
   const [contractors, setContractors] = useState<Contractor[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [showForm, setShowForm] = useState(false)
+  const [showImport, setShowImport] = useState(false)
   const [editing, setEditing] = useState<Contractor | undefined>()
   const [saving, setSaving] = useState(false)
   const { success, error } = useToast()
@@ -90,13 +95,51 @@ export default function Contractors() {
     [contractors],
   )
 
+  const handleImport = useCallback(
+    async (rows: ParsedContractorRow[]): Promise<{ created: number; skipped: number }> => {
+      let created = 0
+      let skipped = 0
+      for (const row of rows) {
+        try {
+          await contractorService.create({
+            name: row.name,
+            specialty: row.specialty ?? undefined,
+            cedula: row.cedula ?? undefined,
+            phone: row.phone ?? undefined,
+            bank_name: row.bank_name ?? undefined,
+            bank_account: row.bank_account ?? undefined,
+            payment_method: row.payment_method ?? 'cash',
+          })
+          created++
+        } catch {
+          skipped++
+        }
+      }
+      await load()
+      if (created > 0) {
+        success(`${created} ${created === 1 ? 'contratista importado' : 'contratistas importados'} correctamente`)
+      }
+      return { created, skipped }
+    },
+    [load, success],
+  )
+
   const openCreateModal = useCallback(() => setShowForm(true), [])
   const closeCreateModal = useCallback(() => setShowForm(false), [])
   const closeEditModal = useCallback(() => setEditing(undefined), [])
+  const openImportModal = useCallback(() => setShowImport(true), [])
+  const closeImportModal = useCallback(() => setShowImport(false), [])
+
+  const existingNames = useMemo(() => contractors.map((c) => c.name), [contractors])
 
   return (
     <div className="space-y-6">
-      <ContractorsHeader total={contractors.length} active={activeCount} onNew={openCreateModal} />
+      <ContractorsHeader
+        total={contractors.length}
+        active={activeCount}
+        onNew={openCreateModal}
+        onImport={canWriteContractors ? openImportModal : undefined}
+      />
       <ContractorsSearch value={search} onChange={setSearch} />
 
       {loading ? (
@@ -115,6 +158,10 @@ export default function Contractors() {
           <ContractorForm initial={editing} onSubmit={handleUpdate} onCancel={closeEditModal} saving={saving} />
         )}
       </Modal>
+
+      {showImport && (
+        <ContractorExcelImportModal existingNames={existingNames} onImport={handleImport} onClose={closeImportModal} />
+      )}
     </div>
   )
 }
