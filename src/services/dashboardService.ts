@@ -69,6 +69,50 @@ export const dashboardService = {
     }
   },
 
+  /**
+   * Gasto mensual consolidado (todos los proyectos) para los últimos `months` meses.
+   * Suma nóminas aprobadas (por report_date) + transacciones (por date).
+   * Devuelve un array de { month: 'YYYY-MM', spend: number } ordenado ascendente.
+   */
+  async getMonthlySpend(months = 12): Promise<Array<{ month: string; spend: number }>> {
+    const now = new Date()
+    // Primer día del mes que empieza el rango (hace `months - 1` meses atrás)
+    const fromDate = new Date(now.getFullYear(), now.getMonth() - (months - 1), 1)
+    const fromISO = localISO(fromDate)
+
+    const [payrollRes, txnRes] = await Promise.all([
+      supabase
+        .from('payroll_periods')
+        .select('grand_total, report_date')
+        .in('status', COMMITTED_PAYROLL_STATUSES)
+        .gte('report_date', fromISO),
+      supabase.from('transactions').select('total, date').gte('date', fromISO),
+    ])
+
+    const spendMap = new Map<string, number>()
+    const ensureMonth = (ym: string) => {
+      if (!spendMap.has(ym)) spendMap.set(ym, 0)
+    }
+
+    for (const p of (payrollRes.data ?? []) as Array<{ grand_total: number | null; report_date: string | null }>) {
+      const ym = p.report_date ? p.report_date.slice(0, 7) : null
+      if (!ym) continue
+      ensureMonth(ym)
+      spendMap.set(ym, (spendMap.get(ym) ?? 0) + (p.grand_total ?? 0))
+    }
+
+    for (const t of (txnRes.data ?? []) as Array<{ total: number | null; date: string | null }>) {
+      const ym = t.date ? t.date.slice(0, 7) : null
+      if (!ym) continue
+      ensureMonth(ym)
+      spendMap.set(ym, (spendMap.get(ym) ?? 0) + (t.total ?? 0))
+    }
+
+    return Array.from(spendMap.entries())
+      .map(([month, spend]) => ({ month, spend }))
+      .sort((a, b) => a.month.localeCompare(b.month))
+  },
+
   async getRecentActivity() {
     const [txnRes, payrollRes] = await Promise.all([
       supabase
