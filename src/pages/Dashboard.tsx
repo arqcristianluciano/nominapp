@@ -14,6 +14,7 @@ import {
   DashboardPendingCortesSection,
   DashboardRecentActivitySection,
 } from '@/components/features/dashboard/DashboardSideSections'
+import { TendenciasSection } from '@/components/features/dashboard/TendenciasSection'
 
 export default function Dashboard() {
   const { t } = useTranslation()
@@ -92,6 +93,8 @@ export default function Dashboard() {
           <DashboardRecentActivitySection activities={data.activities} nowMs={nowMs} />
         </div>
       </div>
+
+      <TendenciasSection />
 
       <DashboardQuickActionsSection onNavigate={navigate} />
     </div>
