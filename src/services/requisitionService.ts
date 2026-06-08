@@ -869,6 +869,15 @@ export const requisitionService = {
         budget_category_id: before.budget_category_id,
         created_by: actor,
         notes: `Reversa de recepción de orden ${before.req_number}`,
+        // Revertir una recepción es una corrección administrativa: debe poder
+        // completarse aunque el material recibido ya se haya consumido (stock
+        // por debajo de lo recibido). Sin este override, el control de stock
+        // negativo rechazaría la reversa con INSUFFICIENT_STOCK. Se registra el
+        // motivo para dejar rastro de auditoría.
+        override: {
+          motivo: `Reversa de recepción de orden ${before.req_number}`,
+          actor,
+        },
       })
       reversed += 1
     }
