@@ -52,6 +52,7 @@ const FlujoCajaPage = lazyWithRetry(() => import('@/pages/FlujoCajaPage'))
 const AvancesPage = lazyWithRetry(() => import('@/pages/AvancesPage'))
 const AprobacionesPage = lazyWithRetry(() => import('@/pages/AprobacionesPage'))
 const AdminUsuarios = lazyWithRetry(() => import('@/pages/AdminUsuarios'))
+const CierreMes = lazyWithRetry(() => import('@/pages/CierreMes'))
 
 function withSuspense(Component: LazyExoticComponent<ComponentType>) {
   return (
@@ -125,6 +126,7 @@ export const router = createBrowserRouter([
           { path: 'proyectos/:projectId/flujo-caja', element: withSuspense(FlujoCajaPage) },
           { path: 'proyectos/:projectId/avances', element: withSuspense(AvancesPage) },
           { path: 'materiales', element: withSuspense(MaterialsCatalogPage) },
+          { path: 'cierre-mes', element: withSuspense(CierreMes) },
           {
             element: <RequireDirector />,
             children: [{ path: 'director', element: withSuspense(DirectorDashboard) }],
