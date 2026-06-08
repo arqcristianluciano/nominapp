@@ -19,7 +19,9 @@ interface ProjectLite {
 }
 
 interface BudgetCategoryLite {
+  id: string
   project_id: string
+  name: string
   budgeted_amount: number | null
 }
 
@@ -45,6 +47,7 @@ interface ContractorDocumentLite {
 interface BudgetExecutionTransactionLite {
   project_id: string
   total: number | null
+  budget_category_id?: string | null
   budget_category?: { code?: string | null } | null
 }
 
@@ -83,6 +86,10 @@ const CXP_WARNING_DAYS = 30
 const CXP_DANGER_DAYS = 60
 const BUDGET_WARNING_THRESHOLD = 0.8
 const BUDGET_DANGER_THRESHOLD = 1.0
+/** Umbral de advertencia por capítulo: ≥90% gastado del presupuesto asignado. */
+const CATEGORY_OVERRUN_WARNING_THRESHOLD = 0.9
+/** Umbral de peligro por capítulo: ≥100% gastado (excedido). */
+const CATEGORY_OVERRUN_DANGER_THRESHOLD = 1.0
 const DOC_EXPIRY_WARNING_DAYS = 30
 /** Días de anticipación para avisar de cuotas de préstamo próximas a vencer. */
 const LOAN_INSTALLMENT_WARNING_DAYS = 7
@@ -153,8 +160,10 @@ export const notificationService = {
         .limit(100),
       // 5 — Categorías presupuestales
       supabase.from('budget_categories').select('id, project_id, name, budgeted_amount'),
-      // 6 — Transacciones (ejecución presupuestal)
-      supabase.from('transactions').select('project_id, total, budget_category:budget_categories(code)'),
+      // 6 — Transacciones (ejecución presupuestal), con category_id para agrupar por capítulo
+      supabase
+        .from('transactions')
+        .select('project_id, total, budget_category_id, budget_category:budget_categories(code)'),
       // 7 — Proyectos
       supabase.from('projects').select('id, name, code'),
       // 8 — Documentos de contratistas
@@ -304,6 +313,47 @@ export const notificationService = {
           title: 'Presupuesto al límite (≥80%)',
           description: `${project.name} — ${Math.round(ratio * 100)}% ejecutado`,
           link: `/proyectos/${projectId}/presupuesto`,
+        })
+      }
+    }
+
+    // --- Sobrecosto por capítulo (≥90% warning, ≥100% danger) ---
+    // Gasto real por capítulo = suma de transactions con ese budget_category_id,
+    // excluyendo depósitos (igual que la lógica de proyecto de arriba).
+    const spentByCategory: Record<string, number> = {}
+    for (const txn of allTransactions) {
+      const isDeposit = txn.budget_category?.code === '19 - DEPOSITOS'
+      if (isDeposit) continue
+      if (!txn.budget_category_id) continue
+      spentByCategory[txn.budget_category_id] = (spentByCategory[txn.budget_category_id] ?? 0) + (txn.total ?? 0)
+    }
+
+    for (const cat of allCategories as BudgetCategoryLite[]) {
+      const budgeted = cat.budgeted_amount ?? 0
+      if (!budgeted) continue // omite capítulos sin presupuesto asignado
+      const spent = spentByCategory[cat.id] ?? 0
+      if (!spent) continue // omite capítulos sin ningún gasto registrado
+      const ratio = spent / budgeted
+      const pct = Math.round(ratio * 100)
+      const project = projectMap[cat.project_id]
+      if (!project) continue
+
+      const spentFmt = formatRD(spent)
+      if (ratio >= CATEGORY_OVERRUN_DANGER_THRESHOLD) {
+        notifications.push({
+          id: `cat-overrun-danger-${cat.id}`,
+          level: 'danger',
+          title: 'Capítulo excedido',
+          description: `${project.name} › ${cat.name} — ${pct}% gastado (${spentFmt} excedido)`,
+          link: `/proyectos/${cat.project_id}/presupuesto`,
+        })
+      } else if (ratio >= CATEGORY_OVERRUN_WARNING_THRESHOLD) {
+        notifications.push({
+          id: `cat-overrun-warning-${cat.id}`,
+          level: 'warning',
+          title: 'Capítulo al límite (≥90%)',
+          description: `${project.name} › ${cat.name} — ${pct}% gastado (${spentFmt})`,
+          link: `/proyectos/${cat.project_id}/presupuesto`,
         })
       }
     }
