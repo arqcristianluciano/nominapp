@@ -91,7 +91,7 @@
     "retrying": "Retrying…",
     "stats": {
       "active_projects": "Active projects",
-      "total_invested": "Total invested",
+      "total_invested": "Payroll invested",
       "cxp_pending": "Pending payables",
       "reports_this_month": "Reports this month",
       "trend_vs_prev": "{{percent}}% vs prev. month",
