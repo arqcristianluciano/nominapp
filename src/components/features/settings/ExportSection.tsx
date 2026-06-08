@@ -1,14 +1,17 @@
 import { useState } from 'react'
-import { Database, Download, Loader2 } from 'lucide-react'
+import { Database, Download, FileSpreadsheet, Loader2 } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import { EXPORTABLE_ENTITIES, exportAllToZip, triggerBackup, type ExportSummary } from '@/services/exportService'
+import { exportBackupToExcel, type BackupSummary } from '@/services/excelBackupService'
 import { getErrorMessage } from '@/utils/errors'
 
 export function ExportSection() {
   const { success, error, info } = useToast()
   const [exporting, setExporting] = useState(false)
   const [backupRunning, setBackupRunning] = useState(false)
+  const [excelBackupRunning, setExcelBackupRunning] = useState(false)
   const [lastSummary, setLastSummary] = useState<ExportSummary | null>(null)
+  const [lastExcelSummary, setLastExcelSummary] = useState<BackupSummary | null>(null)
 
   async function handleExportCsv() {
     if (exporting) return
@@ -22,6 +25,25 @@ export function ExportSection() {
       error(`No se pudo generar el ZIP: ${getErrorMessage(err)}`)
     } finally {
       setExporting(false)
+    }
+  }
+
+  async function handleExcelBackup() {
+    if (excelBackupRunning) return
+    setExcelBackupRunning(true)
+    try {
+      const summary = await exportBackupToExcel()
+      setLastExcelSummary(summary)
+      const withErrors = summary.sheets.filter((s) => s.error).length
+      if (withErrors > 0) {
+        info(`Respaldo listo con ${withErrors} hoja(s) con error. Archivo: ${summary.filename}`)
+      } else {
+        success(`Respaldo listo: ${summary.filename} · ${summary.sheets.length} hojas, ${summary.totalRows} filas`)
+      }
+    } catch (err) {
+      error(`No se pudo generar el respaldo: ${getErrorMessage(err)}`)
+    } finally {
+      setExcelBackupRunning(false)
     }
   }
 
@@ -75,6 +97,70 @@ export function ExportSection() {
             ))}
           </ul>
         </details>
+      </div>
+
+      {/* ── Respaldo en Excel ─────────────────────────────────────────────── */}
+      <div className="bg-app-surface rounded-xl border border-app-border p-6 space-y-4">
+        <div className="space-y-1">
+          <h2 className="font-medium text-app-text">Descargar respaldo (Excel)</h2>
+          <p className="text-sm text-app-muted">
+            Genera un archivo Excel (.xlsx) con una hoja por área: Proyectos, Proveedores, Contratistas, Nóminas, Mano
+            de obra, Distribución de pagos, Préstamos, Cuotas, Inventario, Cubicaciones, Presupuesto, Transacciones,
+            Control de calidad y Bitácora. Todos los datos del sistema en un solo archivo.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={handleExcelBackup}
+            disabled={excelBackupRunning}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+          >
+            {excelBackupRunning ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <FileSpreadsheet className="w-4 h-4" />
+            )}
+            {excelBackupRunning ? 'Generando...' : 'Descargar respaldo (Excel)'}
+          </button>
+        </div>
+
+        {lastExcelSummary && (
+          <div className="space-y-2">
+            <p className="text-xs text-app-muted">
+              Archivo: <span className="font-mono">{lastExcelSummary.filename}</span> · Total:{' '}
+              {lastExcelSummary.totalRows} filas en {lastExcelSummary.sheets.length} hojas
+            </p>
+            <div className="overflow-hidden rounded-lg border border-app-border">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-app-bg border-b border-app-border">
+                    <th className="px-3 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">Hoja</th>
+                    <th className="px-3 py-2 text-right text-[10px] font-semibold text-app-muted uppercase">Filas</th>
+                    <th className="px-3 py-2 text-left text-[10px] font-semibold text-app-muted uppercase">Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lastExcelSummary.sheets.map((s) => (
+                    <tr key={s.name} className="border-b border-app-border last:border-b-0">
+                      <td className="px-3 py-2 text-xs text-app-text">{s.name}</td>
+                      <td className="px-3 py-2 text-xs text-app-muted text-right">{s.rows}</td>
+                      <td className="px-3 py-2 text-xs">
+                        {s.error ? (
+                          <span className="text-red-600">{s.error}</span>
+                        ) : s.rows === 0 ? (
+                          <span className="text-app-subtle">sin datos</span>
+                        ) : (
+                          <span className="text-green-600">ok</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="bg-app-surface rounded-xl border border-app-border p-6 space-y-4">
