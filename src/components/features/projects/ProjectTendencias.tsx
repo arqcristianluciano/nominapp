@@ -33,7 +33,7 @@ interface ScheduleMonthlyProgress {
  * por duración de las tareas activas en ese mes.
  */
 function buildScheduleProgress(tasks: ScheduleTask[], months: number): ScheduleMonthlyProgress[] {
-  if (tasks.length === 0) return []
+  if (!tasks || tasks.length === 0) return []
 
   const now = new Date()
   const result: ScheduleMonthlyProgress[] = []
@@ -95,12 +95,11 @@ export function ProjectTendencias({ projectId }: Props) {
         .from('schedule_tasks')
         .select('*')
         .eq('project_id', projectId)
-        .order('task_number', { ascending: true, nullsFirst: false })
-        .then((res) => (res.data ?? []) as ScheduleTask[]),
+        .order('task_number', { ascending: true, nullsFirst: false }),
     ]).then(([cashRes, schedRes]) => {
       if (cancelled) return
-      if (cashRes.status === 'fulfilled') setCashFlowRows(cashRes.value)
-      if (schedRes.status === 'fulfilled') setTasks(schedRes.value)
+      if (cashRes.status === 'fulfilled') setCashFlowRows(cashRes.value ?? [])
+      if (schedRes.status === 'fulfilled') setTasks((schedRes.value?.data ?? []) as ScheduleTask[])
       setLoading(false)
     })
 
