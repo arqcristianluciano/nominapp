@@ -85,6 +85,7 @@ export default function Dashboard() {
           loading={data.loading}
           projects={data.activeProjects}
           progressMap={data.progressMap}
+          projectKpiMap={data.projectKpiMap}
         />
 
         <div className="space-y-4">

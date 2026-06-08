@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Download, FileText, Printer } from 'lucide-react'
+import { Download, FileText, Printer, Users } from 'lucide-react'
 import { useProjectStore } from '@/stores/projectStore'
 import { useProjectReports } from '@/hooks/useProjectReports'
 import { ReportsSummaryCards } from '@/components/features/reports/ReportsSummaryCards'
 import { CubicationsTable, FinancialSummaryTable } from '@/components/features/reports/ReportsTables'
 import { ReporteMensualModal } from '@/components/features/reports/ReporteMensualModal'
 import { Modal } from '@/components/ui/Modal'
-import { downloadPdf, generateMonthlyReport } from '@/services/reports/pdfReportService'
+import { downloadPdf, generateMonthlyReport, generateClientReport } from '@/services/reports/pdfReportService'
 import { loadMonthlyReportData } from '@/services/reports/monthlyReportData'
+import { loadClientReportData } from '@/services/reports/clientReportData'
 import { getErrorMessage } from '@/utils/errors'
 
 const MONTH_NAMES = [
@@ -53,6 +54,13 @@ export default function Reportes() {
   const [selectedMonth, setSelectedMonth] = useState(defaultMonthValue())
   const [generatingPdf, setGeneratingPdf] = useState(false)
   const [pdfError, setPdfError] = useState<string | null>(null)
+
+  // Client report state
+  const [clientReportDialogOpen, setClientReportDialogOpen] = useState(false)
+  const [clientReportProjectId, setClientReportProjectId] = useState('')
+  const [clientReportIncludePhotos, setClientReportIncludePhotos] = useState(false)
+  const [generatingClientPdf, setGeneratingClientPdf] = useState(false)
+  const [clientPdfError, setClientPdfError] = useState<string | null>(null)
 
   useEffect(() => {
     fetchProjects()
@@ -108,6 +116,47 @@ export default function Reportes() {
     }
   }
 
+  function openClientReportDialog() {
+    setClientPdfError(null)
+    if (!clientReportProjectId && projects.length > 0) {
+      setClientReportProjectId(projects[0].id)
+    }
+    setClientReportDialogOpen(true)
+  }
+
+  function closeClientReportDialog() {
+    if (generatingClientPdf) return
+    setClientReportDialogOpen(false)
+  }
+
+  async function handleGenerateClientPdf() {
+    setClientPdfError(null)
+    if (!clientReportProjectId) {
+      setClientPdfError('Selecciona un proyecto.')
+      return
+    }
+    const project = projects.find((p) => p.id === clientReportProjectId)
+    if (!project) {
+      setClientPdfError('Proyecto no encontrado.')
+      return
+    }
+    setGeneratingClientPdf(true)
+    try {
+      const input = await loadClientReportData(clientReportProjectId, {
+        includePhotos: clientReportIncludePhotos,
+      })
+      const doc = generateClientReport(input)
+      const filename = `reporte-cliente-${project.code || project.id}.pdf`
+      downloadPdf(doc, filename)
+      setClientReportDialogOpen(false)
+    } catch (err) {
+      console.error('[Reportes] handleGenerateClientPdf failed', err)
+      setClientPdfError(getErrorMessage(err) || 'No se pudo generar el reporte para cliente. Intenta de nuevo.')
+    } finally {
+      setGeneratingClientPdf(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
@@ -127,6 +176,12 @@ export default function Reportes() {
             className="flex items-center gap-2 px-4 py-2 border border-app-border bg-app-surface text-sm font-medium text-app-muted rounded-xl hover:bg-app-hover transition-colors"
           >
             <FileText className="w-4 h-4" /> Reporte mensual
+          </button>
+          <button
+            onClick={openClientReportDialog}
+            className="flex items-center gap-2 px-4 py-2 border border-blue-300 bg-blue-50 text-sm font-medium text-blue-700 rounded-xl hover:bg-blue-100 transition-colors"
+          >
+            <Users className="w-4 h-4" /> Reporte para cliente (PDF)
           </button>
           {reports.length > 0 && (
             <>
@@ -222,6 +277,78 @@ export default function Reportes() {
             >
               <Download className="w-4 h-4" />
               {generatingPdf ? 'Generando...' : 'Descargar PDF'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Client report dialog */}
+      <Modal open={clientReportDialogOpen} onClose={closeClientReportDialog} title="Reporte para cliente (PDF)">
+        <div className="space-y-4">
+          <p className="text-xs text-app-muted">
+            Genera un PDF presentable para tu cliente o inversionista. Incluye avance de obra, resumen financiero e
+            hitos del cronograma. <strong>No incluye</strong> costos unitarios, detalle de contratistas ni datos
+            bancarios.
+          </p>
+
+          <div>
+            <label htmlFor="client-report-project" className="block text-xs font-medium text-app-muted mb-2">
+              Proyecto
+            </label>
+            <select
+              id="client-report-project"
+              value={clientReportProjectId}
+              onChange={(e) => setClientReportProjectId(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg border border-app-border bg-app-surface text-sm text-app-text"
+            >
+              <option value="">Selecciona un proyecto…</option>
+              {projects.map((project) => (
+                <option key={project.id} value={project.id}>
+                  {project.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <input
+              id="client-report-photos"
+              type="checkbox"
+              checked={clientReportIncludePhotos}
+              onChange={(e) => setClientReportIncludePhotos(e.target.checked)}
+              className="w-4 h-4 rounded border-app-border text-blue-600"
+            />
+            <label htmlFor="client-report-photos" className="text-sm text-app-text">
+              Incluir fotos recientes de la bitácora (hasta 6)
+            </label>
+          </div>
+
+          {clientPdfError && (
+            <p className="text-xs text-red-600" role="alert">
+              {clientPdfError}
+            </p>
+          )}
+
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={closeClientReportDialog}
+              disabled={generatingClientPdf}
+              className="px-3 py-2 rounded-lg border border-app-border bg-app-surface text-sm text-app-muted hover:bg-app-hover transition-colors disabled:opacity-50"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                void handleGenerateClientPdf()
+              }}
+              disabled={generatingClientPdf || !clientReportProjectId}
+              aria-busy={generatingClientPdf}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Download className="w-4 h-4" />
+              {generatingClientPdf ? 'Generando...' : 'Descargar PDF'}
             </button>
           </div>
         </div>

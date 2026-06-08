@@ -1,7 +1,35 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, AlertTriangle, AlertCircle, X, CheckCircle } from 'lucide-react'
+import { Bell, AlertTriangle, AlertCircle, X, CheckCircle, Mail, MessageCircle, Share2 } from 'lucide-react'
 import { notificationService, type AppNotification } from '@/services/notificationService'
+
+// ---------------------------------------------------------------------------
+// Helpers para compartir sin backend ni credenciales
+// ---------------------------------------------------------------------------
+
+/** Arma el texto de un aviso individual. */
+function notifToText(notif: AppNotification): string {
+  const levelLabel = notif.level === 'danger' ? '🔴' : notif.level === 'warning' ? '🟡' : 'ℹ️'
+  return `${levelLabel} *${notif.title}*\n${notif.description}`
+}
+
+/** Arma un resumen de todos los avisos visibles. */
+function summaryText(notifications: AppNotification[]): string {
+  const lines = notifications.map((n, i) => `${i + 1}. ${notifToText(n)}`).join('\n\n')
+  return `*Resumen de alertas NominApp* (${notifications.length} aviso${notifications.length !== 1 ? 's' : ''})\n\n${lines}`
+}
+
+/** Abre WhatsApp Web/app con el mensaje listo. El usuario elige a quién enviárselo. */
+function openWhatsApp(text: string): void {
+  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer')
+}
+
+/** Abre el cliente de correo con asunto y cuerpo prellenados. */
+function openEmail(subject: string, body: string): void {
+  window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+}
+
+// ---------------------------------------------------------------------------
 
 const LEVEL_STYLES: Record<string, { icon: React.ElementType; bg: string; text: string; border: string }> = {
   danger: {
@@ -79,6 +107,24 @@ export function NotificationDropdown() {
     dismiss(notif.id, { stopPropagation: () => {} } as React.MouseEvent)
     setOpen(false)
     navigate(notif.link)
+  }
+
+  function handleShareWhatsApp(notif: AppNotification, e: React.MouseEvent) {
+    e.stopPropagation()
+    openWhatsApp(notifToText(notif))
+  }
+
+  function handleShareEmail(notif: AppNotification, e: React.MouseEvent) {
+    e.stopPropagation()
+    openEmail(notif.title, notifToText(notif))
+  }
+
+  function handleShareSummaryWhatsApp() {
+    openWhatsApp(summaryText(visible))
+  }
+
+  function handleShareSummaryEmail() {
+    openEmail('Resumen de alertas NominApp', summaryText(visible))
   }
 
   const visible = notifications.filter((n) => !dismissed.has(n.id))
@@ -163,39 +209,101 @@ export function NotificationDropdown() {
                 const style = LEVEL_STYLES[notif.level]
                 const Icon = style.icon
                 return (
-                  <div
-                    role="button"
-                    tabIndex={0}
-                    key={notif.id}
-                    onClick={() => handleClick(notif)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault()
-                        handleClick(notif)
-                      }
-                    }}
-                    className={`w-full cursor-pointer text-left flex items-start gap-3 px-4 py-3 hover:bg-app-hover transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 ${style.border}`}
-                  >
-                    <div className={`mt-0.5 w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${style.bg}`}>
-                      <Icon className={`w-3.5 h-3.5 ${style.text}`} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-app-text">{notif.title}</p>
-                      <p className="text-xs text-app-muted truncate mt-0.5">{notif.description}</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={(e) => dismiss(notif.id, e)}
-                      className={`shrink-0 p-0.5 mt-0.5 text-app-subtle hover:text-app-muted ${ICON_BUTTON_CLASS}`}
-                      title="Descartar notificación"
-                      aria-label="Descartar notificación"
+                  <div key={notif.id} className={`flex flex-col ${style.border}`}>
+                    {/* Fila principal: icono + texto + descartar */}
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => handleClick(notif)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          handleClick(notif)
+                        }
+                      }}
+                      className="w-full cursor-pointer text-left flex items-start gap-3 px-4 pt-3 pb-1 hover:bg-app-hover transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500"
                     >
-                      <X className="w-3 h-3" />
-                    </button>
+                      <div
+                        className={`mt-0.5 w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${style.bg}`}
+                      >
+                        <Icon className={`w-3.5 h-3.5 ${style.text}`} aria-hidden="true" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-app-text">{notif.title}</p>
+                        <p className="text-xs text-app-muted truncate mt-0.5">{notif.description}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => dismiss(notif.id, e)}
+                        className={`shrink-0 p-0.5 mt-0.5 text-app-subtle hover:text-app-muted ${ICON_BUTTON_CLASS}`}
+                        title="Descartar notificación"
+                        aria-label="Descartar notificación"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+
+                    {/* Fila de acciones: enviar por WhatsApp / correo */}
+                    <div className="flex items-center gap-2 px-4 pb-2 pl-14">
+                      <button
+                        type="button"
+                        onClick={(e) => handleShareWhatsApp(notif, e)}
+                        className={`flex items-center gap-1 text-[10px] text-green-600 hover:text-green-700 font-medium ${ICON_BUTTON_CLASS}`}
+                        title="Enviar por WhatsApp"
+                        aria-label={`Enviar aviso "${notif.title}" por WhatsApp`}
+                      >
+                        <MessageCircle className="w-3 h-3" aria-hidden="true" />
+                        WhatsApp
+                      </button>
+                      <span className="text-app-subtle text-[10px]">·</span>
+                      <button
+                        type="button"
+                        onClick={(e) => handleShareEmail(notif, e)}
+                        className={`flex items-center gap-1 text-[10px] text-blue-500 hover:text-blue-700 font-medium ${ICON_BUTTON_CLASS}`}
+                        title="Enviar por correo"
+                        aria-label={`Enviar aviso "${notif.title}" por correo`}
+                      >
+                        <Mail className="w-3 h-3" aria-hidden="true" />
+                        Correo
+                      </button>
+                    </div>
                   </div>
                 )
               })}
           </div>
+
+          {/* Pie: compartir resumen de todos los avisos visibles */}
+          {!loading && !error && visible.length > 1 && (
+            <div className="px-4 py-2.5 border-t border-app-border bg-app-surface-subtle flex items-center justify-between">
+              <span className="text-[10px] text-app-subtle flex items-center gap-1">
+                <Share2 className="w-3 h-3" aria-hidden="true" />
+                Compartir resumen ({visible.length} avisos)
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleShareSummaryWhatsApp}
+                  className={`flex items-center gap-1 text-[10px] text-green-600 hover:text-green-700 font-medium ${ICON_BUTTON_CLASS}`}
+                  title="Compartir resumen por WhatsApp"
+                  aria-label="Compartir resumen de todos los avisos por WhatsApp"
+                >
+                  <MessageCircle className="w-3 h-3" aria-hidden="true" />
+                  WhatsApp
+                </button>
+                <span className="text-app-subtle text-[10px]">·</span>
+                <button
+                  type="button"
+                  onClick={handleShareSummaryEmail}
+                  className={`flex items-center gap-1 text-[10px] text-blue-500 hover:text-blue-700 font-medium ${ICON_BUTTON_CLASS}`}
+                  title="Compartir resumen por correo"
+                  aria-label="Compartir resumen de todos los avisos por correo"
+                >
+                  <Mail className="w-3 h-3" aria-hidden="true" />
+                  Correo
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

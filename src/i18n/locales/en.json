@@ -32,16 +32,19 @@
     }
   },
   "header": {
-    "searchPlaceholder": "Search projects, contractors...",
+    "searchPlaceholder": "Search projects, contractors, suppliers...",
     "searchPlaceholderMobile": "Search...",
     "searchTitle": "Search",
     "noResults": "No results for \"{{query}}\"",
     "searchLoadError": "Couldn't load search",
+    "searching": "Searching...",
     "logout": "Sign out",
     "types": {
       "proyecto": "Project",
       "contratista": "Contractor",
-      "suplidor": "Supplier"
+      "suplidor": "Supplier",
+      "prestamo": "Loan",
+      "contrato": "Cubicación"
     }
   },
   "common": {
