@@ -20,6 +20,7 @@ import {
   Calendar,
   TrendingUp,
   Users,
+  CalendarCheck,
 } from 'lucide-react'
 import { usePendingApprovals } from '@/hooks/usePendingApprovals'
 import { usePendingCortes } from '@/hooks/usePendingCortes'
@@ -82,6 +83,7 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { to: '/reportes', icon: FileText, labelKey: 'nav.financialSummary', capability: 'canViewReportes' },
       { to: '/historial-precios', icon: TrendingUp, labelKey: 'nav.priceHistory', capability: 'canViewPriceHistory' },
+      { to: '/cierre-mes', icon: CalendarCheck, labelKey: 'nav.cierreMes' },
     ],
   },
   {
