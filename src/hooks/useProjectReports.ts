@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { transactionService } from '@/services/transactionService'
 import { budgetCategoryService } from '@/services/budgetCategoryService'
+import { budgetItemService } from '@/services/budgetItemService'
+import { budgetSpentService } from '@/services/budgetSpentService'
 import { getProjectsProgress } from '@/services/cubicationService'
-import { calcCashDisponible, calcTotalCxP, calcTotalIncurrido } from '@/utils/financialCalculations'
+import { calcBudgetSpent, calcCashDisponible, calcTotalCxP } from '@/utils/financialCalculations'
+import { round2 } from '@/utils/money'
 import { useToast } from '@/components/ui/Toast'
 import type { Project } from '@/types/database'
 import type { ProjectReport, ReportTotals } from '@/components/features/reports/reportTypes'
@@ -30,6 +33,19 @@ export function useProjectReports(projects: Project[]) {
           budgetCategoryService.getByProjects(projectIds),
         ])
 
+        // Subpartidas (budget_items) de todas las categorías y costo imputado por
+        // proyecto. Se cargan aquí para que el consolidado calcule el presupuesto y
+        // el gasto IGUAL que la pantalla de Presupuesto de cada proyecto:
+        //   - Presupuesto de una partida = suma de sus subpartidas si tiene; si no,
+        //     el monto de la categoría (budgeted_amount).
+        //   - Gasto = transacciones imputadas a la partida + costo imputado
+        //     (nóminas, facturas de materiales y salidas de almacén).
+        const allCategoryIds = allCategories.map((category) => category.id)
+        const [allItems, imputedPerProject] = await Promise.all([
+          budgetItemService.getByProjectCategories(allCategoryIds),
+          Promise.all(activeProjects.map((project) => budgetSpentService.getImputedCostByCategory(project.id))),
+        ])
+
         const transactionsByProject = new Map<string, typeof allTransactions>()
         for (const tx of allTransactions) {
           const list = transactionsByProject.get(tx.project_id)
@@ -44,12 +60,38 @@ export function useProjectReports(projects: Project[]) {
           else categoriesByProject.set(category.project_id, [category])
         }
 
+        const itemsByCategory = new Map<string, typeof allItems>()
+        for (const item of allItems) {
+          const list = itemsByCategory.get(item.budget_category_id)
+          if (list) list.push(item)
+          else itemsByCategory.set(item.budget_category_id, [item])
+        }
+
+        const imputedByProject = new Map<string, Record<string, number>>()
+        activeProjects.forEach((project, index) => {
+          imputedByProject.set(project.id, imputedPerProject[index] ?? {})
+        })
+
         const results: ProjectReport[] = []
         for (const project of activeProjects) {
           const transactions = transactionsByProject.get(project.id) ?? []
           const categories = categoriesByProject.get(project.id) ?? []
-          const totalIncurrido = calcTotalIncurrido(transactions)
-          const presupuesto = categories.reduce((sum, category) => sum + category.budgeted_amount, 0)
+          const imputed = imputedByProject.get(project.id) ?? {}
+
+          let presupuesto = 0
+          let totalIncurrido = 0
+          for (const category of categories) {
+            const items = itemsByCategory.get(category.id) ?? []
+            const categoryBudget =
+              items.length > 0
+                ? items.reduce((sum, item) => sum + item.quantity * item.unit_price, 0)
+                : category.budgeted_amount
+            presupuesto += categoryBudget
+            totalIncurrido += calcBudgetSpent(transactions, category.id) + (imputed[category.id] ?? 0)
+          }
+          presupuesto = round2(presupuesto)
+          totalIncurrido = round2(totalIncurrido)
+
           const cub = cubProgress[project.id] ?? { acordado: 0, acumulado: 0, avg_completion: 0 }
           results.push({
             id: project.id,
