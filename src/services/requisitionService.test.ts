@@ -347,6 +347,40 @@ describe('requisitionService - recepción de mercancía (entrada a almacén)', (
     expect(poMovements.some((m) => m.type === 'out' && m.quantity === 25)).toBe(true)
   })
 
+  it('reverseReceipt funciona aunque el material recibido ya se haya consumido (caso Sentry #99)', async () => {
+    const name = `Varilla ${Date.now()}`
+    const req = await makeOrderedReq(name, 100, 12)
+    await requisitionService.markReceived(req.id, 'Almacenista')
+
+    const item = (await inventoryService.getItems(projectId)).find((i) => i.name === name)!
+    expect(item.current_stock).toBe(100)
+
+    // Se consume todo el material recibido (salida normal a una partida): el
+    // stock queda en 0 antes de intentar revertir la recepción.
+    await inventoryService.addMovement({
+      item_id: item.id,
+      project_id: projectId,
+      type: 'out',
+      quantity: 100,
+      date: new Date().toISOString().slice(0, 10),
+      budget_item_id: itemId,
+      created_by: 'Almacenista',
+      notes: 'Consumo en obra',
+    })
+    const consumed = (await inventoryService.getItems(projectId)).find((i) => i.name === name)!
+    expect(consumed.current_stock).toBe(0)
+
+    // Antes del fix esto lanzaba InventoryError INSUFFICIENT_STOCK
+    // ("disponible 0, solicitado 100"). La reversa debe completarse como
+    // corrección administrativa (override) y dejar la OC en "ordered".
+    await requisitionService.reverseReceipt(req.id, 'Almacenista')
+
+    const after = await requisitionService.getById(req.id)
+    expect(after.status).toBe('ordered')
+    const finalItem = (await inventoryService.getItems(projectId)).find((i) => i.name === name)!
+    expect(finalItem.current_stock).toBe(-100)
+  })
+
   it('vincula la entrada de almacén por material_catalog_id de la línea de cotización', async () => {
     const { data: cat } = await supabase
       .from('materials_catalog')
