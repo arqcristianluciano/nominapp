@@ -343,4 +343,165 @@ describe('notificationService.getAll', () => {
     const qcNotif = notifications.find((n) => n.id.startsWith('qc-test-'))
     expect(qcNotif).toBeUndefined()
   })
+
+  // --- Sobrecosto por capítulo ---
+
+  it('capítulo al 95% de gasto emite notificación cat-overrun-warning', async () => {
+    // Query 5: una categoría con presupuesto de 100 000
+    // Query 6: transacciones que suman 95 000 con ese budget_category_id
+    // Query 7: proyecto al que pertenece la categoría
+    setQueryResults({
+      5: {
+        data: [{ id: 'cat-1', project_id: 'proj-A', name: 'Estructura', budgeted_amount: 100000 }],
+        error: null,
+      },
+      6: {
+        data: [
+          {
+            project_id: 'proj-A',
+            total: 95000,
+            budget_category_id: 'cat-1',
+            budget_category: { code: 'EST-01' },
+          },
+        ],
+        error: null,
+      },
+      7: {
+        data: [{ id: 'proj-A', name: 'Edificio Central', code: 'EC-001' }],
+        error: null,
+      },
+    })
+
+    const notifications = await notificationService.getAll()
+
+    const catNotif = notifications.find((n) => n.id === 'cat-overrun-warning-cat-1')
+    expect(catNotif).toBeDefined()
+    expect(catNotif).toMatchObject({
+      id: 'cat-overrun-warning-cat-1',
+      level: 'warning',
+      title: 'Capítulo al límite (≥90%)',
+      link: '/proyectos/proj-A/presupuesto',
+    })
+    expect(catNotif!.description).toContain('Edificio Central')
+    expect(catNotif!.description).toContain('Estructura')
+    expect(catNotif!.description).toContain('95%')
+  })
+
+  it('capítulo al 100% o más emite notificación cat-overrun-danger', async () => {
+    // Query 5: categoría con presupuesto de 50 000
+    // Query 6: gasto de 55 000 → 110% → danger
+    setQueryResults({
+      5: {
+        data: [{ id: 'cat-2', project_id: 'proj-B', name: 'Acabados', budgeted_amount: 50000 }],
+        error: null,
+      },
+      6: {
+        data: [
+          {
+            project_id: 'proj-B',
+            total: 55000,
+            budget_category_id: 'cat-2',
+            budget_category: { code: 'ACA-02' },
+          },
+        ],
+        error: null,
+      },
+      7: {
+        data: [{ id: 'proj-B', name: 'Torre Norte', code: 'TN-002' }],
+        error: null,
+      },
+    })
+
+    const notifications = await notificationService.getAll()
+
+    const catNotif = notifications.find((n) => n.id === 'cat-overrun-danger-cat-2')
+    expect(catNotif).toBeDefined()
+    expect(catNotif).toMatchObject({
+      id: 'cat-overrun-danger-cat-2',
+      level: 'danger',
+      title: 'Capítulo excedido',
+      link: '/proyectos/proj-B/presupuesto',
+    })
+    expect(catNotif!.description).toContain('Torre Norte')
+    expect(catNotif!.description).toContain('Acabados')
+    expect(catNotif!.description).toContain('110%')
+  })
+
+  it('capítulo con presupuesto 0 no emite ninguna alerta de sobrecosto', async () => {
+    setQueryResults({
+      5: {
+        data: [{ id: 'cat-3', project_id: 'proj-C', name: 'Varios', budgeted_amount: 0 }],
+        error: null,
+      },
+      6: {
+        data: [
+          {
+            project_id: 'proj-C',
+            total: 1000,
+            budget_category_id: 'cat-3',
+            budget_category: { code: 'VAR-03' },
+          },
+        ],
+        error: null,
+      },
+      7: {
+        data: [{ id: 'proj-C', name: 'Proyecto C', code: 'PC-003' }],
+        error: null,
+      },
+    })
+
+    const notifications = await notificationService.getAll()
+
+    const catNotif = notifications.find((n) => n.id.startsWith('cat-overrun-'))
+    expect(catNotif).toBeUndefined()
+  })
+
+  it('capítulo con gasto 0 no emite ninguna alerta de sobrecosto', async () => {
+    setQueryResults({
+      5: {
+        data: [{ id: 'cat-4', project_id: 'proj-D', name: 'Instalaciones', budgeted_amount: 80000 }],
+        error: null,
+      },
+      // Query 6 vacía → sin transacciones para cat-4
+      7: {
+        data: [{ id: 'proj-D', name: 'Proyecto D', code: 'PD-004' }],
+        error: null,
+      },
+    })
+
+    const notifications = await notificationService.getAll()
+
+    const catNotif = notifications.find((n) => n.id.startsWith('cat-overrun-'))
+    expect(catNotif).toBeUndefined()
+  })
+
+  it('transacción de depósito no cuenta como gasto al calcular sobrecosto por capítulo', async () => {
+    // Un depósito de 200 000 no debe disparar la alerta aunque supere el presupuesto
+    setQueryResults({
+      5: {
+        data: [{ id: 'cat-5', project_id: 'proj-E', name: 'Depósitos', budgeted_amount: 100000 }],
+        error: null,
+      },
+      6: {
+        data: [
+          {
+            project_id: 'proj-E',
+            total: 200000,
+            budget_category_id: 'cat-5',
+            budget_category: { code: '19 - DEPOSITOS' },
+          },
+        ],
+        error: null,
+      },
+      7: {
+        data: [{ id: 'proj-E', name: 'Proyecto E', code: 'PE-005' }],
+        error: null,
+      },
+    })
+
+    const notifications = await notificationService.getAll()
+
+    const catNotif = notifications.find((n) => n.id.startsWith('cat-overrun-'))
+    expect(catNotif).toBeUndefined()
+  })
 })
