@@ -13,9 +13,11 @@ import {
 import { formatRD } from '@/utils/currency'
 import { StatCard } from '@/components/features/dashboard/StatCard'
 import { ProjectCard } from '@/components/features/dashboard/ProjectCard'
+import { ProjectOverviewCard } from '@/components/features/dashboard/ProjectOverviewCard'
 import { QuickAction } from '@/components/features/dashboard/QuickAction'
 import { EmptyProjects, ProjectsSkeleton } from '@/components/features/dashboard/ProjectsSkeleton'
 import type { ProjectProgress } from '@/hooks/useDashboardData'
+import type { ProjectKPI } from '@/services/directorService'
 import type { Project } from '@/types/database'
 
 interface DashboardStatsSectionProps {
@@ -34,6 +36,7 @@ interface DashboardProjectsSectionProps {
   loading: boolean
   projects: Project[]
   progressMap: Record<string, ProjectProgress>
+  projectKpiMap: Record<string, ProjectKPI>
 }
 
 const QUICK_ACTIONS = [
@@ -119,8 +122,14 @@ export function DashboardStatsSection({
   )
 }
 
-export function DashboardProjectsSection({ loading, projects, progressMap }: DashboardProjectsSectionProps) {
+export function DashboardProjectsSection({
+  loading,
+  projects,
+  progressMap,
+  projectKpiMap,
+}: DashboardProjectsSectionProps) {
   const { t } = useTranslation()
+  const hasKpis = Object.keys(projectKpiMap).length > 0
   return (
     <div className="space-y-3 lg:col-span-2">
       <div className="flex items-center justify-between">
@@ -138,9 +147,14 @@ export function DashboardProjectsSection({ loading, projects, progressMap }: Das
         <EmptyProjects />
       ) : (
         <div className="space-y-2.5">
-          {projects.slice(0, 4).map((project) => (
-            <ProjectCard key={project.id} project={project} progress={progressMap[project.id]} />
-          ))}
+          {projects.slice(0, 4).map((project) => {
+            const kpi = projectKpiMap[project.id]
+            return hasKpis && kpi ? (
+              <ProjectOverviewCard key={project.id} kpi={kpi} progress={progressMap[project.id]} />
+            ) : (
+              <ProjectCard key={project.id} project={project} progress={progressMap[project.id]} />
+            )
+          })}
           {projects.length > 4 && (
             <Link
               to="/proyectos"
