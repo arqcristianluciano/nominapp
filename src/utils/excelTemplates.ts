@@ -83,6 +83,50 @@ export async function downloadPayrollTemplate(): Promise<void> {
 }
 
 /**
+ * Genera y descarga la plantilla para importar Proveedores.
+ * Columnas: Nombre, RNC, Teléfono, Banco, Número de cuenta, Tipo de cuenta, Condiciones de pago.
+ */
+export async function downloadSupplierTemplate(): Promise<void> {
+  const XLSX = await import('xlsx')
+  const rows: (string | number)[][] = [
+    ['Nombre', 'RNC', 'Teléfono', 'Banco', 'Número de cuenta', 'Tipo de cuenta', 'Condiciones de pago'],
+    [
+      'Materiales del Norte SA',
+      '131234567',
+      '809-555-0100',
+      'Banco Popular',
+      '123456789012',
+      'ahorros',
+      'Credito 30 dias',
+    ],
+    ['Ferretería Central', '131999888', '829-555-0200', 'Banreservas', '987654321012', 'corriente', 'Pago Cash'],
+    ['Distribuidora XYZ', '', '849-555-0300', '', '', '', ''],
+  ]
+  const ws = buildSheetWithBoldHeader(XLSX, rows)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Proveedores')
+  downloadWorkbook(XLSX, wb, 'plantilla_proveedores.xlsx')
+}
+
+/**
+ * Genera y descarga la plantilla para importar Contratistas.
+ * Columnas: Nombre, Especialidad, Cédula, Teléfono, Banco, Número de cuenta, Método de pago.
+ */
+export async function downloadContractorTemplate(): Promise<void> {
+  const XLSX = await import('xlsx')
+  const rows: (string | number)[][] = [
+    ['Nombre', 'Especialidad', 'Cédula', 'Teléfono', 'Banco', 'Número de cuenta', 'Método de pago'],
+    ['Juan Pérez', 'Albanilería', '001-1234567-8', '809-555-1001', 'Banco Popular', '111222333444', 'transferencia'],
+    ['María González', 'Electricidad', '002-9876543-1', '829-555-2002', 'Banreservas', '555666777888', 'cheque'],
+    ['Carlos Ramírez', 'Plomería', '', '849-555-3003', '', '', 'efectivo'],
+  ]
+  const ws = buildSheetWithBoldHeader(XLSX, rows)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Contratistas')
+  downloadWorkbook(XLSX, wb, 'plantilla_contratistas.xlsx')
+}
+
+/**
  * Genera y descarga la plantilla para importar presupuesto Mercado.
  * El formato usa filas-header por categoria (Ajustes, Equipos, Mano de Obra, Materiales)
  * seguidas de partidas con: Codigo, Descripcion, Unidad, Cantidad, Precio Unitario.
