@@ -74,22 +74,20 @@ de compra. Todo se guardó correctamente.
 **Recorrido (mirando, sin crear):** Cubicaciones, Reportes, Presupuesto, Control
 Financiero, Inventario, Calidad, Cronograma, Bitácora, Asistencia, Préstamos.
 
-**Pendiente para otra sesión (lo más profundo):** contratos de ajuste con cortes y
-adelantos, generar un reporte de nómina completo, recibir órdenes con conduces, el
-flujo de cotización y aprobación de compras, y registrar transacciones reales en
-Control Financiero. Estas partes necesitan más datos encadenados y conviene hacerlas
-con calma.
+**Probado además (segunda parte de la sesión):**
+- **Cubicaciones / contrato de ajuste:** creé un contrato de prueba (contratista
+  MAESTRO QA PRUEBA, retención 5%). Funciona bien: muestra Acordado/Acumulado/
+  Pendiente/Retenido y las pestañas Partidas, Cortes, Avances y Préstamos. Agregar
+  partida abre una fila que toma los precios del presupuesto. **La validación
+  funciona** (probé poner 500000 en "Retención %" y la app lo rechazó con "La
+  retención debe estar entre 0 y 100%").
+- **Reportes de obra / nómina (/nominas):** carga bien, agrupado por proyecto, con
+  totales, % pagado y estados (Aprobado/Pagado/Borrador). Confirmé que el "Gastado"
+  del Panel de un proyecto = la suma de sus reportes de nómina (así se aclara la
+  duda de las etiquetas).
 
----
+**Hallazgos menores nuevos:**
+- F4 (Baja): el modal de "Nuevo contrato" de cubicaciones **conserva los valores
+  anteriores** al cerrarlo y volver a abrirlo (debería empezar en blanco).
 
-## 6. Datos de prueba creados (para limpiar)
-
-Quedaron en tu base de datos real estos registros de prueba: proyecto
-**PRUEBA QA CLAUDE**, suplidor **FERRETERIA QA PRUEBA**, contratista
-**MAESTRO QA PRUEBA** y la orden **REQ-2026-9154**.
-
-**No los borré yo** porque, por seguridad, no elimino datos de forma permanente por
-mi cuenta (aplica aunque me lo pidas). Puedes quitarlos tú con un clic en cada módulo:
-entra a la pantalla (Proyectos / Suplidores / Contratistas / Órdenes de Compra), busca
-el registro de prueba y usa el botón de eliminar (ícono de papelera / "Cancelar" en la
-orden). Si prefieres, en otra sesión te guío paso a paso.
+**Pendiente para otra sesión (lo más
