@@ -11,7 +11,15 @@
  *   1. Transacciones (control financiero / CxP / diario) → `total`
  *   2. Mano de obra de nóminas comprometidas (approved/paid) → `quantity × unit_price`
  *   3. Facturas de materiales de esas nóminas → `amount`
- *   4. Salidas de almacén (`inventory_movements` con `type='out'`) → `quantity × unit_cost`
+ *   4. Salidas de almacén de CONSUMO (`inventory_movements` con `type='out'`
+ *      y `purchase_order_id IS NULL`) → `quantity × unit_cost`
+ *
+ * SOLO las salidas de consumo son gasto: las reversas de recepción también son
+ * `type='out'` pero llevan `purchase_order_id` (corrección administrativa que
+ * devuelve mercancía de una orden, no consumo de obra). Todo consumidor de la
+ * fuente (4) debe filtrar `.is('purchase_order_id', null)` en su consulta.
+ * El costo de la salida lo rellena la base automáticamente con el costo
+ * promedio vigente del material (migración 087) cuando no se envía explícito.
  *
  * ⚠️ RIESGO DE DOBLE CONTEO
  * Las transacciones (1) y los ítems de reporte/almacén (2)-(4) son fuentes

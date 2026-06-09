@@ -5,6 +5,8 @@ import { budgetCategoryService } from '@/services/budgetCategoryService'
 import { budgetItemService } from '@/services/budgetItemService'
 import { materialsCatalogService, type MaterialCatalogItem } from '@/services/materialsCatalogService'
 import { parseDecimalInput } from '@/utils/decimalInput'
+import { formatRD } from '@/utils/currency'
+import { mul, round2 } from '@/utils/money'
 import type { InventoryMovementFormState } from './inventoryConfig'
 
 /**
@@ -319,6 +321,7 @@ export function InventoryMovementForm({
   }, [form.budget_category_id])
 
   const isOut = form.type === 'out'
+  const selectedItem = items.find((i) => i.id === form.item_id)
 
   const handleQuantityChange = (value: string) => {
     setQuantityStr(value)
@@ -440,6 +443,16 @@ export function InventoryMovementForm({
 
         {isOut && (
           <StockOverrideFields form={form} categories={categories} budgetItems={budgetItems} onChange={onChange} />
+        )}
+
+        {/* En salidas el costo no se pide: se imputa el costo promedio del
+            material (la base lo rellena, migración 087). Esta línea muestra
+            cuánto se cargará al presupuesto para que no sea una sorpresa. */}
+        {isOut && selectedItem && Number(selectedItem.unit_cost) > 0 && (
+          <p className="sm:col-span-4 text-xs text-app-muted">
+            Se cargará al presupuesto a costo promedio: {formatRD(Number(selectedItem.unit_cost))} ×{' '}
+            {form.quantity || 0} = {formatRD(round2(mul(form.quantity || 0, Number(selectedItem.unit_cost))))}
+          </p>
         )}
 
         <div className="sm:col-span-4">

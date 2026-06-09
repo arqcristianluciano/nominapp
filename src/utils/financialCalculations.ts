@@ -1,7 +1,5 @@
 import { round2, sumBy, sub, add } from './money'
 
-const DEPOSIT_CODE = '19 - DEPOSITOS'
-
 /**
  * Detecta si una categoria corresponde a DEPOSITOS (ingreso de fondos), de forma
  * tolerante: ignora mayusculas, acentos y separadores. Asi un codigo como
@@ -10,7 +8,10 @@ const DEPOSIT_CODE = '19 - DEPOSITOS'
  */
 function isDepositCategory(code: string | null | undefined): boolean {
   if (!code) return false
-  const normalized = code.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase()
+  const normalized = code
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
   return normalized.includes('DEPOSITO')
 }
 

@@ -117,6 +117,18 @@ beforeAll(async () => {
       budget_category_id: catB,
       budget_item_id: null,
     },
+    // Reversa de recepción (type='out' CON purchase_order_id): corrección
+    // administrativa, NO debe contar como gasto aunque lleve costo y partida.
+    {
+      project_id: projectId,
+      type: 'out',
+      quantity: 99,
+      unit_cost: 500,
+      date: '2026-05-12',
+      budget_category_id: catB,
+      budget_item_id: null,
+      purchase_order_id: 'oc_reversa_1',
+    },
   ])
 })
 
@@ -125,7 +137,8 @@ describe('budgetSpentService.getImputedCostByCategory', () => {
     const map = await budgetSpentService.getImputedCostByCategory(projectId)
     // Preliminares: 5×1000 (mano de obra) + 4×100 (salida de almacén vía partida) = 5400.
     expect(map[catA]).toBe(5400)
-    // Demoliciones: factura 3000 + salida 2×250 = 3500. La entrada (type='in') no cuenta.
+    // Demoliciones: factura 3000 + salida 2×250 = 3500. La entrada (type='in')
+    // no cuenta, y la reversa de recepción (out con purchase_order_id) tampoco.
     expect(map[catB]).toBe(3500)
   })
 
