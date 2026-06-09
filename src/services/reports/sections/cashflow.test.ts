@@ -60,6 +60,6 @@ describe('buildCashflowSection', () => {
     const json = JSON.stringify(result)
 
     expect(json).not.toMatch(/NaN/)
-    expect(json).toContain('-$')
+    expect(json).toContain('-RD$')
   })
 })

@@ -16,13 +16,18 @@ import type { Content, TCreatedPdf, TDocumentDefinitions, TFontDictionary } from
 
 import { buildAppendixSection } from './sections/appendix'
 import type { AppendixInput, AppendixTransaction } from './sections/appendix'
+import { buildBudgetBreakdownSection } from './sections/budgetBreakdown'
 import type { BudgetBreakdownInput } from './sections/budgetBreakdown'
+import { buildCashflowSection } from './sections/cashflow'
 import type { CashflowInput } from './sections/cashflow'
 import { buildClientReportContent } from './sections/clientReport'
 import type { ClientReportInput } from './sections/clientReport'
 import { buildCoverPage } from './sections/cover'
 import type { CoverInput } from './sections/cover'
+import { buildExecutiveSummarySection } from './sections/executiveSummary'
 import type { ExecutiveSummaryInput } from './sections/executiveSummary'
+import { buildPayrollSection } from './sections/payroll'
+import type { PayrollSectionInput, PayrollSectionRow } from './sections/payroll'
 import { buildPageFooter } from './sections/footer'
 
 /* -------------------------------------------------------------------------- */
@@ -368,6 +373,32 @@ export function generateMonthlyReport(input: MonthlyReportInput): TCreatedPdf {
     })),
   }
 
+  // Moneda dominicana para todo el reporte.
+  const CURRENCY = 'DOP'
+  const LOCALE = 'es-DO'
+
+  const executiveSummaryInput: ExecutiveSummaryInput = {
+    ...input.executiveSummary,
+    currency: CURRENCY,
+    locale: LOCALE,
+  }
+
+  // Nomina: mapear las entradas agregadas a las filas que espera la seccion.
+  const payrollRows: PayrollSectionRow[] = (input.payroll.entries ?? []).map((e) => ({
+    contractorName: String((e as Record<string, unknown>).contractorName ?? 'Contratista sin nombre'),
+    partidasCount: Number((e as Record<string, unknown>).partidasCount ?? 0),
+    laborSubtotal: Number((e as Record<string, unknown>).laborSubtotal ?? 0),
+    materials: Number((e as Record<string, unknown>).materials ?? 0),
+    indirects: Number((e as Record<string, unknown>).indirects ?? 0),
+    deductions: Number((e as Record<string, unknown>).deductions ?? 0),
+    net: Number((e as Record<string, unknown>).net ?? 0),
+  }))
+  const payrollInput: PayrollSectionInput = {
+    rows: payrollRows,
+    currency: CURRENCY,
+    locale: LOCALE,
+  }
+
   const docDefinition: TDocumentDefinitions = {
     info: {
       title: `Reporte mensual - ${input.project.name}`,
@@ -393,7 +424,11 @@ export function generateMonthlyReport(input: MonthlyReportInput): TCreatedPdf {
     content: [
       // Cover page first (ends with pageBreak:'after').
       ...buildCoverPage(coverInput),
-      // Body sections are populated by their respective builders/agents.
+      // Resumen ejecutivo, desglose presupuestario, flujo de caja y nomina.
+      ...buildExecutiveSummarySection(executiveSummaryInput),
+      buildBudgetBreakdownSection(input.budgetBreakdown),
+      buildCashflowSection(input.cashflow),
+      buildPayrollSection(payrollInput),
       // Appendix last (starts with pageBreak:'before').
       ...buildAppendixSection(appendixInput),
     ],
