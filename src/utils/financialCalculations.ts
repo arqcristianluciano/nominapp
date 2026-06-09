@@ -3,6 +3,18 @@ import { round2, sumBy, sub, add } from './money'
 const DEPOSIT_CODE = '19 - DEPOSITOS'
 
 /**
+ * Detecta si una categoria corresponde a DEPOSITOS (ingreso de fondos), de forma
+ * tolerante: ignora mayusculas, acentos y separadores. Asi un codigo como
+ * "19 - DEPOSITOS", "19-Depositos" o "DEPOSITO" se reconoce igual y un ingreso
+ * no se cuenta por error como gasto.
+ */
+function isDepositCategory(code: string | null | undefined): boolean {
+  if (!code) return false
+  const normalized = code.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase()
+  return normalized.includes('DEPOSITO')
+}
+
+/**
  * Returns true when a payment_condition string indicates a credit purchase
  * (e.g. "Crédito", "Credito", "CREDITO"). Accent-insensitive, lowercase.
  */
@@ -30,8 +42,8 @@ export function calcTransitos(transactions: FinancialTransaction[]): number {
 }
 
 export function calcCashDisponible(transactions: FinancialTransaction[]): number {
-  const deposits = transactions.filter((t) => t.budget_category?.code === DEPOSIT_CODE)
-  const egresses = transactions.filter((t) => t.budget_category?.code !== DEPOSIT_CODE)
+  const deposits = transactions.filter((t) => isDepositCategory(t.budget_category?.code))
+  const egresses = transactions.filter((t) => !isDepositCategory(t.budget_category?.code))
   return round2(
     sub(
       sumBy(deposits, (t) => t.total),
@@ -70,7 +82,7 @@ export function calcDisponibleNeto(cash: number, cxp: number, transitos: number)
 }
 
 export function calcTotalIncurrido(transactions: FinancialTransaction[]): number {
-  const egresses = transactions.filter((t) => t.budget_category?.code !== DEPOSIT_CODE)
+  const egresses = transactions.filter((t) => !isDepositCategory(t.budget_category?.code))
   return round2(sumBy(egresses, (t) => t.total))
 }
 
