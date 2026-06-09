@@ -90,4 +90,4 @@ Financiero, Inventario, Calidad, Cronograma, Bitácora, Asistencia, Préstamos.
 - F4 (Baja): el modal de "Nuevo contrato" de cubicaciones **conserva los valores
   anteriores** al cerrarlo y volver a abrirlo (debería empezar en blanco).
 
-**Pendiente para otra sesión (lo más
+**Cadena profunda de cubicación — P
