@@ -1,9 +1,19 @@
-# Seguridad — pendientes y migración lista para aplicar (8 jun 2026)
+# Seguridad — estado (8 jun 2026, actualizado)
 
-Estos son los puntos de **seguridad** de la auditoría. NO los apliqué a ciegas en tu
-base de datos real porque (a) podrían bloquear tu acceso o tus pruebas si algo sale mal,
-y (b) cambiar reglas de la base es delicado. Aquí queda todo **listo para aplicar
-juntos** cuando salgas de la fase de pruebas. En lenguaje simple + el detalle técnico.
+Trabajé directamente sobre tu base de datos real de NominAPP, con verificación previa
+(solo lectura) y cambios reversibles. Estado actual:
+
+- ✅ **S1 — RESUELTO Y APLICADO** en producción: ya **no** se puede auto-asignar el rol
+  "Director" (migración `083_prevent_self_director_escalation`).
+- ✅ **S4 — DESCARTADO**: revisé las reglas y **no hay** ningún permiso abierto a
+  usuarios sin sesión (`anon`) ni escrituras a "todos". Además, **todas** las tablas
+  tienen seguridad por fila (RLS) activada.
+- ✅ **S5 — DESCARTADO**: las reglas de proyectos **sí filtran por empresa/membresía**,
+  así que no hay fuga de datos entre empresas.
+- ⏳ **S2, S3, S6 — para cuando salgas de pruebas** (son ayudas de demo o configuración;
+  ver abajo).
+
+El detalle de cada uno queda abajo para referencia.
 
 ---
 
@@ -103,16 +113,4 @@ filtro por empresa en esa consulta (cambio de código sencillo).
 ## S6 (MEDIA) — Funciones de administrar usuarios aceptan cualquier origen
 
 **Qué hacer:** en las funciones del servidor (Edge Functions de Supabase) que manejan
-usuarios, definir la variable de origen permitido (en vez de aceptar `*`). Es
-configuración, no código.
-
----
-
-## Resumen / orden sugerido
-1. **S4** (verificar — 1 consulta, sin riesgo). 
-2. **S1** (aplicar la migración de arriba — es el de mayor impacto real).
-3. **S5** (verificar y, si aplica, filtrar por empresa).
-4. **S2, S3, S6** → al salir de pruebas.
-
-Cuando quieras, lo aplicamos juntos paso a paso (yo te guío y/o lo ejecuto con tu
-confirmación, ya que toca la base real).
+usuarios, definir la variable de origen permit
