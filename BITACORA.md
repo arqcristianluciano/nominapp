@@ -39,12 +39,15 @@ Pagar; pagarla mueve el dinero del banco, pero no cambia el gasto de la
 partida. Importante: no registres esa misma factura como gasto manual en
 Control Financiero imputada a la misma partida, porque se contaría dos veces.
 
-**Cómo quedó:** 646 pruebas automáticas en verde (6 nuevas protegen este
+**Cómo quedó:** 647 pruebas automáticas en verde (7 nuevas protegen este
 comportamiento) y la app construye sin errores. Punto de restauración:
 `restore/2026-06-09-costo-salidas-almacen`.
 
-**Pendiente:** Aplicar el ajuste a la base de datos en línea (la que usa la
-app publicada) para que las salidas ya registradas tomen su costo.
+**Base de datos en línea:** El ajuste ya está aplicado en la base que usa la
+app publicada (lo aplicó una sesión de trabajo en paralelo y se verificó que
+coincide con este cambio). La salida de la madera 2x4x16 quedó valorada:
+100 unidades × RD$159 = RD$15,900, imputada a Campamento. Ya no queda
+ninguna salida sin costo.
 
 ## 2026-06-08 — Arreglo: deshacer recepción de órdenes de compra (Sentry #99)
 

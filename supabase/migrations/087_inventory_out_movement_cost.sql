@@ -9,9 +9,10 @@
 -- nunca se reflejaba en el presupuesto.
 --
 -- Solución:
---   1. `rpc_inventory_add_movement` ahora valora toda salida sin costo
---      explícito al costo promedio ponderado vigente del material (el mismo
---      que mantienen las entradas de compras). Las entradas no cambian.
+--   1. `rpc_inventory_add_movement` ahora valora las salidas de consumo
+--      (despachos manuales, sin orden de compra) sin costo explícito al costo
+--      promedio ponderado vigente del material (el mismo que mantienen las
+--      entradas de compras). Las entradas no cambian.
 --   2. Backfill: las salidas históricas SIN costo y SIN orden de compra
 --      (las salidas manuales de despacho; las salidas con purchase_order_id
 --      son reversas de recepción y no representan consumo) toman el costo
@@ -24,6 +25,8 @@
 --   - Las salidas de reversa (purchase_order_id IS NOT NULL) se dejan sin
 --     costo a propósito: no son consumo de obra y el cálculo de GASTADO las
 --     excluye (ver utils/costoReal.ts).
+--   - Si el material aún no tiene costo promedio (0), la salida queda sin
+--     costo (NULL) en vez de registrar un 0 engañoso.
 -- =====================================================
 
 -- -------------------------------------------------------
@@ -89,12 +92,13 @@ BEGIN
   v_delta         := CASE p_type WHEN 'in' THEN p_quantity ELSE -p_quantity END;
   v_new_stock     := v_current_stock + v_delta;
 
-  -- Costo del movimiento: las salidas sin costo explícito se valoran al costo
-  -- promedio ponderado vigente del material, para que el consumo imputado a la
-  -- partida refleje el costo real de compra (migración 087).
+  -- Costo del movimiento: las salidas de consumo (sin orden de compra) sin
+  -- costo explícito se valoran al costo promedio ponderado vigente del
+  -- material, para que el consumo imputado a la partida refleje el costo real
+  -- de compra. Las reversas de recepción (purchase_order_id) no llevan costo.
   v_movement_cost := p_unit_cost;
-  IF p_type = 'out' AND v_movement_cost IS NULL THEN
-    v_movement_cost := v_current_cost;
+  IF p_type = 'out' AND v_movement_cost IS NULL AND p_purchase_order_id IS NULL THEN
+    v_movement_cost := NULLIF(v_current_cost, 0);
   END IF;
 
   -- Bloquear stock negativo salvo override
