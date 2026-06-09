@@ -1,0 +1,62 @@
+name: Respaldo de la base de datos
+
+# Robot de respaldo automatico (gratis).
+# Cada dia guarda una copia completa de toda la base de datos (estructura +
+# datos) como un archivo descargable dentro de GitHub (en la pestana
+# "Actions" -> esta ejecucion -> "Artifacts"). Asi, si algo sale mal, se
+# puede restaurar la informacion de un dia anterior.
+#
+# Tambien se puede ejecutar a mano desde la pestana Actions.
+#
+# REQUISITO (se configura una sola vez):
+#   En GitHub -> Settings -> Secrets and variables -> Actions, crear un
+#   secreto llamado  SUPABASE_DB_URL  con la cadena de conexion de la base
+#   de datos (Supabase -> Project Settings -> Database -> Connection string
+#   -> URI). Sin ese secreto el robot no puede entrar a la base.
+
+on:
+  schedule:
+    # Todos los dias a las 07:00 UTC (aprox. medianoche/1am en America).
+    - cron: '0 7 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    name: Copia diaria de la base de datos
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Verificar que exista el secreto de conexion
+        run: |
+          if [ -z "${{ secrets.SUPABASE_DB_URL }}" ]; then
+            echo "::error::Falta el secreto SUPABASE_DB_URL. Crealo en Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+
+      - name: Instalar la herramienta de Supabase
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Generar la copia (estructura + datos)
+        run: |
+          mkdir -p backups
+          FECHA="$(date +%Y-%m-%d)"
+          # Estructura (tablas, reglas de seguridad, funciones)
+          supabase db dump --db-url "${{ secrets.SUPABASE_DB_URL }}" -f "backups/${FECHA}-estructura.sql"
+          # Datos (el contenido de las tablas)
+          supabase db dump --db-url "${{ secrets.SUPABASE_DB_URL }}" --data-only -f "backups/${FECHA}-datos.sql"
+          echo "Copia generada para ${FECHA}:"
+          ls -lh backups/
+
+      - name: Guardar la copia como archivo descargable
+        uses: actions/upload-artifact@v4
+        with:
+          name: respaldo-base-de-datos
+          path: backups/
+          # Se conservan 30 dias; despues GitHub las borra solas.
+          retention-days: 30
