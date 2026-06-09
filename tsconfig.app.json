@@ -24,8 +24,8 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
 
-    /* Path aliases */
-    "baseUrl": ".",
+    /* Path aliases (sin baseUrl: TypeScript 6 lo declara obsoleto; las rutas
+       de "paths" se resuelven relativas a este archivo) */
     "paths": {
       "@/*": ["./src/*"]
     }
