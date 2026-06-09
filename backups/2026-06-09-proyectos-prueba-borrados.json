@@ -1,0 +1,208 @@
+{
+  "_descripcion": "Punto de restauracion de los 4 proyectos de prueba/vacios borrados el 2026-06-09 tras la revision general. Para restaurar, re-insertar estas filas (projects -> budget_categories -> budget_items / project_members). Las categorias de plantilla con budgeted_amount=0 se omiten porque la app las regenera sola; aqui se guardan solo las filas no regenerables (proyectos, presupuestos no-cero, items y miembros).",
+  "fecha": "2026-06-09T23:17:56Z",
+  "projects": [
+    {
+      "id": "0e65a64b-9167-44b7-96ce-4877af9dd5cf",
+      "code": "POA-2026",
+      "name": "PRUEBA OMAR AYBAR",
+      "status": "active",
+      "location": "SANTIAGO",
+      "company_id": "4dafb573-6dc9-4c03-9920-e9512fb667b7",
+      "created_at": "2026-05-11T12:10:07.58916+00:00",
+      "created_by": "fc840753-aabf-4326-a4b9-10875274d76f",
+      "dt_percent": 10,
+      "updated_at": "2026-05-20T12:28:34.506289+00:00",
+      "planning_fee": 600000,
+      "admin_percent": 5,
+      "custom_indirects": [],
+      "transport_percent": 1
+    },
+    {
+      "id": "3cc4e38b-9900-491e-a3f8-2d94ae1f0ccf",
+      "code": "K-2026",
+      "name": "KUBOO",
+      "status": "active",
+      "location": "Playa Encuentro, Cabarete",
+      "company_id": "c1000000-0000-0000-0000-000000000005",
+      "created_at": "2026-05-20T11:46:53.019121+00:00",
+      "created_by": "fc840753-aabf-4326-a4b9-10875274d76f",
+      "dt_percent": 10,
+      "updated_at": "2026-05-20T12:28:34.506289+00:00",
+      "planning_fee": 0,
+      "admin_percent": 2,
+      "custom_indirects": [],
+      "transport_percent": 2
+    },
+    {
+      "id": "e7b30467-e6e9-4e0e-984a-615b436cfccd",
+      "code": "E-2026",
+      "name": "EJEMPLO",
+      "status": "active",
+      "location": "Stho",
+      "company_id": "c1000000-0000-0000-0000-000000000005",
+      "created_at": "2026-05-21T00:44:41.89039+00:00",
+      "created_by": "fc840753-aabf-4326-a4b9-10875274d76f",
+      "dt_percent": 10,
+      "updated_at": "2026-05-21T00:44:41.89039+00:00",
+      "planning_fee": 0,
+      "admin_percent": 1,
+      "custom_indirects": [],
+      "transport_percent": 0.5
+    },
+    {
+      "id": "386f443a-48f0-41df-a058-2a6e46e1638e",
+      "code": "E-2026",
+      "name": "EJEMPLO 2",
+      "status": "active",
+      "location": "Stgo",
+      "company_id": "c1000000-0000-0000-0000-000000000005",
+      "created_at": "2026-05-21T00:45:00.536807+00:00",
+      "created_by": "fc840753-aabf-4326-a4b9-10875274d76f",
+      "dt_percent": 10,
+      "updated_at": "2026-05-21T00:45:00.536807+00:00",
+      "planning_fee": 0,
+      "admin_percent": 1,
+      "custom_indirects": [],
+      "transport_percent": 0.5
+    }
+  ],
+  "budget_categories_con_monto": [
+    {
+      "id": "dcaada75-5464-4b7c-9c4b-dce9770a65cf",
+      "code": "1 - PRELIMINARES",
+      "name": "Preliminares",
+      "project_id": "0e65a64b-9167-44b7-96ce-4877af9dd5cf",
+      "sort_order": 1,
+      "budgeted_amount": 5000000
+    },
+    {
+      "id": "fb21952e-2ea8-4b5a-9585-91a9bdd88424",
+      "code": "2 - DEMOLICIONES",
+      "name": "Demoliciones",
+      "project_id": "0e65a64b-9167-44b7-96ce-4877af9dd5cf",
+      "sort_order": 2,
+      "budgeted_amount": 2000000
+    },
+    {
+      "id": "1798ec1b-ecf4-4117-a115-4a7e63916dd7",
+      "code": "3 - ESTRUCTURA",
+      "name": "Estructura",
+      "project_id": "0e65a64b-9167-44b7-96ce-4877af9dd5cf",
+      "sort_order": 3,
+      "budgeted_amount": 30000000
+    },
+    {
+      "id": "4d3e6caf-b458-40c9-a49d-b190169f0ee1",
+      "code": "4 - H.A.",
+      "name": "Hormigón armado",
+      "project_id": "0e65a64b-9167-44b7-96ce-4877af9dd5cf",
+      "sort_order": 4,
+      "budgeted_amount": 60000000
+    },
+    {
+      "id": "f1ffa98f-c2ec-4587-9c85-c07033c75c74",
+      "code": "5 - MUROS",
+      "name": "Muros",
+      "project_id": "0e65a64b-9167-44b7-96ce-4877af9dd5cf",
+      "sort_order": 5,
+      "budgeted_amount": 20000000
+    },
+    {
+      "id": "dbe6cfbb-8530-4b94-9b84-fd0e557e20b4",
+      "code": "6 - TERMINACION DE SUPERFICIE",
+      "name": "Terminación de superficie",
+      "project_id": "0e65a64b-9167-44b7-96ce-4877af9dd5cf",
+      "sort_order": 6,
+      "budgeted_amount": 25000000
+    }
+  ],
+  "budget_items": [
+    {
+      "id": "f90ae25e-4972-4eee-a524-8f466e4cae16",
+      "unit": "M2",
+      "quantity": 1,
+      "sort_order": 1779881519269,
+      "unit_price": 1,
+      "description": "sd",
+      "budget_category_id": "3fbebed5-c9b7-4789-9b78-a2f95f625cf1"
+    },
+    {
+      "id": "6c482efa-99cc-4725-872d-dfbd50f58fe0",
+      "unit": "M2",
+      "quantity": 1,
+      "sort_order": 1779970762261,
+      "unit_price": 1,
+      "description": "sd",
+      "budget_category_id": "3fbebed5-c9b7-4789-9b78-a2f95f625cf1"
+    }
+  ],
+  "project_members": [
+    {
+      "id": "61334742-c2da-41ac-8eaa-81c5afd779f6",
+      "role": "director_general",
+      "user_id": "fc840753-aabf-4326-a4b9-10875274d76f",
+      "project_id": "0e65a64b-9167-44b7-96ce-4877af9dd5cf"
+    },
+    {
+      "id": "a322be17-5492-4ba3-b133-530017a67963",
+      "role": "planificacion",
+      "user_id": "179b047f-5fbf-4ae4-958e-0b886cb5de41",
+      "project_id": "0e65a64b-9167-44b7-96ce-4877af9dd5cf"
+    },
+    {
+      "id": "1ffe3def-da45-47dd-9da2-67985a8c81aa",
+      "role": "ingeniero_obra",
+      "user_id": "1ce6c0b4-5e4a-497a-804e-f0a875d0fc23",
+      "project_id": "0e65a64b-9167-44b7-96ce-4877af9dd5cf"
+    },
+    {
+      "id": "6a099c63-8905-4ea9-bed6-894da6c8387e",
+      "role": "supervisor_especializado",
+      "user_id": "4c0b4bec-cf98-4947-a567-4c8669aa8614",
+      "project_id": "0e65a64b-9167-44b7-96ce-4877af9dd5cf"
+    },
+    {
+      "id": "26754b9d-a364-4ab2-86a5-5626f04d3b8b",
+      "role": "comprador",
+      "user_id": "be83ef6d-40e7-4d6b-af52-4d815f8f192c",
+      "project_id": "0e65a64b-9167-44b7-96ce-4877af9dd5cf"
+    },
+    {
+      "id": "bc055b6d-d88d-4d5f-b011-8fb2fb991f90",
+      "role": "almacenista",
+      "user_id": "4c027375-bf66-4964-af6f-4553bb9a05d8",
+      "project_id": "0e65a64b-9167-44b7-96ce-4877af9dd5cf"
+    },
+    {
+      "id": "e4a767a9-994a-4bed-9112-a3d469bd2b15",
+      "role": "contabilidad",
+      "user_id": "c5baf2a4-404e-4a16-b33b-fd53a054bd1f",
+      "project_id": "0e65a64b-9167-44b7-96ce-4877af9dd5cf"
+    },
+    {
+      "id": "59d826d0-44ec-4baf-b9d8-5fe87071d0aa",
+      "role": "director_proyecto",
+      "user_id": "07e7b613-f32f-45b3-8c3c-271a7f5e8635",
+      "project_id": "0e65a64b-9167-44b7-96ce-4877af9dd5cf"
+    },
+    {
+      "id": "b1ec1d3e-bf0a-4289-8d65-27f4bcabcb62",
+      "role": "director_proyecto",
+      "user_id": "fc840753-aabf-4326-a4b9-10875274d76f",
+      "project_id": "3cc4e38b-9900-491e-a3f8-2d94ae1f0ccf"
+    },
+    {
+      "id": "40d2d6b7-d8c5-48c2-bef5-252d5f1c3e53",
+      "role": "director_proyecto",
+      "user_id": "fc840753-aabf-4326-a4b9-10875274d76f",
+      "project_id": "e7b30467-e6e9-4e0e-984a-615b436cfccd"
+    },
+    {
+      "id": "6a2cc8b6-e3f9-4a40-9670-3cec46cd9aea",
+      "role": "director_proyecto",
+      "user_id": "fc840753-aabf-4326-a4b9-10875274d76f",
+      "project_id": "386f443a-48f0-41df-a058-2a6e46e1638e"
+    }
+  ]
+}

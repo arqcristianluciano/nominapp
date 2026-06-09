@@ -2,6 +2,31 @@
 
 Diario en lenguaje sencillo de lo que se va haciendo en la app.
 
+## 2026-06-09 (parte 4) — Revisión general y limpieza
+
+**Qué se hizo:** Una revisión completa de la app y la base de datos.
+
+**Lo que estaba bien:** el arreglo del gasto de almacén funciona (cero
+salidas sin costo, cero stock negativo), la seguridad quedó bien cerrada
+(no hay tablas con la puerta abierta, salvo dos listas de solo-lectura que
+está bien que todos vean), y la velocidad y respaldos en orden.
+
+**Limpieza hecha:** se borraron 4 proyectos de prueba vacíos: PRUEBA OMAR
+AYBAR, KUBOO, EJEMPLO y EJEMPLO 2. Antes se guardó un respaldo completo de
+ellos en `backups/2026-06-09-proyectos-prueba-borrados.json` por si hay que
+recuperarlos. Quedan 3 proyectos: AQUAMARINA 2, AQUAMARINA2 y PRUEBA CARGA
+EXCEL.
+
+**Pendiente con Cristian (decisiones suyas):**
+
+1. **Dos proyectos "Aquamarina" casi iguales** (AQUAMARINA 2 del 8-may con
+   almacén/órdenes, y AQUAMARINA2 del 21-may con presupuesto más completo).
+   Hay señales de que el nuevo es una copia parcial del viejo (facturas
+   repetidas). Falta decidir cuál se queda.
+2. **~RD$900,000 en facturas de material sin partida** en los Aquamarina:
+   no aparecen en el presupuesto hasta asignarles una partida. Se le pasó
+   la lista para que diga a qué partida va cada una.
+
 ## 2026-06-09 (parte 3) — El gasto de almacén ahora sí llega al presupuesto
 
 **Qué reportó Cristian (con capturas):** pidió madera para "Campamento",
