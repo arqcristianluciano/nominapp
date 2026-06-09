@@ -101,6 +101,11 @@ export const notificationService = {
   async getAll(): Promise<AppNotification[]> {
     const today = new Date()
     const todayStr = today.toISOString().split('T')[0]
+    // Medianoche local de hoy: para contar dias por calendario sin que la zona
+    // horaria corra el resultado un dia (las fechas vienen como 'YYYY-MM-DD').
+    const startOfTodayMs = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime()
+    const daysSinceLocal = (dateStr: string): number =>
+      Math.floor((startOfTodayMs - new Date(`${dateStr}T00:00:00`).getTime()) / 86_400_000)
 
     const approachingCutoff = new Date(today)
     approachingCutoff.setDate(approachingCutoff.getDate() - DAYS_APPROACHING)
@@ -219,7 +224,7 @@ export const notificationService = {
 
     // --- Ensayos de hormigón sin resultado (por días desde vaciado) ---
     for (const qc of (qcOverdueRes.data || []) as OverdueQualityControlLite[]) {
-      const daysSince = Math.floor((today.getTime() - new Date(qc.pour_date).getTime()) / 86_400_000)
+      const daysSince = daysSinceLocal(qc.pour_date)
       const isOverdue = daysSince >= DAYS_OVERDUE
       notifications.push({
         id: `qc-overdue-${qc.id}`,
@@ -249,7 +254,7 @@ export const notificationService = {
       .filter((txn) => isCreditCondition(txn.payment_condition))
       .slice(0, 10)
     for (const txn of dangerCreditTxns) {
-      const days = Math.floor((today.getTime() - new Date(txn.date).getTime()) / 86400000)
+      const days = daysSinceLocal(txn.date)
       notifications.push({
         id: `cxp-danger-${txn.id}`,
         level: 'danger',
@@ -265,7 +270,7 @@ export const notificationService = {
       .filter((txn) => isCreditCondition(txn.payment_condition))
       .slice(0, 10)
     for (const txn of warningCreditTxns) {
-      const days = Math.floor((today.getTime() - new Date(txn.date).getTime()) / 86400000)
+      const days = daysSinceLocal(txn.date)
       notifications.push({
         id: `cxp-warning-${txn.id}`,
         level: 'warning',
