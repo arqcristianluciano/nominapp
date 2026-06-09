@@ -94,6 +94,7 @@ export function AvancesFormSection({
             type="number"
             inputMode="decimal"
             step="0.01"
+            min={0}
             value={form.executed_quantity}
             onChange={(e) => setForm({ ...form, executed_quantity: e.target.value, executed_percent: '' })}
             placeholder="ej: 25"
