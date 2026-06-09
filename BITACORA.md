@@ -2,6 +2,29 @@
 
 Diario en lenguaje sencillo de lo que se va haciendo en la app.
 
+## 2026-06-09 (parte 4) — Ver el gasto por subpartida y el costo de cada movimiento
+
+**Contexto:** Dos sesiones de trabajo atendieron en paralelo el mismo reporte
+de Cristian (el de la madera de Campamento, ver "parte 3" más abajo). Ambos
+trabajos se unieron en uno solo, sin duplicados, y se verificó que la base de
+datos en línea quedó correcta: la salida de la madera vale RD$15,900
+(100 × RD$159) imputada a Campamento y no queda ninguna salida sin costo.
+
+**Qué agrega esta parte (encima de la parte 3):**
+
+1. **La fila de cada subpartida del presupuesto ahora muestra su gastado y su
+   diferencia** (ej. Campamento: gastado RD$15,900 de RD$1,000,000). Antes
+   esa casilla siempre mostraba un guion y solo se veía el total del capítulo.
+2. **La lista de movimientos del inventario muestra el costo en RD$** de cada
+   entrada y salida, no solo la cantidad.
+3. Pruebas automáticas nuevas que protegen todo este comportamiento
+   (valoración de salidas, exclusión de devoluciones al suplidor, desglose
+   por subpartida).
+
+**Cómo quedó:** 647 pruebas automáticas en verde, la app construye sin
+errores y los cambios se publicaron en la app oficial con el visto bueno de
+Cristian. Punto de restauración: `restore/2026-06-09-costo-salidas-almacen`.
+
 ## 2026-06-09 (parte 3) — El gasto de almacén ahora sí llega al presupuesto
 
 **Qué reportó Cristian (con capturas):** pidió madera para "Campamento",

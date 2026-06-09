@@ -7,6 +7,7 @@ type Props = {
   projectId: string
   loading: boolean
   rows: BudgetRow[]
+  spentByItem: Record<string, number>
   spentTotal: number
   budgetedTotal: number
   itemsByCategory: Record<string, BudgetItem[]>
@@ -27,6 +28,7 @@ export function BudgetDetailTabContent({
   projectId,
   loading,
   rows,
+  spentByItem,
   spentTotal,
   budgetedTotal,
   itemsByCategory,
@@ -46,6 +48,7 @@ export function BudgetDetailTabContent({
       <BudgetPresupuestoTab
         loading={loading}
         rows={rows}
+        spentByItem={spentByItem}
         spentTotal={spentTotal}
         budgetedTotal={budgetedTotal}
         itemsByCategory={itemsByCategory}

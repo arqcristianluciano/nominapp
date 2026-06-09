@@ -396,6 +396,17 @@ function mockRpcInventoryAddMovement(args: RpcArgs): RpcResult {
     }
   }
 
+  // Costo del movimiento: las salidas de consumo (sin orden de compra) sin
+  // costo explícito se valoran al costo promedio ponderado vigente del
+  // material; las reversas de recepción quedan sin costo (espejo de la
+  // migración 087).
+  const movementCost =
+    p_type === 'out' && p_unit_cost == null && !p_purchase_order_id
+      ? currentCost > 0
+        ? currentCost
+        : null
+      : p_unit_cost
+
   // Insertar movimiento
   if (!db['inventory_movements']) db['inventory_movements'] = []
   const movementId = generateId()
@@ -411,7 +422,7 @@ function mockRpcInventoryAddMovement(args: RpcArgs): RpcResult {
     budget_item_id: p_budget_item_id,
     budget_category_id: p_budget_category_id,
     purchase_order_id: p_purchase_order_id,
-    unit_cost: p_unit_cost,
+    unit_cost: movementCost,
     created_by: p_created_by,
     lot_id: p_lot_id,
     attachment_path: p_attachment_path,

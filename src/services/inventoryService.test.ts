@@ -95,6 +95,53 @@ describe('inventoryService - regla 7.5 (bloqueo stock negativo)', () => {
 })
 
 describe('inventoryService - costo promedio ponderado', () => {
+  it('valora la salida al costo promedio del material cuando no se indica costo', async () => {
+    const item = await createItem(`salida-costo-${Date.now()}`, 100)
+    await inventoryService.updateItem(item.id, { unit_cost: 850 })
+
+    // Salida sin unit_cost explícito (como la registra el formulario de salidas).
+    await inventoryService.addMovement({
+      item_id: item.id,
+      project_id: projectId,
+      type: 'out',
+      quantity: 10,
+      date: '2026-05-02',
+      budget_item_id: budgetItemId,
+    })
+
+    const { data: movements } = await supabase
+      .from('inventory_movements')
+      .select('*')
+      .eq('item_id', item.id)
+      .eq('type', 'out')
+    expect(movements?.length).toBe(1)
+    // El movimiento queda valorado al costo promedio vigente: 10 × 850 = 8500 de consumo.
+    expect(Number(movements?.[0]?.unit_cost)).toBe(850)
+  })
+
+  it('una salida de reversa de recepción (con orden de compra) queda sin costo', async () => {
+    const item = await createItem(`reversa-costo-${Date.now()}`, 100)
+    await inventoryService.updateItem(item.id, { unit_cost: 850 })
+
+    await inventoryService.addMovement({
+      item_id: item.id,
+      project_id: projectId,
+      type: 'out',
+      quantity: 10,
+      date: '2026-05-02',
+      budget_item_id: budgetItemId,
+      purchase_order_id: 'oc-reversa-test',
+    })
+
+    const { data: movements } = await supabase
+      .from('inventory_movements')
+      .select('*')
+      .eq('item_id', item.id)
+      .eq('type', 'out')
+    // La reversa no es consumo: no se valora, para no inflar el gasto de la partida.
+    expect(movements?.[0]?.unit_cost).toBeNull()
+  })
+
   it('recalcula unit_cost ponderado tras entrada', async () => {
     const item = await createItem(`material-${Date.now() + 5}`, 10)
     // Setear costo inicial 100

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   INVENTORY_OUT_TYPE,
   inventoryOutCost,
+  isConsumptionOut,
   laborLineCost,
   materialInvoiceCost,
   resolveImputedCategory,
@@ -34,6 +35,22 @@ describe('costoReal extractores de monto', () => {
 
   it('expone el tipo de movimiento de salida de almacén', () => {
     expect(INVENTORY_OUT_TYPE).toBe('out')
+  })
+})
+
+describe('isConsumptionOut', () => {
+  it('una salida manual (sin orden de compra) es consumo', () => {
+    expect(isConsumptionOut({ type: 'out', purchase_order_id: null })).toBe(true)
+    expect(isConsumptionOut({ type: 'out' })).toBe(true)
+  })
+
+  it('una salida de reversa de recepción (con orden de compra) NO es consumo', () => {
+    expect(isConsumptionOut({ type: 'out', purchase_order_id: 'oc-1' })).toBe(false)
+  })
+
+  it('una entrada nunca es consumo', () => {
+    expect(isConsumptionOut({ type: 'in', purchase_order_id: null })).toBe(false)
+    expect(isConsumptionOut({ type: 'in', purchase_order_id: 'oc-1' })).toBe(false)
   })
 })
 

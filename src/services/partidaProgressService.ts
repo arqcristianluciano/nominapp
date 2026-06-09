@@ -3,6 +3,7 @@ import { COMMITTED_PAYROLL_STATUSES } from '@/services/payrollService'
 import {
   INVENTORY_OUT_TYPE,
   inventoryOutCost,
+  isConsumptionOut,
   laborLineCost,
   materialInvoiceCost,
   resolveImputedCategory,
@@ -207,10 +208,10 @@ export const partidaProgressService = {
 
     // 4) Costo real - salidas de almacén imputadas a partida/capítulo. Solo
     // despachos de consumo: las reversas de recepción (con purchase_order_id)
-    // no son gasto (ver @/utils/costoReal).
+    // no son gasto (ver isConsumptionOut en @/utils/costoReal).
     const { data: movements } = await supabase
       .from('inventory_movements')
-      .select('quantity, unit_cost, date, budget_category_id, budget_item_id, type')
+      .select('quantity, unit_cost, date, budget_category_id, budget_item_id, type, purchase_order_id')
       .eq('project_id', projectId)
       .eq('type', INVENTORY_OUT_TYPE)
       .is('purchase_order_id', null)
@@ -220,7 +221,10 @@ export const partidaProgressService = {
       date: string | null
       budget_category_id: string | null
       budget_item_id: string | null
+      type: string
+      purchase_order_id: string | null
     }>) {
+      if (!isConsumptionOut(mv)) continue
       const month = monthKey(mv.date)
       if (!month) continue
       getRow(month, resolveCategory(mv.budget_category_id, mv.budget_item_id)).costo_real += inventoryOutCost(mv)
@@ -368,7 +372,7 @@ export const partidaProgressService = {
     // las reversas de recepción (con purchase_order_id) no son gasto.
     const { data: movements } = await supabase
       .from('inventory_movements')
-      .select('quantity, unit_cost, budget_item_id, type')
+      .select('quantity, unit_cost, budget_item_id, type, purchase_order_id')
       .eq('project_id', projectId)
       .eq('type', INVENTORY_OUT_TYPE)
       .is('purchase_order_id', null)
@@ -376,7 +380,10 @@ export const partidaProgressService = {
       quantity: number | null
       unit_cost: number | null
       budget_item_id: string | null
+      type: string
+      purchase_order_id: string | null
     }>) {
+      if (!isConsumptionOut(mv)) continue
       addCost(mv.budget_item_id, inventoryOutCost(mv))
     }
 

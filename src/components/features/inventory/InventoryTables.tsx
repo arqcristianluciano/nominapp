@@ -148,6 +148,14 @@ export function InventoryStockTable({
   )
 }
 
+// Valor en RD$ del movimiento: cantidad × costo unitario registrado. Las
+// entradas lo traen de la compra y las salidas del costo promedio del material
+// (migración 087); los movimientos antiguos sin costo muestran "—".
+function movementValue(movement: InventoryMovement): number | null {
+  if (movement.unit_cost == null) return null
+  return round2(mul(movement.quantity, movement.unit_cost))
+}
+
 export function InventoryMovementsTable({ movements }: { movements: InventoryMovement[] }) {
   return (
     <div className="bg-app-surface border border-app-border rounded-xl overflow-hidden">
@@ -186,6 +194,12 @@ export function InventoryMovementsTable({ movements }: { movements: InventoryMov
                   {movement.quantity} {movement.item?.unit ?? ''}
                 </span>
               </div>
+              {movementValue(movement) !== null && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-xs text-app-subtle">Costo</span>
+                  <span className="font-semibold text-app-text">{formatRD(movementValue(movement)!)}</span>
+                </div>
+              )}
               {movement.notes && (
                 <div className="text-xs text-app-muted bg-app-hover/40 rounded-md px-2 py-1.5 break-words">
                   {movement.notes}
@@ -205,6 +219,7 @@ export function InventoryMovementsTable({ movements }: { movements: InventoryMov
               <th className="text-left px-4 py-2.5 font-medium">Material</th>
               <th className="text-center px-4 py-2.5 font-medium">Tipo</th>
               <th className="text-right px-4 py-2.5 font-medium">Cantidad</th>
+              <th className="text-right px-4 py-2.5 font-medium">Costo</th>
               <th className="text-left px-4 py-2.5 font-medium">Notas</th>
             </tr>
           </thead>
@@ -238,6 +253,9 @@ export function InventoryMovementsTable({ movements }: { movements: InventoryMov
                 >
                   {movement.type === 'in' ? '+' : '-'}
                   {movement.quantity} {movement.item?.unit ?? ''}
+                </td>
+                <td className="px-4 py-3 text-right text-app-text">
+                  {movementValue(movement) !== null ? formatRD(movementValue(movement)!) : '—'}
                 </td>
                 <td className="px-4 py-3 text-app-muted text-xs">{movement.notes ?? '—'}</td>
               </tr>

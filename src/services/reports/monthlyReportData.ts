@@ -22,6 +22,7 @@ import { transactionService } from '@/services/transactionService'
 import {
   INVENTORY_OUT_TYPE,
   inventoryOutCost,
+  isConsumptionOut,
   laborLineCost,
   materialInvoiceCost,
   transactionCost,
@@ -128,6 +129,8 @@ interface InventoryOutMovement {
   unit_cost: number | null
   budget_category_id: string | null
   budget_item_id: string | null
+  type: string
+  purchase_order_id: string | null
 }
 
 /**
@@ -139,7 +142,7 @@ interface InventoryOutMovement {
 async function loadInventoryOutMovements(projectId: string, range: MonthRange): Promise<InventoryOutMovement[]> {
   const { data, error } = await supabase
     .from('inventory_movements')
-    .select('quantity, unit_cost, budget_category_id, budget_item_id')
+    .select('quantity, unit_cost, budget_category_id, budget_item_id, type, purchase_order_id')
     .eq('project_id', projectId)
     .eq('type', INVENTORY_OUT_TYPE)
     .is('purchase_order_id', null)
@@ -149,7 +152,7 @@ async function loadInventoryOutMovements(projectId: string, range: MonthRange): 
     console.warn('[monthlyReportData] loadInventoryOutMovements failed:', error.message)
     return []
   }
-  return (data ?? []) as InventoryOutMovement[]
+  return ((data ?? []) as InventoryOutMovement[]).filter(isConsumptionOut)
 }
 
 /* -------------------------------------------------------------------------- */

@@ -33,6 +33,15 @@
 /** Tipo de movimiento de inventario que representa consumo (costo real). */
 export const INVENTORY_OUT_TYPE = 'out' as const
 
+/**
+ * ¿Es este movimiento una salida de CONSUMO (despacho manual a obra)?
+ * Las salidas vinculadas a una orden de compra son reversas de recepción /
+ * devoluciones al suplidor y NO representan costo real de la partida.
+ */
+export function isConsumptionOut(row: { type: string; purchase_order_id?: string | null }): boolean {
+  return row.type === INVENTORY_OUT_TYPE && !row.purchase_order_id
+}
+
 /** Costo de una línea de mano de obra: cantidad × precio unitario. */
 export function laborLineCost(row: { quantity: number | null; unit_price: number | null }): number {
   return Number(row.quantity ?? 0) * Number(row.unit_price ?? 0)

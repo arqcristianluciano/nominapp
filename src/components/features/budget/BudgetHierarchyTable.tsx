@@ -12,6 +12,7 @@ interface BudgetRow {
 export function BudgetHierarchyTable({
   loading,
   rows,
+  spentByItem,
   spentTotal,
   budgetedTotal,
   itemsByCategory,
@@ -24,6 +25,7 @@ export function BudgetHierarchyTable({
 }: {
   loading: boolean
   rows: BudgetRow[]
+  spentByItem: Record<string, number>
   spentTotal: number
   budgetedTotal: number
   itemsByCategory: Record<string, BudgetItem[]>
@@ -64,6 +66,7 @@ export function BudgetHierarchyTable({
                 category={row.category}
                 items={itemsByCategory[row.category.id] ?? []}
                 spent={row.spent}
+                spentByItem={spentByItem}
                 priceList={priceList as never[]}
                 onAddItem={onAddItem}
                 onUpdateItem={(id, changes) => onUpdateItem(id, row.category.id, changes)}
