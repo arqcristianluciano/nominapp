@@ -267,8 +267,10 @@ export const loanService = {
       loan?: { principal: number; contractor?: { name: string } }
     }
 
-    // Actualizar la cuota como pagada
-    const { error } = await supabase
+    // Actualizar la cuota como pagada SOLO si aun no estaba pagada. Asi un doble
+    // clic (o dos personas a la vez) no registra el cobro dos veces: el segundo
+    // intento no actualiza ninguna fila y salimos sin duplicar el movimiento.
+    const { data: updatedRows, error } = await supabase
       .from('loan_installments')
       .update({
         estado: 'pagada',
@@ -276,7 +278,13 @@ export const loanService = {
         cuenta_cobro_id: cuentaCobroId ?? null,
       })
       .eq('id', installmentId)
+      .neq('estado', 'pagada')
+      .select('id')
     if (error) throw error
+    if (!updatedRows || updatedRows.length === 0) {
+      // La cuota ya estaba pagada: no se duplica el movimiento de cobro.
+      return
+    }
 
     // Registrar la entrada de dinero en la cuenta de cobro (si se indicó)
     if (cuentaCobroId) {

@@ -172,7 +172,12 @@ function LoanRow({
 }) {
   const [showSchedule, setShowSchedule] = useState(false)
   const totalOwed = round2(mul(loan.installment_amount, loan.installments))
-  const balance = Math.max(0, round2(totalOwed - paid))
+  // Un prestamo marcado como 'Pagado' se considera saldado: el saldo es 0 y
+  // el monto pagado equivale al total, para que la fila no muestre datos
+  // contradictorios (Estado Pagado con saldo pendiente).
+  const isSettled = loan.status === 'paid'
+  const effectivePaid = isSettled ? totalOwed : paid
+  const balance = isSettled ? 0 : Math.max(0, round2(totalOwed - paid))
 
   return (
     <>
@@ -201,7 +206,7 @@ function LoanRow({
           {formatRD(loan.installment_amount)}
         </td>
         <td className="px-4 py-3.5 text-right text-sm text-emerald-600 dark:text-emerald-400 hidden sm:table-cell">
-          {formatRD(paid)}
+          {formatRD(effectivePaid)}
         </td>
         <td className="px-4 py-3.5 text-right text-sm font-bold text-app-text">{formatRD(balance)}</td>
         <td className="px-4 py-3.5 text-center">
@@ -276,7 +281,12 @@ function LoanCard({
 }) {
   const [showSchedule, setShowSchedule] = useState(false)
   const totalOwed = round2(mul(loan.installment_amount, loan.installments))
-  const balance = Math.max(0, round2(totalOwed - paid))
+  // Un prestamo marcado como 'Pagado' se considera saldado: el saldo es 0 y
+  // el monto pagado equivale al total, para que la fila no muestre datos
+  // contradictorios (Estado Pagado con saldo pendiente).
+  const isSettled = loan.status === 'paid'
+  const effectivePaid = isSettled ? totalOwed : paid
+  const balance = isSettled ? 0 : Math.max(0, round2(totalOwed - paid))
 
   return (
     <div>
@@ -299,7 +309,7 @@ function LoanCard({
             Saldo: <span className="font-bold text-app-text">{formatRD(balance)}</span>
           </p>
           <p className="text-xs text-app-muted mt-0.5">
-            Pagado: <span className="text-emerald-600 dark:text-emerald-400">{formatRD(paid)}</span>
+            Pagado: <span className="text-emerald-600 dark:text-emerald-400">{formatRD(effectivePaid)}</span>
           </p>
         </div>
         <div className="flex flex-col items-end gap-2 shrink-0">

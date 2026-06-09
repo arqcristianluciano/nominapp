@@ -18,7 +18,9 @@ vi.mock('@/utils/excelExport', () => ({
 import { exportBackupToExcel } from './excelBackupService'
 
 function buildBuilder(data: unknown, error: unknown = null) {
-  return { select: vi.fn().mockResolvedValue({ data, error }) }
+  // fetchAll ahora pagina con .select('*').range(...). El mock entrega los datos
+  // en la primera pagina; como el lote es < 1000, el bucle termina tras una pagina.
+  return { select: vi.fn().mockReturnValue({ range: vi.fn().mockResolvedValue({ data, error }) }) }
 }
 
 // ─── tests ───────────────────────────────────────────────────────────────────

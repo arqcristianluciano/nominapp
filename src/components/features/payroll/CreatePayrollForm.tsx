@@ -93,6 +93,7 @@ export function CreatePayrollForm({ projectId, onCreated, onCancel }: Props) {
           <label className="block text-xs font-medium text-app-muted mb-1">No. de nómina</label>
           <input
             type="number"
+            min={1}
             value={number}
             onChange={(e) => setNumber(parseInt(e.target.value))}
             required

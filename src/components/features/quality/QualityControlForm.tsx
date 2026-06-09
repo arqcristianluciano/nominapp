@@ -133,6 +133,7 @@ export function QualityControlForm({ initial, projectId, saving, onSubmit, onCan
           <label className={labelClass}>Fecha de colada *</label>
           <input
             type="date"
+            max={new Date().toISOString().slice(0, 10)}
             value={pourDate}
             onChange={(e) => setPourDate(e.target.value)}
             className={inputClass}

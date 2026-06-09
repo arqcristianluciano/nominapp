@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { getErrorMessage } from '@/utils/errors'
 import { useTranslation } from 'react-i18next'
 import { supplierService } from '@/services/supplierService'
 import { Modal } from '@/components/ui/Modal'
@@ -49,8 +50,8 @@ export default function Suppliers() {
         setShowForm(false)
         await load()
         success(t('suppliers.toast.created'))
-      } catch {
-        error(t('suppliers.toast.create_failed'))
+      } catch (err) {
+        error(getErrorMessage(err) || t('suppliers.toast.create_failed'))
       } finally {
         setSaving(false)
       }
@@ -67,8 +68,8 @@ export default function Suppliers() {
         setEditing(undefined)
         await load()
         success(t('suppliers.toast.updated'))
-      } catch {
-        error(t('suppliers.toast.update_failed'))
+      } catch (err) {
+        error(getErrorMessage(err) || t('suppliers.toast.update_failed'))
       } finally {
         setSaving(false)
       }

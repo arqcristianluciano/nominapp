@@ -35,7 +35,9 @@ export const dashboardService = {
         .from('transactions')
         .select('id, total, payment_condition, date, description, project_id, created_at')
         .order('created_at', { ascending: false })
-        .limit(200),
+        // Antes 200: truncaba los totales (CxP) en proyectos con muchas transacciones.
+        // 5000 cubre con holgura la escala actual sin afectar el rendimiento.
+        .limit(5000),
     ])
 
     const payrolls = (payrollRes.data || []) as PayrollKpiRow[]

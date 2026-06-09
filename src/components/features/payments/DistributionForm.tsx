@@ -134,6 +134,7 @@ export function DistributionForm({ beneficiaries, sourceAccounts, pendiente, sav
           <input
             type="number"
             step="any"
+            min="0.01"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             className={`${inputClass} w-full`}

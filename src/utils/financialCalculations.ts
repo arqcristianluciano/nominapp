@@ -1,6 +1,18 @@
-import { round2, sumBy, sub } from './money'
+import { round2, sumBy, sub, add } from './money'
 
 const DEPOSIT_CODE = '19 - DEPOSITOS'
+
+/**
+ * Detecta si una categoria corresponde a DEPOSITOS (ingreso de fondos), de forma
+ * tolerante: ignora mayusculas, acentos y separadores. Asi un codigo como
+ * "19 - DEPOSITOS", "19-Depositos" o "DEPOSITO" se reconoce igual y un ingreso
+ * no se cuenta por error como gasto.
+ */
+function isDepositCategory(code: string | null | undefined): boolean {
+  if (!code) return false
+  const normalized = code.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase()
+  return normalized.includes('DEPOSITO')
+}
 
 /**
  * Returns true when a payment_condition string indicates a credit purchase
@@ -30,8 +42,8 @@ export function calcTransitos(transactions: FinancialTransaction[]): number {
 }
 
 export function calcCashDisponible(transactions: FinancialTransaction[]): number {
-  const deposits = transactions.filter((t) => t.budget_category?.code === DEPOSIT_CODE)
-  const egresses = transactions.filter((t) => t.budget_category?.code !== DEPOSIT_CODE)
+  const deposits = transactions.filter((t) => isDepositCategory(t.budget_category?.code))
+  const egresses = transactions.filter((t) => !isDepositCategory(t.budget_category?.code))
   return round2(
     sub(
       sumBy(deposits, (t) => t.total),
@@ -41,25 +53,25 @@ export function calcCashDisponible(transactions: FinancialTransaction[]): number
 }
 
 export function calcTotalCxP(transactions: FinancialTransaction[]): number {
-  const creditTransactions = transactions.filter((t) => t.payment_condition?.includes('Credito'))
+  const creditTransactions = transactions.filter((t) => isCreditCondition(t.payment_condition))
 
   let totalPending = 0
   for (const credit of creditTransactions) {
     const invoiceNo = credit.invoice_number
     if (!invoiceNo) {
-      totalPending = round2(totalPending + credit.total)
+      totalPending = round2(add(totalPending, credit.total))
       continue
     }
 
     const payments = transactions.filter(
       (t) =>
-        !t.payment_condition?.includes('Credito') &&
+        !isCreditCondition(t.payment_condition) &&
         t.invoice_number === invoiceNo &&
         t.supplier_id === credit.supplier_id,
     )
     const paid = round2(sumBy(payments, (p) => Math.abs(p.total)))
     const pending = round2(sub(credit.total, paid))
-    if (pending > 0) totalPending = round2(totalPending + pending)
+    if (pending > 0) totalPending = round2(add(totalPending, pending))
   }
 
   return totalPending
@@ -70,7 +82,7 @@ export function calcDisponibleNeto(cash: number, cxp: number, transitos: number)
 }
 
 export function calcTotalIncurrido(transactions: FinancialTransaction[]): number {
-  const egresses = transactions.filter((t) => t.budget_category?.code !== DEPOSIT_CODE)
+  const egresses = transactions.filter((t) => !isDepositCategory(t.budget_category?.code))
   return round2(sumBy(egresses, (t) => t.total))
 }
 
@@ -89,7 +101,7 @@ export interface CxPItem {
 }
 
 export function calcCxPDetails(transactions: FinancialTransaction[]): CxPItem[] {
-  const creditTransactions = transactions.filter((t) => t.payment_condition?.includes('Credito'))
+  const creditTransactions = transactions.filter((t) => isCreditCondition(t.payment_condition))
 
   return creditTransactions
     .map((credit) => {
@@ -99,7 +111,7 @@ export function calcCxPDetails(transactions: FinancialTransaction[]): CxPItem[] 
       if (invoiceNo) {
         const payments = transactions.filter(
           (t) =>
-            !t.payment_condition?.includes('Credito') &&
+            !isCreditCondition(t.payment_condition) &&
             t.invoice_number === invoiceNo &&
             t.supplier_id === credit.supplier_id,
         )
