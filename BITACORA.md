@@ -97,3 +97,38 @@ formularios que aún aceptan datos raros, avisos cuando un guardado falla,
 reporte mensual en PDF incompleto, y candados de servidor para uso simultáneo
 (numeración, recibir/pagar, inventario). Ayudas de demo (código 1234, accesos
 rápidos del login) se quitan al salir de pruebas.
+
+## 2026-06-09 (parte 2) — "Hazlo todo": cierre de pendientes
+
+Antes de empezar dejé un punto de restauración para poder volver atrás si algo
+salía mal.
+
+1. **Avisos cuando algo falla (U2).** Revisé todos los guardados: ya avisan al
+   usuario si fallan. Solo las listas desplegables fallan calladas (correcto).
+
+2. **Validaciones de formularios (U1).** Los formularios de dinero ya validaban
+   al guardar; reforcé los mínimos que faltaban (monto de distribución y
+   cantidad de avances) para que no acepten negativos.
+
+3. **Reporte mensual en PDF (N5) — el más grande.** Antes el PDF solo traía
+   portada y anexo. Ahora incluye el resumen ejecutivo, el desglose por
+   capítulos, el flujo de caja y la nómina, y todos los montos salen en RD$.
+
+4. **Candados para uso simultáneo (varias personas a la vez):**
+   - Números de tarea del cronograma ya no se pueden repetir (los de órdenes,
+     requisiciones y cortes ya estaban protegidos).
+   - Pagar una cuota de préstamo es a prueba de doble clic: un segundo clic ya
+     no registra el cobro dos veces.
+   - La base de datos ahora impide recibir más mercancía de la que se pidió,
+     aunque dos personas reciban al mismo tiempo.
+   - El inventario y los pagos ya eran "todo o nada" (lo confirmé).
+
+**Qué cambió para Cristian:** el reporte mensual ahora sí sale completo, y la
+app es más segura cuando varias personas la usan a la vez. Todo probado (tipos,
+pruebas y construcción en verde) y publicado.
+
+**Único punto que dejé para hacer contigo en vivo:** reglas de "estados" más
+profundas en el servidor (qué transición de estado se permite y cuál no). No
+las apliqué a ciegas porque podrían bloquear acciones normales del día a día;
+conviene probarlas contigo. Lo esencial (no recibir de más, no pagar dos veces,
+no repetir números) ya quedó puesto.

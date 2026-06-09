@@ -23,10 +23,22 @@
 > **Seguridad (S1–S6):** S1 aplicado en producción (migración 083). Resto en
 > `SEGURIDAD_PENDIENTE_2026-06-08.md`.
 >
-> **Pendiente (documentado, requiere tu validación en vivo o decisiones de negocio):**
-> U1 (validaciones de formularios), U2 (errores silenciosos), N4/N5 (lógica de
-> préstamos/reporte PDF mensual), N7 y R1/R2/R6 (candados de servidor/base de datos
-> para uso simultáneo). Se hacen mejor contigo presente para verificar cada uno.
+> **Agregado el 9 jun 2026 (parte 2 — "hazlo todo"):**
+> - U1 — los formularios de dinero ya validaban; se reforzaron mínimos faltantes.
+> - U2 — verificado: todos los guardados avisan si fallan (solo cargas de listas
+>   fallan en silencio, lo cual es correcto).
+> - N5 — el reporte mensual en PDF ahora incluye resumen, desglose, flujo de caja
+>   y nómina (antes solo portada y anexo); montos en RD$.
+> - R1 — números de tarea del cronograma sin repetir (migración 085); órdenes,
+>   requisiciones y cortes ya estaban protegidos.
+> - R4 — pago de cuota a prueba de doble clic.
+> - R2/N7 — candado de base de datos: no se puede recibir más de lo pedido
+>   (migración 086).
+> - R6 — verificado: inventario y pagos ya son operaciones atómicas (RPC).
+>
+> **Único pendiente (requiere validación en vivo):** reglas de transición de
+> estado más profundas en el servidor (N7 ampliado), no aplicadas a ciegas para
+> no bloquear acciones normales del día a día.
 
 
 Se lanzaron **16 agentes simultáneos**, cada uno revisando una parte distinta del
