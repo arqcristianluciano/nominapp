@@ -11,13 +11,22 @@
 > - R5 — editar un ensayo de calidad ya no borra su estado.
 > - (De antes hoy: Reporte consolidado, préstamo "Pagado", etiqueta del Panel.)
 >
-> **Seguridad (S1–S6):** entregada como migración lista + checklist en
-> `SEGURIDAD_PENDIENTE_2026-06-08.md` (no se aplicó a ciegas en la base real).
+> **Agregado el 9 jun 2026:**
+> - N6 — el costo promedio de un material ahora se pondera por cantidad.
+> - U5 — el respaldo en Excel ya no se corta a 1000 filas (trae todo por páginas).
+> - U6 — un hito ya no se marca "Completado" solo por la fecha; si pasó la fecha
+>   sin terminar dice "Atrasado".
+> - U7 — el conteo de días en las alertas ya no se corre un día por zona horaria.
+> - Seguridad de base de datos: las operaciones "del sistema" ya no fallan por la
+>   regla del registro de auditoría (migración 084).
+>
+> **Seguridad (S1–S6):** S1 aplicado en producción (migración 083). Resto en
+> `SEGURIDAD_PENDIENTE_2026-06-08.md`.
 >
 > **Pendiente (documentado, requiere tu validación en vivo o decisiones de negocio):**
-> U1 (validaciones de formularios), U2 (errores silenciosos), N4/N5/N6 (lógica de
-> préstamos/reportes), N7 y R1/R2/R6 (candados de servidor/base de datos para uso
-> simultáneo). Se hacen mejor contigo presente para verificar cada uno.
+> U1 (validaciones de formularios), U2 (errores silenciosos), N4/N5 (lógica de
+> préstamos/reporte PDF mensual), N7 y R1/R2/R6 (candados de servidor/base de datos
+> para uso simultáneo). Se hacen mejor contigo presente para verificar cada uno.
 
 
 Se lanzaron **16 agentes simultáneos**, cada uno revisando una parte distinta del
@@ -133,4 +142,29 @@ de RD$ no se protege (se usa en ~314 lugares).
 
 **U5. Exportación a Excel/CSV:**
  - Riesgo de "inyección de fórmulas" (un nombre que empieza con "=" se ejecuta al abrir
-   el archivo). Ya existe una función para evitarlo pero no se usa en todos l
+   el archivo). Ya existe una función para evitarlo pero no se usa en todos lados.
+ - El respaldo se corta a 1000 filas sin avisar (un respaldo incompleto es peligroso).
+ - Algunos CSV abren con acentos rotos en Excel (falta marca UTF-8).
+
+**U6. Reporte al cliente:** un hito se marca "completado" solo porque pasó su fecha,
+aunque tenga 0% de avance → información falsa para el cliente.
+
+**U7. Fechas con zona horaria** en las alertas pueden salir un día corridas.
+
+**U8.** Un botón de borrar usa la ventanita gris del navegador en vez del diálogo
+bonito de la app (inconsistencia menor).
+
+---
+
+## Plan sugerido (mi recomendación de orden)
+
+1. **Seguridad primero (S1, S2, S3, S4):** son los de mayor riesgo real para una app de
+   finanzas/nómina. Empezaría por verificar en producción S1 y S4, y quitar S2/S3.
+2. **Números que engañan (N1, N2, N3, N4):** afectan decisiones con plata; son arreglos
+   acotados.
+3. **Robustez (R1, R4, R2):** importan cuando haya varios usuarios.
+4. **Experiencia (U1–U8):** muchos son rápidos y mejoran el día a día.
+
+Puedo ir haciéndolos por tandas, cada uno verificado (tipos, pruebas y build) y dejado
+en una propuesta de cambio para tu visto bueno, igual que los anteriores. Tú me dices
+por dónde arrancamos.
