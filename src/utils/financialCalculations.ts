@@ -1,4 +1,4 @@
-import { round2, sumBy, sub } from './money'
+import { round2, sumBy, sub, add } from './money'
 
 const DEPOSIT_CODE = '19 - DEPOSITOS'
 
@@ -41,25 +41,25 @@ export function calcCashDisponible(transactions: FinancialTransaction[]): number
 }
 
 export function calcTotalCxP(transactions: FinancialTransaction[]): number {
-  const creditTransactions = transactions.filter((t) => t.payment_condition?.includes('Credito'))
+  const creditTransactions = transactions.filter((t) => isCreditCondition(t.payment_condition))
 
   let totalPending = 0
   for (const credit of creditTransactions) {
     const invoiceNo = credit.invoice_number
     if (!invoiceNo) {
-      totalPending = round2(totalPending + credit.total)
+      totalPending = round2(add(totalPending, credit.total))
       continue
     }
 
     const payments = transactions.filter(
       (t) =>
-        !t.payment_condition?.includes('Credito') &&
+        !isCreditCondition(t.payment_condition) &&
         t.invoice_number === invoiceNo &&
         t.supplier_id === credit.supplier_id,
     )
     const paid = round2(sumBy(payments, (p) => Math.abs(p.total)))
     const pending = round2(sub(credit.total, paid))
-    if (pending > 0) totalPending = round2(totalPending + pending)
+    if (pending > 0) totalPending = round2(add(totalPending, pending))
   }
 
   return totalPending
@@ -89,7 +89,7 @@ export interface CxPItem {
 }
 
 export function calcCxPDetails(transactions: FinancialTransaction[]): CxPItem[] {
-  const creditTransactions = transactions.filter((t) => t.payment_condition?.includes('Credito'))
+  const creditTransactions = transactions.filter((t) => isCreditCondition(t.payment_condition))
 
   return creditTransactions
     .map((credit) => {
@@ -99,7 +99,7 @@ export function calcCxPDetails(transactions: FinancialTransaction[]): CxPItem[] 
       if (invoiceNo) {
         const payments = transactions.filter(
           (t) =>
-            !t.payment_condition?.includes('Credito') &&
+            !isCreditCondition(t.payment_condition) &&
             t.invoice_number === invoiceNo &&
             t.supplier_id === credit.supplier_id,
         )
