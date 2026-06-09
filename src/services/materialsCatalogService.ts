@@ -108,13 +108,14 @@ export const materialsCatalogService = {
 
     const { data: movements } = await supabase
       .from('inventory_movements')
-      .select('unit_cost, date, supplier_id, supplier:suppliers(name)')
+      .select('unit_cost, quantity, date, supplier_id, supplier:suppliers(name)')
       .eq('type', 'in')
       .in('item_id', itemIds)
       .order('date', { ascending: false })
 
     const rows = (movements ?? []) as Array<{
       unit_cost: number | null
+      quantity: number | null
       date: string
       supplier?: { name?: string | null } | null
     }>
@@ -122,7 +123,13 @@ export const materialsCatalogService = {
     if (withCost.length === 0) return zeroStat(catalog)
 
     const costs = withCost.map((r) => Number(r.unit_cost ?? 0))
-    const avg = costs.reduce((a, b) => a + b, 0) / costs.length
+    // Promedio PONDERADO por cantidad: una compra grande pesa mas que una pequena.
+    // Si no hay cantidades validas, se usa el promedio simple como resguardo.
+    const totalQty = withCost.reduce((sum, r) => sum + Math.max(0, Number(r.quantity ?? 0)), 0)
+    const avg =
+      totalQty > 0
+        ? withCost.reduce((sum, r) => sum + Number(r.unit_cost ?? 0) * Math.max(0, Number(r.quantity ?? 0)), 0) / totalQty
+        : costs.reduce((a, b) => a + b, 0) / costs.length
     const min = Math.min(...costs)
     const max = Math.max(...costs)
     const last = withCost[0]
