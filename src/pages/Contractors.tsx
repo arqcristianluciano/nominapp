@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { getErrorMessage } from '@/utils/errors'
 import { useTranslation } from 'react-i18next'
 import { contractorService } from '@/services/contractorService'
 import { Modal } from '@/components/ui/Modal'
@@ -51,8 +52,8 @@ export default function Contractors() {
         setShowForm(false)
         await load()
         success(t('contractors.toast.created'))
-      } catch {
-        error(t('contractors.toast.create_failed'))
+      } catch (err) {
+        error(getErrorMessage(err) || t('contractors.toast.create_failed'))
       } finally {
         setSaving(false)
       }
@@ -69,8 +70,8 @@ export default function Contractors() {
         setEditing(undefined)
         await load()
         success(t('contractors.toast.updated'))
-      } catch {
-        error(t('contractors.toast.update_failed'))
+      } catch (err) {
+        error(getErrorMessage(err) || t('contractors.toast.update_failed'))
       } finally {
         setSaving(false)
       }
