@@ -1,0 +1,147 @@
+-- =====================================================
+-- NominApp - Migración 087: costo automático en salidas de almacén
+-- Fecha: 2026-06-09
+--
+-- Problema (reportado por Cristian con capturas de WhatsApp):
+--   Las salidas de almacén se guardaban SIN costo unitario (el formulario
+--   solo pide costo en las entradas y nadie lo rellenaba por defecto), así
+--   que la columna GASTADO del presupuesto sumaba cantidad × NULL = 0 y el
+--   consumo de materiales nunca se reflejaba en la partida imputada.
+--   Caso real: salida de 100 maderas (costo promedio RD$159) imputada a
+--   "1.01 Campamento" → el presupuesto mostraba RD$0 gastado.
+--
+-- Solución (dos partes):
+--   1) rpc_inventory_add_movement: si una salida de CONSUMO (sin
+--      purchase_order_id) llega sin costo, se rellena con el costo promedio
+--      ponderado vigente del material. Las reversas de recepción (salidas
+--      CON purchase_order_id) se dejan sin costo: son correcciones
+--      administrativas, no gasto de obra.
+--   2) Backfill: las salidas de consumo históricas sin costo toman el costo
+--      promedio actual de su material.
+--
+-- NOTAS: Idempotente (CREATE OR REPLACE + UPDATE condicionado).
+-- =====================================================
+
+CREATE OR REPLACE FUNCTION public.rpc_inventory_add_movement(
+  p_item_id            uuid,
+  p_project_id         uuid,
+  p_type               text,
+  p_quantity           numeric,
+  p_date               date,
+  p_notes              text        DEFAULT NULL,
+  p_supplier_id        uuid        DEFAULT NULL,
+  p_budget_item_id     uuid        DEFAULT NULL,
+  p_budget_category_id uuid        DEFAULT NULL,
+  p_purchase_order_id  uuid        DEFAULT NULL,
+  p_unit_cost          numeric     DEFAULT NULL,
+  p_created_by         text        DEFAULT NULL,
+  p_lot_id             uuid        DEFAULT NULL,
+  p_attachment_path    text        DEFAULT NULL,
+  p_override_motivo    text        DEFAULT NULL
+)
+RETURNS uuid
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_item           public.inventory_items%ROWTYPE;
+  v_current_stock  numeric;
+  v_current_cost   numeric;
+  v_delta          numeric;
+  v_new_stock      numeric;
+  v_next_cost      numeric;
+  v_insert_cost    numeric;
+  v_movement_id    uuid;
+BEGIN
+  -- Validar cantidad
+  IF NOT (p_quantity > 0) THEN
+    RAISE EXCEPTION 'INVALID_QUANTITY: La cantidad del movimiento debe ser mayor que cero.'
+      USING ERRCODE = 'P0001';
+  END IF;
+
+  -- Validar partida en salidas
+  IF p_type = 'out' AND p_budget_item_id IS NULL AND p_budget_category_id IS NULL THEN
+    RAISE EXCEPTION 'OUT_REQUIRES_PARTIDA: Toda salida de almacén debe imputarse a una partida del presupuesto.'
+      USING ERRCODE = 'P0001';
+  END IF;
+
+  -- Bloquear la fila del material para serializar acceso concurrente
+  SELECT * INTO v_item
+  FROM public.inventory_items
+  WHERE id = p_item_id
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'ITEM_NOT_FOUND: Material no encontrado.'
+      USING ERRCODE = 'P0001';
+  END IF;
+
+  v_current_stock := COALESCE(v_item.current_stock, 0);
+  v_current_cost  := COALESCE(v_item.unit_cost, 0);
+  v_delta         := CASE p_type WHEN 'in' THEN p_quantity ELSE -p_quantity END;
+  v_new_stock     := v_current_stock + v_delta;
+
+  -- Bloquear stock negativo salvo override
+  IF v_new_stock < 0 AND p_override_motivo IS NULL THEN
+    RAISE EXCEPTION 'INSUFFICIENT_STOCK: Stock insuficiente: disponible %, solicitado %.',
+      v_current_stock, p_quantity
+      USING ERRCODE = 'P0001';
+  END IF;
+
+  -- Costo a registrar en el movimiento. En salidas de CONSUMO (sin orden de
+  -- compra asociada) sin costo explícito se imputa el costo promedio vigente
+  -- del material: ese costo es el que alimenta la columna GASTADO del
+  -- presupuesto (cantidad × costo). Las reversas de recepción (salidas con
+  -- purchase_order_id) NO llevan costo: no son gasto de obra.
+  v_insert_cost := p_unit_cost;
+  IF p_type = 'out' AND v_insert_cost IS NULL AND p_purchase_order_id IS NULL THEN
+    v_insert_cost := NULLIF(v_current_cost, 0);
+  END IF;
+
+  -- Insertar el movimiento
+  INSERT INTO public.inventory_movements (
+    item_id, project_id, type, quantity, date,
+    notes, supplier_id, budget_item_id, budget_category_id,
+    purchase_order_id, unit_cost, created_by, lot_id,
+    attachment_path, override_motivo, created_at
+  ) VALUES (
+    p_item_id, p_project_id, p_type, p_quantity, p_date,
+    p_notes, p_supplier_id, p_budget_item_id, p_budget_category_id,
+    p_purchase_order_id, v_insert_cost, p_created_by, p_lot_id,
+    p_attachment_path, p_override_motivo, now()
+  )
+  RETURNING id INTO v_movement_id;
+
+  -- Recalcular costo promedio ponderado (solo en entradas con costo válido)
+  v_next_cost := v_current_cost;
+  IF p_type = 'in' AND p_unit_cost IS NOT NULL AND p_unit_cost > 0 THEN
+    IF (v_current_stock + p_quantity) > 0 THEN
+      v_next_cost := (v_current_stock * v_current_cost + p_quantity * p_unit_cost)
+                    / (v_current_stock + p_quantity);
+    ELSE
+      v_next_cost := p_unit_cost;
+    END IF;
+  END IF;
+
+  -- Actualizar stock y costo en una sola sentencia atómica
+  UPDATE public.inventory_items
+  SET current_stock = v_new_stock,
+      unit_cost     = v_next_cost
+  WHERE id = p_item_id;
+
+  RETURN v_movement_id;
+END;
+$$;
+
+-- Backfill: salidas de consumo históricas sin costo → costo promedio actual
+-- del material. Solo despachos (sin purchase_order_id) y solo si el material
+-- tiene un costo promedio conocido (> 0).
+UPDATE public.inventory_movements m
+SET unit_cost = i.unit_cost
+FROM public.inventory_items i
+WHERE i.id = m.item_id
+  AND m.type = 'out'
+  AND (m.unit_cost IS NULL OR m.unit_cost = 0)
+  AND m.purchase_order_id IS NULL
+  AND i.unit_cost > 0;

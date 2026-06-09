@@ -4,7 +4,7 @@ export type MockDb = Record<string, MockTable>
 
 export interface MockFilter {
   field: string
-  op: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'ilike' | 'like' | 'in'
+  op: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'ilike' | 'like' | 'in' | 'is'
   value: unknown
 }
 

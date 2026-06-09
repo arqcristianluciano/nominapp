@@ -2,6 +2,44 @@
 
 Diario en lenguaje sencillo de lo que se va haciendo en la app.
 
+## 2026-06-09 (parte 3) — El gasto de almacén ahora sí llega al presupuesto
+
+**Qué reportó Cristian (con capturas):** pidió madera para "Campamento",
+le dio entrada y salida de almacén, pero el presupuesto seguía en RD$0
+gastado. Preguntó si el gasto debía salir ahí o al pagar la factura
+(la compró a crédito).
+
+**Qué pasaba:** las salidas de almacén se guardaban sin costo (el
+formulario solo pide costo en las entradas), y el gasto se calcula
+"cantidad × costo", así que siempre daba cero. Pasaba con TODAS las
+salidas de la app (las 3 que existían).
+
+**Qué se arregló:**
+
+1. Toda salida de almacén toma ahora automáticamente el costo promedio
+   del material (el costo real al que se compró).
+2. Se corrigieron las 3 salidas históricas: Campamento ahora marca
+   RD$15,900 (100 maderas × RD$159) y Estructura RD$665,000 (varillas).
+3. Las "reversas de recepción" (cuando se deshace una entrega) ya no
+   se cuentan como gasto de obra: son correcciones, no consumo.
+4. El formulario de salida ahora muestra cuánto se cargará al
+   presupuesto antes de guardar, para que no haya sorpresas.
+
+**Respuesta a la pregunta de Cristian:** el gasto aparece en la partida
+cuando el material SALE del almacén (se consume en la obra), no cuando
+se paga la factura. El crédito con el suplidor es un tema de deuda
+(cuentas por pagar), separado del consumo del presupuesto. OJO: al
+registrar el pago de esa factura en el control financiero, NO hay que
+imputarlo otra vez a la misma partida, porque se contaría doble.
+
+**Para revisar con Cristian:** las varillas de 3/8" están registradas a
+RD$70,000 cada una (precio que se digitó al darles entrada). Si ese
+precio no es correcto, se corrige y el presupuesto se ajusta solo.
+
+**Cómo quedó:** tipos, 640 pruebas, estilo y compilación en verde. La
+regla nueva se ensayó en la base real con un ensayo que se deshace solo
+(rellenó RD$159 correctamente y no dejó rastro).
+
 ## 2026-06-09 — Seguridad, respaldo automático y velocidad
 
 **Qué se hizo:** Una revisión completa de seguridad, un respaldo automático

@@ -133,7 +133,8 @@ interface InventoryOutMovement {
 /**
  * Salidas de almacén (type='out') del proyecto dentro del rango, imputadas a
  * una partida/capítulo. Representan costo real consumido y deben sumarse al
- * desglose por capítulo igual que en `budgetSpentService`.
+ * desglose por capítulo igual que en `budgetSpentService`. Solo despachos de
+ * consumo: las reversas de recepción (con purchase_order_id) no son gasto.
  */
 async function loadInventoryOutMovements(projectId: string, range: MonthRange): Promise<InventoryOutMovement[]> {
   const { data, error } = await supabase
@@ -141,6 +142,7 @@ async function loadInventoryOutMovements(projectId: string, range: MonthRange): 
     .select('quantity, unit_cost, budget_category_id, budget_item_id')
     .eq('project_id', projectId)
     .eq('type', INVENTORY_OUT_TYPE)
+    .is('purchase_order_id', null)
     .gte('date', range.start)
     .lte('date', range.end)
   if (error) {

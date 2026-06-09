@@ -105,11 +105,14 @@ export const budgetSpentService = {
     }
 
     // 3) Salidas de almacén imputadas a partida/capítulo (costo real consumido).
+    // Solo despachos de consumo: las reversas de recepción llevan
+    // purchase_order_id y NO son gasto (ver @/utils/costoReal).
     let movementsQuery = supabase
       .from('inventory_movements')
       .select('quantity, unit_cost, date, budget_category_id, budget_item_id, type')
       .eq('project_id', projectId)
       .eq('type', INVENTORY_OUT_TYPE)
+      .is('purchase_order_id', null)
     if (filters?.dateFrom) movementsQuery = movementsQuery.gte('date', filters.dateFrom)
     if (filters?.dateTo) movementsQuery = movementsQuery.lte('date', filters.dateTo)
     const { data: movements, error: movementsError } = await movementsQuery
