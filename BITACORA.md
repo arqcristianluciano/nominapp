@@ -117,3 +117,31 @@ adelantos, generar un reporte de nómina completo, recepción de órdenes con
 conduces y el flujo de cotización/aprobación de compras. Quedaron 4 registros de
 prueba en la base (PRUEBA QA CLAUDE, FERRETERIA QA PRUEBA, MAESTRO QA PRUEBA,
 REQ-2026-9154) que Cristian puede borrar con un clic cuando quiera.
+
+## 2026-06-08 (noche) — Auditoría con 16 agentes y arreglos publicados
+
+**Qué se hizo:** Se auditó todo el código con 16 agentes en paralelo y se
+corrigieron y publicaron en producción (cada uno verificado: tipos, pruebas y
+build) los siguientes puntos:
+- "Crédito" con o sin tilde ya cuenta igual (CxP no desaparece).
+- "Depósitos" se detectan sin depender del texto exacto del código.
+- El Panel ya no se queda solo con las últimas 200 transacciones.
+- CxP suma con precisión de centavos; los montos ya no pueden salir como "NaN".
+- Exportación CSV protegida contra inyección de fórmulas.
+- Editar un ensayo de calidad ya no borra su estado.
+- Topes en formularios (personal en obra, No. de nómina, fecha de colada no futura).
+- Suplidores y contratistas ahora muestran el detalle real del error al guardar.
+
+**Seguridad (aplicada en la base real, con verificación previa):**
+- S1: se bloqueó que un usuario se auto-asigne "Director" (migración 083).
+- S4 y S5: verificados, sin problemas (RLS activo en todas las tablas, sin accesos
+  abiertos, proyectos filtrados por empresa).
+
+**Qué cambió para Cristian:** la app calcula y muestra mejor el dinero, exporta más
+seguro, y nadie puede auto-darse permisos de director.
+
+**Pendiente (documentado en AUDITORIA_CODIGO y SEGURIDAD_PENDIENTE):** lógica de
+préstamos/reportes que necesita decisiones de negocio, candados de base de datos para
+uso simultáneo, y validaciones de formularios que conviene verificar en pantalla.
+También quedan 5 registros de prueba por borrar y, al salir de pruebas, quitar los
+accesos rápidos del login y el código demo "1234".
