@@ -206,13 +206,15 @@ export const partidaProgressService = {
       getRow(month, categoryId).cubicado += valor
     }
 
-    // 4) Costo real - salidas de almacén imputadas a partida/capítulo
-    // (solo despachos de consumo; las reversas de recepción se excluyen)
+    // 4) Costo real - salidas de almacén imputadas a partida/capítulo. Solo
+    // despachos de consumo: las reversas de recepción (con purchase_order_id)
+    // no son gasto (ver isConsumptionOut en @/utils/costoReal).
     const { data: movements } = await supabase
       .from('inventory_movements')
       .select('quantity, unit_cost, date, budget_category_id, budget_item_id, type, purchase_order_id')
       .eq('project_id', projectId)
       .eq('type', INVENTORY_OUT_TYPE)
+      .is('purchase_order_id', null)
     for (const mv of (movements ?? []) as Array<{
       quantity: number | null
       unit_cost: number | null
@@ -366,13 +368,14 @@ export const partidaProgressService = {
       }
     }
 
-    // 3) Salidas de almacén imputadas a partida
-    // (solo despachos de consumo; las reversas de recepción se excluyen)
+    // 3) Salidas de almacén imputadas a partida. Solo despachos de consumo:
+    // las reversas de recepción (con purchase_order_id) no son gasto.
     const { data: movements } = await supabase
       .from('inventory_movements')
       .select('quantity, unit_cost, budget_item_id, type, purchase_order_id')
       .eq('project_id', projectId)
       .eq('type', INVENTORY_OUT_TYPE)
+      .is('purchase_order_id', null)
     for (const mv of (movements ?? []) as Array<{
       quantity: number | null
       unit_cost: number | null

@@ -2,52 +2,97 @@
 
 Diario en lenguaje sencillo de lo que se va haciendo en la app.
 
-## 2026-06-09 — El costo de los materiales despachados ahora sí llega al presupuesto
+## 2026-06-09 (parte 4) — Ver el gasto por subpartida y el costo de cada movimiento
 
-**Qué reportó Cristian (por WhatsApp):** Pidió madera para la partida de
-Campamento, le dio entrada al almacén y luego salida hacia la obra, pero el
-gasto no aparecía en el presupuesto: la partida seguía en RD$0 y la fila de
-Campamento mostraba un guion.
+**Contexto:** Dos sesiones de trabajo atendieron en paralelo el mismo reporte
+de Cristian (el de la madera de Campamento, ver "parte 3" más abajo). Ambos
+trabajos se unieron en uno solo, sin duplicados, y se verificó que la base de
+datos en línea quedó correcta: la salida de la madera vale RD$15,900
+(100 × RD$159) imputada a Campamento y no queda ninguna salida sin costo.
 
-**Qué causaba el problema:** Al registrar una salida de almacén, la app
-guardaba la cantidad pero NO el costo del material. Como el gasto se calcula
-"cantidad × costo", el resultado siempre era cero.
+**Qué agrega esta parte (encima de la parte 3):**
 
-**Qué cambió para Cristian:**
+1. **La fila de cada subpartida del presupuesto ahora muestra su gastado y su
+   diferencia** (ej. Campamento: gastado RD$15,900 de RD$1,000,000). Antes
+   esa casilla siempre mostraba un guion y solo se veía el total del capítulo.
+2. **La lista de movimientos del inventario muestra el costo en RD$** de cada
+   entrada y salida, no solo la cantidad.
+3. Pruebas automáticas nuevas que protegen todo este comportamiento
+   (valoración de salidas, exclusión de devoluciones al suplidor, desglose
+   por subpartida).
 
-1. **Toda salida de almacén ahora se valora sola** al costo promedio de
-   compra del material (el mismo que alimentan las órdenes de compra). No hay
-   que escribir el costo a mano: la app lo toma del historial de compras.
-2. **Ese costo ya suma al GASTADO del presupuesto**, tanto en la fila del
-   capítulo (ej. Preliminares) como en la fila de la subpartida exacta
-   (ej. Campamento), que antes solo mostraba un guion.
-3. **La lista de movimientos del inventario ahora muestra el costo en RD$**
-   de cada entrada y salida, no solo la cantidad.
-4. **El formulario de salida avisa** a qué costo se valorará el despacho
-   antes de guardar.
-5. **Las salidas viejas que quedaron en cero se reparan** con el costo
-   promedio actual del material (incluida la salida de la madera 2x4x16).
-6. Detalle técnico importante: cuando se devuelve mercancía al suplidor
-   (deshacer una recepción), esa salida NO cuenta como gasto de obra; solo
-   cuentan los despachos reales a la obra.
+**Cómo quedó:** 647 pruebas automáticas en verde, la app construye sin
+errores y los cambios se publicaron en la app oficial con el visto bueno de
+Cristian. Punto de restauración: `restore/2026-06-09-costo-salidas-almacen`.
 
-**Respuesta a la pregunta de Cristian sobre la factura a crédito:** El gasto
-de la partida se registra cuando el material SALE del almacén hacia la obra
-(es cuando se consume), no cuando se paga la factura. La factura a crédito es
-otra historia: es una deuda con el suplidor y se controla en Cuentas por
-Pagar; pagarla mueve el dinero del banco, pero no cambia el gasto de la
-partida. Importante: no registres esa misma factura como gasto manual en
-Control Financiero imputada a la misma partida, porque se contaría dos veces.
+## 2026-06-09 (parte 3) — El gasto de almacén ahora sí llega al presupuesto
 
-**Cómo quedó:** 647 pruebas automáticas en verde (7 nuevas protegen este
-comportamiento) y la app construye sin errores. Punto de restauración:
-`restore/2026-06-09-costo-salidas-almacen`.
+**Qué reportó Cristian (con capturas):** pidió madera para "Campamento",
+le dio entrada y salida de almacén, pero el presupuesto seguía en RD$0
+gastado. Preguntó si el gasto debía salir ahí o al pagar la factura
+(la compró a crédito).
 
-**Base de datos en línea:** El ajuste ya está aplicado en la base que usa la
-app publicada (lo aplicó una sesión de trabajo en paralelo y se verificó que
-coincide con este cambio). La salida de la madera 2x4x16 quedó valorada:
-100 unidades × RD$159 = RD$15,900, imputada a Campamento. Ya no queda
-ninguna salida sin costo.
+**Qué pasaba:** las salidas de almacén se guardaban sin costo (el
+formulario solo pide costo en las entradas), y el gasto se calcula
+"cantidad × costo", así que siempre daba cero. Pasaba con TODAS las
+salidas de la app (las 3 que existían).
+
+**Qué se arregló:**
+
+1. Toda salida de almacén toma ahora automáticamente el costo promedio
+   del material (el costo real al que se compró).
+2. Se corrigieron las 3 salidas históricas: Campamento ahora marca
+   RD$15,900 (100 maderas × RD$159) y Estructura RD$665,000 (varillas).
+3. Las "reversas de recepción" (cuando se deshace una entrega) ya no
+   se cuentan como gasto de obra: son correcciones, no consumo.
+4. El formulario de salida ahora muestra cuánto se cargará al
+   presupuesto antes de guardar, para que no haya sorpresas.
+
+**Respuesta a la pregunta de Cristian:** el gasto aparece en la partida
+cuando el material SALE del almacén (se consume en la obra), no cuando
+se paga la factura. El crédito con el suplidor es un tema de deuda
+(cuentas por pagar), separado del consumo del presupuesto. OJO: al
+registrar el pago de esa factura en el control financiero, NO hay que
+imputarlo otra vez a la misma partida, porque se contaría doble.
+
+**Para revisar con Cristian:** las varillas de 3/8" están registradas a
+RD$70,000 cada una (precio que se digitó al darles entrada). Si ese
+precio no es correcto, se corrige y el presupuesto se ajusta solo.
+
+**Cómo quedó:** tipos, 640 pruebas, estilo y compilación en verde. La
+regla nueva se ensayó en la base real con un ensayo que se deshace solo
+(rellenó RD$159 correctamente y no dejó rastro).
+
+## 2026-06-09 — Seguridad, respaldo automático y velocidad
+
+**Qué se hizo:** Una revisión completa de seguridad, un respaldo automático
+y una mejora de velocidad.
+
+**Seguridad:** Dos tablas nuevas (los "movimientos de cuenta" del banco y
+las "cuotas de préstamo") habían quedado con acceso abierto: cualquier
+usuario conectado podía verlas o cambiarlas. Ahora respetan los permisos
+por rol igual que el resto de la app (solo entra quien debe). Las tablas
+estaban vacías, así que no se perdió nada.
+
+**Respaldo automático:** Se programó un "robot" gratis en GitHub que cada
+día guarda una copia completa de toda la base de datos. Si algo sale mal,
+se puede volver a la información de un día anterior. (Falta un paso de una
+sola vez: pegar la contraseña de la base como "secreto" en GitHub; sin eso
+el robot no puede entrar.)
+
+**Velocidad:** Se agregaron cuatro "índices" en la base de datos (atajos de
+búsqueda) para que ciertas consultas sean más rápidas a medida que crezcan
+los datos. Las pantallas ya venían cargando por partes, así que ahí no hizo
+falta tocar nada.
+
+**Cómo quedó:** Tipos, 640 pruebas y compilación: todo en verde. Reglas de
+base de datos aplicadas y verificadas en la base real. Punto de
+restauración creado: `restore/2026-06-09-antes-seguridad-respaldo-velocidad`.
+
+**Pendiente:** (1) Activar el robot de respaldo pegando el secreto
+`SUPABASE_DB_URL` en GitHub → Settings → Secrets and variables → Actions.
+(2) Opcional: activar en Supabase la "protección contra contraseñas
+filtradas" (un interruptor en el panel de Autenticación).
 
 ## 2026-06-08 — Arreglo: deshacer recepción de órdenes de compra (Sentry #99)
 

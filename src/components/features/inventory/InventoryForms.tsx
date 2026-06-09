@@ -445,6 +445,16 @@ export function InventoryMovementForm({
           <StockOverrideFields form={form} categories={categories} budgetItems={budgetItems} onChange={onChange} />
         )}
 
+        {/* En salidas el costo no se pide: se imputa el costo promedio del
+            material (la base lo rellena, migración 087). Esta línea muestra
+            cuánto se cargará al presupuesto para que no sea una sorpresa. */}
+        {isOut && selectedItem && Number(selectedItem.unit_cost) > 0 && (
+          <p className="sm:col-span-4 text-xs text-app-muted">
+            Se cargará al presupuesto a costo promedio: {formatRD(Number(selectedItem.unit_cost))} ×{' '}
+            {form.quantity || 0} = {formatRD(round2(mul(form.quantity || 0, Number(selectedItem.unit_cost))))}
+          </p>
+        )}
+
         <div className="sm:col-span-4">
           <label className="text-xs text-app-muted block mb-1">Notas</label>
           <input
@@ -459,15 +469,6 @@ export function InventoryMovementForm({
       {isOut && !form.budget_category_id && !form.budget_item_id && (
         <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md px-2 py-1.5">
           Toda salida debe imputarse al menos a un capítulo (regla de almacén 7.4).
-        </p>
-      )}
-
-      {isOut && selectedItem && selectedItem.unit_cost > 0 && (
-        <p className="text-xs text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-md px-2 py-1.5">
-          Esta salida se valorará a {formatRD(selectedItem.unit_cost)} por {selectedItem.unit} (costo promedio de
-          compras)
-          {form.quantity > 0 && <> — total {formatRD(round2(mul(form.quantity, selectedItem.unit_cost)))}</>} y se
-          sumará al gastado de la partida elegida.
         </p>
       )}
 

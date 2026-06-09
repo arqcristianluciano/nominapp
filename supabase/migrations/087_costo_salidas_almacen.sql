@@ -1,37 +1,27 @@
 -- =====================================================
--- NominApp - Migración 087: costo en salidas de almacén
+-- NominApp - Migración 087: costo automático en salidas de almacén
 -- Fecha: 2026-06-09
 --
--- Problema reportado: al despachar material del almacén (salida imputada a una
--- partida), el movimiento quedaba con unit_cost NULL porque el formulario de
--- salida no captura costo. Como el GASTADO de la partida se calcula
--- cantidad × unit_cost del movimiento, la salida sumaba RD$0 y el consumo
--- nunca se reflejaba en el presupuesto.
+-- Problema (reportado por Cristian con capturas de WhatsApp):
+--   Las salidas de almacén se guardaban SIN costo unitario (el formulario
+--   solo pide costo en las entradas y nadie lo rellenaba por defecto), así
+--   que la columna GASTADO del presupuesto sumaba cantidad × NULL = 0 y el
+--   consumo de materiales nunca se reflejaba en la partida imputada.
+--   Caso real: salida de 100 maderas (costo promedio RD$159) imputada a
+--   "1.01 Campamento" → el presupuesto mostraba RD$0 gastado.
 --
--- Solución:
---   1. `rpc_inventory_add_movement` ahora valora las salidas de consumo
---      (despachos manuales, sin orden de compra) sin costo explícito al costo
---      promedio ponderado vigente del material (el mismo que mantienen las
---      entradas de compras). Las entradas no cambian.
---   2. Backfill: las salidas históricas SIN costo y SIN orden de compra
---      (las salidas manuales de despacho; las salidas con purchase_order_id
---      son reversas de recepción y no representan consumo) toman el costo
---      promedio actual del material.
+-- Solución (dos partes):
+--   1) rpc_inventory_add_movement: si una salida de CONSUMO (sin
+--      purchase_order_id) llega sin costo, se rellena con el costo promedio
+--      ponderado vigente del material. Las reversas de recepción (salidas
+--      CON purchase_order_id) se dejan sin costo: son correcciones
+--      administrativas, no gasto de obra.
+--   2) Backfill: las salidas de consumo históricas sin costo toman el costo
+--      promedio actual de su material.
 --
--- NOTAS DE DISEÑO:
---   - Idempotente: el CREATE OR REPLACE puede re-ejecutarse; el UPDATE solo
---     toca filas con unit_cost NULL, así que en una segunda pasada no hay
---     filas que actualizar.
---   - Las salidas de reversa (purchase_order_id IS NOT NULL) se dejan sin
---     costo a propósito: no son consumo de obra y el cálculo de GASTADO las
---     excluye (ver utils/costoReal.ts).
---   - Si el material aún no tiene costo promedio (0), la salida queda sin
---     costo (NULL) en vez de registrar un 0 engañoso.
+-- NOTAS: Idempotente (CREATE OR REPLACE + UPDATE condicionado).
 -- =====================================================
 
--- -------------------------------------------------------
--- 1. RPC: valorar salidas al costo promedio ponderado
--- -------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.rpc_inventory_add_movement(
   p_item_id            uuid,
   p_project_id         uuid,
@@ -58,10 +48,10 @@ DECLARE
   v_item           public.inventory_items%ROWTYPE;
   v_current_stock  numeric;
   v_current_cost   numeric;
-  v_movement_cost  numeric;
   v_delta          numeric;
   v_new_stock      numeric;
   v_next_cost      numeric;
+  v_insert_cost    numeric;
   v_movement_id    uuid;
 BEGIN
   -- Validar cantidad
@@ -92,20 +82,21 @@ BEGIN
   v_delta         := CASE p_type WHEN 'in' THEN p_quantity ELSE -p_quantity END;
   v_new_stock     := v_current_stock + v_delta;
 
-  -- Costo del movimiento: las salidas de consumo (sin orden de compra) sin
-  -- costo explícito se valoran al costo promedio ponderado vigente del
-  -- material, para que el consumo imputado a la partida refleje el costo real
-  -- de compra. Las reversas de recepción (purchase_order_id) no llevan costo.
-  v_movement_cost := p_unit_cost;
-  IF p_type = 'out' AND v_movement_cost IS NULL AND p_purchase_order_id IS NULL THEN
-    v_movement_cost := NULLIF(v_current_cost, 0);
-  END IF;
-
   -- Bloquear stock negativo salvo override
   IF v_new_stock < 0 AND p_override_motivo IS NULL THEN
     RAISE EXCEPTION 'INSUFFICIENT_STOCK: Stock insuficiente: disponible %, solicitado %.',
       v_current_stock, p_quantity
       USING ERRCODE = 'P0001';
+  END IF;
+
+  -- Costo a registrar en el movimiento. En salidas de CONSUMO (sin orden de
+  -- compra asociada) sin costo explícito se imputa el costo promedio vigente
+  -- del material: ese costo es el que alimenta la columna GASTADO del
+  -- presupuesto (cantidad × costo). Las reversas de recepción (salidas con
+  -- purchase_order_id) NO llevan costo: no son gasto de obra.
+  v_insert_cost := p_unit_cost;
+  IF p_type = 'out' AND v_insert_cost IS NULL AND p_purchase_order_id IS NULL THEN
+    v_insert_cost := NULLIF(v_current_cost, 0);
   END IF;
 
   -- Insertar el movimiento
@@ -117,7 +108,7 @@ BEGIN
   ) VALUES (
     p_item_id, p_project_id, p_type, p_quantity, p_date,
     p_notes, p_supplier_id, p_budget_item_id, p_budget_category_id,
-    p_purchase_order_id, v_movement_cost, p_created_by, p_lot_id,
+    p_purchase_order_id, v_insert_cost, p_created_by, p_lot_id,
     p_attachment_path, p_override_motivo, now()
   )
   RETURNING id INTO v_movement_id;
@@ -143,30 +134,14 @@ BEGIN
 END;
 $$;
 
--- Permisos: solo usuarios autenticados pueden invocar la RPC
-REVOKE ALL ON FUNCTION public.rpc_inventory_add_movement(
-  uuid, uuid, text, numeric, date,
-  text, uuid, uuid, uuid, uuid,
-  numeric, text, uuid, text, text
-) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.rpc_inventory_add_movement(
-  uuid, uuid, text, numeric, date,
-  text, uuid, uuid, uuid, uuid,
-  numeric, text, uuid, text, text
-) TO authenticated;
-
--- -------------------------------------------------------
--- 2. Backfill: salidas manuales históricas sin costo
--- -------------------------------------------------------
--- Solo despachos manuales (sin orden de compra asociada). Toman el costo
--- promedio actual del material; es la mejor aproximación disponible porque el
--- costo del movimiento nunca se guardó.
+-- Backfill: salidas de consumo históricas sin costo → costo promedio actual
+-- del material. Solo despachos (sin purchase_order_id) y solo si el material
+-- tiene un costo promedio conocido (> 0).
 UPDATE public.inventory_movements m
 SET unit_cost = i.unit_cost
 FROM public.inventory_items i
-WHERE m.item_id = i.id
+WHERE i.id = m.item_id
   AND m.type = 'out'
-  AND m.unit_cost IS NULL
+  AND (m.unit_cost IS NULL OR m.unit_cost = 0)
   AND m.purchase_order_id IS NULL
-  AND i.unit_cost IS NOT NULL
   AND i.unit_cost > 0;

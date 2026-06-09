@@ -71,6 +71,8 @@ function applyFilters(rows: MockRow[], filters: MockFilter[]): MockRow[] {
       if (f.op === 'in') return Array.isArray(f.value) && f.value.includes(v)
       if (f.op === 'ilike') return matchPattern(v, String(f.value), true)
       if (f.op === 'like') return matchPattern(v, String(f.value), false)
+      // IS NULL de SQL: campos ausentes (undefined) también cuentan como nulos.
+      if (f.op === 'is') return f.value === null ? v == null : v === f.value
       return true
     }),
   )
@@ -172,7 +174,7 @@ class MockQueryBuilder {
     return this
   }
   is(field: string, value: unknown): this {
-    this._filters.push({ field, op: 'eq', value })
+    this._filters.push({ field, op: 'is', value })
     return this
   }
   in(field: string, values: unknown[]): this {

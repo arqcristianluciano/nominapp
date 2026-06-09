@@ -117,8 +117,9 @@ beforeAll(async () => {
       budget_category_id: catB,
       budget_item_id: null,
     },
-    // Salida de REVERSA de recepción (vinculada a una orden de compra):
-    // devuelve mercancía al suplidor, NO es consumo y NO debe contar.
+    // Salidas de REVERSA de recepción (type='out' CON purchase_order_id):
+    // corrección administrativa que devuelve mercancía al suplidor, NO es
+    // consumo y NO debe contar aunque lleve costo y partida/capítulo.
     {
       project_id: projectId,
       type: 'out',
@@ -129,6 +130,16 @@ beforeAll(async () => {
       budget_item_id: itemA,
       purchase_order_id: 'oc-reversa-1',
     },
+    {
+      project_id: projectId,
+      type: 'out',
+      quantity: 99,
+      unit_cost: 500,
+      date: '2026-05-12',
+      budget_category_id: catB,
+      budget_item_id: null,
+      purchase_order_id: 'oc_reversa_1',
+    },
   ])
 })
 
@@ -138,7 +149,8 @@ describe('budgetSpentService.getImputedCostByCategory', () => {
     // Preliminares: 5×1000 (mano de obra) + 4×100 (salida de almacén vía partida) = 5400.
     // La salida de reversa (50×999, purchase_order_id) NO cuenta.
     expect(map[catA]).toBe(5400)
-    // Demoliciones: factura 3000 + salida 2×250 = 3500. La entrada (type='in') no cuenta.
+    // Demoliciones: factura 3000 + salida 2×250 = 3500. La entrada (type='in')
+    // no cuenta, y la reversa de recepción (out con purchase_order_id) tampoco.
     expect(map[catB]).toBe(3500)
   })
 
