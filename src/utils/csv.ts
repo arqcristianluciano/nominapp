@@ -5,9 +5,22 @@
 
 type CsvCell = string | number | null | undefined
 
-/** Escapa un valor para una celda CSV. */
+/**
+ * Neutraliza la "inyeccion de formulas" en CSV: si una celda de TEXTO empieza con
+ * un caracter que Excel/Sheets interpretaria como formula (= + - @, tab o retorno),
+ * se le antepone un apostrofo para que se trate como texto. No se tocan los numeros
+ * (incluidos negativos), que llegan como `number`, por lo que no se corrompen datos.
+ */
+function neutralizeFormula(value: CsvCell): string {
+  if (typeof value !== 'string') return value == null ? '' : String(value)
+  // Si parece un numero (ej. "-50.00", "+3"), se deja igual.
+  if (/^[+-]?\d/.test(value)) return value
+  return /^[=+\-@\t\r]/.test(value) ? `'${value}` : value
+}
+
+/** Escapa un valor para una celda CSV (incluye proteccion contra inyeccion de formulas). */
 export function sanitizeCsvCell(value: CsvCell): string {
-  const str = value == null ? '' : String(value)
+  const str = neutralizeFormula(value)
   return /[",\n\r]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str
 }
 
