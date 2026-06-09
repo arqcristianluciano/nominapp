@@ -34,10 +34,16 @@ export const qualityControlService = {
   },
 
   async update(id: string, updates: QCUpdate): Promise<QualityControl> {
-    const status = computeStatus(updates.actual_resistance, updates.expected_resistance)
+    // El estado (aprobado/fallido) solo se recalcula cuando la actualizacion trae
+    // ambas resistencias; asi una edicion parcial (p.ej. solo la fecha o las notas)
+    // no borra por error el estado ya guardado.
+    const payload: QCUpdate & { status?: 'passed' | 'failed' | null } = { ...updates }
+    if (updates.actual_resistance != null && updates.expected_resistance != null) {
+      payload.status = computeStatus(updates.actual_resistance, updates.expected_resistance)
+    }
     const { data, error } = await supabase
       .from('quality_control')
-      .update({ ...updates, status })
+      .update(payload)
       .eq('id', id)
       .select()
       .single()
