@@ -35,6 +35,8 @@ export interface ClientReportMilestone {
   progress: number
   /** Whether the milestone is already completed. */
   completed: boolean
+  /** Whether the milestone is overdue (past its planned date but not finished). */
+  overdue?: boolean
 }
 
 export interface ClientReportFinancialSummary {
@@ -351,14 +353,16 @@ function buildFinancialSection(input: ClientReportInput, opts: FormatOptions): C
 /* Section: Schedule milestones                                               */
 /* -------------------------------------------------------------------------- */
 
-function milestoneBadge(completed: boolean, progress: number): string {
+function milestoneBadge(completed: boolean, progress: number, overdue = false): string {
   if (completed || progress >= 100) return '✓ Completado'
+  if (overdue) return `Atrasado (${Math.round(progress)}%)`
   if (progress > 0) return `En curso (${Math.round(progress)}%)`
   return 'Pendiente'
 }
 
-function milestoneBadgeColor(completed: boolean, progress: number): string {
+function milestoneBadgeColor(completed: boolean, progress: number, overdue = false): string {
   if (completed || progress >= 100) return '#0f9d58'
+  if (overdue) return '#d93025'
   if (progress > 0) return '#1a73e8'
   return '#9aa0a6'
 }
@@ -377,8 +381,8 @@ function buildMilestonesSection(input: ClientReportInput, opts: FormatOptions): 
   const body: TableCell[][] = [headerRow]
 
   for (const m of input.milestones) {
-    const badge = milestoneBadge(m.completed, m.progress)
-    const color = milestoneBadgeColor(m.completed, m.progress)
+    const badge = milestoneBadge(m.completed, m.progress, m.overdue)
+    const color = milestoneBadgeColor(m.completed, m.progress, m.overdue)
     body.push([
       { text: m.name },
       { text: formatDate(m.endDate, opts), alignment: 'center' },

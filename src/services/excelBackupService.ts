@@ -15,9 +15,21 @@ import { exportToExcel, type ExcelSheet } from '@/utils/excelExport'
 type Row = Record<string, unknown>
 
 async function fetchAll(table: string): Promise<Row[]> {
-  const { data, error } = await supabase.from(table).select('*')
-  if (error) throw new Error(`[${table}] ${error.message}`)
-  return (data ?? []) as Row[]
+  // El servidor devuelve como maximo ~1000 filas por consulta. Para que el respaldo
+  // sea COMPLETO, traemos los datos por paginas hasta que no queden mas.
+  const PAGE = 1000
+  const all: Row[] = []
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase
+      .from(table)
+      .select('*')
+      .range(from, from + PAGE - 1)
+    if (error) throw new Error(`[${table}] ${error.message}`)
+    const batch = (data ?? []) as Row[]
+    all.push(...batch)
+    if (batch.length < PAGE) break
+  }
+  return all
 }
 
 /** Convierte una fila cruda en ExcelRow: aplana objetos/arrays a JSON string. */

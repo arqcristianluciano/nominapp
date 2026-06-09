@@ -106,7 +106,9 @@ async function loadMilestones(projectId: string): Promise<ClientReportMilestone[
       name: t.name,
       endDate: t.end_date,
       progress: t.progress,
-      completed: t.progress >= 100 || t.end_date < today,
+      completed: t.progress >= 100,
+      // Atrasado: paso su fecha planificada pero no esta terminado.
+      overdue: t.progress < 100 && t.end_date < today,
     }))
 }
 
