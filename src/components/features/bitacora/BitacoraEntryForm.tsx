@@ -207,8 +207,9 @@ export function BitacoraEntryForm({ form, saving, editMode, onChange, onCancel, 
           <input
             type="number"
             inputMode="numeric"
+            min={0}
             value={form.workforce_count}
-            onChange={(e) => onChange({ ...form, workforce_count: +e.target.value })}
+            onChange={(e) => onChange({ ...form, workforce_count: Math.max(0, +e.target.value) })}
             className={inputCls}
           />
         </div>
