@@ -3,6 +3,7 @@ import { transactionService, type TransactionWithRelations } from '@/services/tr
 import { budgetCategoryService } from '@/services/budgetCategoryService'
 import { budgetSpentService } from '@/services/budgetSpentService'
 import { calcBudgetSpent } from '@/utils/financialCalculations'
+import { transactionCost } from '@/utils/costoReal'
 import { round2 } from '@/utils/money'
 import { getErrorMessage } from '@/utils/errors'
 import type { BudgetCategory } from '@/types/database'
@@ -18,6 +19,7 @@ export function useBudgetDetail(projectId: string | undefined) {
   const [categories, setCategories] = useState<BudgetCategory[]>([])
   const [transactions, setTransactions] = useState<TransactionWithRelations[]>([])
   const [imputedByCategory, setImputedByCategory] = useState<Record<string, number>>({})
+  const [imputedByItem, setImputedByItem] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -34,11 +36,12 @@ export function useBudgetDetail(projectId: string | undefined) {
         const [cats, txns, imputed] = await Promise.all([
           budgetCategoryService.initializeForProject(projectId),
           transactionService.getByProject(projectId, filters),
-          budgetSpentService.getImputedCostByCategory(projectId, filters),
+          budgetSpentService.getImputedCost(projectId, filters),
         ])
         setCategories(cats)
         setTransactions(txns)
-        setImputedByCategory(imputed)
+        setImputedByCategory(imputed.byCategory)
+        setImputedByItem(imputed.byItem)
         return { categories: cats, transactions: txns }
       } catch (e) {
         setError(getErrorMessage(e))
@@ -118,6 +121,23 @@ export function useBudgetDetail(projectId: string | undefined) {
     })
   }, [categories, transactions, imputedByCategory])
 
+  // GASTADO por subpartida: costo imputado directamente a cada budget_item
+  // (mano de obra, facturas y salidas de consumo de almacén) más las
+  // transacciones del control financiero imputadas a esa subpartida. Es el
+  // desglose de la columna GASTADO del capítulo; lo imputado solo a nivel de
+  // capítulo no aparece aquí.
+  const spentByItem = useMemo<Record<string, number>>(() => {
+    const map: Record<string, number> = { ...imputedByItem }
+    for (const tx of transactions) {
+      if (!tx.budget_item_id) continue
+      map[tx.budget_item_id] = (map[tx.budget_item_id] ?? 0) + transactionCost(tx)
+    }
+    for (const id of Object.keys(map)) {
+      map[id] = round2(map[id])
+    }
+    return map
+  }, [transactions, imputedByItem])
+
   const totals = useMemo(() => {
     const acc = rows.reduce(
       (sum, row) => ({
@@ -136,6 +156,7 @@ export function useBudgetDetail(projectId: string | undefined) {
 
   return {
     rows,
+    spentByItem,
     totals,
     loading,
     saving,

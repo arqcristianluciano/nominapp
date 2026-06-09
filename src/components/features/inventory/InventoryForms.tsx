@@ -4,7 +4,9 @@ import type { BudgetCategory, BudgetItem } from '@/types/database'
 import { budgetCategoryService } from '@/services/budgetCategoryService'
 import { budgetItemService } from '@/services/budgetItemService'
 import { materialsCatalogService, type MaterialCatalogItem } from '@/services/materialsCatalogService'
+import { formatRD } from '@/utils/currency'
 import { parseDecimalInput } from '@/utils/decimalInput'
+import { mul, round2 } from '@/utils/money'
 import type { InventoryMovementFormState } from './inventoryConfig'
 
 /**
@@ -319,6 +321,7 @@ export function InventoryMovementForm({
   }, [form.budget_category_id])
 
   const isOut = form.type === 'out'
+  const selectedItem = items.find((i) => i.id === form.item_id)
 
   const handleQuantityChange = (value: string) => {
     setQuantityStr(value)
@@ -456,6 +459,15 @@ export function InventoryMovementForm({
       {isOut && !form.budget_category_id && !form.budget_item_id && (
         <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md px-2 py-1.5">
           Toda salida debe imputarse al menos a un capítulo (regla de almacén 7.4).
+        </p>
+      )}
+
+      {isOut && selectedItem && selectedItem.unit_cost > 0 && (
+        <p className="text-xs text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-md px-2 py-1.5">
+          Esta salida se valorará a {formatRD(selectedItem.unit_cost)} por {selectedItem.unit} (costo promedio de
+          compras)
+          {form.quantity > 0 && <> — total {formatRD(round2(mul(form.quantity, selectedItem.unit_cost)))}</>} y se
+          sumará al gastado de la partida elegida.
         </p>
       )}
 

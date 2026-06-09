@@ -117,6 +117,18 @@ beforeAll(async () => {
       budget_category_id: catB,
       budget_item_id: null,
     },
+    // Salida de REVERSA de recepción (vinculada a una orden de compra):
+    // devuelve mercancía al suplidor, NO es consumo y NO debe contar.
+    {
+      project_id: projectId,
+      type: 'out',
+      quantity: 50,
+      unit_cost: 999,
+      date: '2026-05-13',
+      budget_category_id: null,
+      budget_item_id: itemA,
+      purchase_order_id: 'oc-reversa-1',
+    },
   ])
 })
 
@@ -124,6 +136,7 @@ describe('budgetSpentService.getImputedCostByCategory', () => {
   it('suma mano de obra, materiales e inventario imputados por capítulo', async () => {
     const map = await budgetSpentService.getImputedCostByCategory(projectId)
     // Preliminares: 5×1000 (mano de obra) + 4×100 (salida de almacén vía partida) = 5400.
+    // La salida de reversa (50×999, purchase_order_id) NO cuenta.
     expect(map[catA]).toBe(5400)
     // Demoliciones: factura 3000 + salida 2×250 = 3500. La entrada (type='in') no cuenta.
     expect(map[catB]).toBe(3500)
@@ -137,5 +150,20 @@ describe('budgetSpentService.getImputedCostByCategory', () => {
     // El reporte en borrador (10 × 2000) NO se incluye aunque cae en el rango.
     // catA = 5000 (mano de obra) + 400 (inventario) = 5400.
     expect(map[catA]).toBe(5400)
+  })
+})
+
+describe('budgetSpentService.getImputedCost (desglose por partida)', () => {
+  it('acumula en byItem solo lo imputado directamente a cada partida', async () => {
+    const { byItem } = await budgetSpentService.getImputedCost(projectId)
+    // itemA: salida de almacén 4×100 = 400. La reversa (purchase_order_id) no cuenta;
+    // lo imputado solo a nivel de capítulo tampoco aparece aquí.
+    expect(byItem[itemA]).toBe(400)
+  })
+
+  it('byCategory coincide con getImputedCostByCategory', async () => {
+    const { byCategory } = await budgetSpentService.getImputedCost(projectId)
+    expect(byCategory[catA]).toBe(5400)
+    expect(byCategory[catB]).toBe(3500)
   })
 })

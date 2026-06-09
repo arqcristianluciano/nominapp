@@ -3,6 +3,7 @@ import { COMMITTED_PAYROLL_STATUSES } from '@/services/payrollService'
 import {
   INVENTORY_OUT_TYPE,
   inventoryOutCost,
+  isConsumptionOut,
   laborLineCost,
   materialInvoiceCost,
   resolveImputedCategory,
@@ -14,14 +15,24 @@ export interface ImputedCostFilters {
   dateTo?: string
 }
 
+export interface ImputedCostResult {
+  /** Costo imputado por capítulo (incluye lo imputado vía partida, resuelto a su capítulo). */
+  byCategory: Record<string, number>
+  /** Costo imputado DIRECTAMENTE a cada partida (budget_item_id). */
+  byItem: Record<string, number>
+}
+
 /**
- * Suma el costo real imputado a cada capítulo (budget_category_id) proveniente de:
+ * Suma el costo real imputado a cada capítulo (budget_category_id) y a cada
+ * partida (budget_item_id) proveniente de:
  *  - líneas de mano de obra de reportes comprometidos (aprobados/pagados),
  *  - facturas de materiales de esos mismos reportes,
- *  - salidas de almacén (inventory_movements type='out') imputadas a partida.
+ *  - salidas de consumo de almacén (despachos manuales; las reversas de
+ *    recepción vinculadas a una orden de compra se excluyen).
  *
- * Devuelve un mapa `categoryId -> monto`. Cuando la imputación es a nivel de
- * partida (`budget_item_id`) se resuelve a su capítulo a través de budget_items.
+ * En `byCategory`, cuando la imputación es a nivel de partida (`budget_item_id`)
+ * se resuelve a su capítulo a través de budget_items. `byItem` solo acumula lo
+ * imputado directamente a una partida.
  *
  * Las reglas (qué fuentes cuentan, cómo se calcula cada monto y cómo se resuelve
  * partida→capítulo) viven en `@/utils/costoReal`, fuente única compartida con
@@ -33,6 +44,11 @@ export interface ImputedCostFilters {
  */
 export const budgetSpentService = {
   async getImputedCostByCategory(projectId: string, filters?: ImputedCostFilters): Promise<Record<string, number>> {
+    const { byCategory } = await this.getImputedCost(projectId, filters)
+    return byCategory
+  },
+
+  async getImputedCost(projectId: string, filters?: ImputedCostFilters): Promise<ImputedCostResult> {
     // Mapa partida -> capítulo, para resolver imputaciones a nivel de budget_item.
     const { data: categories, error: catError } = await supabase
       .from('budget_categories')
@@ -54,9 +70,12 @@ export const budgetSpentService = {
     }
 
     const totals: Record<string, number> = {}
+    const itemTotals: Record<string, number> = {}
     const add = (categoryId: string | null | undefined, itemId: string | null | undefined, amount: number): void => {
+      if (!amount) return
+      if (itemId) itemTotals[itemId] = (itemTotals[itemId] ?? 0) + amount
       const resolved = resolveImputedCategory(categoryId, itemId, itemToCategory)
-      if (!resolved || !amount) return
+      if (!resolved) return
       totals[resolved] = (totals[resolved] ?? 0) + amount
     }
 
@@ -105,9 +124,11 @@ export const budgetSpentService = {
     }
 
     // 3) Salidas de almacén imputadas a partida/capítulo (costo real consumido).
+    // Solo despachos manuales: las reversas de recepción (purchase_order_id)
+    // no son consumo (ver isConsumptionOut en costoReal).
     let movementsQuery = supabase
       .from('inventory_movements')
-      .select('quantity, unit_cost, date, budget_category_id, budget_item_id, type')
+      .select('quantity, unit_cost, date, budget_category_id, budget_item_id, type, purchase_order_id')
       .eq('project_id', projectId)
       .eq('type', INVENTORY_OUT_TYPE)
     if (filters?.dateFrom) movementsQuery = movementsQuery.gte('date', filters.dateFrom)
@@ -120,13 +141,19 @@ export const budgetSpentService = {
       unit_cost: number | null
       budget_category_id: string | null
       budget_item_id: string | null
+      type: string
+      purchase_order_id: string | null
     }>) {
+      if (!isConsumptionOut(mv)) continue
       add(mv.budget_category_id, mv.budget_item_id, inventoryOutCost(mv))
     }
 
     for (const id of Object.keys(totals)) {
       totals[id] = round2(totals[id])
     }
-    return totals
+    for (const id of Object.keys(itemTotals)) {
+      itemTotals[id] = round2(itemTotals[id])
+    }
+    return { byCategory: totals, byItem: itemTotals }
   },
 }

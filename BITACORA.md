@@ -2,6 +2,50 @@
 
 Diario en lenguaje sencillo de lo que se va haciendo en la app.
 
+## 2026-06-09 — El costo de los materiales despachados ahora sí llega al presupuesto
+
+**Qué reportó Cristian (por WhatsApp):** Pidió madera para la partida de
+Campamento, le dio entrada al almacén y luego salida hacia la obra, pero el
+gasto no aparecía en el presupuesto: la partida seguía en RD$0 y la fila de
+Campamento mostraba un guion.
+
+**Qué causaba el problema:** Al registrar una salida de almacén, la app
+guardaba la cantidad pero NO el costo del material. Como el gasto se calcula
+"cantidad × costo", el resultado siempre era cero.
+
+**Qué cambió para Cristian:**
+
+1. **Toda salida de almacén ahora se valora sola** al costo promedio de
+   compra del material (el mismo que alimentan las órdenes de compra). No hay
+   que escribir el costo a mano: la app lo toma del historial de compras.
+2. **Ese costo ya suma al GASTADO del presupuesto**, tanto en la fila del
+   capítulo (ej. Preliminares) como en la fila de la subpartida exacta
+   (ej. Campamento), que antes solo mostraba un guion.
+3. **La lista de movimientos del inventario ahora muestra el costo en RD$**
+   de cada entrada y salida, no solo la cantidad.
+4. **El formulario de salida avisa** a qué costo se valorará el despacho
+   antes de guardar.
+5. **Las salidas viejas que quedaron en cero se reparan** con el costo
+   promedio actual del material (incluida la salida de la madera 2x4x16).
+6. Detalle técnico importante: cuando se devuelve mercancía al suplidor
+   (deshacer una recepción), esa salida NO cuenta como gasto de obra; solo
+   cuentan los despachos reales a la obra.
+
+**Respuesta a la pregunta de Cristian sobre la factura a crédito:** El gasto
+de la partida se registra cuando el material SALE del almacén hacia la obra
+(es cuando se consume), no cuando se paga la factura. La factura a crédito es
+otra historia: es una deuda con el suplidor y se controla en Cuentas por
+Pagar; pagarla mueve el dinero del banco, pero no cambia el gasto de la
+partida. Importante: no registres esa misma factura como gasto manual en
+Control Financiero imputada a la misma partida, porque se contaría dos veces.
+
+**Cómo quedó:** 646 pruebas automáticas en verde (6 nuevas protegen este
+comportamiento) y la app construye sin errores. Punto de restauración:
+`restore/2026-06-09-costo-salidas-almacen`.
+
+**Pendiente:** Aplicar el ajuste a la base de datos en línea (la que usa la
+app publicada) para que las salidas ya registradas tomen su costo.
+
 ## 2026-06-08 — Arreglo: deshacer recepción de órdenes de compra (Sentry #99)
 
 **Qué se hizo:** Se corrigió un error que tumbaba la app al deshacer la

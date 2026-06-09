@@ -3,6 +3,7 @@ import { COMMITTED_PAYROLL_STATUSES } from '@/services/payrollService'
 import {
   INVENTORY_OUT_TYPE,
   inventoryOutCost,
+  isConsumptionOut,
   laborLineCost,
   materialInvoiceCost,
   resolveImputedCategory,
@@ -206,9 +207,10 @@ export const partidaProgressService = {
     }
 
     // 4) Costo real - salidas de almacén imputadas a partida/capítulo
+    // (solo despachos de consumo; las reversas de recepción se excluyen)
     const { data: movements } = await supabase
       .from('inventory_movements')
-      .select('quantity, unit_cost, date, budget_category_id, budget_item_id, type')
+      .select('quantity, unit_cost, date, budget_category_id, budget_item_id, type, purchase_order_id')
       .eq('project_id', projectId)
       .eq('type', INVENTORY_OUT_TYPE)
     for (const mv of (movements ?? []) as Array<{
@@ -217,7 +219,10 @@ export const partidaProgressService = {
       date: string | null
       budget_category_id: string | null
       budget_item_id: string | null
+      type: string
+      purchase_order_id: string | null
     }>) {
+      if (!isConsumptionOut(mv)) continue
       const month = monthKey(mv.date)
       if (!month) continue
       getRow(month, resolveCategory(mv.budget_category_id, mv.budget_item_id)).costo_real += inventoryOutCost(mv)
@@ -362,16 +367,20 @@ export const partidaProgressService = {
     }
 
     // 3) Salidas de almacén imputadas a partida
+    // (solo despachos de consumo; las reversas de recepción se excluyen)
     const { data: movements } = await supabase
       .from('inventory_movements')
-      .select('quantity, unit_cost, budget_item_id, type')
+      .select('quantity, unit_cost, budget_item_id, type, purchase_order_id')
       .eq('project_id', projectId)
       .eq('type', INVENTORY_OUT_TYPE)
     for (const mv of (movements ?? []) as Array<{
       quantity: number | null
       unit_cost: number | null
       budget_item_id: string | null
+      type: string
+      purchase_order_id: string | null
     }>) {
+      if (!isConsumptionOut(mv)) continue
       addCost(mv.budget_item_id, inventoryOutCost(mv))
     }
 

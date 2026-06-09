@@ -10,6 +10,8 @@ interface Props {
   category: BudgetCategory
   items: BudgetItem[]
   spent: number
+  /** Gastado imputado directamente a cada subpartida (budget_item_id → monto). */
+  spentByItem: Record<string, number>
   priceList: PriceListItem[]
   onAddItem: (data: Omit<BudgetItem, 'id'>) => Promise<void>
   onUpdateItem: (id: string, changes: Partial<Omit<BudgetItem, 'id'>>) => Promise<void>
@@ -22,6 +24,7 @@ export default function BudgetPartidaRow({
   category,
   items,
   spent,
+  spentByItem,
   priceList,
   onAddItem,
   onUpdateItem,
@@ -160,6 +163,8 @@ export default function BudgetPartidaRow({
       {expanded &&
         items.map((item, idx) => {
           const itemTotal = item.quantity * item.unit_price
+          const itemSpent = spentByItem[item.id] ?? 0
+          const itemDifference = itemTotal - itemSpent
           const displayCode = budgetItemDisplayCode(category, item, idx)
           return (
             <tr key={item.id} className="border-b border-app-border bg-app-bg/50 hover:bg-blue-50/20">
@@ -175,9 +180,21 @@ export default function BudgetPartidaRow({
                   </span>
                 </div>
               </td>
-              <td className="px-3 py-2 text-xs text-app-subtle text-right">—</td>
+              <td className="px-3 py-2 text-xs text-right">
+                {itemSpent !== 0 ? (
+                  <span className="text-app-muted">{formatRD(itemSpent)}</span>
+                ) : (
+                  <span className="text-app-subtle">—</span>
+                )}
+              </td>
               <td className="px-3 py-2 text-xs font-medium text-app-muted text-right">{formatRD(itemTotal)}</td>
-              <td className="px-3 py-2" />
+              <td
+                className={`px-3 py-2 text-xs text-right ${
+                  itemSpent === 0 ? '' : itemDifference < 0 ? 'text-red-600' : 'text-green-600'
+                }`}
+              >
+                {itemSpent !== 0 ? formatRD(itemDifference) : ''}
+              </td>
               <td className="px-3 py-2 text-right">
                 <div className="flex items-center justify-end gap-1">
                   <button

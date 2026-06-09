@@ -63,6 +63,7 @@ export function BudgetDetailHeader({
 export function BudgetPresupuestoTab({
   loading,
   rows,
+  spentByItem,
   spentTotal,
   budgetedTotal,
   itemsByCategory,
@@ -75,6 +76,7 @@ export function BudgetPresupuestoTab({
 }: {
   loading: boolean
   rows: Array<{ category: BudgetCategory; spent: number; budgeted: number }>
+  spentByItem: Record<string, number>
   spentTotal: number
   budgetedTotal: number
   itemsByCategory: Record<string, BudgetItem[]>
@@ -91,6 +93,7 @@ export function BudgetPresupuestoTab({
       <BudgetHierarchyTable
         loading={loading}
         rows={rows}
+        spentByItem={spentByItem}
         spentTotal={spentTotal}
         budgetedTotal={budgetedTotal}
         itemsByCategory={itemsByCategory}

@@ -76,6 +76,7 @@ export default function PresupuestoDetalle() {
         projectId={projectId!}
         loading={budget.loading}
         rows={budget.rows}
+        spentByItem={budget.spentByItem}
         spentTotal={budget.totals.spent}
         budgetedTotal={grandBudgeted}
         itemsByCategory={budgetItems.itemsByCategory}
