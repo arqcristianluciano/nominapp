@@ -2,6 +2,26 @@
 
 Diario en lenguaje sencillo de lo que se va haciendo en la app.
 
+## 2026-06-09 (parte 5) — Puesta al día de componentes internos
+
+**Qué se hizo:** Se aplicaron 23 actualizaciones de piezas internas de la app
+que estaban pendientes (las propuestas automáticas acumuladas): React,
+conexión con la base de datos, generador de PDF, íconos, herramientas de
+construcción y pruebas, TypeScript 6 y el conector de Sentry 5, además de 3
+piezas de la maquinaria de GitHub. Todo se probó antes de publicar: 647
+pruebas en verde y la app construye sin errores.
+
+**Qué cambió para Cristian:** Nada visible; la app queda más segura, más
+rápida de construir y sin deudas de mantenimiento acumuladas.
+
+**Lo único que se dejó pendiente a propósito:** el revisor de calidad de
+React (eslint-plugin-react-hooks) se quedó en su versión actual, porque la
+nueva trae reglas más estrictas que marcan 51 puntos a corregir en 30
+archivos; eso es un trabajo de limpieza aparte para otra sesión.
+
+**También se confirmó con Cristian:** el precio de las varillas (RD$70,000
+por atado) es correcto; el gasto de Estructura queda como está.
+
 ## 2026-06-09 (parte 4) — Ver el gasto por subpartida y el costo de cada movimiento
 
 **Contexto:** Dos sesiones de trabajo atendieron en paralelo el mismo reporte
