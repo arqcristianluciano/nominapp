@@ -191,6 +191,45 @@ function useLoanHandlers(
     [context, setCancelTargetId],
   )
 
+  /** Registra el pago de una cuota (con cuenta de cobro opcional). Si era la
+   *  última pendiente, el préstamo completo queda marcado como pagado. */
+  const handlePayInstallment = useCallback(
+    async (loan: ContractorLoan, installment: LoanInstallment, fechaPago: string, cuentaCobroId?: string) => {
+      try {
+        await loanService.markInstallmentPaid(installment.id, fechaPago, cuentaCobroId)
+        const stillPending = (installmentsMap[loan.id] ?? []).filter(
+          (i) => i.id !== installment.id && i.estado === 'pendiente',
+        )
+        if (stillPending.length === 0 && loan.status === 'active') {
+          await loanService.updateStatus(loan.id, 'paid')
+        }
+        await context.refresh()
+        context.success(`Cuota #${installment.numero_cuota} registrada como pagada`)
+      } catch (err) {
+        console.error('[useLoansPage] handlePayInstallment fallo', err)
+        Sentry.captureException(err, { tags: { area: 'useLoansPage' } })
+        context.error(getErrorMessage(err) || 'No se pudo registrar el pago de la cuota')
+      }
+    },
+    [context, installmentsMap],
+  )
+
+  /** Cambia la fecha programada de una cuota pendiente. */
+  const handleUpdateInstallmentDate = useCallback(
+    async (installment: LoanInstallment, fechaProgramada: string) => {
+      try {
+        await loanService.updateInstallmentDate(installment.id, fechaProgramada)
+        await context.refresh()
+        context.success(`Fecha de la cuota #${installment.numero_cuota} actualizada`)
+      } catch (err) {
+        console.error('[useLoansPage] handleUpdateInstallmentDate fallo', err)
+        Sentry.captureException(err, { tags: { area: 'useLoansPage' } })
+        context.error(getErrorMessage(err) || 'No se pudo cambiar la fecha de la cuota')
+      }
+    },
+    [context],
+  )
+
   /** Calcula si el préstamo a editar tiene al menos una cuota ya pagada */
   const hasPaidInstallments = useCallback(
     (loanId: string) => {
@@ -200,7 +239,15 @@ function useLoanHandlers(
     [installmentsMap],
   )
 
-  return { handleCreate, handleEdit, handleMarkPaid, handleCancel, hasPaidInstallments }
+  return {
+    handleCreate,
+    handleEdit,
+    handleMarkPaid,
+    handleCancel,
+    handlePayInstallment,
+    handleUpdateInstallmentDate,
+    hasPaidInstallments,
+  }
 }
 
 export function useLoansPage({ success, error }: ToastHandlers) {
@@ -208,7 +255,15 @@ export function useLoansPage({ success, error }: ToastHandlers) {
   const { loans, contractors, bankAccounts, paidMap, installmentsMap, loading, refresh } = useLoansData(error)
   const { activeLoans, otherLoans } = useLoanFilters(loans, ui.search)
   const actionContext = useMemo(() => ({ refresh, success, error }), [error, refresh, success])
-  const { handleCreate, handleEdit, handleMarkPaid, handleCancel, hasPaidInstallments } = useLoanHandlers(
+  const {
+    handleCreate,
+    handleEdit,
+    handleMarkPaid,
+    handleCancel,
+    handlePayInstallment,
+    handleUpdateInstallmentDate,
+    hasPaidInstallments,
+  } = useLoanHandlers(
     actionContext,
     installmentsMap,
     ui.setSaving,
@@ -239,6 +294,8 @@ export function useLoansPage({ success, error }: ToastHandlers) {
     handleEdit,
     handleMarkPaid,
     handleCancel,
+    handlePayInstallment,
+    handleUpdateInstallmentDate,
     hasPaidInstallments,
   }
 }

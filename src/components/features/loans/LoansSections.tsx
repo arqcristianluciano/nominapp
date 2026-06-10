@@ -57,6 +57,7 @@ type CreateValues = {
   interest_rate: number
   installments: number
   disbursed_date: string
+  first_installment_date?: string | null
   frecuencia: LoanFrecuencia
   disbursement_account_id?: string | null
   notes?: string
@@ -67,6 +68,8 @@ type EditValues = {
   interest_rate?: number
   installments?: number
   frecuencia?: LoanFrecuencia
+  disbursed_date?: string
+  first_installment_date?: string | null
   disbursement_account_id?: string | null
   notes?: string | null
 }
@@ -133,6 +136,7 @@ export function LoansModals({
                 interest_rate: editLoan.interest_rate,
                 installments: editLoan.installments,
                 disbursed_date: editLoan.disbursed_date,
+                first_installment_date: editLoan.first_installment_date ?? '',
                 frecuencia: editLoan.frecuencia ?? 'mensual',
                 disbursement_account_id: editLoan.disbursement_account_id ?? '',
                 notes: editLoan.notes ?? '',

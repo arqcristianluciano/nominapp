@@ -2,6 +2,50 @@
 
 Diario en lenguaje sencillo de lo que se va haciendo en la app.
 
+## 2026-06-10 — Arreglos del documento de observaciones (PDF del 10/06)
+
+Cristian envió un PDF con 5 observaciones de uso real. Se atendieron todas:
+
+1. **Cronograma: la pantalla baja sola hasta el formulario.** Al pulsar el
+   lápiz (editar) o el "+" (añadir subtarea) en cualquier tarea, la página se
+   desplaza automáticamente hasta el formulario; ya no hay que subir a mano,
+   ni siquiera trabajando en las últimas tareas de la lista.
+2. **Cronograma: se acabó el mensaje de error rojo al guardar.** El error de
+   "número duplicado" pasaba porque la app calculaba el número de la tarea
+   desde el navegador y dos guardados seguidos chocaban. Ahora el número lo
+   asigna la propia base de datos en el momento exacto de guardar, de uno en
+   uno, así que no puede repetirse. Además el botón Guardar ignora dobles
+   clics y la lista se refresca sola después de guardar (con o sin error),
+   sin tener que refrescar el navegador.
+3. **Unidades nuevas (Atado, Libra, Quintal…).** Las listas de unidades de
+   toda la app (solicitudes de compra, nómina, presupuesto y lista de
+   precios) ahora salen de la base de datos y tienen una opción
+   "+ Añadir nueva unidad…": lo que se escriba queda guardado y disponible
+   en todos los formularios para siempre. Ya vienen incluidas Atado, Libra
+   y Quintal.
+4. **Préstamos: fechas de pago de cuotas.** El formulario del préstamo tiene
+   un campo nuevo "Fecha de la primera cuota"; las demás se programan desde
+   ahí según la frecuencia. Y en el cronograma de cada préstamo se puede
+   cambiar la fecha de cualquier cuota pendiente con el lapicito.
+5. **Préstamos: el dinero sale y entra de cuentas.** Al crear el préstamo se
+   puede elegir de qué cuenta sale el dinero (eso ya existía pero la lista
+   salía vacía porque no hay cuentas registradas; ahora la app lo avisa y te
+   lleva a Configuración → Cuentas bancarias para crearlas). Lo nuevo: cada
+   cuota tiene un botón verde "Registrar pago" donde se indica la fecha real
+   y a qué cuenta entra el dinero; ese cobro queda anotado en la pestaña
+   "Conciliación de cuentas". Si se paga la última cuota, el préstamo se
+   marca solo como Pagado.
+
+**Qué cambió para Cristian:** el cronograma ya no da el error rojo ni obliga
+a subir/refrescar a mano; puede crear unidades nuevas él mismo; y los
+préstamos ya manejan fechas de cuotas y cuentas de salida/entrada del dinero.
+Para aprovechar lo de las cuentas, el único paso pendiente de su lado es
+registrar sus cuentas en Configuración → Cuentas bancarias.
+
+**Probado:** revisión de estilo, tipos, 653 pruebas automáticas y
+construcción, todo en verde. Los 3 cambios de base de datos (088, 089, 090)
+ya están aplicados en la base real; son aditivos y no tocan datos existentes.
+
 ## 2026-06-09 (parte 5) — Puesta al día de componentes internos
 
 **Qué se hizo:** Se aplicaron 23 actualizaciones de piezas internas de la app

@@ -33,6 +33,8 @@ export default function Loans() {
     handleEdit,
     handleMarkPaid,
     handleCancel,
+    handlePayInstallment,
+    handleUpdateInstallmentDate,
     hasPaidInstallments,
   } = useLoansPage({ success, error })
 
@@ -78,9 +80,12 @@ export default function Loans() {
                 loans={activeLoans}
                 paidMap={paidMap}
                 installmentsMap={installmentsMap}
+                bankAccounts={bankAccounts}
                 onMarkPaid={handleMarkPaid}
                 onCancel={(id) => setCancelTargetId(id)}
                 onEdit={(loan) => setEditLoan(loan)}
+                onPayInstallment={handlePayInstallment}
+                onUpdateInstallmentDate={handleUpdateInstallmentDate}
                 showActions
               />
               {otherLoans.length > 0 && (

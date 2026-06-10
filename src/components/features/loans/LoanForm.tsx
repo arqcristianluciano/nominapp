@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { calcInstallmentAmount } from '@/services/loanService'
 import { formatRD } from '@/utils/currency'
 import type { BankAccount, Contractor, LoanFrecuencia } from '@/types/database'
@@ -9,6 +10,7 @@ interface LoanFormValues {
   interest_rate: number
   installments: number
   disbursed_date: string
+  first_installment_date: string
   frecuencia: LoanFrecuencia
   disbursement_account_id: string
   notes: string
@@ -19,9 +21,10 @@ interface Props {
   bankAccounts: BankAccount[]
   saving: boolean
   onSubmit: (
-    values: Omit<LoanFormValues, 'notes' | 'disbursement_account_id'> & {
+    values: Omit<LoanFormValues, 'notes' | 'disbursement_account_id' | 'first_installment_date'> & {
       notes?: string
       disbursement_account_id?: string | null
+      first_installment_date?: string | null
     },
   ) => Promise<void>
   onCancel: () => void
@@ -36,6 +39,7 @@ const INITIAL: LoanFormValues = {
   interest_rate: 5,
   installments: 6,
   disbursed_date: new Date().toISOString().slice(0, 10),
+  first_installment_date: '',
   frecuencia: 'mensual',
   disbursement_account_id: '',
   notes: '',
@@ -77,6 +81,7 @@ export function LoanForm({
       interest_rate: form.interest_rate,
       installments: form.installments,
       disbursed_date: form.disbursed_date,
+      first_installment_date: form.first_installment_date || null,
       frecuencia: form.frecuencia,
       disbursement_account_id: form.disbursement_account_id || null,
       notes: form.notes || undefined,
@@ -187,7 +192,30 @@ export function LoanForm({
               </option>
             ))}
           </select>
+          {bankAccounts.length === 0 && (
+            <p className="mt-1 text-[11px] text-app-subtle">
+              No hay cuentas registradas todavía. Regístralas en{' '}
+              <Link to="/configuracion" className="text-blue-600 hover:underline">
+                Configuración → Cuentas bancarias
+              </Link>{' '}
+              para que el préstamo salga de una cuenta y los cobros entren a ella.
+            </p>
+          )}
         </div>
+      </div>
+
+      <div>
+        <label className={labelCls}>Fecha de la primera cuota (opcional)</label>
+        <input
+          type="date"
+          className={inputCls}
+          value={form.first_installment_date}
+          onChange={(e) => set('first_installment_date', e.target.value)}
+        />
+        <p className="mt-1 text-[11px] text-app-subtle">
+          Las demás cuotas se programan a partir de esta fecha según la frecuencia. Si la dejas vacía, la primera cuota
+          cae un período después del desembolso.
+        </p>
       </div>
 
       {installmentAmount > 0 && (

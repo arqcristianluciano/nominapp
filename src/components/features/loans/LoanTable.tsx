@@ -1,19 +1,39 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Banknote, CheckCircle, ChevronDown, ChevronUp, Pencil, XCircle } from 'lucide-react'
-import type { ContractorLoan, LoanInstallment } from '@/types/database'
+import type { BankAccount, ContractorLoan, LoanInstallment } from '@/types/database'
 import { formatRD } from '@/utils/currency'
 import { mul, round2 } from '@/utils/money'
+import { InstallmentDateModal, InstallmentPayModal, type InstallmentTarget } from './InstallmentModals'
 
 interface LoanTableProps {
   title: string
   loans: ContractorLoan[]
   paidMap: Record<string, number>
   installmentsMap: Record<string, LoanInstallment[]>
+  bankAccounts?: BankAccount[]
   onMarkPaid?: (id: string) => void
   onCancel?: (id: string) => void
   onEdit?: (loan: ContractorLoan) => void
+  onPayInstallment?: (
+    loan: ContractorLoan,
+    installment: LoanInstallment,
+    fechaPago: string,
+    cuentaCobroId?: string,
+  ) => Promise<void>
+  onUpdateInstallmentDate?: (installment: LoanInstallment, fechaProgramada: string) => Promise<void>
   showActions?: boolean
+}
+
+/** Callbacks que abren las ventanas de pago/fecha de una cuota concreta. */
+interface InstallmentActionHandlers {
+  onRequestPay?: (loan: ContractorLoan, installment: LoanInstallment) => void
+  onRequestDate?: (loan: ContractorLoan, installment: LoanInstallment) => void
+}
+
+/** Suma de las cuotas ya marcadas como pagadas en el cronograma. */
+function sumPaidInstallments(installments: LoanInstallment[]): number {
+  return round2(installments.reduce((sum, i) => (i.estado === 'pagada' ? sum + i.monto : sum), 0))
 }
 
 const STATUS_LABEL: Record<string, string> = { active: 'Activo', paid: 'Pagado', cancelled: 'Cancelado' }
@@ -40,12 +60,16 @@ function InstallmentSchedule({
   loan,
   paid,
   installments,
+  onRequestPay,
+  onRequestDate,
 }: {
   loan: ContractorLoan
   paid: number
   installments: LoanInstallment[]
-}) {
+} & InstallmentActionHandlers) {
   const totalOwed = round2(mul(loan.installment_amount, loan.installments))
+  // Las cuotas solo se pueden cobrar o reprogramar en préstamos activos.
+  const canAct = loan.status === 'active' && !!(onRequestPay || onRequestDate)
 
   if (installments.length === 0) {
     // Fallback para préstamos anteriores a la migración (sin cronograma en BD)
@@ -113,6 +137,7 @@ function InstallmentSchedule({
               </th>
               <th className="text-right px-3 py-2 font-semibold text-app-subtle uppercase">Monto</th>
               <th className="text-center px-3 py-2 font-semibold text-app-subtle uppercase">Estado</th>
+              {canAct && <th className="text-center px-3 py-2 font-semibold text-app-subtle uppercase">Acciones</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-app-border">
@@ -136,12 +161,38 @@ function InstallmentSchedule({
                     <span className="text-app-subtle">Pendiente</span>
                   )}
                 </td>
+                {canAct && (
+                  <td className="text-center px-3 py-1.5">
+                    {inst.estado !== 'pagada' && (
+                      <div className="inline-flex items-center gap-1">
+                        {onRequestDate && (
+                          <button
+                            onClick={() => onRequestDate(loan, inst)}
+                            title="Cambiar fecha programada"
+                            className="p-1.5 rounded-lg text-app-subtle hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {onRequestPay && (
+                          <button
+                            onClick={() => onRequestPay(loan, inst)}
+                            title="Registrar pago de esta cuota"
+                            className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors"
+                          >
+                            <Banknote className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
           <tfoot>
             <tr className="bg-app-bg border-t border-app-border">
-              <td className="px-3 py-2 text-app-muted font-semibold text-right" colSpan={4}>
+              <td className="px-3 py-2 text-app-muted font-semibold text-right" colSpan={canAct ? 5 : 4}>
                 Total:
               </td>
               <td className="px-3 py-2 font-bold text-app-text text-right">{formatRD(totalOwed)}</td>
@@ -160,6 +211,8 @@ function LoanRow({
   onMarkPaid,
   onCancel,
   onEdit,
+  onRequestPay,
+  onRequestDate,
   showActions,
 }: {
   loan: ContractorLoan
@@ -169,15 +222,18 @@ function LoanRow({
   onCancel?: (id: string) => void
   onEdit?: (loan: ContractorLoan) => void
   showActions?: boolean
-}) {
+} & InstallmentActionHandlers) {
   const [showSchedule, setShowSchedule] = useState(false)
   const totalOwed = round2(mul(loan.installment_amount, loan.installments))
   // Un prestamo marcado como 'Pagado' se considera saldado: el saldo es 0 y
   // el monto pagado equivale al total, para que la fila no muestre datos
   // contradictorios (Estado Pagado con saldo pendiente).
+  // El pago puede registrarse por dos vías (deducción de nómina o cuota
+  // cobrada directa); se toma el mayor para no sumar dos veces lo mismo.
   const isSettled = loan.status === 'paid'
-  const effectivePaid = isSettled ? totalOwed : paid
-  const balance = isSettled ? 0 : Math.max(0, round2(totalOwed - paid))
+  const paidRecorded = Math.max(paid, sumPaidInstallments(installments))
+  const effectivePaid = isSettled ? totalOwed : paidRecorded
+  const balance = isSettled ? 0 : Math.max(0, round2(totalOwed - paidRecorded))
 
   return (
     <>
@@ -254,7 +310,13 @@ function LoanRow({
       {showSchedule && (
         <tr>
           <td colSpan={8} className="bg-app-bg">
-            <InstallmentSchedule loan={loan} paid={paid} installments={installments} />
+            <InstallmentSchedule
+              loan={loan}
+              paid={paid}
+              installments={installments}
+              onRequestPay={onRequestPay}
+              onRequestDate={onRequestDate}
+            />
           </td>
         </tr>
       )}
@@ -269,6 +331,8 @@ function LoanCard({
   onMarkPaid,
   onCancel,
   onEdit,
+  onRequestPay,
+  onRequestDate,
   showActions,
 }: {
   loan: ContractorLoan
@@ -278,15 +342,18 @@ function LoanCard({
   onCancel?: (id: string) => void
   onEdit?: (loan: ContractorLoan) => void
   showActions?: boolean
-}) {
+} & InstallmentActionHandlers) {
   const [showSchedule, setShowSchedule] = useState(false)
   const totalOwed = round2(mul(loan.installment_amount, loan.installments))
   // Un prestamo marcado como 'Pagado' se considera saldado: el saldo es 0 y
   // el monto pagado equivale al total, para que la fila no muestre datos
   // contradictorios (Estado Pagado con saldo pendiente).
+  // El pago puede registrarse por dos vías (deducción de nómina o cuota
+  // cobrada directa); se toma el mayor para no sumar dos veces lo mismo.
   const isSettled = loan.status === 'paid'
-  const effectivePaid = isSettled ? totalOwed : paid
-  const balance = isSettled ? 0 : Math.max(0, round2(totalOwed - paid))
+  const paidRecorded = Math.max(paid, sumPaidInstallments(installments))
+  const effectivePaid = isSettled ? totalOwed : paidRecorded
+  const balance = isSettled ? 0 : Math.max(0, round2(totalOwed - paidRecorded))
 
   return (
     <div>
@@ -354,7 +421,13 @@ function LoanCard({
       </div>
       {showSchedule && (
         <div className="bg-app-bg">
-          <InstallmentSchedule loan={loan} paid={paid} installments={installments} />
+          <InstallmentSchedule
+            loan={loan}
+            paid={paid}
+            installments={installments}
+            onRequestPay={onRequestPay}
+            onRequestDate={onRequestDate}
+          />
         </div>
       )}
     </div>
@@ -366,11 +439,25 @@ export function LoanTable({
   loans,
   paidMap,
   installmentsMap,
+  bankAccounts = [],
   onMarkPaid,
   onCancel,
   onEdit,
+  onPayInstallment,
+  onUpdateInstallmentDate,
   showActions,
 }: LoanTableProps) {
+  // Cuota seleccionada para registrar pago / cambiar fecha (abre la ventana).
+  const [payTarget, setPayTarget] = useState<InstallmentTarget | null>(null)
+  const [dateTarget, setDateTarget] = useState<InstallmentTarget | null>(null)
+
+  const onRequestPay = onPayInstallment
+    ? (loan: ContractorLoan, installment: LoanInstallment) => setPayTarget({ loan, installment })
+    : undefined
+  const onRequestDate = onUpdateInstallmentDate
+    ? (loan: ContractorLoan, installment: LoanInstallment) => setDateTarget({ loan, installment })
+    : undefined
+
   if (loans.length === 0) {
     return (
       <section>
@@ -424,6 +511,8 @@ export function LoanTable({
                 onMarkPaid={onMarkPaid}
                 onCancel={onCancel}
                 onEdit={onEdit}
+                onRequestPay={onRequestPay}
+                onRequestDate={onRequestDate}
                 showActions={showActions}
               />
             ))}
@@ -439,11 +528,33 @@ export function LoanTable({
               onMarkPaid={onMarkPaid}
               onCancel={onCancel}
               onEdit={onEdit}
+              onRequestPay={onRequestPay}
+              onRequestDate={onRequestDate}
               showActions={showActions}
             />
           ))}
         </div>
       </div>
+
+      {onPayInstallment && (
+        <InstallmentPayModal
+          target={payTarget}
+          bankAccounts={bankAccounts}
+          onConfirm={async (fechaPago, cuentaCobroId) => {
+            if (payTarget) await onPayInstallment(payTarget.loan, payTarget.installment, fechaPago, cuentaCobroId)
+          }}
+          onClose={() => setPayTarget(null)}
+        />
+      )}
+      {onUpdateInstallmentDate && (
+        <InstallmentDateModal
+          target={dateTarget}
+          onConfirm={async (fechaProgramada) => {
+            if (dateTarget) await onUpdateInstallmentDate(dateTarget.installment, fechaProgramada)
+          }}
+          onClose={() => setDateTarget(null)}
+        />
+      )}
     </section>
   )
 }
