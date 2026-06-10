@@ -29,6 +29,15 @@ export function BankAccountForm({ initial, saving, onSubmit, onCancel }: Props) 
       return
     }
 
+    // Las cuentas sin proyecto solo pueden ser internas (constraint en BD,
+    // migración 091); este formulario no asocia proyecto, así que lo exige.
+    if (!isInternal) {
+      setFormError(
+        'Desde aquí solo se registran cuentas internas de la empresa. Las cuentas de contratistas y proveedores se guardan en la ficha de cada uno.',
+      )
+      return
+    }
+
     onSubmit({
       owner_name: ownerName,
       bank_name: bankName,

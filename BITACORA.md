@@ -46,6 +46,26 @@ registrar sus cuentas en Configuración → Cuentas bancarias.
 construcción, todo en verde. Los 3 cambios de base de datos (088, 089, 090)
 ya están aplicados en la base real; son aditivos y no tocan datos existentes.
 
+### Anexo (misma fecha) — errores al guardar cuenta bancaria
+
+Cristian intentó registrar una cuenta bancaria y salieron dos errores
+técnicos en inglés, con causas distintas:
+
+1. **"row-level security"**: no era un fallo, sino la regla de permisos por
+   tipo de usuario — las cuentas bancarias solo las pueden crear el usuario
+   administrador y el de contabilidad, y en ese momento la sesión era del
+   usuario de planificación. Solución: entrar como administrador. Mejora
+   aplicada: cuando un usuario no tenga permiso para algo, la app ahora lo
+   dice en claro ("Tu usuario no tiene permiso para realizar esta acción…").
+   Cristian decidió dejar los permisos como están.
+2. **"null value in column project_id"**: este sí era un choque entre dos
+   reglas de la propia app. Un refuerzo de integridad de hace semanas exigía
+   que toda cuenta perteneciera a un proyecto, pero las cuentas internas de
+   la empresa no son de ningún proyecto. Se ajustó la regla en la base de
+   datos (cambio 091): las cuentas internas pueden no tener proyecto; las
+   demás lo siguen necesitando. Se probó contra la base real y el guardado
+   ya funciona.
+
 ## 2026-06-09 (parte 5) — Puesta al día de componentes internos
 
 **Qué se hizo:** Se aplicaron 23 actualizaciones de piezas internas de la app

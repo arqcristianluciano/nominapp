@@ -55,6 +55,8 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 
 ### Fixed
 
+- Ya se pueden registrar cuentas bancarias internas (de la empresa) desde Configuración: la migración 048 exigía proyecto en toda cuenta (`project_id NOT NULL`), chocando con el diseño de cuentas internas sin proyecto. La migración 091 lo relaja conservando la integridad con un CHECK (solo las internas pueden quedar sin proyecto), y el formulario avisa en claro si se intenta crear una cuenta no interna desde ahí.
+- Los errores de permisos de la base de datos (violaciones de RLS / "permission denied") ahora se muestran al usuario en lenguaje claro: "Tu usuario no tiene permiso para realizar esta acción…", en lugar del mensaje técnico en inglés.
 - Cronograma de obra: el error «duplicate key value violates unique constraint "uniq_schedule_tasks_project_number"» al guardar una tarea quedó resuelto: el número de tarea ahora lo asigna la base de datos de forma atómica al insertar (migración 088, trigger con candado por proyecto) y el botón Guardar es a prueba de doble clic.
 - Cronograma de obra: al pulsar editar o añadir subtarea la página se desplaza sola hasta el formulario (antes había que subir manualmente), y la lista se refresca sola después de cada intento de guardado, con o sin error.
 - Préstamos: al editar un préstamo se enviaban a la base campos no editables (incluido un `contractor_id` vacío); ahora solo se guardan los campos del formulario. Cambiar la fecha de desembolso o la de primera cuota regenera las cuotas pendientes; editar solo notas o cuenta ya no pisa fechas ajustadas a mano.
