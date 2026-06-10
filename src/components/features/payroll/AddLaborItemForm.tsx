@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { UserPlus, X, AlertTriangle } from 'lucide-react'
 import type { BudgetCategory, BudgetItem, Contractor, LaborLineItem, PriceListItem } from '@/types/database'
-import { MEASURE_UNITS } from '@/constants/measureUnits'
+import { UnitSelect } from '@/components/ui/UnitSelect'
 import { contractorService } from '@/services/contractorService'
 import { budgetItemService } from '@/services/budgetItemService'
 import { parseDecimalInput } from '@/utils/decimalInput'
@@ -282,17 +282,11 @@ export function AddLaborItemForm({
         </div>
         <div>
           <label className="block text-xs font-medium text-app-muted mb-1">Unidad *</label>
-          <select
+          <UnitSelect
             value={unit}
-            onChange={(e) => setUnit(e.target.value)}
+            onChange={setUnit}
             className="w-full px-3 py-2 bg-app-input-bg text-app-text border border-app-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] sm:min-h-0"
-          >
-            {MEASURE_UNITS.map((u) => (
-              <option key={u.value} value={u.value}>
-                {u.label}
-              </option>
-            ))}
-          </select>
+          />
         </div>
         <div className="col-span-2 sm:col-span-1">
           <label className="block text-xs font-medium text-app-muted mb-1">Precio unitario *</label>

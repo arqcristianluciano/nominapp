@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { X, Search } from 'lucide-react'
 import type { BudgetItem, BudgetCategory, PriceListItem } from '@/types/database'
-import { MEASURE_UNITS } from '@/constants/measureUnits'
+import { UnitSelect } from '@/components/ui/UnitSelect'
 import { formatRD } from '@/utils/currency'
 import { parseDecimalInput } from '@/utils/decimalInput'
 import { getErrorMessage } from '@/utils/errors'
@@ -196,23 +196,11 @@ export default function BudgetItemForm({ category, priceList, editItem, defaultC
               <label className="text-[10px] font-medium text-app-muted mb-1 block uppercase tracking-wide">
                 Unidad
               </label>
-              <select
+              <UnitSelect
                 value={form.unit}
-                onChange={(e) => set('unit', e.target.value)}
+                onChange={(unit) => set('unit', unit)}
                 className="w-full px-2.5 py-2 border border-app-border rounded-lg text-xs focus:ring-1 focus:ring-blue-500 bg-app-surface"
-              >
-                {MEASURE_UNITS.map((u) => (
-                  <option key={u.value} value={u.value}>
-                    {u.label}
-                  </option>
-                ))}
-                <option value="Und">Unidad</option>
-                <option value="Saco">Saco</option>
-                <option value="QQ">Quintal</option>
-                <option value="Global">Global</option>
-                <option value="Punto">Punto</option>
-                <option value="Mes">Mes</option>
-              </select>
+              />
             </div>
             <div>
               <label className="text-[10px] font-medium text-app-muted mb-1 block uppercase tracking-wide">

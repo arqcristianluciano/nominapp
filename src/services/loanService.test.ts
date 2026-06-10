@@ -12,7 +12,7 @@ vi.mock('@/lib/supabase', () => ({
   },
 }))
 
-import { calcInstallmentAmount, loanService } from './loanService'
+import { calcInstallmentAmount, calcInstallmentDate, loanService } from './loanService'
 
 /** Helper: arma la cadena from→select→in resolviendo a {data, error}. */
 function mockSupabaseInResponse(data: Array<{ loan_id: string; amount: number }> | null, error: unknown = null) {
@@ -108,5 +108,37 @@ describe('calcInstallmentAmount', () => {
 
   it('borde: principal 0 retorna 0', () => {
     expect(calcInstallmentAmount(0, 10, 12)).toBe(0)
+  })
+})
+
+describe('calcInstallmentDate', () => {
+  it('sin fecha de primera cuota: cada cuota quincenal cae 15 días después', () => {
+    expect(calcInstallmentDate('2026-06-10', 'quincenal', 1)).toBe('2026-06-25')
+    expect(calcInstallmentDate('2026-06-10', 'quincenal', 2)).toBe('2026-07-10')
+  })
+
+  it('sin fecha de primera cuota: semanal suma 7 días por cuota', () => {
+    expect(calcInstallmentDate('2026-06-10', 'semanal', 2)).toBe('2026-06-24')
+  })
+
+  it('sin fecha de primera cuota: mensual suma meses exactos', () => {
+    expect(calcInstallmentDate('2026-01-31', 'mensual', 1)).toBe('2026-03-03') // feb no tiene 31 → corre al siguiente
+    expect(calcInstallmentDate('2026-06-10', 'mensual', 3)).toBe('2026-09-10')
+  })
+
+  it('con fecha de primera cuota: la cuota 1 cae exactamente en esa fecha', () => {
+    expect(calcInstallmentDate('2026-06-10', 'quincenal', 1, '2026-07-01')).toBe('2026-07-01')
+    expect(calcInstallmentDate('2026-06-10', 'mensual', 1, '2026-08-15')).toBe('2026-08-15')
+  })
+
+  it('con fecha de primera cuota: las siguientes se calculan desde ahí', () => {
+    expect(calcInstallmentDate('2026-06-10', 'quincenal', 2, '2026-07-01')).toBe('2026-07-16')
+    expect(calcInstallmentDate('2026-06-10', 'semanal', 3, '2026-07-01')).toBe('2026-07-15')
+    expect(calcInstallmentDate('2026-06-10', 'mensual', 3, '2026-07-15')).toBe('2026-09-15')
+  })
+
+  it('fecha de primera cuota null o vacía equivale a no indicarla', () => {
+    expect(calcInstallmentDate('2026-06-10', 'quincenal', 1, null)).toBe('2026-06-25')
+    expect(calcInstallmentDate('2026-06-10', 'quincenal', 1, '')).toBe('2026-06-25')
   })
 })

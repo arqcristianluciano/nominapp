@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { EMPTY_SCHEDULE_FORM } from '@/components/features/schedule/scheduleConfig'
 import { buildGanttInfo, getTodayLeft } from '@/components/features/schedule/scheduleGanttUtils'
 import {
@@ -64,12 +64,15 @@ function useScheduleFormState() {
   const [saving, setSaving] = useState(false)
   /** When not null, the form is opened in "add subtask" mode with this parent locked. */
   const [lockedParentId, setLockedParentId] = useState<string | null>(null)
+  /** Bumped on every open so the page scrolls to the form even if it was already visible. */
+  const [formRevision, setFormRevision] = useState(0)
 
   const openCreate = useCallback(() => {
     setShowForm(true)
     setEditId(null)
     setLockedParentId(null)
     setForm({ ...EMPTY_SCHEDULE_FORM })
+    setFormRevision((r) => r + 1)
   }, [])
 
   const openAddSubtask = useCallback((parentTask: ScheduleTask) => {
@@ -81,6 +84,7 @@ function useScheduleFormState() {
       parent_task_id: parentTask.id,
       color: parentTask.color,
     })
+    setFormRevision((r) => r + 1)
   }, [])
 
   const startEdit = useCallback((task: ScheduleTask) => {
@@ -88,6 +92,7 @@ function useScheduleFormState() {
     setEditId(task.id)
     setLockedParentId(null)
     setShowForm(true)
+    setFormRevision((r) => r + 1)
   }, [])
 
   const closeForm = useCallback(() => {
@@ -103,6 +108,7 @@ function useScheduleFormState() {
     deleteId,
     saving,
     lockedParentId,
+    formRevision,
     setForm,
     setDeleteId,
     setSaving,
@@ -121,8 +127,12 @@ function useScheduleEditor(
 ) {
   const state = useScheduleFormState()
   const { form, editId, deleteId, setForm, setDeleteId, setSaving, closeForm } = state
+  // Guard síncrono contra doble clic en Guardar: el estado `saving` tarda un
+  // render en reflejarse y un segundo clic rápido podría duplicar la tarea.
+  const savingRef = useRef(false)
 
   const saveTask = useCallback(async () => {
+    if (savingRef.current) return
     if (!projectId || !form.name.trim()) return
     // Validation: needs end_date unless it has children (dates are derived then)
     const hasChildrenInDb = editId ? tasks.some((t) => t.parent_task_id === editId) : false
@@ -142,6 +152,7 @@ function useScheduleEditor(
       }
     }
 
+    savingRef.current = true
     setSaving(true)
     try {
       const payload = { ...form, project_id: projectId }
@@ -149,10 +160,13 @@ function useScheduleEditor(
       else await scheduleService.create(payload)
       closeForm()
       setForm({ ...EMPTY_SCHEDULE_FORM })
-      await load()
     } catch (saveError) {
       onError(`No se pudo guardar tarea: ${getErrorMessage(saveError)}`)
     } finally {
+      // La lista se refresca SIEMPRE (también tras un error) para que lo que
+      // se ve en pantalla coincida con lo guardado, sin refrescar el navegador.
+      await load()
+      savingRef.current = false
       setSaving(false)
     }
   }, [closeForm, editId, form, load, onError, projectId, setForm, setSaving, tasks])

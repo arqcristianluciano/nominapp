@@ -9,6 +9,12 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 
 ### Added
 
+- Catálogo de unidades de medida guardado en la base de datos (`measure_units`, migración 089): los selects de unidad (solicitudes de compra, mano de obra de nómina, partidas de presupuesto y lista de precios) leen el catálogo y ofrecen "+ Añadir nueva unidad…" para registrar unidades como Atado o Libra, que quedan disponibles en toda la app. La semilla incluye las unidades que ya se usaban más Atado, Libra y Quintal.
+- Préstamos: campo "Fecha de la primera cuota" (migración 090). Las cuotas se programan a partir de esa fecha según la frecuencia; si se deja vacía, se mantiene el cálculo desde el desembolso.
+- Préstamos: registrar el pago de cuotas individuales desde el cronograma del préstamo, con fecha real de pago y cuenta a la que entra el dinero (genera el movimiento de entrada en Conciliación). Al pagar la última cuota pendiente, el préstamo queda marcado como Pagado.
+- Préstamos: cambiar la fecha programada de una cuota pendiente desde el cronograma.
+- Aviso con enlace a Configuración → Cuentas bancarias cuando no hay cuentas registradas, en el formulario de préstamo y en la ventana de pago de cuota.
+
 - Subpartidas del presupuesto numeradas automáticamente (1.1, 1.2, …) en la lista y en el modal de creación (#40).
 - Las partidas que quedan vacías (sin subpartidas, sin monto y sin gasto) se detectan automáticamente. Tras importar un presupuesto desde Excel se ofrece eliminarlas de una vez, y en cualquier momento desde el botón "Limpiar partidas vacías (N)" de la cabecera. Siempre pide confirmación y permite elegir con checkboxes cuáles borrar (nunca se borra sin preguntar). Las partidas vacías se resaltan en la tabla con una etiqueta "vacía", y tras eliminarlas un aviso ofrece "Deshacer" para recuperarlas.
 - Botón para eliminar manualmente una partida vacía desde la tabla de presupuesto, con confirmación.
@@ -49,6 +55,11 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 
 ### Fixed
 
+- Cronograma de obra: el error «duplicate key value violates unique constraint "uniq_schedule_tasks_project_number"» al guardar una tarea quedó resuelto: el número de tarea ahora lo asigna la base de datos de forma atómica al insertar (migración 088, trigger con candado por proyecto) y el botón Guardar es a prueba de doble clic.
+- Cronograma de obra: al pulsar editar o añadir subtarea la página se desplaza sola hasta el formulario (antes había que subir manualmente), y la lista se refresca sola después de cada intento de guardado, con o sin error.
+- Préstamos: al editar un préstamo se enviaban a la base campos no editables (incluido un `contractor_id` vacío); ahora solo se guardan los campos del formulario. Cambiar la fecha de desembolso o la de primera cuota regenera las cuotas pendientes; editar solo notas o cuenta ya no pisa fechas ajustadas a mano.
+- Préstamos: el total "Pagado" y el saldo de cada préstamo consideran también las cuotas cobradas directamente, no solo las deducciones de nómina (se toma el mayor de ambos registros para no contar doble).
+- Solicitudes de compra: la unidad por defecto de una línea nueva era "UND", un valor que no existía en el catálogo; ahora es "Unidad" (UD).
 - En la cubicación mensual por capítulo, los costos imputados solo a una partida (mano de obra y facturas de materiales sin capítulo explícito) ahora se agrupan en el capítulo de esa partida, en lugar de caer en "sin capítulo". El cálculo del capítulo es ahora consistente entre todas las fuentes de costo (inventario, nómina, facturas y CxP).
 - Integridad del total de facturas: `material_invoices.amount` se recalcula automáticamente como la suma de sus ítems mediante un trigger en BD (migración 058), blindándolo frente a ediciones directas además de la lógica de la app.
 - E2E (Playwright) en CI como job _advisory_ (no bloqueante hasta estabilizar la suite), con nuevo spec del flujo de factura de materiales con varios ítems y advertencia de comprobante.

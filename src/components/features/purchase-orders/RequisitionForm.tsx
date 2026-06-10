@@ -3,7 +3,7 @@ import type { Project, BudgetCategory, BudgetItem } from '@/types/database'
 import { budgetCategoryService } from '@/services/budgetCategoryService'
 import { budgetItemService } from '@/services/budgetItemService'
 import { requisitionService } from '@/services/requisitionService'
-import { MEASURE_UNITS } from '@/constants/measureUnits'
+import { UnitSelect } from '@/components/ui/UnitSelect'
 import type { ResourceType } from '@/types/purchaseOrder'
 import type { RequisitionItemInput } from '@/services/requisitionService'
 import { AlertTriangle, Plus, Trash2 } from 'lucide-react'
@@ -243,13 +243,7 @@ function ItemRow({ draft, index, projectId, total, onChange, onRemove }: ItemRow
         </div>
         <div className="col-span-6 sm:col-span-4">
           <label className="block text-xs font-medium text-app-muted mb-1">Unidad</label>
-          <select value={draft.unit} onChange={(e) => onChange(index, { unit: e.target.value })} className={cell}>
-            {MEASURE_UNITS.map((u) => (
-              <option key={u.value} value={u.value}>
-                {u.label}
-              </option>
-            ))}
-          </select>
+          <UnitSelect value={draft.unit} onChange={(unit) => onChange(index, { unit })} className={cell} />
         </div>
       </div>
 
@@ -289,7 +283,7 @@ const emptyItem = (): ItemDraft => ({
   itemId: '',
   resourceType: 'material',
   quantity: '',
-  unit: 'UND',
+  unit: 'UD',
   availability: null,
   categories: [],
   items: [],
@@ -308,7 +302,7 @@ export function RequisitionForm({ projects, onSubmit, onCancel, saving, initialV
         itemId: it.budget_item_id ?? '',
         resourceType: (it.resource_type as ResourceType) ?? 'material',
         quantity: it.quantity != null ? String(it.quantity) : '',
-        unit: it.unit ?? 'UND',
+        unit: it.unit ?? 'UD',
         availability: null,
         categories: [],
         items: [],

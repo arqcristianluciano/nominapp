@@ -12,16 +12,26 @@ export function calcInstallmentAmount(principal: number, interestRate: number, i
   return round2(div(add(base, totalInterest), installments))
 }
 
-/** Calcula la fecha de una cuota a partir de la fecha de desembolso, frecuencia y número de cuota. */
-export function calcInstallmentDate(disbursedDate: string, frecuencia: LoanFrecuencia, numeroCuota: number): string {
-  const base = new Date(disbursedDate + 'T00:00:00')
+/** Calcula la fecha de una cuota a partir de la fecha de desembolso, frecuencia y número de cuota.
+ *  Si se indica `firstInstallmentDate`, la cuota 1 cae exactamente en esa fecha
+ *  y las siguientes se calculan desde ahí según la frecuencia. */
+export function calcInstallmentDate(
+  disbursedDate: string,
+  frecuencia: LoanFrecuencia,
+  numeroCuota: number,
+  firstInstallmentDate?: string | null,
+): string {
+  const baseDate = firstInstallmentDate || disbursedDate
+  // Con fecha de primera cuota, la cuota 1 no se desplaza (offset 0).
+  const steps = firstInstallmentDate ? numeroCuota - 1 : numeroCuota
+  const base = new Date(baseDate + 'T00:00:00')
   if (frecuencia === 'semanal') {
-    base.setDate(base.getDate() + numeroCuota * 7)
+    base.setDate(base.getDate() + steps * 7)
   } else if (frecuencia === 'quincenal') {
-    base.setDate(base.getDate() + numeroCuota * 15)
+    base.setDate(base.getDate() + steps * 15)
   } else {
     // mensual: suma meses exactos
-    base.setMonth(base.getMonth() + numeroCuota)
+    base.setMonth(base.getMonth() + steps)
   }
   return base.toISOString().slice(0, 10)
 }
@@ -33,6 +43,7 @@ function buildInstallments(
   frecuencia: LoanFrecuencia,
   installments: number,
   installmentAmount: number,
+  firstInstallmentDate?: string | null,
 ): Array<{
   loan_id: string
   numero_cuota: number
@@ -42,7 +53,7 @@ function buildInstallments(
   return Array.from({ length: installments }, (_, idx) => ({
     loan_id: loanId,
     numero_cuota: idx + 1,
-    fecha_pago_programada: calcInstallmentDate(disbursedDate, frecuencia, idx + 1),
+    fecha_pago_programada: calcInstallmentDate(disbursedDate, frecuencia, idx + 1, firstInstallmentDate),
     monto: installmentAmount,
   }))
 }
@@ -78,6 +89,7 @@ export const loanService = {
     interest_rate: number
     installments: number
     disbursed_date: string
+    first_installment_date?: string | null
     frecuencia?: LoanFrecuencia
     disbursement_account_id?: string | null
     notes?: string
@@ -100,6 +112,7 @@ export const loanService = {
       frecuencia,
       created.installments,
       installment_amount,
+      created.first_installment_date,
     )
     const { error: insError } = await supabase.from('loan_installments').insert(installmentsToInsert)
     if (insError) throw insError
@@ -143,6 +156,8 @@ export const loanService = {
       interest_rate?: number
       installments?: number
       frecuencia?: LoanFrecuencia
+      disbursed_date?: string
+      first_installment_date?: string | null
       disbursement_account_id?: string | null
       notes?: string | null
     },
@@ -158,10 +173,19 @@ export const loanService = {
     const newFrecuencia: LoanFrecuencia = updates.frecuencia ?? currentLoan.frecuencia
     const newInstallmentAmount = calcInstallmentAmount(newPrincipal, newRate, newInstallments)
 
+    // Lista blanca de campos editables: el formulario envía el objeto completo
+    // y campos como contractor_id no deben llegar al UPDATE (JSON.stringify
+    // descarta los undefined al serializar la petición).
     const { data, error } = await supabase
       .from('contractor_loans')
       .update({
-        ...updates,
+        principal: updates.principal,
+        interest_rate: updates.interest_rate,
+        installments: updates.installments,
+        disbursed_date: updates.disbursed_date,
+        first_installment_date: updates.first_installment_date,
+        disbursement_account_id: updates.disbursement_account_id,
+        notes: updates.notes,
         frecuencia: newFrecuencia,
         installment_amount: newInstallmentAmount,
       })
@@ -171,12 +195,16 @@ export const loanService = {
     if (error) throw error
     const updated = data as ContractorLoan
 
-    // Determinar si hay que regenerar cuotas
+    // Regenerar cuotas solo si cambió algo que afecte el cronograma; así una
+    // edición de notas o cuenta no pisa fechas de cuotas ajustadas a mano.
     const scheduleChanged =
-      updates.installments !== undefined ||
-      updates.frecuencia !== undefined ||
-      updates.principal !== undefined ||
-      updates.interest_rate !== undefined
+      (updates.installments !== undefined && updates.installments !== currentLoan.installments) ||
+      (updates.frecuencia !== undefined && updates.frecuencia !== currentLoan.frecuencia) ||
+      (updates.principal !== undefined && updates.principal !== currentLoan.principal) ||
+      (updates.interest_rate !== undefined && updates.interest_rate !== currentLoan.interest_rate) ||
+      (updates.disbursed_date !== undefined && updates.disbursed_date !== currentLoan.disbursed_date) ||
+      (updates.first_installment_date !== undefined &&
+        (updates.first_installment_date ?? null) !== (currentLoan.first_installment_date ?? null))
 
     if (scheduleChanged) {
       // Encontrar cuotas ya pagadas para preservarlas
@@ -203,6 +231,7 @@ export const loanService = {
         newFrecuencia,
         newInstallments,
         newInstallmentAmount,
+        updated.first_installment_date,
       ).filter((inst) => !paidNumbers.has(inst.numero_cuota))
 
       if (newInstallmentsToInsert.length > 0) {
@@ -249,6 +278,21 @@ export const loanService = {
       map[row.loan_id].push(row)
     }
     return map
+  },
+
+  /** Cambia la fecha programada de una cuota. Solo se permite en cuotas
+   *  pendientes: la fecha de una cuota ya pagada es un hecho histórico. */
+  async updateInstallmentDate(installmentId: string, fechaProgramada: string): Promise<void> {
+    const { data, error } = await supabase
+      .from('loan_installments')
+      .update({ fecha_pago_programada: fechaProgramada })
+      .eq('id', installmentId)
+      .eq('estado', 'pendiente')
+      .select('id')
+    if (error) throw error
+    if (!data || data.length === 0) {
+      throw new Error('La cuota ya está pagada; su fecha programada no se puede cambiar.')
+    }
   },
 
   /** Marca una cuota como pagada, registra la cuenta de cobro y la fecha real.

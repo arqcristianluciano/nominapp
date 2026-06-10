@@ -111,6 +111,16 @@ export interface PriceListItem {
   unit_price: number
 }
 
+// ---- Unidades de medida (table: measure_units, migration 089) ----
+
+export interface MeasureUnitRecord {
+  id: string
+  code: string
+  label: string
+  sort_order: number
+  created_at: string
+}
+
 export type PayrollStatus = 'draft' | 'submitted' | 'approved' | 'paid'
 
 export interface PayrollPeriod {
@@ -335,6 +345,8 @@ export interface ContractorLoan {
   installments: number
   installment_amount: number
   disbursed_date: string
+  /** Fecha elegida para la primera cuota; null = calcular desde el desembolso. */
+  first_installment_date: string | null
   status: LoanStatus
   frecuencia: LoanFrecuencia
   disbursement_account_id: string | null
@@ -511,6 +523,11 @@ export interface Database {
         Row: ProjectDocument
         Insert: Omit<ProjectDocument, 'id' | 'created_at'>
         Update: Partial<ProjectDocument>
+      }
+      measure_units: {
+        Row: MeasureUnitRecord
+        Insert: Omit<MeasureUnitRecord, 'id' | 'created_at' | 'sort_order'> & { sort_order?: number }
+        Update: Partial<MeasureUnitRecord>
       }
     }
   }

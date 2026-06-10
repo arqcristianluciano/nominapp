@@ -1,14 +1,12 @@
 import { useState, useEffect } from 'react'
 import { Check, X } from 'lucide-react'
 import type { PriceListItem, PriceListCategory } from '@/types/database'
-import { MEASURE_UNITS } from '@/constants/measureUnits'
+import { UnitSelect } from '@/components/ui/UnitSelect'
 import { generatePriceCode } from '@/utils/priceCodeGenerator'
 import { PRICE_LIST_CATEGORIES } from '@/constants/priceListCategories'
 import { useToast } from '@/components/ui/Toast'
 
 const CATEGORIES = PRICE_LIST_CATEGORIES
-
-const EXTRA_UNITS = ['Und', 'Saco', 'QQ', 'Global', 'Día', 'Mes']
 
 interface Props {
   projectId: string
@@ -115,22 +113,11 @@ export default function PriceListInlineForm({
         />
       </td>
       <td className="px-3 py-1.5">
-        <select
+        <UnitSelect
           value={form.unit}
-          onChange={(e) => set('unit', e.target.value)}
+          onChange={(unit) => set('unit', unit)}
           className="w-full px-2 py-1 border border-app-border rounded text-xs bg-app-surface"
-        >
-          {MEASURE_UNITS.map((u) => (
-            <option key={u.value} value={u.value}>
-              {u.label}
-            </option>
-          ))}
-          {EXTRA_UNITS.map((u) => (
-            <option key={u} value={u}>
-              {u}
-            </option>
-          ))}
-        </select>
+        />
       </td>
       <td className="px-3 py-1.5">
         <input

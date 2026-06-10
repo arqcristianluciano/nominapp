@@ -202,25 +202,14 @@ export const scheduleService = {
     return data ?? []
   },
 
-  async getNextTaskNumber(projectId: string): Promise<number> {
-    const { data, error } = await supabase
-      .from('schedule_tasks')
-      .select('task_number')
-      .eq('project_id', projectId)
-      .order('task_number', { ascending: false })
-      .limit(1)
-    if (error) throw error
-    const maxNum = data?.[0]?.task_number ?? 0
-    return (maxNum ?? 0) + 1
-  },
-
   async create(task: ScheduleTaskFormData): Promise<ScheduleTask> {
-    const nextNum = await scheduleService.getNextTaskNumber(task.project_id)
+    // El número de tarea lo asigna la base de datos al insertar (migración 088),
+    // serializado por proyecto: dos guardados a la vez nunca chocan.
     const { data, error } = await supabase
       .from('schedule_tasks')
       .insert({
         ...task,
-        task_number: nextNum,
+        task_number: null,
         created_at: new Date().toISOString(),
       })
       .select()
