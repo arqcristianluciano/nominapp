@@ -22,4 +22,17 @@ describe('getErrorMessage', () => {
   it('número → string', () => {
     expect(getErrorMessage(404)).toBe('404')
   })
+
+  it('traduce violaciones de RLS a un mensaje claro de permisos', () => {
+    const msg = getErrorMessage({
+      message: 'new row violates row-level security policy for table "bank_accounts"',
+      code: '42501',
+    })
+    expect(msg).toContain('no tiene permiso')
+    expect(msg).not.toContain('row-level security')
+  })
+
+  it('traduce "permission denied" a un mensaje claro de permisos', () => {
+    expect(getErrorMessage(new Error('permission denied for table contractor_loans'))).toContain('no tiene permiso')
+  })
 })

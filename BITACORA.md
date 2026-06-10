@@ -46,6 +46,17 @@ registrar sus cuentas en Configuración → Cuentas bancarias.
 construcción, todo en verde. Los 3 cambios de base de datos (088, 089, 090)
 ya están aplicados en la base real; son aditivos y no tocan datos existentes.
 
+### Anexo (misma fecha) — error al guardar cuenta bancaria
+
+Cristian intentó registrar una cuenta bancaria y salió un error técnico en
+inglés ("row-level security"). No era un fallo: es la regla de permisos por
+tipo de usuario que la app tiene a propósito — las cuentas bancarias solo
+las pueden crear el usuario administrador y el de contabilidad, y en ese
+momento la sesión era del usuario de planificación. Solución inmediata:
+entrar como administrador. Mejora aplicada: cuando un usuario no tenga
+permiso para algo, la app ahora lo dice en claro ("Tu usuario no tiene
+permiso para realizar esta acción…") en lugar del mensaje técnico.
+
 ## 2026-06-09 (parte 5) — Puesta al día de componentes internos
 
 **Qué se hizo:** Se aplicaron 23 actualizaciones de piezas internas de la app
