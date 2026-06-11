@@ -1,8 +1,13 @@
-import { ArrowDownCircle, ArrowUpCircle, Building2 } from 'lucide-react'
-import { useAccountMovements } from '@/hooks/useAccountMovements'
+import { useState } from 'react'
+import { ArrowDownCircle, ArrowUpCircle, Building2, Plus } from 'lucide-react'
+import { useAccountMovements, type ManualMovementInput } from '@/hooks/useAccountMovements'
+import { useAppRoles } from '@/hooks/useAppRoles'
+import { Modal } from '@/components/ui/Modal'
 import { SkeletonTable } from '@/components/ui/Skeleton'
+import { useToast } from '@/components/ui/Toast'
 import { formatRD } from '@/utils/currency'
-import type { AccountMovement, BankAccount } from '@/types/database'
+import { getErrorMessage } from '@/utils/errors'
+import type { AccountMovement, AccountMovementTipo, BankAccount } from '@/types/database'
 
 // ─── Helpers de presentación ────────────────────────────────────────────────
 
@@ -14,7 +19,8 @@ function formatDate(dateStr: string): string {
 const ORIGEN_LABEL: Record<string, string> = {
   loan_disbursement: 'Desembolso de préstamo',
   loan_repayment: 'Cobro de cuota',
-  manual: 'Manual',
+  manual: 'Movimiento manual',
+  initial_balance: 'Saldo inicial',
 }
 
 function origenLabel(origen: string): string {
@@ -138,11 +144,145 @@ function MovimientoCard({ mov }: { mov: AccountMovement }) {
   )
 }
 
+function ManualMovementForm({
+  saving,
+  onSubmit,
+  onCancel,
+}: {
+  saving: boolean
+  onSubmit: (input: ManualMovementInput) => Promise<void>
+  onCancel: () => void
+}) {
+  const [tipo, setTipo] = useState<AccountMovementTipo>('credito')
+  const [monto, setMonto] = useState('')
+  const [fecha, setFecha] = useState(new Date().toISOString().slice(0, 10))
+  const [concepto, setConcepto] = useState('')
+
+  const montoParsed = parseFloat(monto)
+  const valid = !Number.isNaN(montoParsed) && montoParsed > 0 && concepto.trim().length > 0 && fecha.length > 0
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!valid) return
+    await onSubmit({ tipo, monto: montoParsed, fecha, concepto: concepto.trim() })
+  }
+
+  const inputCls =
+    'w-full border border-app-border rounded-lg px-3 py-2 text-sm bg-app-bg text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500'
+  const labelCls = 'block text-xs font-medium text-app-muted mb-1'
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label className={labelCls}>Tipo de movimiento *</label>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => setTipo('credito')}
+            className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
+              tipo === 'credito'
+                ? 'bg-emerald-600 text-white border-emerald-600'
+                : 'bg-app-surface text-app-muted border-app-border hover:border-emerald-400'
+            }`}
+          >
+            <ArrowDownCircle className="w-4 h-4" /> Entrada (depósito)
+          </button>
+          <button
+            type="button"
+            onClick={() => setTipo('debito')}
+            className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
+              tipo === 'debito'
+                ? 'bg-red-600 text-white border-red-600'
+                : 'bg-app-surface text-app-muted border-app-border hover:border-red-400'
+            }`}
+          >
+            <ArrowUpCircle className="w-4 h-4" /> Salida (retiro)
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className={labelCls}>Monto (RD$) *</label>
+          <input
+            type="number"
+            min="0.01"
+            step="0.01"
+            className={inputCls}
+            value={monto}
+            onChange={(e) => setMonto(e.target.value)}
+            required
+          />
+        </div>
+        <div>
+          <label className={labelCls}>Fecha *</label>
+          <input type="date" className={inputCls} value={fecha} onChange={(e) => setFecha(e.target.value)} required />
+        </div>
+      </div>
+
+      <div>
+        <label className={labelCls}>Concepto *</label>
+        <input
+          type="text"
+          className={inputCls}
+          value={concepto}
+          onChange={(e) => setConcepto(e.target.value)}
+          placeholder="Ej: Depósito para fondo de préstamos"
+          required
+        />
+      </div>
+
+      <div className="flex justify-end gap-2 pt-1">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-4 py-2 text-sm text-app-muted border border-app-border rounded-lg hover:bg-app-hover"
+        >
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          disabled={saving || !valid}
+          className="px-4 py-2 text-sm bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50"
+        >
+          {saving ? 'Guardando...' : 'Registrar movimiento'}
+        </button>
+      </div>
+    </form>
+  )
+}
+
 // ─── Panel principal ──────────────────────────────────────────────────────────
 
 export function AccountMovementsPanel() {
-  const { accounts, selectedAccountId, movements, balance, loading, loadingMovements, error, setSelectedAccountId } =
-    useAccountMovements()
+  const {
+    accounts,
+    selectedAccountId,
+    movements,
+    balance,
+    loading,
+    loadingMovements,
+    error,
+    setSelectedAccountId,
+    addManualMovement,
+  } = useAccountMovements()
+  const { canWriteBankAccounts } = useAppRoles()
+  const { success, error: toastError } = useToast()
+  const [showMovementForm, setShowMovementForm] = useState(false)
+  const [savingMovement, setSavingMovement] = useState(false)
+
+  const handleAddMovement = async (input: ManualMovementInput) => {
+    setSavingMovement(true)
+    try {
+      await addManualMovement(input)
+      setShowMovementForm(false)
+      success(input.tipo === 'credito' ? 'Entrada registrada en la cuenta' : 'Salida registrada en la cuenta')
+    } catch (err) {
+      toastError(`No se pudo registrar el movimiento: ${getErrorMessage(err)}`)
+    } finally {
+      setSavingMovement(false)
+    }
+  }
 
   if (loading) return <SkeletonTable rows={4} cols={3} />
 
@@ -166,8 +306,18 @@ export function AccountMovementsPanel() {
 
   return (
     <div className="space-y-4">
-      {/* Selector de cuenta */}
-      <AccountSelector accounts={accounts} selectedId={selectedAccountId} onChange={setSelectedAccountId} />
+      {/* Selector de cuenta + registrar movimiento manual */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <AccountSelector accounts={accounts} selectedId={selectedAccountId} onChange={setSelectedAccountId} />
+        {canWriteBankAccounts && selectedAccountId && (
+          <button
+            onClick={() => setShowMovementForm(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 shrink-0"
+          >
+            <Plus className="w-3.5 h-3.5" /> Registrar movimiento
+          </button>
+        )}
+      </div>
 
       {/* Tarjetas de resumen */}
       {balance && (
@@ -186,6 +336,7 @@ export function AccountMovementsPanel() {
           <p className="text-sm text-app-muted">Esta cuenta aún no tiene movimientos registrados.</p>
           <p className="text-xs text-app-subtle mt-1">
             Los movimientos se generan automáticamente al desembolsar un préstamo o al marcar una cuota como cobrada.
+            También puedes anotar el dinero que ya tiene la cuenta con el botón "Registrar movimiento".
           </p>
         </div>
       ) : (
@@ -213,6 +364,15 @@ export function AccountMovementsPanel() {
           </div>
         </div>
       )}
+
+      {/* Modal: registrar movimiento manual */}
+      <Modal open={showMovementForm} onClose={() => setShowMovementForm(false)} title="Registrar movimiento manual">
+        <ManualMovementForm
+          saving={savingMovement}
+          onSubmit={handleAddMovement}
+          onCancel={() => setShowMovementForm(false)}
+        />
+      </Modal>
     </div>
   )
 }

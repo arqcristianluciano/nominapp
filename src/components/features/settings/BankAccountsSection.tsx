@@ -13,7 +13,7 @@ interface BankAccountsSectionProps {
   onCreate: () => void
   onEdit: (account: BankAccount) => void
   onCloseForm: () => void
-  onSubmit: (data: Partial<BankAccount>) => void
+  onSubmit: (data: Partial<BankAccount>, saldoInicial?: number) => void
 }
 
 export function BankAccountsSection({

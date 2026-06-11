@@ -6,7 +6,8 @@ import { isCedula, isRNC } from '@/utils/validators'
 interface Props {
   initial?: BankAccount
   saving: boolean
-  onSubmit: (data: Partial<BankAccount>) => void
+  /** saldoInicial solo viene informado al crear (no al editar). */
+  onSubmit: (data: Partial<BankAccount>, saldoInicial?: number) => void
   onCancel: () => void
 }
 
@@ -17,6 +18,7 @@ export function BankAccountForm({ initial, saving, onSubmit, onCancel }: Props) 
   const [accountType, setAccountType] = useState(initial?.account_type || '')
   const [cedulaRnc, setCedulaRnc] = useState(initial?.cedula_rnc || '')
   const [isInternal, setIsInternal] = useState(initial?.is_internal ?? true)
+  const [saldoInicial, setSaldoInicial] = useState('')
   const [formError, setFormError] = useState<string | null>(null)
 
   function handleSubmit(e: React.FormEvent) {
@@ -38,15 +40,24 @@ export function BankAccountForm({ initial, saving, onSubmit, onCancel }: Props) 
       return
     }
 
-    onSubmit({
-      owner_name: ownerName,
-      bank_name: bankName,
-      account_number: accountNumber,
-      account_type: accountType || null,
-      cedula_rnc: cedulaRnc || null,
-      is_internal: isInternal,
-      project_id: null,
-    })
+    const saldoParsed = parseFloat(saldoInicial)
+    if (saldoInicial.trim() && (Number.isNaN(saldoParsed) || saldoParsed < 0)) {
+      setFormError('El saldo inicial debe ser un monto válido (0 o mayor)')
+      return
+    }
+
+    onSubmit(
+      {
+        owner_name: ownerName,
+        bank_name: bankName,
+        account_number: accountNumber,
+        account_type: accountType || null,
+        cedula_rnc: cedulaRnc || null,
+        is_internal: isInternal,
+        project_id: null,
+      },
+      initial ? undefined : saldoParsed > 0 ? saldoParsed : undefined,
+    )
   }
 
   const inputClass =
@@ -98,6 +109,24 @@ export function BankAccountForm({ initial, saving, onSubmit, onCancel }: Props) 
           <label className="text-xs font-medium text-app-muted mb-1 block">Cédula / RNC</label>
           <input type="text" value={cedulaRnc} onChange={(e) => setCedulaRnc(e.target.value)} className={inputClass} />
         </div>
+        {!initial && (
+          <div className="col-span-2">
+            <label className="text-xs font-medium text-app-muted mb-1 block">Saldo inicial (RD$)</label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={saldoInicial}
+              onChange={(e) => setSaldoInicial(e.target.value)}
+              className={inputClass}
+              placeholder="0.00"
+            />
+            <p className="mt-1 text-[11px] text-app-subtle">
+              Dinero que ya tiene la cuenta en el banco. Queda registrado como primera entrada, para que los préstamos
+              tengan de dónde salir. Luego puedes anotar más depósitos o retiros en Préstamos → Conciliación de cuentas.
+            </p>
+          </div>
+        )}
         <div className="col-span-2">
           <label className="flex items-center gap-2 cursor-pointer">
             <input

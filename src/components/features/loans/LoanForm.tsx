@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { accountMovementService } from '@/services/accountMovementService'
 import { calcInstallmentAmount } from '@/services/loanService'
 import { formatRD } from '@/utils/currency'
 import type { BankAccount, Contractor, LoanFrecuencia } from '@/types/database'
@@ -61,8 +62,35 @@ export function LoanForm({
   editMode = false,
 }: Props) {
   const [form, setForm] = useState<LoanFormValues>({ ...INITIAL, ...initialValues })
+  // Saldo calculado por cuenta (se carga al seleccionar una cuenta de desembolso)
+  const [saldoMap, setSaldoMap] = useState<Record<string, number>>({})
 
   const set = (field: keyof LoanFormValues, value: string | number) => setForm((prev) => ({ ...prev, [field]: value }))
+
+  // Carga el saldo de la cuenta seleccionada para avisar si el préstamo lo supera.
+  // Solo en modo creación: al editar, el desembolso original ya está descontado
+  // del saldo y el aviso sería engañoso.
+  useEffect(() => {
+    const accountId = form.disbursement_account_id
+    if (editMode || !accountId || saldoMap[accountId] !== undefined) return
+    let cancelled = false
+    accountMovementService
+      .getByAccount(accountId)
+      .then((movs) => {
+        if (cancelled) return
+        const { saldo } = accountMovementService.calcSaldo(movs)
+        setSaldoMap((prev) => ({ ...prev, [accountId]: saldo }))
+      })
+      .catch(() => {
+        // El aviso de saldo es informativo; si falla la carga, no se muestra.
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [form.disbursement_account_id, editMode, saldoMap])
+
+  const saldoDisponible = !editMode && form.disbursement_account_id ? saldoMap[form.disbursement_account_id] : undefined
+  const saldoInsuficiente = saldoDisponible !== undefined && form.principal > 0 && form.principal > saldoDisponible
 
   const installmentAmount =
     form.principal > 0 && form.installments > 0
@@ -201,8 +229,20 @@ export function LoanForm({
               para que el préstamo salga de una cuenta y los cobros entren a ella.
             </p>
           )}
+          {saldoDisponible !== undefined && !saldoInsuficiente && (
+            <p className="mt-1 text-[11px] text-app-subtle">Saldo disponible: {formatRD(saldoDisponible)}</p>
+          )}
         </div>
       </div>
+
+      {saldoInsuficiente && (
+        <div className="px-4 py-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg text-sm text-amber-800 dark:text-amber-200">
+          Aviso: esta cuenta tiene {formatRD(saldoDisponible)} registrado y el préstamo es de {formatRD(form.principal)}
+          , así que su saldo quedaría en {formatRD(saldoDisponible - form.principal)}. Puedes continuar de todos modos.
+          Si a la cuenta le falta dinero por anotar, regístralo en Préstamos → Conciliación de cuentas con el botón
+          "Registrar movimiento".
+        </div>
+      )}
 
       <div>
         <label className={labelCls}>Fecha de la primera cuota (opcional)</label>

@@ -405,7 +405,7 @@ export interface ScheduleTask {
 export type AccountMovementTipo = 'debito' | 'credito'
 
 /** Fuente que generó el movimiento */
-export type AccountMovementOrigen = 'loan_disbursement' | 'loan_repayment' | 'manual'
+export type AccountMovementOrigen = 'loan_disbursement' | 'loan_repayment' | 'manual' | 'initial_balance'
 
 /** Fila de la tabla account_movements (migración 081). */
 export interface AccountMovement {
