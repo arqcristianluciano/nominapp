@@ -9,6 +9,10 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 
 ### Added
 
+- Cuentas bancarias: campo "Saldo inicial (RD$)" al crear una cuenta interna; se registra como primer movimiento de entrada (origen `initial_balance`) para que los desembolsos de préstamos tengan fondos de los que salir.
+- Conciliación de cuentas: botón "Registrar movimiento" para anotar depósitos y retiros manuales en la cuenta seleccionada (visible solo con permiso `write_bank_accounts`).
+- Formulario de préstamo: muestra el saldo disponible de la cuenta de desembolso elegida y avisa (sin bloquear) cuando el monto del préstamo supera ese saldo.
+
 - Catálogo de unidades de medida guardado en la base de datos (`measure_units`, migración 089): los selects de unidad (solicitudes de compra, mano de obra de nómina, partidas de presupuesto y lista de precios) leen el catálogo y ofrecen "+ Añadir nueva unidad…" para registrar unidades como Atado o Libra, que quedan disponibles en toda la app. La semilla incluye las unidades que ya se usaban más Atado, Libra y Quintal.
 - Préstamos: campo "Fecha de la primera cuota" (migración 090). Las cuotas se programan a partir de esa fecha según la frecuencia; si se deja vacía, se mantiene el cálculo desde el desembolso.
 - Préstamos: registrar el pago de cuotas individuales desde el cronograma del préstamo, con fecha real de pago y cuenta a la que entra el dinero (genera el movimiento de entrada en Conciliación). Al pagar la última cuota pendiente, el préstamo queda marcado como Pagado.

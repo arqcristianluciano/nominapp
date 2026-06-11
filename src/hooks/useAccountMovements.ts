@@ -1,8 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { accountMovementService, type AccountBalance } from '@/services/accountMovementService'
 import { bankAccountService } from '@/services/bankAccountService'
-import type { AccountMovement, BankAccount } from '@/types/database'
+import type { AccountMovement, AccountMovementTipo, BankAccount } from '@/types/database'
 import { getErrorMessage } from '@/utils/errors'
+
+export interface ManualMovementInput {
+  tipo: AccountMovementTipo
+  monto: number
+  fecha: string
+  concepto: string
+}
 
 interface UseAccountMovementsResult {
   /** Lista de cuentas bancarias cargadas */
@@ -18,6 +25,8 @@ interface UseAccountMovementsResult {
   error: string | null
   setSelectedAccountId: (id: string | null) => void
   refresh: () => Promise<void>
+  /** Registra un movimiento manual (depósito o retiro) en la cuenta seleccionada y recarga la lista. */
+  addManualMovement: (input: ManualMovementInput) => Promise<void>
 }
 
 export function useAccountMovements(): UseAccountMovementsResult {
@@ -60,6 +69,23 @@ export function useAccountMovements(): UseAccountMovementsResult {
     if (selectedAccountId) await loadMovementsForAccount(selectedAccountId)
   }, [loadAccounts, loadMovementsForAccount, selectedAccountId])
 
+  const addManualMovement = useCallback(
+    async (input: ManualMovementInput) => {
+      if (!selectedAccountId) return
+      await accountMovementService.create({
+        account_id: selectedAccountId,
+        fecha: input.fecha,
+        tipo: input.tipo,
+        monto: input.monto,
+        concepto: input.concepto,
+        origen: 'manual',
+        referencia_id: null,
+      })
+      await loadMovementsForAccount(selectedAccountId)
+    },
+    [selectedAccountId, loadMovementsForAccount],
+  )
+
   // Carga inicial de cuentas
   useEffect(() => {
     void loadAccounts()
@@ -100,5 +126,6 @@ export function useAccountMovements(): UseAccountMovementsResult {
       setSelectedAccountId(id)
     },
     refresh,
+    addManualMovement,
   }
 }

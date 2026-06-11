@@ -2,6 +2,39 @@
 
 Diario en lenguaje sencillo de lo que se va haciendo en la app.
 
+## 2026-06-11 — Cuentas bancarias: errores corregidos y saldo inicial
+
+**Por la mañana** se corrigieron los dos errores que salieron al registrar
+la cuenta del fondo de préstamos:
+
+1. **"Permission denied"**: no era un fallo, sino los permisos funcionando —
+   solo el administrador y contabilidad pueden crear cuentas. Se decidió
+   dejarlo así. Ahora ese mensaje sale en español claro en toda la app.
+2. **"project_id violates not-null constraint"**: este sí era un fallo (una
+   regla vieja de la base de datos exigía proyecto a toda cuenta). Quedó
+   corregido: las cuentas internas de la empresa ya se guardan sin proyecto.
+
+**Por la tarde**, a raíz de una observación de Cristian (si la cuenta nace
+en cero, el primer préstamo la deja en negativo), se agregó:
+
+- **Saldo inicial**: al crear una cuenta en Configuración → Cuentas
+  bancarias se puede indicar cuánto dinero ya tiene; queda anotado como su
+  primera entrada.
+- **Movimientos manuales**: en Préstamos → Conciliación de cuentas hay un
+  botón "Registrar movimiento" para anotar depósitos o retiros en cualquier
+  momento (solo administrador/contabilidad lo ven).
+- **Aviso de fondos**: al crear un préstamo, el formulario muestra el saldo
+  disponible de la cuenta elegida y, si el préstamo lo supera, avisa en
+  amarillo que el saldo quedará negativo — pero deja continuar, por si el
+  dinero real ya está en el banco y solo falta anotarlo.
+
+**Qué cambió para Cristian:** puede registrar su cuenta del fondo de
+préstamos con el dinero que ya tiene, anotar más depósitos cuando meta
+dinero, y la app le avisa si va a prestar más de lo que hay.
+
+**Pendiente:** registrar la cuenta real (Titular PRESTAMOS, BHD León) como
+administrador, ahora con su saldo inicial.
+
 ## 2026-06-10 — Arreglos del documento de observaciones (PDF del 10/06)
 
 Cristian envió un PDF con 5 observaciones de uso real. Se atendieron todas:
