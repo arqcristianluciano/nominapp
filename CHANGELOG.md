@@ -9,6 +9,10 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 
 ### Added
 
+- Conciliación de cuentas: corregir (lapicito) y borrar (con confirmación) los movimientos anotados a mano (`manual` / `initial_balance`); los generados por préstamos no son editables desde el panel.
+- Préstamos: cuotas vencidas (pendientes con fecha pasada) resaltadas en rojo con etiqueta "Vencida" en el cronograma, y contador de cuotas vencidas por préstamo activo.
+- Préstamos: tarjetas de resumen del fondo (Disponible en cuentas internas, En la calle, Total cobrado, Cuotas vencidas) al inicio de la pantalla.
+- Conciliación de cuentas: exportar los movimientos de la cuenta seleccionada a Excel, con fila de totales y saldo.
 - Cuentas bancarias: campo "Saldo inicial (RD$)" al crear una cuenta interna; se registra como primer movimiento de entrada (origen `initial_balance`) para que los desembolsos de préstamos tengan fondos de los que salir.
 - Conciliación de cuentas: botón "Registrar movimiento" para anotar depósitos y retiros manuales en la cuenta seleccionada (visible solo con permiso `write_bank_accounts`).
 - Formulario de préstamo: muestra el saldo disponible de la cuenta de desembolso elegida y avisa (sin bloquear) cuando el monto del préstamo supera ese saldo.

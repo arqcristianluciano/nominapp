@@ -2,7 +2,7 @@ import * as Sentry from '@sentry/react'
 import { supabase } from '@/lib/supabase'
 import type { ContractorLoan, LoanDeduction, LoanFrecuencia, LoanInstallment, LoanStatus } from '@/types/database'
 import { accountMovementService } from '@/services/accountMovementService'
-import { add, div, money, pct, round2 } from '@/utils/money'
+import { add, div, money, mul, pct, round2 } from '@/utils/money'
 
 /** Cuota fija: capital + interés simple distribuido en N cuotas */
 export function calcInstallmentAmount(principal: number, interestRate: number, installments: number): number {
@@ -34,6 +34,43 @@ export function calcInstallmentDate(
     base.setMonth(base.getMonth() + steps)
   }
   return base.toISOString().slice(0, 10)
+}
+
+/** Totales de avance de un préstamo, con el mismo criterio que la tabla:
+ *  - Un préstamo 'paid' se considera saldado (pagado = total, saldo = 0).
+ *  - El pago llega por dos vías (deducción de nómina o cuota cobrada);
+ *    se toma el mayor para no sumar dos veces lo mismo. */
+export function calcLoanProgress(
+  loan: Pick<ContractorLoan, 'status' | 'installment_amount' | 'installments'>,
+  paidFromDeductions: number,
+  installments: Array<Pick<LoanInstallment, 'estado' | 'monto'>>,
+): { totalOwed: number; effectivePaid: number; balance: number } {
+  const totalOwed = round2(mul(loan.installment_amount, loan.installments))
+  const paidInstallments = round2(installments.reduce((sum, i) => (i.estado === 'pagada' ? sum + i.monto : sum), 0))
+  const paidRecorded = Math.max(paidFromDeductions, paidInstallments)
+  const isSettled = loan.status === 'paid'
+  return {
+    totalOwed,
+    effectivePaid: isSettled ? totalOwed : paidRecorded,
+    balance: isSettled ? 0 : Math.max(0, round2(totalOwed - paidRecorded)),
+  }
+}
+
+/** Una cuota está vencida si sigue pendiente y su fecha programada ya pasó.
+ *  `todayStr` (AAAA-MM-DD) se puede inyectar en tests; por defecto es hoy. */
+export function isInstallmentOverdue(
+  installment: Pick<LoanInstallment, 'estado' | 'fecha_pago_programada'>,
+  todayStr: string = new Date().toISOString().slice(0, 10),
+): boolean {
+  return installment.estado !== 'pagada' && installment.fecha_pago_programada < todayStr
+}
+
+/** Cantidad de cuotas vencidas en un cronograma. */
+export function countOverdueInstallments(
+  installments: Array<Pick<LoanInstallment, 'estado' | 'fecha_pago_programada'>>,
+  todayStr?: string,
+): number {
+  return installments.filter((i) => isInstallmentOverdue(i, todayStr)).length
 }
 
 /** Genera el array de cuotas a insertar para un préstamo recién creado. */

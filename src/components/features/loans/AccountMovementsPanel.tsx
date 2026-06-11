@@ -1,12 +1,15 @@
 import { useState } from 'react'
-import { ArrowDownCircle, ArrowUpCircle, Building2, Plus } from 'lucide-react'
+import { ArrowDownCircle, ArrowUpCircle, Building2, Download, Pencil, Plus, Trash2 } from 'lucide-react'
+import { isEditableMovement } from '@/services/accountMovementService'
 import { useAccountMovements, type ManualMovementInput } from '@/hooks/useAccountMovements'
 import { useAppRoles } from '@/hooks/useAppRoles'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { Modal } from '@/components/ui/Modal'
 import { SkeletonTable } from '@/components/ui/Skeleton'
 import { useToast } from '@/components/ui/Toast'
 import { formatRD } from '@/utils/currency'
 import { getErrorMessage } from '@/utils/errors'
+import { exportToExcel } from '@/utils/excelExport'
 import type { AccountMovement, AccountMovementTipo, BankAccount } from '@/types/database'
 
 // ─── Helpers de presentación ────────────────────────────────────────────────
@@ -87,8 +90,41 @@ function BalanceCard({
   )
 }
 
-function MovimientoRow({ mov }: { mov: AccountMovement }) {
+/** Callbacks para corregir/borrar movimientos anotados a mano. */
+interface MovementActionHandlers {
+  onEdit?: (mov: AccountMovement) => void
+  onDelete?: (mov: AccountMovement) => void
+}
+
+function MovementActionButtons({ mov, onEdit, onDelete }: { mov: AccountMovement } & MovementActionHandlers) {
+  if (!isEditableMovement(mov) || (!onEdit && !onDelete)) return null
+  return (
+    <div className="inline-flex items-center gap-1">
+      {onEdit && (
+        <button
+          onClick={() => onEdit(mov)}
+          title="Corregir movimiento"
+          className="p-1.5 rounded-lg text-app-subtle hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors"
+        >
+          <Pencil className="w-3.5 h-3.5" />
+        </button>
+      )}
+      {onDelete && (
+        <button
+          onClick={() => onDelete(mov)}
+          title="Borrar movimiento"
+          className="p-1.5 rounded-lg text-app-subtle hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
+      )}
+    </div>
+  )
+}
+
+function MovimientoRow({ mov, onEdit, onDelete }: { mov: AccountMovement } & MovementActionHandlers) {
   const isCredito = mov.tipo === 'credito'
+  const showActions = !!(onEdit || onDelete)
   return (
     <tr className="hover:bg-app-hover transition-colors">
       <td className="px-4 py-3 text-xs text-app-muted">{formatDate(mov.fecha)}</td>
@@ -113,11 +149,16 @@ function MovimientoRow({ mov }: { mov: AccountMovement }) {
           {formatRD(mov.monto)}
         </span>
       </td>
+      {showActions && (
+        <td className="px-2 py-3 text-center">
+          <MovementActionButtons mov={mov} onEdit={onEdit} onDelete={onDelete} />
+        </td>
+      )}
     </tr>
   )
 }
 
-function MovimientoCard({ mov }: { mov: AccountMovement }) {
+function MovimientoCard({ mov, onEdit, onDelete }: { mov: AccountMovement } & MovementActionHandlers) {
   const isCredito = mov.tipo === 'credito'
   return (
     <div className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-app-hover transition-colors">
@@ -134,29 +175,35 @@ function MovimientoCard({ mov }: { mov: AccountMovement }) {
           </p>
         </div>
       </div>
-      <span
-        className={`text-sm font-bold shrink-0 ${isCredito ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`}
-      >
-        {isCredito ? '+' : '−'}
-        {formatRD(mov.monto)}
-      </span>
+      <div className="flex items-center gap-1 shrink-0">
+        <span
+          className={`text-sm font-bold ${isCredito ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`}
+        >
+          {isCredito ? '+' : '−'}
+          {formatRD(mov.monto)}
+        </span>
+        <MovementActionButtons mov={mov} onEdit={onEdit} onDelete={onDelete} />
+      </div>
     </div>
   )
 }
 
 function ManualMovementForm({
+  initial,
   saving,
   onSubmit,
   onCancel,
 }: {
+  /** Si se pasa, el formulario corrige ese movimiento en vez de crear uno nuevo. */
+  initial?: AccountMovement
   saving: boolean
   onSubmit: (input: ManualMovementInput) => Promise<void>
   onCancel: () => void
 }) {
-  const [tipo, setTipo] = useState<AccountMovementTipo>('credito')
-  const [monto, setMonto] = useState('')
-  const [fecha, setFecha] = useState(new Date().toISOString().slice(0, 10))
-  const [concepto, setConcepto] = useState('')
+  const [tipo, setTipo] = useState<AccountMovementTipo>(initial?.tipo ?? 'credito')
+  const [monto, setMonto] = useState(initial ? String(initial.monto) : '')
+  const [fecha, setFecha] = useState(initial?.fecha ?? new Date().toISOString().slice(0, 10))
+  const [concepto, setConcepto] = useState(initial?.concepto ?? '')
 
   const montoParsed = parseFloat(monto)
   const valid = !Number.isNaN(montoParsed) && montoParsed > 0 && concepto.trim().length > 0 && fecha.length > 0
@@ -245,7 +292,7 @@ function ManualMovementForm({
           disabled={saving || !valid}
           className="px-4 py-2 text-sm bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50"
         >
-          {saving ? 'Guardando...' : 'Registrar movimiento'}
+          {saving ? 'Guardando...' : initial ? 'Guardar cambios' : 'Registrar movimiento'}
         </button>
       </div>
     </form>
@@ -265,11 +312,15 @@ export function AccountMovementsPanel() {
     error,
     setSelectedAccountId,
     addManualMovement,
+    updateManualMovement,
+    deleteManualMovement,
   } = useAccountMovements()
   const { canWriteBankAccounts } = useAppRoles()
   const { success, error: toastError } = useToast()
   const [showMovementForm, setShowMovementForm] = useState(false)
   const [savingMovement, setSavingMovement] = useState(false)
+  const [editTarget, setEditTarget] = useState<AccountMovement | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<AccountMovement | null>(null)
 
   const handleAddMovement = async (input: ManualMovementInput) => {
     setSavingMovement(true)
@@ -283,6 +334,62 @@ export function AccountMovementsPanel() {
       setSavingMovement(false)
     }
   }
+
+  const handleEditMovement = async (input: ManualMovementInput) => {
+    if (!editTarget) return
+    setSavingMovement(true)
+    try {
+      await updateManualMovement(editTarget.id, input)
+      setEditTarget(null)
+      success('Movimiento corregido')
+    } catch (err) {
+      toastError(`No se pudo corregir el movimiento: ${getErrorMessage(err)}`)
+    } finally {
+      setSavingMovement(false)
+    }
+  }
+
+  const handleDeleteMovement = async () => {
+    if (!deleteTarget) return
+    try {
+      await deleteManualMovement(deleteTarget.id)
+      success('Movimiento borrado')
+    } catch (err) {
+      toastError(`No se pudo borrar el movimiento: ${getErrorMessage(err)}`)
+    }
+  }
+
+  const handleExport = async () => {
+    const account = accounts.find((a) => a.id === selectedAccountId)
+    if (!account || movements.length === 0) return
+    try {
+      const rows = movements.map((mov) => ({
+        Fecha: formatDate(mov.fecha),
+        Tipo: mov.tipo === 'credito' ? 'Entrada' : 'Salida',
+        Concepto: mov.concepto,
+        Origen: origenLabel(mov.origen),
+        'Entrada (RD$)': mov.tipo === 'credito' ? mov.monto : null,
+        'Salida (RD$)': mov.tipo === 'debito' ? mov.monto : null,
+      }))
+      if (balance) {
+        rows.push({
+          Fecha: '',
+          Tipo: 'TOTALES',
+          Concepto: `Saldo: ${formatRD(balance.saldo)}`,
+          Origen: '',
+          'Entrada (RD$)': balance.totalCreditos,
+          'Salida (RD$)': balance.totalDebitos,
+        })
+      }
+      await exportToExcel(`movimientos-${account.bank_name}-${account.account_number}`, [{ name: 'Movimientos', rows }])
+      success('Movimientos exportados a Excel')
+    } catch (err) {
+      toastError(`No se pudo exportar: ${getErrorMessage(err)}`)
+    }
+  }
+
+  const onEditMovement = canWriteBankAccounts ? (mov: AccountMovement) => setEditTarget(mov) : undefined
+  const onDeleteMovement = canWriteBankAccounts ? (mov: AccountMovement) => setDeleteTarget(mov) : undefined
 
   if (loading) return <SkeletonTable rows={4} cols={3} />
 
@@ -306,17 +413,27 @@ export function AccountMovementsPanel() {
 
   return (
     <div className="space-y-4">
-      {/* Selector de cuenta + registrar movimiento manual */}
+      {/* Selector de cuenta + registrar movimiento manual + exportar */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <AccountSelector accounts={accounts} selectedId={selectedAccountId} onChange={setSelectedAccountId} />
-        {canWriteBankAccounts && selectedAccountId && (
-          <button
-            onClick={() => setShowMovementForm(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 shrink-0"
-          >
-            <Plus className="w-3.5 h-3.5" /> Registrar movimiento
-          </button>
-        )}
+        <div className="flex items-center gap-2 shrink-0">
+          {selectedAccountId && movements.length > 0 && (
+            <button
+              onClick={() => void handleExport()}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-app-muted border border-app-border rounded-lg hover:bg-app-hover"
+            >
+              <Download className="w-3.5 h-3.5" /> Exportar a Excel
+            </button>
+          )}
+          {canWriteBankAccounts && selectedAccountId && (
+            <button
+              onClick={() => setShowMovementForm(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700"
+            >
+              <Plus className="w-3.5 h-3.5" /> Registrar movimiento
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Tarjetas de resumen */}
@@ -348,18 +465,19 @@ export function AccountMovementsPanel() {
                 <th className="text-left px-4 py-2.5 text-[10px] font-semibold text-app-subtle uppercase">Fecha</th>
                 <th className="text-left px-4 py-2.5 text-[10px] font-semibold text-app-subtle uppercase">Concepto</th>
                 <th className="text-right px-4 py-2.5 text-[10px] font-semibold text-app-subtle uppercase">Monto</th>
+                {canWriteBankAccounts && <th className="w-20" />}
               </tr>
             </thead>
             <tbody className="divide-y divide-app-border">
               {movements.map((mov) => (
-                <MovimientoRow key={mov.id} mov={mov} />
+                <MovimientoRow key={mov.id} mov={mov} onEdit={onEditMovement} onDelete={onDeleteMovement} />
               ))}
             </tbody>
           </table>
           {/* Cards en móvil */}
           <div className="sm:hidden divide-y divide-app-border">
             {movements.map((mov) => (
-              <MovimientoCard key={mov.id} mov={mov} />
+              <MovimientoCard key={mov.id} mov={mov} onEdit={onEditMovement} onDelete={onDeleteMovement} />
             ))}
           </div>
         </div>
@@ -373,6 +491,33 @@ export function AccountMovementsPanel() {
           onCancel={() => setShowMovementForm(false)}
         />
       </Modal>
+
+      {/* Modal: corregir movimiento manual */}
+      <Modal open={!!editTarget} onClose={() => setEditTarget(null)} title="Corregir movimiento">
+        {editTarget && (
+          <ManualMovementForm
+            key={editTarget.id}
+            initial={editTarget}
+            saving={savingMovement}
+            onSubmit={handleEditMovement}
+            onCancel={() => setEditTarget(null)}
+          />
+        )}
+      </Modal>
+
+      {/* Modal: confirmar borrado de movimiento */}
+      <ConfirmModal
+        open={!!deleteTarget}
+        title="Borrar movimiento"
+        message={
+          deleteTarget
+            ? `¿Borrar "${deleteTarget.concepto}" (${deleteTarget.tipo === 'credito' ? 'entrada' : 'salida'} de ${formatRD(deleteTarget.monto)})? El saldo de la cuenta se recalculará sin él.`
+            : ''
+        }
+        confirmLabel="Borrar"
+        onConfirm={() => void handleDeleteMovement()}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   )
 }

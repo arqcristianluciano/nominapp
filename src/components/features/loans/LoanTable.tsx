@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Banknote, CheckCircle, ChevronDown, ChevronUp, Pencil, XCircle } from 'lucide-react'
+import { calcLoanProgress, countOverdueInstallments, isInstallmentOverdue } from '@/services/loanService'
 import type { BankAccount, ContractorLoan, LoanInstallment } from '@/types/database'
 import { formatRD } from '@/utils/currency'
 import { mul, round2 } from '@/utils/money'
@@ -29,11 +30,6 @@ interface LoanTableProps {
 interface InstallmentActionHandlers {
   onRequestPay?: (loan: ContractorLoan, installment: LoanInstallment) => void
   onRequestDate?: (loan: ContractorLoan, installment: LoanInstallment) => void
-}
-
-/** Suma de las cuotas ya marcadas como pagadas en el cronograma. */
-function sumPaidInstallments(installments: LoanInstallment[]): number {
-  return round2(installments.reduce((sum, i) => (i.estado === 'pagada' ? sum + i.monto : sum), 0))
 }
 
 const STATUS_LABEL: Record<string, string> = { active: 'Activo', paid: 'Pagado', cancelled: 'Cancelado' }
@@ -141,54 +137,67 @@ function InstallmentSchedule({
             </tr>
           </thead>
           <tbody className="divide-y divide-app-border">
-            {installments.map((inst) => (
-              <tr
-                key={inst.id}
-                className={inst.estado === 'pagada' ? 'bg-emerald-50/50 dark:bg-emerald-950/10' : 'hover:bg-app-hover'}
-              >
-                <td className="text-center px-3 py-1.5 text-app-muted font-mono">#{inst.numero_cuota}</td>
-                <td className="text-left px-3 py-1.5 text-app-muted hidden sm:table-cell">
-                  {formatDate(inst.fecha_pago_programada)}
-                </td>
-                <td className="text-left px-3 py-1.5 text-app-muted hidden sm:table-cell">
-                  {inst.fecha_pago_real ? formatDate(inst.fecha_pago_real) : '—'}
-                </td>
-                <td className="text-right px-3 py-1.5 font-medium text-app-text">{formatRD(inst.monto)}</td>
-                <td className="text-center px-3 py-1.5">
-                  {inst.estado === 'pagada' ? (
-                    <span className="text-emerald-600 font-semibold">Pagada</span>
-                  ) : (
-                    <span className="text-app-subtle">Pendiente</span>
-                  )}
-                </td>
-                {canAct && (
+            {installments.map((inst) => {
+              // Solo en préstamos activos: en uno cancelado las cuotas pendientes
+              // ya no se cobran, así que no tiene sentido marcarlas vencidas.
+              const overdue = loan.status === 'active' && isInstallmentOverdue(inst)
+              return (
+                <tr
+                  key={inst.id}
+                  className={
+                    inst.estado === 'pagada'
+                      ? 'bg-emerald-50/50 dark:bg-emerald-950/10'
+                      : overdue
+                        ? 'bg-red-50/60 dark:bg-red-950/15 hover:bg-red-50 dark:hover:bg-red-950/25'
+                        : 'hover:bg-app-hover'
+                  }
+                >
+                  <td className="text-center px-3 py-1.5 text-app-muted font-mono">#{inst.numero_cuota}</td>
+                  <td className="text-left px-3 py-1.5 text-app-muted hidden sm:table-cell">
+                    {formatDate(inst.fecha_pago_programada)}
+                  </td>
+                  <td className="text-left px-3 py-1.5 text-app-muted hidden sm:table-cell">
+                    {inst.fecha_pago_real ? formatDate(inst.fecha_pago_real) : '—'}
+                  </td>
+                  <td className="text-right px-3 py-1.5 font-medium text-app-text">{formatRD(inst.monto)}</td>
                   <td className="text-center px-3 py-1.5">
-                    {inst.estado !== 'pagada' && (
-                      <div className="inline-flex items-center gap-1">
-                        {onRequestDate && (
-                          <button
-                            onClick={() => onRequestDate(loan, inst)}
-                            title="Cambiar fecha programada"
-                            className="p-1.5 rounded-lg text-app-subtle hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors"
-                          >
-                            <Pencil className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                        {onRequestPay && (
-                          <button
-                            onClick={() => onRequestPay(loan, inst)}
-                            title="Registrar pago de esta cuota"
-                            className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors"
-                          >
-                            <Banknote className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
+                    {inst.estado === 'pagada' ? (
+                      <span className="text-emerald-600 font-semibold">Pagada</span>
+                    ) : overdue ? (
+                      <span className="text-red-600 dark:text-red-400 font-semibold">Vencida</span>
+                    ) : (
+                      <span className="text-app-subtle">Pendiente</span>
                     )}
                   </td>
-                )}
-              </tr>
-            ))}
+                  {canAct && (
+                    <td className="text-center px-3 py-1.5">
+                      {inst.estado !== 'pagada' && (
+                        <div className="inline-flex items-center gap-1">
+                          {onRequestDate && (
+                            <button
+                              onClick={() => onRequestDate(loan, inst)}
+                              title="Cambiar fecha programada"
+                              className="p-1.5 rounded-lg text-app-subtle hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                          {onRequestPay && (
+                            <button
+                              onClick={() => onRequestPay(loan, inst)}
+                              title="Registrar pago de esta cuota"
+                              className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors"
+                            >
+                              <Banknote className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </td>
+                  )}
+                </tr>
+              )
+            })}
           </tbody>
           <tfoot>
             <tr className="bg-app-bg border-t border-app-border">
@@ -224,16 +233,8 @@ function LoanRow({
   showActions?: boolean
 } & InstallmentActionHandlers) {
   const [showSchedule, setShowSchedule] = useState(false)
-  const totalOwed = round2(mul(loan.installment_amount, loan.installments))
-  // Un prestamo marcado como 'Pagado' se considera saldado: el saldo es 0 y
-  // el monto pagado equivale al total, para que la fila no muestre datos
-  // contradictorios (Estado Pagado con saldo pendiente).
-  // El pago puede registrarse por dos vías (deducción de nómina o cuota
-  // cobrada directa); se toma el mayor para no sumar dos veces lo mismo.
-  const isSettled = loan.status === 'paid'
-  const paidRecorded = Math.max(paid, sumPaidInstallments(installments))
-  const effectivePaid = isSettled ? totalOwed : paidRecorded
-  const balance = isSettled ? 0 : Math.max(0, round2(totalOwed - paidRecorded))
+  const { effectivePaid, balance } = calcLoanProgress(loan, paid, installments)
+  const overdueCount = loan.status === 'active' ? countOverdueInstallments(installments) : 0
 
   return (
     <>
@@ -266,9 +267,16 @@ function LoanRow({
         </td>
         <td className="px-4 py-3.5 text-right text-sm font-bold text-app-text">{formatRD(balance)}</td>
         <td className="px-4 py-3.5 text-center">
-          <span className={`px-2 py-0.5 text-[11px] font-semibold rounded-full ${STATUS_COLOR[loan.status]}`}>
-            {STATUS_LABEL[loan.status]}
-          </span>
+          <div className="flex flex-col items-center gap-1">
+            <span className={`px-2 py-0.5 text-[11px] font-semibold rounded-full ${STATUS_COLOR[loan.status]}`}>
+              {STATUS_LABEL[loan.status]}
+            </span>
+            {overdueCount > 0 && (
+              <span className="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300">
+                {overdueCount} {overdueCount === 1 ? 'cuota vencida' : 'cuotas vencidas'}
+              </span>
+            )}
+          </div>
         </td>
         <td className="px-2 py-3.5">
           <div className="flex items-center justify-end gap-1">
@@ -344,16 +352,8 @@ function LoanCard({
   showActions?: boolean
 } & InstallmentActionHandlers) {
   const [showSchedule, setShowSchedule] = useState(false)
-  const totalOwed = round2(mul(loan.installment_amount, loan.installments))
-  // Un prestamo marcado como 'Pagado' se considera saldado: el saldo es 0 y
-  // el monto pagado equivale al total, para que la fila no muestre datos
-  // contradictorios (Estado Pagado con saldo pendiente).
-  // El pago puede registrarse por dos vías (deducción de nómina o cuota
-  // cobrada directa); se toma el mayor para no sumar dos veces lo mismo.
-  const isSettled = loan.status === 'paid'
-  const paidRecorded = Math.max(paid, sumPaidInstallments(installments))
-  const effectivePaid = isSettled ? totalOwed : paidRecorded
-  const balance = isSettled ? 0 : Math.max(0, round2(totalOwed - paidRecorded))
+  const { effectivePaid, balance } = calcLoanProgress(loan, paid, installments)
+  const overdueCount = loan.status === 'active' ? countOverdueInstallments(installments) : 0
 
   return (
     <div>
@@ -383,6 +383,11 @@ function LoanCard({
           <span className={`px-2 py-0.5 text-[11px] font-semibold rounded-full ${STATUS_COLOR[loan.status]}`}>
             {STATUS_LABEL[loan.status]}
           </span>
+          {overdueCount > 0 && (
+            <span className="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300">
+              {overdueCount} {overdueCount === 1 ? 'cuota vencida' : 'cuotas vencidas'}
+            </span>
+          )}
           <div className="flex items-center gap-1">
             <button
               onClick={() => setShowSchedule((v) => !v)}
