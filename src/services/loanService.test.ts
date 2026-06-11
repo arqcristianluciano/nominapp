@@ -12,7 +12,14 @@ vi.mock('@/lib/supabase', () => ({
   },
 }))
 
-import { calcInstallmentAmount, calcInstallmentDate, loanService } from './loanService'
+import {
+  calcInstallmentAmount,
+  calcInstallmentDate,
+  calcLoanProgress,
+  countOverdueInstallments,
+  isInstallmentOverdue,
+  loanService,
+} from './loanService'
 
 /** Helper: arma la cadena from→select→in resolviendo a {data, error}. */
 function mockSupabaseInResponse(data: Array<{ loan_id: string; amount: number }> | null, error: unknown = null) {
@@ -140,5 +147,67 @@ describe('calcInstallmentDate', () => {
   it('fecha de primera cuota null o vacía equivale a no indicarla', () => {
     expect(calcInstallmentDate('2026-06-10', 'quincenal', 1, null)).toBe('2026-06-25')
     expect(calcInstallmentDate('2026-06-10', 'quincenal', 1, '')).toBe('2026-06-25')
+  })
+})
+
+describe('isInstallmentOverdue / countOverdueInstallments', () => {
+  const HOY = '2026-06-11'
+
+  it('pendiente con fecha pasada está vencida', () => {
+    expect(isInstallmentOverdue({ estado: 'pendiente' as const, fecha_pago_programada: '2026-06-10' }, HOY)).toBe(true)
+  })
+
+  it('pendiente con fecha de hoy o futura NO está vencida', () => {
+    expect(isInstallmentOverdue({ estado: 'pendiente' as const, fecha_pago_programada: '2026-06-11' }, HOY)).toBe(false)
+    expect(isInstallmentOverdue({ estado: 'pendiente' as const, fecha_pago_programada: '2026-07-01' }, HOY)).toBe(false)
+  })
+
+  it('pagada nunca está vencida aunque la fecha haya pasado', () => {
+    expect(isInstallmentOverdue({ estado: 'pagada' as const, fecha_pago_programada: '2026-01-01' }, HOY)).toBe(false)
+  })
+
+  it('countOverdueInstallments cuenta solo las vencidas', () => {
+    const cuotas = [
+      { estado: 'pagada' as const, fecha_pago_programada: '2026-05-01' },
+      { estado: 'pendiente' as const, fecha_pago_programada: '2026-05-15' },
+      { estado: 'pendiente' as const, fecha_pago_programada: '2026-06-01' },
+      { estado: 'pendiente' as const, fecha_pago_programada: '2026-08-01' },
+    ]
+    expect(countOverdueInstallments(cuotas, HOY)).toBe(2)
+  })
+})
+
+describe('calcLoanProgress', () => {
+  const baseLoan = { status: 'active' as const, installment_amount: 1100, installments: 10 }
+
+  it('sin pagos: saldo = total adeudado', () => {
+    const r = calcLoanProgress(baseLoan, 0, [])
+    expect(r.totalOwed).toBe(11_000)
+    expect(r.effectivePaid).toBe(0)
+    expect(r.balance).toBe(11_000)
+  })
+
+  it('toma el mayor entre deducciones de nómina y cuotas cobradas (no suma ambas)', () => {
+    const cuotas = [
+      { estado: 'pagada' as const, monto: 1100 },
+      { estado: 'pagada' as const, monto: 1100 },
+      { estado: 'pendiente' as const, monto: 1100 },
+    ]
+    // Deducciones (1100) < cuotas cobradas (2200) → manda 2200
+    const r = calcLoanProgress(baseLoan, 1100, cuotas)
+    expect(r.effectivePaid).toBe(2200)
+    expect(r.balance).toBe(8800)
+  })
+
+  it("préstamo 'paid' queda saldado: pagado = total y saldo 0", () => {
+    const r = calcLoanProgress({ ...baseLoan, status: 'paid' }, 3300, [])
+    expect(r.effectivePaid).toBe(11_000)
+    expect(r.balance).toBe(0)
+  })
+
+  it("préstamo 'cancelled' conserva lo realmente pagado y saldo restante", () => {
+    const r = calcLoanProgress({ ...baseLoan, status: 'cancelled' }, 2200, [])
+    expect(r.effectivePaid).toBe(2200)
+    expect(r.balance).toBe(8800)
   })
 })

@@ -32,6 +32,22 @@ en cero, el primer préstamo la deja en negativo), se agregó:
 préstamos con el dinero que ya tiene, anotar más depósitos cuando meta
 dinero, y la app le avisa si va a prestar más de lo que hay.
 
+**Más tarde**, Cristian pidió sugerencias y eligió cuatro mejoras, que se
+hicieron de una vez:
+
+- **Corregir movimientos**: los depósitos/retiros anotados a mano (y el
+  saldo inicial) ahora tienen lapicito para corregirlos y botón para
+  borrarlos (con confirmación). Los movimientos generados por préstamos
+  no se tocan a mano, se manejan desde el préstamo.
+- **Cuotas vencidas**: las cuotas pendientes cuya fecha ya pasó se ven en
+  rojo con la etiqueta "Vencida", y cada préstamo activo muestra una
+  etiqueta roja con cuántas cuotas vencidas tiene.
+- **Resumen del fondo**: la pantalla de Préstamos abre con 4 tarjetas:
+  Disponible en cuentas, En la calle (prestado pendiente de cobro),
+  Total cobrado y Cuotas vencidas.
+- **Exportar a Excel**: en Conciliación de cuentas, botón para descargar
+  los movimientos de la cuenta y compararlos con el estado del banco.
+
 **Pendiente:** registrar la cuenta real (Titular PRESTAMOS, BHD León) como
 administrador, ahora con su saldo inicial.
 

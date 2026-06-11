@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { LoanTable } from '@/components/features/loans/LoanTable'
+import { LoanFundSummary } from '@/components/features/loans/LoanFundSummary'
 import { LoansHeader, LoansModals, LoansSearch } from '@/components/features/loans/LoansSections'
 import { AccountMovementsPanel } from '@/components/features/loans/AccountMovementsPanel'
 import { useToast } from '@/components/ui/Toast'
@@ -69,6 +70,15 @@ export default function Loans() {
       {/* Contenido según pestaña activa */}
       {activeTab === 'prestamos' && (
         <>
+          {!loading && (
+            <LoanFundSummary
+              loans={loans}
+              paidMap={paidMap}
+              installmentsMap={installmentsMap}
+              bankAccounts={bankAccounts}
+            />
+          )}
+
           <LoansSearch value={search} onChange={setSearch} />
 
           {loading ? (

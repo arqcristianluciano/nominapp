@@ -9,6 +9,12 @@ export interface AccountBalance {
   saldo: number
 }
 
+/** Solo los movimientos anotados a mano (manual / saldo inicial) se pueden
+ *  corregir o borrar; los generados por préstamos se manejan desde el préstamo. */
+export function isEditableMovement(movement: AccountMovement): boolean {
+  return movement.origen === 'manual' || movement.origen === 'initial_balance'
+}
+
 export const accountMovementService = {
   /** Lista todos los movimientos de una cuenta, ordenados del más reciente al más antiguo. */
   async getByAccount(accountId: string): Promise<AccountMovement[]> {
@@ -66,6 +72,22 @@ export const accountMovementService = {
     const { data, error } = await supabase.from('account_movements').insert(movement).select('*').single()
     if (error) throw error
     return data as AccountMovement
+  },
+
+  /** Corrige un movimiento anotado a mano (tipo, monto, fecha o concepto). */
+  async update(
+    id: string,
+    fields: Partial<Pick<AccountMovement, 'tipo' | 'monto' | 'fecha' | 'concepto'>>,
+  ): Promise<AccountMovement> {
+    const { data, error } = await supabase.from('account_movements').update(fields).eq('id', id).select('*').single()
+    if (error) throw error
+    return data as AccountMovement
+  },
+
+  /** Borra un movimiento anotado a mano. */
+  async delete(id: string): Promise<void> {
+    const { error } = await supabase.from('account_movements').delete().eq('id', id)
+    if (error) throw error
   },
 
   /** Elimina los movimientos asociados a una referencia (para rollback manual si es necesario). */

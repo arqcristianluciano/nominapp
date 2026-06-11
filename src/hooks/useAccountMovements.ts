@@ -27,6 +27,10 @@ interface UseAccountMovementsResult {
   refresh: () => Promise<void>
   /** Registra un movimiento manual (depósito o retiro) en la cuenta seleccionada y recarga la lista. */
   addManualMovement: (input: ManualMovementInput) => Promise<void>
+  /** Corrige un movimiento anotado a mano y recarga la lista. */
+  updateManualMovement: (id: string, input: ManualMovementInput) => Promise<void>
+  /** Borra un movimiento anotado a mano y recarga la lista. */
+  deleteManualMovement: (id: string) => Promise<void>
 }
 
 export function useAccountMovements(): UseAccountMovementsResult {
@@ -86,6 +90,29 @@ export function useAccountMovements(): UseAccountMovementsResult {
     [selectedAccountId, loadMovementsForAccount],
   )
 
+  const updateManualMovement = useCallback(
+    async (id: string, input: ManualMovementInput) => {
+      if (!selectedAccountId) return
+      await accountMovementService.update(id, {
+        tipo: input.tipo,
+        monto: input.monto,
+        fecha: input.fecha,
+        concepto: input.concepto,
+      })
+      await loadMovementsForAccount(selectedAccountId)
+    },
+    [selectedAccountId, loadMovementsForAccount],
+  )
+
+  const deleteManualMovement = useCallback(
+    async (id: string) => {
+      if (!selectedAccountId) return
+      await accountMovementService.delete(id)
+      await loadMovementsForAccount(selectedAccountId)
+    },
+    [selectedAccountId, loadMovementsForAccount],
+  )
+
   // Carga inicial de cuentas
   useEffect(() => {
     void loadAccounts()
@@ -127,5 +154,7 @@ export function useAccountMovements(): UseAccountMovementsResult {
     },
     refresh,
     addManualMovement,
+    updateManualMovement,
+    deleteManualMovement,
   }
 }
