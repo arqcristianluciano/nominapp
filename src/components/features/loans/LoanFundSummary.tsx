@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
-import { AlertTriangle, Banknote, HandCoins, Wallet } from 'lucide-react'
+import { AlertTriangle, Banknote, HandCoins, TrendingUp, Wallet } from 'lucide-react'
 import { accountMovementService } from '@/services/accountMovementService'
-import { calcLoanProgress, countOverdueInstallments } from '@/services/loanService'
+import { calcInterestEarned, calcLoanProgress, countOverdueInstallments } from '@/services/loanService'
 import { formatRD } from '@/utils/currency'
 import { round2 } from '@/utils/money'
 import type { BankAccount, ContractorLoan, LoanInstallment } from '@/types/database'
@@ -76,24 +76,31 @@ export function LoanFundSummary({ loans, paidMap, installmentsMap, bankAccounts 
   // Sin cuentas internas no hay saldo que mostrar (se ignora cualquier valor previo).
   const disponibleShown = internalAccountIds.length === 0 ? null : disponible
 
-  const { enLaCalle, totalCobrado, cuotasVencidas } = useMemo(() => {
+  const { enLaCalle, totalCobrado, intereses, cuotasVencidas } = useMemo(() => {
     let calle = 0
     let cobrado = 0
+    let ganado = 0
     let vencidas = 0
     for (const loan of loans) {
       const installments = installmentsMap[loan.id] ?? []
       const { effectivePaid, balance } = calcLoanProgress(loan, paidMap[loan.id] ?? 0, installments)
       cobrado += effectivePaid
+      ganado += calcInterestEarned(loan, effectivePaid)
       if (loan.status === 'active') {
         calle += balance
         vencidas += countOverdueInstallments(installments)
       }
     }
-    return { enLaCalle: round2(calle), totalCobrado: round2(cobrado), cuotasVencidas: vencidas }
+    return {
+      enLaCalle: round2(calle),
+      totalCobrado: round2(cobrado),
+      intereses: round2(ganado),
+      cuotasVencidas: vencidas,
+    }
   }, [loans, paidMap, installmentsMap])
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
       <SummaryCard
         icon={<Wallet className="w-4 h-4" />}
         label="Disponible en cuentas"
@@ -110,6 +117,12 @@ export function LoanFundSummary({ loans, paidMap, installmentsMap, bankAccounts 
         icon={<Banknote className="w-4 h-4" />}
         label="Total cobrado"
         value={formatRD(totalCobrado)}
+        tone="emerald"
+      />
+      <SummaryCard
+        icon={<TrendingUp className="w-4 h-4" />}
+        label="Intereses ganados"
+        value={formatRD(intereses)}
         tone="emerald"
       />
       <SummaryCard

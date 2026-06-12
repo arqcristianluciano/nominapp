@@ -9,6 +9,10 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 
 ### Added
 
+- Recordatorio diario de cobros al celular: Edge Function `loan-reminders` (push a directores con cuotas vencidas o que vencen en ≤2 días) ejecutada cada día a las 8:00 AM RD por pg_cron + pg_net (migración 092, tabla `internal_config` para el secreto server-to-server).
+- Préstamos: recibo de pago en PDF por cada cuota pagada (botón en el cronograma) y estado de cuenta del préstamo en PDF (botón en cada fila), generados con pdfmake (`loanPdfService`).
+- Préstamos: tarjeta "Intereses ganados" en el resumen del fondo (`calcInterestEarned`: interés proporcional a lo cobrado).
+
 - Conciliación de cuentas: corregir (lapicito) y borrar (con confirmación) los movimientos anotados a mano (`manual` / `initial_balance`); los generados por préstamos no son editables desde el panel.
 - Préstamos: cuotas vencidas (pendientes con fecha pasada) resaltadas en rojo con etiqueta "Vencida" en el cronograma, y contador de cuotas vencidas por préstamo activo.
 - Préstamos: tarjetas de resumen del fondo (Disponible en cuentas internas, En la calle, Total cobrado, Cuotas vencidas) al inicio de la pantalla.

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Banknote, CheckCircle, ChevronDown, ChevronUp, Pencil, XCircle } from 'lucide-react'
+import { Banknote, CheckCircle, ChevronDown, ChevronUp, FileText, Pencil, Receipt, XCircle } from 'lucide-react'
+import { downloadInstallmentReceipt, downloadLoanStatement } from '@/services/loanPdfService'
 import { calcLoanProgress, countOverdueInstallments, isInstallmentOverdue } from '@/services/loanService'
 import type { BankAccount, ContractorLoan, LoanInstallment } from '@/types/database'
 import { formatRD } from '@/utils/currency'
@@ -56,16 +57,21 @@ function InstallmentSchedule({
   loan,
   paid,
   installments,
+  bankAccounts = [],
   onRequestPay,
   onRequestDate,
 }: {
   loan: ContractorLoan
   paid: number
   installments: LoanInstallment[]
+  bankAccounts?: BankAccount[]
 } & InstallmentActionHandlers) {
   const totalOwed = round2(mul(loan.installment_amount, loan.installments))
   // Las cuotas solo se pueden cobrar o reprogramar en préstamos activos.
   const canAct = loan.status === 'active' && !!(onRequestPay || onRequestDate)
+  // La columna de acciones también aparece si hay cuotas pagadas (recibo PDF).
+  const hasPaidInstallments = installments.some((i) => i.estado === 'pagada')
+  const showActionsCol = canAct || hasPaidInstallments
 
   if (installments.length === 0) {
     // Fallback para préstamos anteriores a la migración (sin cronograma en BD)
@@ -133,7 +139,9 @@ function InstallmentSchedule({
               </th>
               <th className="text-right px-3 py-2 font-semibold text-app-subtle uppercase">Monto</th>
               <th className="text-center px-3 py-2 font-semibold text-app-subtle uppercase">Estado</th>
-              {canAct && <th className="text-center px-3 py-2 font-semibold text-app-subtle uppercase">Acciones</th>}
+              {showActionsCol && (
+                <th className="text-center px-3 py-2 font-semibold text-app-subtle uppercase">Acciones</th>
+              )}
             </tr>
           </thead>
           <tbody className="divide-y divide-app-border">
@@ -169,29 +177,47 @@ function InstallmentSchedule({
                       <span className="text-app-subtle">Pendiente</span>
                     )}
                   </td>
-                  {canAct && (
+                  {showActionsCol && (
                     <td className="text-center px-3 py-1.5">
-                      {inst.estado !== 'pagada' && (
-                        <div className="inline-flex items-center gap-1">
-                          {onRequestDate && (
-                            <button
-                              onClick={() => onRequestDate(loan, inst)}
-                              title="Cambiar fecha programada"
-                              className="p-1.5 rounded-lg text-app-subtle hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors"
-                            >
-                              <Pencil className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                          {onRequestPay && (
-                            <button
-                              onClick={() => onRequestPay(loan, inst)}
-                              title="Registrar pago de esta cuota"
-                              className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors"
-                            >
-                              <Banknote className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                        </div>
+                      {inst.estado === 'pagada' ? (
+                        <button
+                          onClick={() =>
+                            downloadInstallmentReceipt({
+                              loan,
+                              installment: inst,
+                              installments,
+                              paidFromDeductions: paid,
+                              bankAccounts,
+                            })
+                          }
+                          title="Descargar recibo de pago (PDF)"
+                          className="p-1.5 rounded-lg text-app-subtle hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors"
+                        >
+                          <Receipt className="w-3.5 h-3.5" />
+                        </button>
+                      ) : (
+                        canAct && (
+                          <div className="inline-flex items-center gap-1">
+                            {onRequestDate && (
+                              <button
+                                onClick={() => onRequestDate(loan, inst)}
+                                title="Cambiar fecha programada"
+                                className="p-1.5 rounded-lg text-app-subtle hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                            {onRequestPay && (
+                              <button
+                                onClick={() => onRequestPay(loan, inst)}
+                                title="Registrar pago de esta cuota"
+                                className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors"
+                              >
+                                <Banknote className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        )
                       )}
                     </td>
                   )}
@@ -201,7 +227,7 @@ function InstallmentSchedule({
           </tbody>
           <tfoot>
             <tr className="bg-app-bg border-t border-app-border">
-              <td className="px-3 py-2 text-app-muted font-semibold text-right" colSpan={canAct ? 5 : 4}>
+              <td className="px-3 py-2 text-app-muted font-semibold text-right" colSpan={showActionsCol ? 5 : 4}>
                 Total:
               </td>
               <td className="px-3 py-2 font-bold text-app-text text-right">{formatRD(totalOwed)}</td>
@@ -217,6 +243,7 @@ function LoanRow({
   loan,
   paid,
   installments,
+  bankAccounts,
   onMarkPaid,
   onCancel,
   onEdit,
@@ -227,6 +254,7 @@ function LoanRow({
   loan: ContractorLoan
   paid: number
   installments: LoanInstallment[]
+  bankAccounts?: BankAccount[]
   onMarkPaid?: (id: string) => void
   onCancel?: (id: string) => void
   onEdit?: (loan: ContractorLoan) => void
@@ -287,6 +315,13 @@ function LoanRow({
             >
               {showSchedule ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </button>
+            <button
+              onClick={() => downloadLoanStatement({ loan, installments, paidFromDeductions: paid })}
+              title="Descargar estado de cuenta (PDF)"
+              className="p-1.5 rounded-lg text-app-subtle hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors"
+            >
+              <FileText className="w-4 h-4" />
+            </button>
             {showActions && (
               <>
                 <button
@@ -322,6 +357,7 @@ function LoanRow({
               loan={loan}
               paid={paid}
               installments={installments}
+              bankAccounts={bankAccounts}
               onRequestPay={onRequestPay}
               onRequestDate={onRequestDate}
             />
@@ -336,6 +372,7 @@ function LoanCard({
   loan,
   paid,
   installments,
+  bankAccounts,
   onMarkPaid,
   onCancel,
   onEdit,
@@ -346,6 +383,7 @@ function LoanCard({
   loan: ContractorLoan
   paid: number
   installments: LoanInstallment[]
+  bankAccounts?: BankAccount[]
   onMarkPaid?: (id: string) => void
   onCancel?: (id: string) => void
   onEdit?: (loan: ContractorLoan) => void
@@ -396,6 +434,13 @@ function LoanCard({
             >
               {showSchedule ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </button>
+            <button
+              onClick={() => downloadLoanStatement({ loan, installments, paidFromDeductions: paid })}
+              title="Descargar estado de cuenta (PDF)"
+              className="p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-app-subtle hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors"
+            >
+              <FileText className="w-4 h-4" />
+            </button>
             {showActions && (
               <>
                 <button
@@ -430,6 +475,7 @@ function LoanCard({
             loan={loan}
             paid={paid}
             installments={installments}
+            bankAccounts={bankAccounts}
             onRequestPay={onRequestPay}
             onRequestDate={onRequestDate}
           />
@@ -513,6 +559,7 @@ export function LoanTable({
                 loan={loan}
                 paid={paidMap[loan.id] ?? 0}
                 installments={installmentsMap[loan.id] ?? []}
+                bankAccounts={bankAccounts}
                 onMarkPaid={onMarkPaid}
                 onCancel={onCancel}
                 onEdit={onEdit}
@@ -530,6 +577,7 @@ export function LoanTable({
               loan={loan}
               paid={paidMap[loan.id] ?? 0}
               installments={installmentsMap[loan.id] ?? []}
+              bankAccounts={bankAccounts}
               onMarkPaid={onMarkPaid}
               onCancel={onCancel}
               onEdit={onEdit}

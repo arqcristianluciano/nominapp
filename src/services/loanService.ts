@@ -56,6 +56,20 @@ export function calcLoanProgress(
   }
 }
 
+/** Intereses ganados de un préstamo según lo cobrado hasta ahora.
+ *  Cada cuota incluye capital e interés en la misma proporción, así que el
+ *  interés ganado es proporcional a lo cobrado: si se cobró la mitad del
+ *  total, se ganó la mitad del interés. */
+export function calcInterestEarned(
+  loan: Pick<ContractorLoan, 'principal' | 'installment_amount' | 'installments'>,
+  effectivePaid: number,
+): number {
+  const totalOwed = round2(mul(loan.installment_amount, loan.installments))
+  if (totalOwed <= 0 || effectivePaid <= 0) return 0
+  const totalInterest = Math.max(0, round2(totalOwed - loan.principal))
+  return round2(totalInterest * Math.min(1, effectivePaid / totalOwed))
+}
+
 /** Una cuota está vencida si sigue pendiente y su fecha programada ya pasó.
  *  `todayStr` (AAAA-MM-DD) se puede inyectar en tests; por defecto es hoy. */
 export function isInstallmentOverdue(
