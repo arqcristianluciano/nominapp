@@ -15,6 +15,7 @@ vi.mock('@/lib/supabase', () => ({
 import {
   calcInstallmentAmount,
   calcInstallmentDate,
+  calcInterestEarned,
   calcLoanProgress,
   countOverdueInstallments,
   isInstallmentOverdue,
@@ -209,5 +210,28 @@ describe('calcLoanProgress', () => {
     const r = calcLoanProgress({ ...baseLoan, status: 'cancelled' }, 2200, [])
     expect(r.effectivePaid).toBe(2200)
     expect(r.balance).toBe(8800)
+  })
+})
+
+describe('calcInterestEarned', () => {
+  // Préstamo: 10,000 al 10% en 10 cuotas de 1,100 → total 11,000, interés 1,000
+  const loan = { principal: 10_000, installment_amount: 1100, installments: 10 }
+
+  it('sin cobros no hay interés ganado', () => {
+    expect(calcInterestEarned(loan, 0)).toBe(0)
+  })
+
+  it('cobrada la mitad del total, se ganó la mitad del interés', () => {
+    expect(calcInterestEarned(loan, 5500)).toBe(500)
+  })
+
+  it('cobrado todo, se ganó todo el interés (y nunca más del total)', () => {
+    expect(calcInterestEarned(loan, 11_000)).toBe(1000)
+    expect(calcInterestEarned(loan, 99_999)).toBe(1000)
+  })
+
+  it('préstamo sin interés (0%) nunca genera ganancia', () => {
+    const sinInteres = { principal: 10_000, installment_amount: 1000, installments: 10 }
+    expect(calcInterestEarned(sinInteres, 10_000)).toBe(0)
   })
 })

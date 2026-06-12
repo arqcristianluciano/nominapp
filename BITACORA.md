@@ -2,6 +2,33 @@
 
 Diario en lenguaje sencillo de lo que se va haciendo en la app.
 
+## 2026-06-12 — Avisos al celular, recibos, estado de cuenta e intereses
+
+Cristian preguntó qué más se podía hacer y eligió cuatro mejoras del
+módulo de préstamos:
+
+1. **Aviso diario al celular**: el servidor revisa cada mañana (8:00 AM)
+   si hay cuotas vencidas o que vencen en los próximos 2 días, y manda
+   una notificación al celular del director con el total por cobrar y los
+   nombres. (La campanita de la app ya avisaba de esto al abrirla; lo
+   nuevo es que llega al teléfono sin abrir la app.) **Requisito**: hay
+   que activar las notificaciones una vez en el teléfono, en
+   Configuración → Notificaciones.
+2. **Recibo de pago en PDF**: cada cuota pagada tiene un botón de recibo
+   en el cronograma, listo para mandar al contratista por WhatsApp.
+3. **Estado de cuenta en PDF**: cada préstamo tiene un botón para
+   descargar el resumen completo (capital, interés, pagado, saldo y el
+   cronograma con estados).
+4. **Intereses ganados**: tarjeta nueva en el resumen del fondo con lo
+   ganado en intereses según lo cobrado (proporcional al avance).
+
+**Qué cambió para Cristian:** no se le escapa ningún cobro (aviso al
+celular), puede dar comprobantes formales a los contratistas y ve
+cuánto le está dejando el negocio de préstamos.
+
+**Pendiente de Cristian:** activar las notificaciones en su teléfono
+(Configuración → Notificaciones → Activar en este dispositivo).
+
 ## 2026-06-11 — Cuentas bancarias: errores corregidos y saldo inicial
 
 **Por la mañana** se corrigieron los dos errores que salieron al registrar

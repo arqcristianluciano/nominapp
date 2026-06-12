@@ -99,7 +99,13 @@ export default function Loans() {
                 showActions
               />
               {otherLoans.length > 0 && (
-                <LoanTable title="Historial" loans={otherLoans} paidMap={paidMap} installmentsMap={installmentsMap} />
+                <LoanTable
+                  title="Historial"
+                  loans={otherLoans}
+                  paidMap={paidMap}
+                  installmentsMap={installmentsMap}
+                  bankAccounts={bankAccounts}
+                />
               )}
             </>
           )}
