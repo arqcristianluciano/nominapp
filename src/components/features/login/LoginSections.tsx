@@ -2,7 +2,16 @@ import { AlertTriangle, BarChart3, Building2, LogIn, ShieldCheck } from 'lucide-
 import type { FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ThemeToggle } from '@/components/layout/ThemeToggle'
-import { TEST_USERS } from '@/constants/testUsers'
+import { ENABLE_TEST_QUICK_LOGIN, TEST_USERS } from '@/constants/testUsers'
+import { isDemoMode } from '@/lib/supabase'
+
+/**
+ * Muestra los botones de acceso rápido de prueba SOLO cuando corresponde:
+ * en modo demo, en build de desarrollo, o si la variable VITE_ENABLE_TEST_LOGIN
+ * está en 'true'. En una build de producción real (sin la variable) quedan
+ * ocultos, para que nadie con la URL entre como cualquier rol.
+ */
+const SHOW_QUICK_ACCESS = ENABLE_TEST_QUICK_LOGIN || isDemoMode || import.meta.env.DEV
 
 export function LoginBrandPanel() {
   const { t } = useTranslation()
@@ -164,7 +173,7 @@ export function LoginFormPanel({
               {submitting ? t('login.submitting') : t('login.submit')}
             </button>
           </form>
-          <LoginQuickAccess onQuickLogin={onQuickLogin} />
+          {SHOW_QUICK_ACCESS && <LoginQuickAccess onQuickLogin={onQuickLogin} />}
         </div>
       </div>
     </div>
