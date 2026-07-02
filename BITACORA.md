@@ -62,18 +62,26 @@ probaron (todas las pruebas automáticas y la construcción en verde):
    adelantos ya no se pueden cobrar dos veces al contratista.
 3. **Los números se leen bien.** "0,125" ya no se convierte en 125, y al
    importar de Excel "1,500" ya es mil quinientos (antes 1.5).
-4. **Seguridad del servidor (lista para aplicar).** Se preparó el
-   arreglo para que dos operaciones internas (mover almacén y sumar
-   pagos) ya no las pueda usar cualquiera sin permiso, y para que nadie
-   borre/renombre las unidades de medida compartidas. Falta aplicarlo a
-   la base real (requiere tu visto bueno).
+4. **Seguridad del servidor (APLICADO a la base real).** Cristian dio el
+   visto bueno y se aplicó: dos operaciones internas (mover almacén y
+   sumar pagos) ya NO las puede usar nadie sin sesión ni sin permiso
+   (antes cualquiera podía, incluso sin entrar). Y las unidades de medida
+   compartidas ya no se pueden borrar/renombrar salvo director o gestor de
+   catálogo (añadir sigue abierto). Verificado: el rol "anónimo" quedó
+   fuera de esas funciones.
 5. **Compras:** una solicitud con varios materiales ahora revisa el
    excedente de presupuesto en todas las líneas, no solo en la primera.
 
+**Decisiones de Cristian en esta sesión:**
+
+- Números con coma = **miles** (2,375 = 2375, estilo internacional). El
+  arreglo respeta eso; solo se corrigió el caso imposible "0,125" (que
+  nunca puede ser miles) para que sea 0.125.
+- Aplicar la seguridad ya: **sí**, hecho.
+
 **Falta (siguiente sesión):** el resto de temas medios y bajos del
-reporte, y dos decisiones tuyas (ver más abajo): cómo escribes las
-cantidades tipo "2,375" y si aplico ya el arreglo de seguridad a la base
-real.
+reporte (fechas que se corren un día, cierres de mes, avisos que no
+llegan, funciones prometidas sin conectar como el modo sin internet, etc.).
 
 ## 2026-06-12 — Avisos al celular, recibos, estado de cuenta e intereses
 
