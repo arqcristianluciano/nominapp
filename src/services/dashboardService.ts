@@ -1,6 +1,12 @@
 import { supabase } from '@/lib/supabase'
-import { calcTotalCxP, type FinancialTransaction } from '@/utils/financialCalculations'
+import { calcTotalCxP, isCreditInvoicePayment, type FinancialTransaction } from '@/utils/financialCalculations'
 import { COMMITTED_PAYROLL_STATUSES } from '@/services/payrollService'
+
+/** Depósito (ingreso de fondos), tolerante a mayúsculas/acentos/separadores. */
+function isDepositCode(code: string | null | undefined): boolean {
+  if (!code) return false
+  return code.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().includes('DEPOSITO')
+}
 
 function localISO(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
@@ -16,6 +22,8 @@ interface TransactionKpiRow {
   total: number | null
   payment_condition: string | null
   date: string
+  invoice_number: string | null
+  supplier_id: string | null
 }
 
 function isBetween(dateValue: string | null | undefined, from: string, to: string) {
@@ -33,7 +41,9 @@ export const dashboardService = {
         .in('status', COMMITTED_PAYROLL_STATUSES),
       supabase
         .from('transactions')
-        .select('id, total, payment_condition, date, description, project_id, created_at')
+        // invoice_number y supplier_id son imprescindibles: sin ellos calcTotalCxP
+        // no puede descontar los pagos y el CxP del panel nunca bajaría.
+        .select('id, total, payment_condition, date, description, project_id, created_at, invoice_number, supplier_id')
         .order('created_at', { ascending: false })
         // Antes 200: truncaba los totales (CxP) en proyectos con muchas transacciones.
         // 5000 cubre con holgura la escala actual sin afectar el rendimiento.
@@ -88,7 +98,10 @@ export const dashboardService = {
         .select('grand_total, report_date')
         .in('status', COMMITTED_PAYROLL_STATUSES)
         .gte('report_date', fromISO),
-      supabase.from('transactions').select('total, date').gte('date', fromISO),
+      supabase
+        .from('transactions')
+        .select('total, date, payment_condition, invoice_number, supplier_id, budget_category:budget_categories(code)')
+        .gte('date', fromISO),
     ])
 
     const spendMap = new Map<string, number>()
@@ -103,9 +116,14 @@ export const dashboardService = {
       spendMap.set(ym, (spendMap.get(ym) ?? 0) + (p.grand_total ?? 0))
     }
 
-    for (const t of (txnRes.data ?? []) as Array<{ total: number | null; date: string | null }>) {
+    const txns = (txnRes.data ?? []) as Array<FinancialTransaction & { date: string | null; total: number | null }>
+    for (const t of txns) {
       const ym = t.date ? t.date.slice(0, 7) : null
       if (!ym) continue
+      // Los depósitos son ingresos, no gasto; y el pago de una factura a crédito
+      // ya se contó como gasto al comprar. Ninguno debe sumar a "gasto mensual".
+      if (isDepositCode(t.budget_category?.code)) continue
+      if (isCreditInvoicePayment(t, txns)) continue
       ensureMonth(ym)
       spendMap.set(ym, (spendMap.get(ym) ?? 0) + (t.total ?? 0))
     }
