@@ -107,8 +107,24 @@ Cristian eligió el orden: primero el cierre de mes. Hecho y probado:
   Cerrar lo puede hacer quien lleva el libro diario o un director;
   reabrir, solo el director. Mientras no cierres ningún mes, nada cambia.
 
-**Faltan (siguientes, en este orden acordado):** modo sin internet de
-verdad, historial del presupuesto, y restaurar un respaldo.
+Después Cristian pidió "hazlo todo": se construyeron las cuatro funciones
+nuevas, cada una probada y subida:
+
+- **Cierre de mes de verdad (aplicado):** cerrar/reabrir un mes; los
+  movimientos de dinero de un mes cerrado no se pueden tocar hasta que un
+  director lo reabra. Candado en el servidor.
+- **Modo sin internet de verdad:** en obra sin señal se pueden registrar
+  solicitudes de compra, avances y movimientos de almacén; quedan
+  guardados en el dispositivo y se envían solos al volver el internet.
+  Además se corrigió que la cola ya no borra cambios en silencio.
+- **Historial del presupuesto:** botón "Historial" en el presupuesto que
+  lista las versiones y permite guardar una copia; y se guarda una copia
+  automática antes de importar de Excel sobre un presupuesto con datos.
+- **Restaurar un respaldo (forma segura):** el respaldo ahora incluye
+  TODAS las tablas (antes omitía módulos), y en Configuración se explica
+  cómo restaurar de forma segura desde el servidor. NO se hizo el botón de
+  "subir un CSV a la base" porque duplicaría o pisaría datos buenos; esa es
+  una acción destructiva que no se hace sin tu confirmación expresa.
 
 ## 2026-06-12 — Avisos al celular, recibos, estado de cuenta e intereses
 
