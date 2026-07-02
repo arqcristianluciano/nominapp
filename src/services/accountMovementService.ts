@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { round2, sumBy, sub } from '@/utils/money'
 import type { AccountMovement, AccountMovementOrigen, AccountMovementTipo, BankAccount } from '@/types/database'
 
 /** Saldo calculado de una cuenta bancaria a partir de sus movimientos. */
@@ -47,15 +48,22 @@ export const accountMovementService = {
     return map
   },
 
-  /** Calcula el saldo de una cuenta: suma de créditos − suma de débitos. */
+  /** Calcula el saldo de una cuenta: suma de créditos − suma de débitos.
+   *  Usa aritmética decimal (decimal.js) para no acumular errores de centavos. */
   calcSaldo(movements: AccountMovement[]): { totalCreditos: number; totalDebitos: number; saldo: number } {
-    let totalCreditos = 0
-    let totalDebitos = 0
-    for (const m of movements) {
-      if (m.tipo === 'credito') totalCreditos += m.monto
-      else totalDebitos += m.monto
-    }
-    return { totalCreditos, totalDebitos, saldo: totalCreditos - totalDebitos }
+    const totalCreditos = round2(
+      sumBy(
+        movements.filter((m) => m.tipo === 'credito'),
+        (m) => m.monto,
+      ),
+    )
+    const totalDebitos = round2(
+      sumBy(
+        movements.filter((m) => m.tipo !== 'credito'),
+        (m) => m.monto,
+      ),
+    )
+    return { totalCreditos, totalDebitos, saldo: round2(sub(totalCreditos, totalDebitos)) }
   },
 
   /** Registra un movimiento de cuenta.

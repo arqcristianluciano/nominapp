@@ -54,7 +54,14 @@ export function usePriceHistory() {
         const grouped: Record<string, PriceEntry[]> = {}
         for (const txn of (txnRes.data ?? []) as TxnLite[]) {
           if (!txn.unit_price || txn.unit_price <= 0) continue
-          const key = `${(txn.supplier?.name ?? txn.description).toLowerCase().trim()}`
+          // Agrupar por PROVEEDOR + MATERIAL. Antes se agrupaba solo por proveedor
+          // y se mezclaban todos sus materiales distintos en un solo historial,
+          // con un precio y una tendencia sin sentido. Ahora cada fila es un
+          // material de un proveedor (y el filtro por proveedor sigue sirviendo).
+          const material = (txn.description ?? '').toLowerCase().trim()
+          if (!material) continue
+          const supplierName = (txn.supplier?.name ?? '').toLowerCase().trim()
+          const key = `${supplierName}||${material}`
           if (!grouped[key]) grouped[key] = []
           grouped[key].push({
             date: txn.date,
