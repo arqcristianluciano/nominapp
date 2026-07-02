@@ -231,6 +231,20 @@ export const requisitionService = {
       }
     }
 
+    // Revisar TAMBIÉN el resto de líneas multi-material (antes solo se evaluaba la
+    // primera): si cualquier línea supera lo disponible de su partida, la
+    // solicitud completa requiere validación de excedente.
+    if (initialStatus !== 'pendiente_validacion' && payload.items && payload.items.length > 1) {
+      for (const it of payload.items.slice(1)) {
+        if (!it.budget_item_id || !it.quantity || it.quantity <= 0) continue
+        const avail = await this.getAvailabilityForBudgetItem(it.budget_item_id)
+        if (it.quantity > avail.available_quantity) {
+          initialStatus = 'pendiente_validacion'
+          break
+        }
+      }
+    }
+
     // El campo description del encabezado toma la descripción de la primera línea
     // si se usan multi-líneas; de lo contrario usa el campo directo.
     const headerDescription = firstItem?.description ?? payload.description
