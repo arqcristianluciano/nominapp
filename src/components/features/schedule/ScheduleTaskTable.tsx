@@ -1,8 +1,6 @@
-import { useState } from 'react'
 import { AlertTriangle, Flag, GitFork, Pencil, Plus, Trash2 } from 'lucide-react'
 import type { ScheduleTask } from '@/services/scheduleService'
 import { flattenTree, buildTaskTree } from '@/services/scheduleService'
-import { ConfirmModal } from '@/components/ui/ConfirmModal'
 
 interface Props {
   tasks: ScheduleTask[]
@@ -25,7 +23,8 @@ function formatDateLong(date: string): string {
 }
 
 export function ScheduleTaskTable({ tasks, today, onEdit, onDelete, onAddSubtask }: Props) {
-  const [deleteId, setDeleteId] = useState<string | null>(null)
+  // El diálogo de confirmación de borrado vive en la página (ScheduleDeleteTaskModal);
+  // aquí el botón solo delega en onDelete para no pedir confirmación dos veces.
 
   // Build enriched tree so we can show computed dates for parent tasks
   const tree = buildTaskTree(tasks)
@@ -123,7 +122,7 @@ export function ScheduleTaskTable({ tasks, today, onEdit, onDelete, onAddSubtask
                         <Pencil className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => setDeleteId(row.id)}
+                        onClick={() => onDelete(row.id)}
                         aria-label={`Eliminar tarea ${row.name}`}
                         className="p-2 text-app-subtle hover:text-red-500 rounded hover:bg-red-50 dark:hover:bg-red-950/30"
                       >
@@ -203,7 +202,7 @@ export function ScheduleTaskTable({ tasks, today, onEdit, onDelete, onAddSubtask
                     <Pencil className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => setDeleteId(row.id)}
+                    onClick={() => onDelete(row.id)}
                     aria-label={`Eliminar tarea ${row.name}`}
                     className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center text-app-subtle hover:text-red-500 rounded hover:bg-red-50 dark:hover:bg-red-950/30"
                   >
@@ -238,17 +237,6 @@ export function ScheduleTaskTable({ tasks, today, onEdit, onDelete, onAddSubtask
           )
         })}
       </ul>
-
-      <ConfirmModal
-        open={!!deleteId}
-        title="Eliminar tarea"
-        message="¿Estás seguro? Esta acción no se puede deshacer. Las subtareas también serán eliminadas."
-        confirmLabel="Eliminar"
-        onConfirm={() => {
-          if (deleteId) onDelete(deleteId)
-        }}
-        onCancel={() => setDeleteId(null)}
-      />
     </div>
   )
 }
