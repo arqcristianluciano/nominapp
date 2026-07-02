@@ -175,6 +175,20 @@ construcción en verde):
   se rompe y sale "Algo salió mal", ese fallo ahora se reporta al vigilante de
   errores (antes quedaba invisible), para poder detectarlo y corregirlo.
 
+### Tercera tanda de detalles finos (misma sesión)
+
+Todo probado (pruebas y construcción en verde):
+
+- **Las flechas de tendencia del Panel ya no engañan.** Las tarjetas "Total
+  invertido" y "CxP pendiente" muestran cifras acumuladas de todo el histórico,
+  pero les salía una flechita "vs mes anterior" que comparaba ese acumulado
+  contra un solo mes, dando saltos sin sentido (por ejemplo "+2400%"). Se quitó
+  esa flecha de esas dos tarjetas para no confundir. La tarjeta "Reportes este
+  mes" sí compara mes contra mes, así que su flecha se conserva.
+- **Otro Excel con números de verdad.** La exportación de "Cubicación mensual"
+  y "Costo real por partida" ahora guarda los montos como números (antes como
+  texto), para poder sumarlos y ordenarlos en Excel, igual que el resto.
+
 ## 2026-06-12 — Avisos al celular, recibos, estado de cuenta e intereses
 
 Cristian preguntó qué más se podía hacer y eligió cuatro mejoras del

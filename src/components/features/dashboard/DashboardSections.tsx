@@ -96,21 +96,19 @@ export function DashboardStatsSection({
         value={String(activeProjectsCount)}
         accent="blue"
       />
+      {/* "Total invertido" y "CxP pendiente" son cifras ACUMULADAS (todo el
+          histórico). Antes se les ponía una flecha "vs mes ant." que comparaba
+          ese acumulado contra un solo mes, dando saltos sin sentido (ej.
+          "+2400%"). Se quitó la flecha de esas dos tarjetas para no confundir.
+          "Reportes este mes" sí es un dato de un mes, así que su flecha —mes
+          contra mes— sí es comparable y se conserva. */}
       <StatCard
         icon={DollarSign}
         label={t('dashboard.stats.total_invested')}
         value={formatRD(totalInvested)}
         accent="emerald"
-        prev={kpiTrend?.investedPrev}
       />
-      <StatCard
-        icon={CreditCard}
-        label={t('dashboard.stats.cxp_pending')}
-        value={formatRD(cxpTotal)}
-        accent="red"
-        prev={kpiTrend?.cxpPrev}
-        invertTrend
-      />
+      <StatCard icon={CreditCard} label={t('dashboard.stats.cxp_pending')} value={formatRD(cxpTotal)} accent="red" />
       <StatCard
         icon={ClipboardList}
         label={t('dashboard.stats.reports_this_month')}
