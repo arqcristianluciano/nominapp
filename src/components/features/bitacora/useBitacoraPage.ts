@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   bitacoraService,
   type BitacoraEntry,
@@ -49,6 +49,8 @@ function useBitacoraEditor(projectId: string | undefined, entries: BitacoraEntry
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  // Candado inmediato contra doble clic (evita duplicar la entrada).
+  const savingRef = useRef(false)
   const [editId, setEditId] = useState<string | null>(null)
 
   const openCreate = useCallback(() => {
@@ -78,6 +80,8 @@ function useBitacoraEditor(projectId: string | undefined, entries: BitacoraEntry
   const saveEntry = useCallback(
     async (pendingPhotos: PendingPhoto[]) => {
       if (!projectId || !form.work_summary.trim()) return
+      if (savingRef.current) return
+      savingRef.current = true
       setSaving(true)
       try {
         // B5: asegurar created_by con el usuario real en registros nuevos.
@@ -110,6 +114,7 @@ function useBitacoraEditor(projectId: string | undefined, entries: BitacoraEntry
         // B3: avisar al usuario en vez de tragar el error.
         error(`No se pudo guardar la entrada: ${getErrorMessage(saveError)}`)
       } finally {
+        savingRef.current = false
         setSaving(false)
       }
     },

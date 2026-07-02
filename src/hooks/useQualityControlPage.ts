@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useProjectStore } from '@/stores/projectStore'
 import { qualityControlService } from '@/services/qualityControlService'
 import { getQualityStats } from '@/components/features/quality/qualityUtils'
@@ -85,9 +85,13 @@ type QualityActionsArgs = {
 }
 
 function useQualityActions(args: QualityActionsArgs) {
+  // Candado inmediato contra doble clic (evita duplicar el ensayo).
+  const savingRef = useRef(false)
   const submitRecord = useCallback(
     async (data: QualityFormData) => {
       if (!args.projectId) return
+      if (savingRef.current) return
+      savingRef.current = true
       args.setSaving(true)
       try {
         if (args.editing) {
@@ -107,6 +111,7 @@ function useQualityActions(args: QualityActionsArgs) {
       } catch (saveError) {
         args.onError(`No se pudo guardar ensayo: ${getErrorMessage(saveError)}`)
       } finally {
+        savingRef.current = false
         args.setSaving(false)
       }
     },

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { attendanceService, type AttendanceFormData, type AttendanceRecord } from '@/services/attendanceService'
 import { contractorService } from '@/services/contractorService'
 import type { Contractor } from '@/types/database'
@@ -41,6 +41,10 @@ export function useAttendancePage(projectId: string | undefined): UseAttendanceP
   const [form, setForm] = useState<Omit<AttendanceFormData, 'project_id'>>({ ...EMPTY_ATTENDANCE_FORM })
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  // Candado inmediato contra doble clic: el estado `saving` desactiva el botón,
+  // pero entre el primer clic y el re-dibujo hay una ventana en la que un segundo
+  // clic podría duplicar el registro. El ref cierra esa ventana al instante.
+  const savingRef = useRef(false)
   const [page, setPage] = useState(0)
   const [filterDate, setFilterDate] = useState('')
 
@@ -102,6 +106,8 @@ export function useAttendancePage(projectId: string | undefined): UseAttendanceP
 
   const handleAdd = useCallback(async () => {
     if (!projectId || !form.contractor_id || !form.activity.trim()) return
+    if (savingRef.current) return
+    savingRef.current = true
 
     setSaving(true)
     const uploadedPhotoUrl = form.photo_url
@@ -117,6 +123,7 @@ export function useAttendancePage(projectId: string | undefined): UseAttendanceP
         void attendanceService.deletePhoto(uploadedPhotoUrl).catch(() => undefined)
       }
     } finally {
+      savingRef.current = false
       setSaving(false)
     }
   }, [error, form, loadAll, projectId])
