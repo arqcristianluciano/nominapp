@@ -22,6 +22,7 @@
  */
 
 import { supabase } from '@/lib/supabase'
+import { todayISO } from '@/utils/dateLocal'
 import { COMMITTED_PAYROLL_STATUSES } from '@/services/payrollService'
 import { projectService } from '@/services/projectService'
 import { scheduleService } from '@/services/scheduleService'
@@ -98,7 +99,7 @@ async function loadTransactionsTotal(projectId: string): Promise<number> {
  */
 async function loadMilestones(projectId: string): Promise<ClientReportMilestone[]> {
   const tasks = await scheduleService.getByProject(projectId)
-  const today = new Date().toISOString().split('T')[0]
+  const today = todayISO()
   return tasks
     .filter((t) => t.is_milestone)
     .sort((a, b) => a.end_date.localeCompare(b.end_date))

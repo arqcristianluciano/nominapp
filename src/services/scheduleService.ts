@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { todayISO } from '@/utils/dateLocal'
 
 // ---------------------------------------------------------------
 // Types
@@ -240,7 +241,7 @@ export const scheduleService = {
   },
 
   getDelayedTasks(tasks: ScheduleTask[]): ScheduleTask[] {
-    const today = new Date().toISOString().split('T')[0]
+    const today = todayISO()
     // Only leaf tasks (no children) are checked for delay
     const parentIds = new Set(tasks.filter((t) => t.parent_task_id !== null).map((t) => t.parent_task_id!))
     return tasks.filter((t) => {

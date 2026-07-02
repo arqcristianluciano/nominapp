@@ -189,6 +189,22 @@ Todo probado (pruebas y construcción en verde):
   y "Costo real por partida" ahora guarda los montos como números (antes como
   texto), para poder sumarlos y ordenarlos en Excel, igual que el resto.
 
+### Cuarta tanda: la app ya usa la hora de República Dominicana
+
+Todo probado (pruebas y construcción en verde):
+
+- **Se acabó el problema de "por la noche la app cree que ya es mañana".**
+  Antes, para saber "qué día es hoy", la app usaba la hora universal (la de
+  Londres), que va 4 horas adelantada. Desde las 8:00 de la noche, hora de
+  aquí, la app ya pensaba que era el día siguiente. Eso causaba varias cosas
+  molestas: cuotas de préstamo que vencen hoy se pintaban en rojo como
+  "vencidas" esa misma noche; al registrar un pago de noche proponía la fecha
+  de mañana (y quedaba anotado con el día equivocado en el recibo y en la
+  cuenta); tareas del cronograma se marcaban "con retraso" un día antes; y los
+  formularios (nómina, inventario, movimientos, cierre de mes, etc.) sugerían
+  la fecha de mañana. Ahora **toda la app usa la hora de República Dominicana**,
+  así que "hoy" siempre es hoy, sin importar la hora.
+
 ## 2026-06-12 — Avisos al celular, recibos, estado de cuenta e intereses
 
 Cristian preguntó qué más se podía hacer y eligió cuatro mejoras del

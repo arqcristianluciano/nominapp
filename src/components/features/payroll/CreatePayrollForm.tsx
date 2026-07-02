@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { todayISO } from '@/utils/dateLocal'
 import { Link } from 'react-router-dom'
 import { payrollService } from '@/services/payrollService'
 import { useAuthStore } from '@/stores/authStore'
@@ -15,7 +16,7 @@ export function CreatePayrollForm({ projectId, onCreated, onCancel }: Props) {
   const user = useAuthStore((s) => s.user)
   const reportedBy = user?.displayName ?? ''
   const [number, setNumber] = useState(1)
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
+  const [date, setDate] = useState(todayISO())
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [draftPeriod, setDraftPeriod] = useState<PayrollPeriod | null>(null)

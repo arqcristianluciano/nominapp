@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase'
 import type { ContractorLoan, LoanDeduction, LoanFrecuencia, LoanInstallment, LoanStatus } from '@/types/database'
 import { accountMovementService } from '@/services/accountMovementService'
 import { add, div, money, mul, pct, round2 } from '@/utils/money'
+import { todayISO } from '@/utils/dateLocal'
 
 /** Cuota fija: capital + interés simple distribuido en N cuotas */
 export function calcInstallmentAmount(principal: number, interestRate: number, installments: number): number {
@@ -74,7 +75,9 @@ export function calcInterestEarned(
  *  `todayStr` (AAAA-MM-DD) se puede inyectar en tests; por defecto es hoy. */
 export function isInstallmentOverdue(
   installment: Pick<LoanInstallment, 'estado' | 'fecha_pago_programada'>,
-  todayStr: string = new Date().toISOString().slice(0, 10),
+  // Hoy en hora local (RD), no UTC: antes, desde las 8 PM la app creía que ya
+  // era "mañana" y pintaba como vencidas cuotas que vencen hoy.
+  todayStr: string = todayISO(),
 ): boolean {
   return installment.estado !== 'pagada' && installment.fecha_pago_programada < todayStr
 }
@@ -349,7 +352,9 @@ export const loanService = {
   /** Marca una cuota como pagada, registra la cuenta de cobro y la fecha real.
    *  Si hay cuenta de cobro, genera un movimiento de entrada en esa cuenta. */
   async markInstallmentPaid(installmentId: string, fechaPagoReal?: string, cuentaCobroId?: string): Promise<void> {
-    const fechaPago = fechaPagoReal ?? new Date().toISOString().slice(0, 10)
+    // Hoy en hora local (RD), no UTC: antes, de noche el pago quedaba anotado
+    // con la fecha de mañana en el recibo y en la cuenta.
+    const fechaPago = fechaPagoReal ?? todayISO()
 
     // Obtener datos de la cuota antes de actualizarla (para el concepto del movimiento)
     const { data: instData, error: fetchErr } = await supabase

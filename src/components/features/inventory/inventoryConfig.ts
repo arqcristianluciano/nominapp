@@ -1,4 +1,5 @@
 import type { AddMovementInput } from '@/services/inventoryService'
+import { todayISO } from '@/utils/dateLocal'
 
 export type InventoryTab = 'stock' | 'movements' | 'lots'
 
@@ -29,7 +30,7 @@ export const EMPTY_MOVEMENT_FORM: InventoryMovementFormState = {
   item_id: '',
   type: 'in',
   quantity: 0,
-  date: new Date().toISOString().split('T')[0],
+  date: todayISO(),
   supplier_id: null,
   notes: '',
   budget_category_id: null,

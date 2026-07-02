@@ -4,7 +4,7 @@ import { loanService, calcInstallmentAmount } from '@/services/loanService'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { useToast } from '@/components/ui/Toast'
 import { formatRD } from '@/utils/currency'
-import { formatDateDMY } from '@/utils/dateLocal'
+import { formatDateDMY, todayISO } from '@/utils/dateLocal'
 import { parseDecimalInput } from '@/utils/decimalInput'
 import type { ContractorLoan } from '@/types/database'
 
@@ -23,7 +23,7 @@ const emptyForm = {
   principal: '',
   interest_rate: '5',
   installments: '6',
-  disbursed_date: new Date().toISOString().slice(0, 10),
+  disbursed_date: todayISO(),
   notes: '',
 }
 

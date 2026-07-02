@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Modal } from '@/components/ui/Modal'
 import { formatRD } from '@/utils/currency'
+import { todayISO } from '@/utils/dateLocal'
 import type { BankAccount, ContractorLoan, LoanInstallment } from '@/types/database'
 
 const inputCls =
@@ -33,7 +34,8 @@ export function InstallmentPayModal({
   // Cada cuota abre el formulario limpio: pago de hoy, sin cuenta elegida.
   useEffect(() => {
     if (target) {
-      setFecha(new Date().toISOString().slice(0, 10))
+      // Hoy en hora local (RD): antes, de noche proponía la fecha de mañana.
+      setFecha(todayISO())
       setCuentaId('')
       setSaving(false)
     }

@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/react'
+import { todayISO } from '@/utils/dateLocal'
 import { supabase } from '@/lib/supabase'
 import type {
   PurchaseRequisition,
@@ -691,7 +692,7 @@ export const requisitionService = {
     const valid = receipts.filter((r) => Number(r.quantity) > 0)
     if (valid.length === 0) throw new Error('Indica al menos una cantidad a recibir.')
 
-    const today = new Date().toISOString().slice(0, 10)
+    const today = todayISO()
     const supplierId = approvedQuote?.supplier_id ?? null
     // NOTE: full atomicity requires a DB transaction (BEGIN/COMMIT). The re-read
     // below reduces (but does not eliminate) the race window for concurrent receipts.
@@ -803,7 +804,7 @@ export const requisitionService = {
   // material descrito en la propia solicitud. No admite parcial.
   async receiveAllFallback(before: PurchaseRequisition, receivedBy: string) {
     const movements = this.buildReceiptMovements(before)
-    const today = new Date().toISOString().slice(0, 10)
+    const today = todayISO()
     for (const m of movements) {
       const item = await inventoryService.findOrCreateItem({
         project_id: before.project_id,
@@ -868,7 +869,7 @@ export const requisitionService = {
       netByItem.set(m.item_id, (netByItem.get(m.item_id) ?? 0) + delta)
     }
 
-    const today = new Date().toISOString().slice(0, 10)
+    const today = todayISO()
     let reversed = 0
     for (const [itemId, net] of netByItem) {
       if (net <= 0) continue

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { accountMovementService } from '@/services/accountMovementService'
 import { calcInstallmentAmount } from '@/services/loanService'
 import { formatRD } from '@/utils/currency'
+import { todayISO } from '@/utils/dateLocal'
 import type { BankAccount, Contractor, LoanFrecuencia } from '@/types/database'
 
 interface LoanFormValues {
@@ -39,7 +40,7 @@ const INITIAL: LoanFormValues = {
   principal: 0,
   interest_rate: 5,
   installments: 6,
-  disbursed_date: new Date().toISOString().slice(0, 10),
+  disbursed_date: todayISO(),
   first_installment_date: '',
   frecuencia: 'mensual',
   disbursement_account_id: '',

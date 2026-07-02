@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { todayISO } from '@/utils/dateLocal'
 import { EMPTY_SCHEDULE_FORM } from '@/components/features/schedule/scheduleConfig'
 import { buildGanttInfo, getTodayLeft } from '@/components/features/schedule/scheduleGanttUtils'
 import {
@@ -192,7 +193,7 @@ export function useSchedulePage(projectId?: string) {
   const overall = useMemo(() => scheduleService.getOverallProgress(tasks), [tasks])
   const delayed = useMemo(() => scheduleService.getDelayedTasks(tasks), [tasks])
   const ganttInfo = useMemo(() => buildGanttInfo(tasks), [tasks])
-  const today = useMemo(() => new Date().toISOString().split('T')[0], [])
+  const today = useMemo(() => todayISO(), [])
   const todayLeft = useMemo(() => getTodayLeft(ganttInfo, today), [ganttInfo, today])
 
   /** True when the task currently in the edit form has children (locks date fields). */

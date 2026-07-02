@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { todayISO } from '@/utils/dateLocal'
 import { useParams } from 'react-router-dom'
 import { Download, Plus, TrendingUp, X } from 'lucide-react'
 import { cashFlowService, type ExpectedInflow, type MonthlyCashFlowRow } from '@/services/cashFlowService'
@@ -17,7 +18,7 @@ interface InflowForm {
 }
 
 const EMPTY_INFLOW: InflowForm = {
-  expected_date: new Date().toISOString().split('T')[0],
+  expected_date: todayISO(),
   amount: 0,
   concept: '',
 }
