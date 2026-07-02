@@ -2,6 +2,50 @@
 
 Diario en lenguaje sencillo de lo que se va haciendo en la app.
 
+## 2026-07-02 — Revisión completa de toda la app (auditoría)
+
+Cristian pidió revisar TODA la aplicación buscando errores, lógica que
+falta, cosas mal conectadas entre módulos y mejoras posibles.
+
+**Cómo se hizo:** se repartió la app en 16 partes y se revisó cada una a
+fondo, siguiendo el rastro del dinero de punta a punta. Además se
+comprobaron a mano, sobre la base de datos real, los puntos más graves.
+Las pruebas automáticas de la app **pasan todas** (667) y la app
+construye sin errores; los problemas encontrados son de lógica y de
+integración, no de que la app "se caiga".
+
+**Qué se encontró (resumen):** 138 temas en total — 9 críticos, 47
+altos, 60 medios y 22 bajos. El detalle completo, en lenguaje sencillo y
+ordenado por gravedad, quedó en el archivo **`AUDITORIA_2026-07-02.md`**.
+
+Los patrones que más se repiten:
+
+1. **El dinero se cuenta dos veces** cuando se compra a crédito y luego
+   se paga esa factura (afecta "disponible", "gastado" del presupuesto,
+   flujo de caja y el panel).
+2. **Cadenas de dinero desconectadas**: pagar nómina, cobrar cuotas o
+   recibir compras a crédito no siempre mueve el saldo de las cuentas ni
+   las cuentas por pagar.
+3. **Descuentos que no descuentan**: deducciones de préstamo y retención
+   de garantía se muestran pero no se restan del pago; los adelantos se
+   pueden cobrar dos veces.
+4. **Candados solo en la pantalla, no en el servidor**: aprobaciones y
+   límites que se revisan en el navegador pero el servidor deja pasar.
+5. **Cosas prometidas que no están conectadas**: el "modo sin internet",
+   el historial de versiones del presupuesto y "importar asistencia"
+   tienen botón pero por dentro no hacen nada.
+
+**Qué cambió para Cristian (por ahora):** todavía nada en la app; esto es
+un diagnóstico. El siguiente paso es que Cristian elija por dónde empezar
+a arreglar (la recomendación es atacar primero el doble conteo del dinero
+y los descuentos que no descuentan, porque afectan plata real todos los
+días).
+
+**Pendiente:** decidir el orden de los arreglos. La segunda verificación
+automática de la lista quedó a medias por un límite de uso del servicio;
+los temas sin reconfirmar están marcados como «por reconfirmar» en el
+reporte, aunque están bien fundamentados.
+
 ## 2026-06-12 — Avisos al celular, recibos, estado de cuenta e intereses
 
 Cristian preguntó qué más se podía hacer y eligió cuatro mejoras del
