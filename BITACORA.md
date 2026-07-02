@@ -126,6 +126,16 @@ nuevas, cada una probada y subida:
   "subir un CSV a la base" porque duplicaría o pisaría datos buenos; esa es
   una acción destructiva que no se hace sin tu confirmación expresa.
 
+### Más arreglos finos (misma sesión)
+
+- **Historial de Precios:** ya no mezcla materiales distintos de un mismo
+  proveedor; cada fila es un material de un proveedor.
+- **Avance del proyecto (gráfica):** ya no cuenta doble el avance (antes
+  sumaba la tarea grande y sus subtareas).
+- **Saldo de cuentas:** se calcula con precisión de centavos.
+- **Sin conexión:** un solo aviso (antes salían dos y uno tapaba la pantalla).
+- **Cronograma:** borrar una tarea pide confirmación una sola vez (antes dos).
+
 ## 2026-06-12 — Avisos al celular, recibos, estado de cuenta e intereses
 
 Cristian preguntó qué más se podía hacer y eligió cuatro mejoras del
