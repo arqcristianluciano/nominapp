@@ -89,13 +89,21 @@ export const cashFlowService = {
     const map = new Map<string, MonthlyCashFlowRow>()
 
     // 1) Planificado: budget_items con start_date.
-    const { data: categories } = await supabase.from('budget_categories').select('id').eq('project_id', projectId)
+    // Importante: si alguna consulta falla (sin internet, permiso denegado) se
+    // lanza el error para que la pantalla muestre un aviso, en vez de pintar la
+    // tabla en ceros y hacer creer que no se ha gastado nada.
+    const { data: categories, error: catError } = await supabase
+      .from('budget_categories')
+      .select('id')
+      .eq('project_id', projectId)
+    if (catError) throw catError
     const categoryIds = (categories ?? []).map((c: { id: string }) => c.id)
     if (categoryIds.length > 0) {
-      const { data: items } = await supabase
+      const { data: items, error: itemsError } = await supabase
         .from('budget_items')
         .select('quantity, unit_price, start_date')
         .in('budget_category_id', categoryIds)
+      if (itemsError) throw itemsError
       for (const it of (items ?? []) as Array<{
         quantity: number | null
         unit_price: number | null
@@ -109,11 +117,12 @@ export const cashFlowService = {
     }
 
     // 2) Real - nóminas aprobadas (usar report_date como mes).
-    const { data: payrolls } = await supabase
+    const { data: payrolls, error: payrollsError } = await supabase
       .from('payroll_periods')
       .select('grand_total, report_date, status')
       .eq('project_id', projectId)
       .in('status', COMMITTED_PAYROLL_STATUSES)
+    if (payrollsError) throw payrollsError
     for (const p of (payrolls ?? []) as Array<{ grand_total: number | null; report_date: string | null }>) {
       const key = monthKey(p.report_date)
       if (!key) continue
@@ -121,10 +130,11 @@ export const cashFlowService = {
     }
 
     // 3) Real - transactions (libro diario).
-    const { data: transactions } = await supabase
+    const { data: transactions, error: txError } = await supabase
       .from('transactions')
       .select('total, date, payment_condition, invoice_number, supplier_id, budget_category:budget_categories(code)')
       .eq('project_id', projectId)
+    if (txError) throw txError
     const txList = (transactions ?? []) as Array<FinancialTransaction & { date: string | null; total: number | null }>
     for (const t of txList) {
       const key = monthKey(t.date)

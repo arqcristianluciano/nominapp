@@ -156,6 +156,25 @@ construcción en verde):
   guarda. Se ocultó para no prometer algo que no funciona; volverá cuando
   la carga esté lista de verdad.
 
+### Segunda tanda de detalles finos (misma sesión)
+
+Se siguieron puliendo detalles pequeños. Todo probado (pruebas y
+construcción en verde):
+
+- **El "Invertido" de la página del proyecto ya coincide con el Panel.**
+  Antes esa barra sumaba también los reportes en borrador o sin aprobar, así
+  que un borrador a medio llenar podía inflar el gasto y pintarlo en rojo,
+  mostrando una cifra distinta a la del Panel para el mismo proyecto. Ahora
+  solo cuenta lo aprobado o pagado, igual que el Panel y el resto de la app.
+- **El Flujo de Caja ya no muestra ceros engañosos.** Antes, si fallaba la
+  carga (sin internet o sin permiso), la tabla salía en cero como si no se
+  hubiera gastado nada. Ahora avisa claramente que no se pudo cargar y ofrece
+  reintentar, en vez de mostrar cifras incompletas. También borrar un ingreso
+  esperado avisa si algo falla, y su Excel exporta números de verdad.
+- **Los fallos de pantalla ahora sí quedan registrados.** Cuando una pantalla
+  se rompe y sale "Algo salió mal", ese fallo ahora se reporta al vigilante de
+  errores (antes quedaba invisible), para poder detectarlo y corregirlo.
+
 ## 2026-06-12 — Avisos al celular, recibos, estado de cuenta e intereses
 
 Cristian preguntó qué más se podía hacer y eligió cuatro mejoras del
