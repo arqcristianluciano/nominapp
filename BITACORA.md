@@ -89,9 +89,26 @@ probaron (todas las pruebas automáticas y la construcción en verde):
   nunca puede ser miles) para que sea 0.125.
 - Aplicar la seguridad ya: **sí**, hecho.
 
-**Falta (siguiente sesión):** el resto de temas medios y bajos del
-reporte (fechas que se corren un día, cierres de mes, avisos que no
-llegan, funciones prometidas sin conectar como el modo sin internet, etc.).
+10. **Fechas que ya no se corren un día** en todo el sistema (cronograma,
+    transacciones, cheques, cuentas por pagar, cortes, adelantos,
+    préstamos y reportes).
+11. **Aviso antes de perder datos:** al borrar una subpartida con gasto o
+    avances, ahora avisa en rojo cuánto se perdería antes de confirmar.
+
+### Funciones nuevas (Cristian pidió "hagamos todo")
+
+Cristian eligió el orden: primero el cierre de mes. Hecho y probado:
+
+- **Cierre de mes de verdad (APLICADO a la base real):** en la pantalla
+  "Cierre de Mes" hay un botón para **cerrar** un mes de un proyecto. Al
+  cerrarlo, nadie puede crear, editar ni borrar movimientos de dinero
+  (libro diario) de ese mes, hasta que un **director** lo **reabra**. El
+  candado está puesto en el servidor (de verdad, no solo en la pantalla).
+  Cerrar lo puede hacer quien lleva el libro diario o un director;
+  reabrir, solo el director. Mientras no cierres ningún mes, nada cambia.
+
+**Faltan (siguientes, en este orden acordado):** modo sin internet de
+verdad, historial del presupuesto, y restaurar un respaldo.
 
 ## 2026-06-12 — Avisos al celular, recibos, estado de cuenta e intereses
 
