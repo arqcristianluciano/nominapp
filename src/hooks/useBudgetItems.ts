@@ -1,9 +1,12 @@
 import { useState, useCallback } from 'react'
+import * as Sentry from '@sentry/react'
 import { budgetItemService } from '@/services/budgetItemService'
 import { budgetCategoryService } from '@/services/budgetCategoryService'
+import { budgetVersionService } from '@/services/budgetVersionService'
 import { priceListService } from '@/services/priceListService'
 import { getErrorMessage } from '@/utils/errors'
 import { assignImportCodes } from '@/utils/budgetItemCode'
+import { useAuthStore } from '@/stores/authStore'
 import type { BudgetItem, BudgetCategory, PriceListItem } from '@/types/database'
 
 export interface BudgetPartida {
@@ -21,6 +24,7 @@ export interface BulkImportPayload {
 }
 
 export function useBudgetItems(projectId: string | undefined) {
+  const user = useAuthStore((s) => s.user)
   const [itemsByCategory, setItemsByCategory] = useState<Record<string, BudgetItem[]>>({})
   const [priceList, setPriceList] = useState<PriceListItem[]>([])
   const [loading, setLoading] = useState(false)
@@ -92,6 +96,19 @@ export function useBudgetItems(projectId: string | undefined) {
     async (payload: BulkImportPayload, existingCategories: BudgetCategory[] = []) => {
       if (!projectId) throw new Error('Proyecto no seleccionado')
 
+      // Si ya hay presupuesto, guardar una copia (versión) antes de importar,
+      // para poder ver cómo estaba y recuperar si la importación no era la
+      // deseada. Best-effort: no bloquea la importación si el guardado falla.
+      if (existingCategories.length > 0) {
+        try {
+          await budgetVersionService.snapshot(projectId, 'Antes de importar presupuesto de Excel', user?.displayName)
+        } catch (e) {
+          // Best-effort: no bloquea la importación, pero se reporta al monitor de
+          // errores para no perder el rastro si el guardado de la copia falla.
+          Sentry.captureException(e, { tags: { area: 'useBudgetItems.snapshot' } })
+        }
+      }
+
       const createdCategories = payload.newCategories.length
         ? await budgetCategoryService.bulkCreate(
             projectId,
@@ -143,7 +160,7 @@ export function useBudgetItems(projectId: string | undefined) {
       })
       return { createdCategories, createdItems: created }
     },
-    [projectId, itemsByCategory],
+    [projectId, itemsByCategory, user?.displayName],
   )
 
   const addPriceListItem = useCallback(async (item: Omit<PriceListItem, 'id'>) => {

@@ -1,4 +1,4 @@
-import { FileUp, Trash2 } from 'lucide-react'
+import { FileUp, Trash2, History } from 'lucide-react'
 import { Breadcrumb } from '@/components/ui/Breadcrumb'
 import { BudgetHierarchyTable } from '@/components/features/budget/BudgetHierarchyTable'
 import { BudgetSummaryCards } from '@/components/features/budget/BudgetSummaryCards'
@@ -12,6 +12,7 @@ export function BudgetDetailHeader({
   onOpenImport,
   emptyCount = 0,
   onCleanEmpty,
+  onOpenHistory,
 }: {
   project: Project
   projectId: string
@@ -19,6 +20,7 @@ export function BudgetDetailHeader({
   onOpenImport: () => void
   emptyCount?: number
   onCleanEmpty?: () => void
+  onOpenHistory?: () => void
 }) {
   return (
     <div>
@@ -45,6 +47,15 @@ export function BudgetDetailHeader({
                 title="Eliminar partidas vacías (sin subpartidas, monto ni gasto)"
               >
                 <Trash2 className="w-3.5 h-3.5" /> Limpiar partidas vacías ({emptyCount})
+              </button>
+            )}
+            {onOpenHistory && (
+              <button
+                onClick={onOpenHistory}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-app-muted border border-app-border rounded-lg hover:bg-app-hover"
+                title="Ver y guardar versiones del presupuesto"
+              >
+                <History className="w-3.5 h-3.5" /> Historial
               </button>
             )}
             <button

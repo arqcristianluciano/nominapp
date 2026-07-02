@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useBudgetDetailPage } from '@/hooks/useBudgetDetailPage'
 import { useToast } from '@/components/ui/Toast'
@@ -6,10 +7,12 @@ import { BudgetTabs } from '@/components/features/budget/BudgetTabs'
 import { BudgetDetailModals } from '@/components/features/budget/BudgetDetailModals'
 import { BudgetDetailHeader } from '@/components/features/budget/BudgetDetailSections'
 import { BudgetDetailTabContent } from '@/components/features/budget/BudgetDetailTabContent'
+import { BudgetVersionsModal } from '@/components/features/budget/BudgetVersionsModal'
 
 export default function PresupuestoDetalle() {
   const { projectId } = useParams<{ projectId: string }>()
   const toast = useToast()
+  const [showHistory, setShowHistory] = useState(false)
   const {
     projects,
     project,
@@ -67,6 +70,7 @@ export default function PresupuestoDetalle() {
         onOpenImport={() => setShowImport(true)}
         emptyCount={emptyCategories.length}
         onCleanEmpty={openEmptyModal}
+        onOpenHistory={() => setShowHistory(true)}
       />
 
       <BudgetTabs tab={tab} projectId={projectId!} priceCount={budgetItems.priceList.length} onChange={setTab} />
@@ -129,6 +133,10 @@ export default function PresupuestoDetalle() {
 
       {budget.error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">{budget.error}</div>
+      )}
+
+      {projectId && (
+        <BudgetVersionsModal open={showHistory} projectId={projectId} onClose={() => setShowHistory(false)} />
       )}
     </div>
   )
