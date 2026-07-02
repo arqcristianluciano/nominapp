@@ -53,8 +53,9 @@ export function CubicacionesPayrollSection({
   }, [load])
 
   // adelantos del contrato pendientes en el momento en que el usuario hace clic
-  // en "Vincular". Se usa para pasar el saldo real al diálogo de confirmación.
-  const [pendingAdelantoIds, setPendingAdelantoIds] = useState<string[]>([])
+  // en "Vincular". Se guardan con su saldo individual para repartir bien el
+  // descuento entre todos (no solo el primero) al registrarlo en la base.
+  const [pendingAdelantos, setPendingAdelantos] = useState<{ id: string; saldo: number }[]>([])
 
   async function doLink(corte: LinkedCorte, deductAdelantos: boolean) {
     if (!corte.partida || !corte.contract) return
@@ -83,15 +84,16 @@ export function CubicacionesPayrollSection({
         })
         // Actualizar deducted_amount en cada adelanto para registrar el saldo
         // descontado en la DB. Se distribuye el descuento entre los adelantos
-        // con saldo restante, del más antiguo al más nuevo.
+        // con saldo restante, del más antiguo al más nuevo, aplicando a cada uno
+        // exactamente su saldo (no el total al primero: eso dejaba a los demás
+        // como "pendientes" y permitía descontarlos otra vez en el próximo corte).
         let remaining = pendingAdelantoTotal
-        for (const adelantoId of pendingAdelantoIds) {
+        for (const a of pendingAdelantos) {
           if (remaining <= 0) break
-          await adelantoService.addDeductedAmount(adelantoId, remaining)
-          // adelantoService.addDeductedAmount limita internamente al saldo disponible
-          // y devuelve cuánto descontó; como no tenemos ese retorno aquí simplemente
-          // marcamos todos los seleccionados (el constraint de la DB los limita).
-          remaining = 0
+          const apply = round2(Math.min(remaining, a.saldo))
+          if (apply <= 0) continue
+          await adelantoService.addDeductedAmount(a.id, apply)
+          remaining = round2(remaining - apply)
         }
       }
       await corteService.linkToPayroll(corte.id, periodId)
@@ -102,7 +104,7 @@ export function CubicacionesPayrollSection({
       setLinking(false)
       setPendingCorte(null)
       setPendingAdelantoTotal(0)
-      setPendingAdelantoIds([])
+      setPendingAdelantos([])
     }
   }
 
@@ -123,7 +125,7 @@ export function CubicacionesPayrollSection({
       return
     }
 
-    setPendingAdelantoIds(pendingAdelantos.map((a) => a.id))
+    setPendingAdelantos(pendingAdelantos.map((a) => ({ id: a.id, saldo: round2(a.amount - (a.deducted_amount ?? 0)) })))
     setPendingAdelantoTotal(totalPendiente)
     setPendingCorte(corte)
   }

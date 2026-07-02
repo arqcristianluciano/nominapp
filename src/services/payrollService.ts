@@ -236,6 +236,34 @@ export const payrollService = {
     if (error) throw error
   },
 
+  /**
+   * Deducciones que se retienen del pago a los beneficiarios de este reporte y
+   * que por tanto NO deben poder distribuirse como pago:
+   *  - Deducciones de préstamos (loan_deductions): dinero que el contratista
+   *    devuelve al fondo, no se le entrega.
+   *  - Retención de garantía de los cortes de cubicación vinculados: se retiene
+   *    hasta liberarla más adelante.
+   * El neto a repartir en pagos es grand_total menos estas deducciones.
+   */
+  async getPayrollDeductions(periodId: string): Promise<{ loanDeductions: number; retention: number; total: number }> {
+    const [dedRes, corteRes] = await Promise.all([
+      supabase.from('loan_deductions').select('amount').eq('payroll_period_id', periodId),
+      supabase.from('contract_cortes').select('retention_amount').eq('linked_payroll_id', periodId),
+    ])
+    if (dedRes.error) throw dedRes.error
+    if (corteRes.error) throw corteRes.error
+    const loanDeductions = round2(
+      ((dedRes.data ?? []) as Array<{ amount: number | null }>).reduce((s, d) => s + Number(d.amount ?? 0), 0),
+    )
+    const retention = round2(
+      ((corteRes.data ?? []) as Array<{ retention_amount: number | null }>).reduce(
+        (s, c) => s + Number(c.retention_amount ?? 0),
+        0,
+      ),
+    )
+    return { loanDeductions, retention, total: round2(loanDeductions + retention) }
+  },
+
   async recalculateTotals(periodId: string) {
     const { period, laborItems, materialInvoices } = await this.getPeriodDetail(periodId)
     const project = period.project as Project | undefined

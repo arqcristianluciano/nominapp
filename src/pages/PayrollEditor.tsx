@@ -6,6 +6,7 @@ import { contractorService } from '@/services/contractorService'
 import { priceListService } from '@/services/priceListService'
 import { budgetCategoryService } from '@/services/budgetCategoryService'
 import { paymentDistributionService } from '@/services/paymentDistributionService'
+import { payrollService } from '@/services/payrollService'
 import { useProjectRoles } from '@/hooks/useProjectRoles'
 import { PaymentDistributionsSection } from '@/components/features/payments/PaymentDistributionsSection'
 import { LoanDeductionSection } from '@/components/features/payroll/LoanDeductionSection'
@@ -95,9 +96,13 @@ export default function PayrollEditor() {
   const handleUpdateStatus = async (status: 'submitted' | 'approved' | 'paid') => {
     if (status === 'submitted' && grandTotal > 0) {
       try {
-        const distributions = await paymentDistributionService.getByPeriod(period.id)
-        const distributed = distributions.reduce((sum, d) => sum + d.amount, 0)
-        const remaining = grandTotal - distributed
+        const [distributions, deductions] = await Promise.all([
+          paymentDistributionService.getByPeriod(period.id),
+          payrollService.getPayrollDeductions(period.id),
+        ])
+        const distributed = distributions.filter((d) => d.status !== 'cancelled').reduce((sum, d) => sum + d.amount, 0)
+        // El neto a repartir descuenta lo retenido (préstamos + garantía).
+        const remaining = Math.max(0, grandTotal - deductions.total) - distributed
         if (remaining > 0.01) {
           setSubmitWarning({ remaining })
           return
