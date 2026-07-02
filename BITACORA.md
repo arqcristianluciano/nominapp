@@ -71,6 +71,16 @@ probaron (todas las pruebas automáticas y la construcción en verde):
    fuera de esas funciones.
 5. **Compras:** una solicitud con varios materiales ahora revisa el
    excedente de presupuesto en todas las líneas, no solo en la primera.
+6. **Respaldo (Exportar todo a CSV):** ya no se corta a 1000 filas por
+   tabla (antes el respaldo salía incompleto sin avisar); se protege
+   contra fórmulas peligrosas de Excel; y abre con acentos y ñ correctos.
+7. **Calendario de pagos:** ya no muestra facturas que ya pagaste (antes
+   se quedaban ahí para siempre); muestra el monto que de verdad falta y
+   lee más movimientos ordenados por fecha.
+8. **Sin registros duplicados:** en asistencia, bitácora y control de
+   calidad, un doble clic en Guardar ya no crea el registro dos veces.
+9. **Control de calidad:** si borras el resultado de un ensayo, ya no
+   queda marcado "Aprobado" en falso.
 
 **Decisiones de Cristian en esta sesión:**
 
