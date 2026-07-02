@@ -74,8 +74,10 @@ type Row = Record<string, unknown>
 function escapeCell(value: unknown): string {
   if (value === null || value === undefined) return ''
   let str: string
+  let isText = false
   if (typeof value === 'string') {
     str = value
+    isText = true
   } else if (typeof value === 'number' || typeof value === 'boolean') {
     str = String(value)
   } else if (value instanceof Date) {
@@ -87,6 +89,13 @@ function escapeCell(value: unknown): string {
     } catch {
       str = String(value)
     }
+    isText = true
+  }
+  // Anti-inyección de fórmulas (CSV injection): Excel/Sheets ejecutan celdas de
+  // TEXTO que empiezan con = + - @ tab o retorno. Se antepone un apóstrofe. No
+  // se aplica a números (vienen como number), así que "-5" numérico no se toca.
+  if (isText && str.length > 0 && /^[=+\-@\t\r]/.test(str)) {
+    str = `'${str}`
   }
   const needsQuote = /[",\n\r]/.test(str)
   if (!needsQuote) return str
@@ -119,14 +128,31 @@ export function rowsToCsv(rows: Row[]): string {
 
 async function fetchTable(table: string): Promise<{ rows: Row[]; error?: string }> {
   try {
-    const { data, error } = await supabase.from(table).select('*')
-    if (error) return { rows: [], error: error.message }
-    return { rows: (data ?? []) as Row[] }
+    // Supabase limita cada consulta a ~1000 filas por defecto. Sin paginar, el
+    // "respaldo" se cortaba en silencio: se recorre por páginas hasta traerlo todo.
+    const PAGE = 1000
+    const all: Row[] = []
+    let from = 0
+    for (;;) {
+      const { data, error } = await supabase
+        .from(table)
+        .select('*')
+        .range(from, from + PAGE - 1)
+      if (error) return { rows: all, error: error.message }
+      const batch = (data ?? []) as Row[]
+      all.push(...batch)
+      if (batch.length < PAGE) break
+      from += PAGE
+    }
+    return { rows: all }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     return { rows: [], error: message }
   }
 }
+
+/** BOM UTF-8 para que Excel abra los CSV con acentos correctos. */
+const UTF8_BOM = '﻿'
 
 function buildZipFilename(): string {
   const now = new Date()
@@ -168,7 +194,8 @@ export async function exportAllToZip(entities: ExportableEntity[] = EXPORTABLE_E
       continue
     }
     const csv = rowsToCsv(rows)
-    files[entity.filename] = strToU8(csv)
+    // BOM al inicio para que Excel reconozca UTF-8 (acentos y ñ correctos).
+    files[entity.filename] = strToU8(UTF8_BOM + csv)
     results.push({ table: entity.table, filename: entity.filename, rows: rows.length })
   }
 
