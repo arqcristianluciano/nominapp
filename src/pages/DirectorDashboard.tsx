@@ -5,6 +5,7 @@ import { directorService, type CompanyKPI, type ProjectKPI } from '@/services/di
 import { exportToExcel } from '@/utils/excelExport'
 import { useToast } from '@/components/ui/Toast'
 import { formatRD } from '@/utils/currency'
+import { round2 } from '@/utils/money'
 import { getErrorMessage } from '@/utils/errors'
 
 function pctClass(pct: number): string {
@@ -49,10 +50,11 @@ export default function DirectorDashboard() {
             Empresa: c.company_name,
             'Proyectos activos': c.active_projects,
             'Proyectos totales': c.projects_count,
-            'Presupuesto total (DOP)': c.total_budget.toFixed(2),
-            'Ejecutado (DOP)': c.total_actual.toFixed(2),
-            'Desviación (DOP)': c.variance.toFixed(2),
-            'Desviación %': `${c.variance_pct.toFixed(1)}%`,
+            // Montos como números reales para que Excel los pueda sumar/ordenar.
+            'Presupuesto total (DOP)': round2(c.total_budget),
+            'Ejecutado (DOP)': round2(c.total_actual),
+            'Desviación (DOP)': round2(c.variance),
+            'Desviación %': round2(c.variance_pct),
           })),
         },
         {
@@ -62,11 +64,11 @@ export default function DirectorDashboard() {
             Código: p.project_code,
             Empresa: p.company_name,
             Estado: p.status,
-            'Presupuesto (DOP)': p.total_budget.toFixed(2),
-            'Ejecutado (DOP)': p.total_actual.toFixed(2),
-            'Desviación (DOP)': p.variance.toFixed(2),
-            'Desviación %': `${p.variance_pct.toFixed(1)}%`,
-            'CxP pendiente': p.cxp_pending.toFixed(2),
+            'Presupuesto (DOP)': round2(p.total_budget),
+            'Ejecutado (DOP)': round2(p.total_actual),
+            'Desviación (DOP)': round2(p.variance),
+            'Desviación %': round2(p.variance_pct),
+            'CxP pendiente': round2(p.cxp_pending),
             'Solicitudes pend.': p.pending_requisitions,
             'Items bajo mínimo': p.low_stock_items,
           })),

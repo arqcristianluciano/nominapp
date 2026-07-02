@@ -30,6 +30,9 @@ export default function AvancesPage() {
 
   const [categories, setCategories] = useState<BudgetCategory[]>([])
   const [items, setItems] = useState<BudgetItem[]>([])
+  // Todas las partidas del proyecto (no solo las del capítulo elegido en el
+  // formulario), para que el historial siempre muestre el nombre de la partida.
+  const [allItems, setAllItems] = useState<BudgetItem[]>([])
   const [progresses, setProgresses] = useState<PartidaProgress[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -47,6 +50,9 @@ export default function AvancesPage() {
       ])
       setCategories(cats)
       setProgresses(progs)
+      // Traer las partidas de todos los capítulos para el historial.
+      const projItems = await budgetItemService.getByProjectCategories(cats.map((c) => c.id))
+      setAllItems(projItems)
     } finally {
       setLoading(false)
     }
@@ -119,7 +125,8 @@ export default function AvancesPage() {
   }
 
   const catById = new Map(categories.map((c) => [c.id, c]))
-  const itemById = new Map(items.map((i) => [i.id, i]))
+  // El historial usa todas las partidas del proyecto para no mostrar "—".
+  const itemById = new Map(allItems.map((i) => [i.id, i]))
 
   return (
     <div className="p-4 lg:p-6 max-w-5xl mx-auto space-y-5">
