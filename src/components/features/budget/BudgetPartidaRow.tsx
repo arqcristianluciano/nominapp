@@ -3,6 +3,7 @@ import { ChevronDown, ChevronRight, Plus, Pencil, Trash2 } from 'lucide-react'
 import type { BudgetCategory, BudgetItem, PriceListItem } from '@/types/database'
 import { formatRD } from '@/utils/currency'
 import { budgetItemDisplayCode, nextBudgetItemCode } from '@/utils/budgetItemCode'
+import { budgetItemService } from '@/services/budgetItemService'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import BudgetItemForm from './BudgetItemForm'
 
@@ -36,8 +37,39 @@ export default function BudgetPartidaRow({
   const [showForm, setShowForm] = useState(false)
   const [editItem, setEditItem] = useState<BudgetItem | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  // Gasto/avances asociados a la subpartida que se va a borrar (para avisar).
+  const [deleteRefs, setDeleteRefs] = useState<{ gastoLinks: number; progreso: number } | null>(null)
   const [confirmDeleteCategory, setConfirmDeleteCategory] = useState(false)
   const [deletingCategory, setDeletingCategory] = useState(false)
+
+  // Al pedir borrar una subpartida, primero consulta cuánto gasto y cuántos
+  // avances tiene, para advertir que se perderán/quedarán sin partida.
+  const requestDeleteItem = async (id: string) => {
+    setDeleteId(id)
+    setDeleteRefs(null)
+    try {
+      const refs = await budgetItemService.countReferences(id)
+      setDeleteRefs({ gastoLinks: refs.gastoLinks, progreso: refs.progreso })
+    } catch {
+      // Si la consulta falla, se muestra el aviso genérico (sin desglose).
+    }
+  }
+
+  const deleteMessage = (() => {
+    if (!deleteRefs || deleteRefs.gastoLinks + deleteRefs.progreso === 0) {
+      return '¿Eliminar esta subpartida? Esta acción no se puede deshacer.'
+    }
+    const partes: string[] = []
+    if (deleteRefs.gastoLinks > 0) {
+      partes.push(
+        `${deleteRefs.gastoLinks} registro(s) de gasto quedarán SIN partida (el "Gastado" de este capítulo bajará)`,
+      )
+    }
+    if (deleteRefs.progreso > 0) {
+      partes.push(`${deleteRefs.progreso} avance(s) de obra se BORRARÁN para siempre`)
+    }
+    return `Atención: esta subpartida tiene movimientos. Si la eliminas, ${partes.join(' y ')}. ¿Eliminar de todos modos?`
+  })()
 
   const hasItems = items.length > 0
   const total = items.reduce((sum, it) => sum + it.quantity * it.unit_price, 0)
@@ -61,6 +93,7 @@ export default function BudgetPartidaRow({
   const handleDelete = async (id: string) => {
     await onDeleteItem(id)
     setDeleteId(null)
+    setDeleteRefs(null)
   }
 
   const handleDeleteCategory = async () => {
@@ -207,7 +240,7 @@ export default function BudgetPartidaRow({
                     <Pencil className="w-3 h-3" />
                   </button>
                   <button
-                    onClick={() => setDeleteId(item.id)}
+                    onClick={() => requestDeleteItem(item.id)}
                     className="p-1 text-app-subtle hover:text-red-600 hover:bg-red-50 rounded"
                   >
                     <Trash2 className="w-3 h-3" />
@@ -239,10 +272,14 @@ export default function BudgetPartidaRow({
             <ConfirmModal
               open={!!deleteId}
               title="Eliminar subpartida"
-              message="¿Eliminar esta subpartida? Esta acción no se puede deshacer."
+              message={deleteMessage}
               confirmLabel="Eliminar"
+              variant={deleteRefs && deleteRefs.gastoLinks + deleteRefs.progreso > 0 ? 'danger' : undefined}
               onConfirm={() => deleteId && handleDelete(deleteId)}
-              onCancel={() => setDeleteId(null)}
+              onCancel={() => {
+                setDeleteId(null)
+                setDeleteRefs(null)
+              }}
             />
           </td>
         </tr>
