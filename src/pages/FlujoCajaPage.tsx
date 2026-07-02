@@ -7,6 +7,7 @@ import { useToast } from '@/components/ui/Toast'
 import { useAuthStore } from '@/stores/authStore'
 import { useProjectStore } from '@/stores/projectStore'
 import { formatRD } from '@/utils/currency'
+import { round2 } from '@/utils/money'
 import { getErrorMessage } from '@/utils/errors'
 
 interface InflowForm {
@@ -30,6 +31,7 @@ export default function FlujoCajaPage() {
   const [rows, setRows] = useState<MonthlyCashFlowRow[]>([])
   const [inflows, setInflows] = useState<ExpectedInflow[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState<InflowForm>(EMPTY_INFLOW)
   const [saving, setSaving] = useState(false)
@@ -38,6 +40,7 @@ export default function FlujoCajaPage() {
   const load = useCallback(async () => {
     if (!projectId) return
     setLoading(true)
+    setLoadError(null)
     try {
       const [proj, inf] = await Promise.all([
         cashFlowService.getMonthlyProjection(projectId),
@@ -45,6 +48,12 @@ export default function FlujoCajaPage() {
       ])
       setRows(proj)
       setInflows(inf)
+    } catch (err) {
+      // Si algo falla (sin internet, permiso), se muestra el aviso en vez de
+      // una tabla en ceros que haría creer que no se ha gastado nada.
+      setLoadError(getErrorMessage(err) || 'No se pudieron cargar los datos del flujo de caja.')
+      setRows([])
+      setInflows([])
     } finally {
       setLoading(false)
     }
@@ -80,8 +89,13 @@ export default function FlujoCajaPage() {
   }
 
   async function handleDeleteInflow(id: string) {
-    await cashFlowService.deleteExpectedInflow(id)
-    await load()
+    try {
+      await cashFlowService.deleteExpectedInflow(id)
+      success('Ingreso esperado eliminado')
+      await load()
+    } catch (err) {
+      error(getErrorMessage(err) || 'No se pudo eliminar')
+    }
   }
 
   async function handleExport() {
@@ -91,12 +105,13 @@ export default function FlujoCajaPage() {
           name: 'Flujo de caja mensual',
           rows: rows.map((r) => ({
             Mes: r.month,
-            'Egreso planificado': r.planned_outflow.toFixed(2),
-            'Egreso real': r.actual_outflow.toFixed(2),
-            'Ingreso planificado': r.planned_inflow.toFixed(2),
-            'Ingreso real': r.actual_inflow.toFixed(2),
-            'Neto planificado': r.net_planned.toFixed(2),
-            'Neto real': r.net_actual.toFixed(2),
+            // Montos como números reales para poder sumar/ordenar en Excel.
+            'Egreso planificado': round2(r.planned_outflow),
+            'Egreso real': round2(r.actual_outflow),
+            'Ingreso planificado': round2(r.planned_inflow),
+            'Ingreso real': round2(r.actual_inflow),
+            'Neto planificado': round2(r.net_planned),
+            'Neto real': round2(r.net_actual),
           })),
         },
         {
@@ -104,7 +119,7 @@ export default function FlujoCajaPage() {
           rows: inflows.map((i) => ({
             Fecha: i.expected_date,
             Concepto: i.concept,
-            'Monto (DOP)': i.amount.toFixed(2),
+            'Monto (DOP)': round2(i.amount),
             Origen: i.source,
             'Ref. externa': i.external_ref ?? '',
           })),
@@ -194,6 +209,19 @@ export default function FlujoCajaPage() {
 
       {loading ? (
         <div className="text-center py-12 text-app-muted text-sm">Calculando proyección...</div>
+      ) : loadError ? (
+        <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 p-5 text-center space-y-3">
+          <p className="text-sm text-red-700 dark:text-red-300">
+            No se pudo cargar el flujo de caja. Para no confundir, no mostramos cifras que podrían estar incompletas.
+          </p>
+          <p className="text-xs text-red-600 dark:text-red-400">{loadError}</p>
+          <button
+            onClick={() => void load()}
+            className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium"
+          >
+            Reintentar
+          </button>
+        </div>
       ) : (
         <>
           <section>

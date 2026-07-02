@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useRouteError } from 'react-router-dom'
 import { RefreshCw, AlertTriangle } from 'lucide-react'
+import * as Sentry from '@sentry/react'
 import { clearChunkReloadFlag, isChunkLoadError } from '@/utils/lazyWithRetry'
 
 const RELOAD_KEY = 'obrapro:chunk-reload-attempt'
@@ -37,6 +38,17 @@ export default function RouterErrorBoundary() {
       window.location.reload()
     }
   }, [isStale])
+
+  // Reportar a Sentry los errores reales de las pantallas. Este atrapador
+  // intercepta el fallo antes de que llegue al general, así que sin esta línea
+  // casi ningún fallo de las pantallas quedaba registrado y el vigilante de
+  // errores quedaba ciego. Los "errores" de versión vieja (chunk) no se
+  // reportan porque no son fallos reales: se resuelven recargando.
+  useEffect(() => {
+    if (error && !isStale) {
+      Sentry.captureException(error, { tags: { boundary: 'router' } })
+    }
+  }, [error, isStale])
 
   const handleReload = () => {
     clearChunkReloadFlag()

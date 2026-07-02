@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { budgetCategoryService } from '@/services/budgetCategoryService'
-import { payrollService } from '@/services/payrollService'
+import { payrollService, COMMITTED_PAYROLL_STATUSES } from '@/services/payrollService'
 import { projectService } from '@/services/projectService'
 import { transactionService, type TransactionWithRelations } from '@/services/transactionService'
 import { usePayrollStore } from '@/stores/payrollStore'
@@ -136,16 +136,51 @@ type ModelParams = {
 }
 
 function useProjectDetailModel(params: ModelParams) {
-  const project = useMemo(() => params.data.projects.find((item) => item.id === params.projectId), [params.projectId, params.data.projects])
-  const draftPeriod = useMemo(() => params.data.periods.find((item) => item.status === 'draft' || item.status === 'submitted') ?? null, [params.data.periods]); const totalBudget = useMemo(() => params.data.budgetCategories.reduce((sum, item) => sum + item.budgeted_amount, 0), [params.data.budgetCategories])
-  const totalInvested = useMemo(() => params.data.periods.reduce((sum, item) => sum + (item.grand_total || 0), 0), [params.data.periods])
-  function handleCreatedPeriod(periodId: string) { params.ui.setShowCreate(false); params.navigate(`/nominas/${periodId}`) }
-  function openCreateModal() { params.ui.setShowCreate(true) }
-  function closeCreateModal() { params.ui.setShowCreate(false) }
-  function openEditProjectModal() { params.ui.setShowEditProject(true) }
-  function closeEditProjectModal() { params.ui.setShowEditProject(false) }
-  function requestDeletePeriod(periodId: string) { params.ui.setConfirmDeleteId(periodId) }
-  function cancelDeletePeriod() { params.ui.setConfirmDeleteId(null) }
+  const project = useMemo(
+    () => params.data.projects.find((item) => item.id === params.projectId),
+    [params.projectId, params.data.projects],
+  )
+  const draftPeriod = useMemo(
+    () => params.data.periods.find((item) => item.status === 'draft' || item.status === 'submitted') ?? null,
+    [params.data.periods],
+  )
+  const totalBudget = useMemo(
+    () => params.data.budgetCategories.reduce((sum, item) => sum + item.budgeted_amount, 0),
+    [params.data.budgetCategories],
+  )
+  // Solo cuentan como "Invertido" los reportes comprometidos (aprobados o
+  // pagados), igual que el Panel, el flujo de caja y el presupuesto-vs-real.
+  // Antes se sumaban también borradores y enviados, inflando la barra y
+  // mostrando una cifra distinta a la del Panel para el mismo proyecto.
+  const totalInvested = useMemo(
+    () =>
+      params.data.periods
+        .filter((item) => COMMITTED_PAYROLL_STATUSES.includes(item.status))
+        .reduce((sum, item) => sum + (item.grand_total || 0), 0),
+    [params.data.periods],
+  )
+  function handleCreatedPeriod(periodId: string) {
+    params.ui.setShowCreate(false)
+    params.navigate(`/nominas/${periodId}`)
+  }
+  function openCreateModal() {
+    params.ui.setShowCreate(true)
+  }
+  function closeCreateModal() {
+    params.ui.setShowCreate(false)
+  }
+  function openEditProjectModal() {
+    params.ui.setShowEditProject(true)
+  }
+  function closeEditProjectModal() {
+    params.ui.setShowEditProject(false)
+  }
+  function requestDeletePeriod(periodId: string) {
+    params.ui.setConfirmDeleteId(periodId)
+  }
+  function cancelDeletePeriod() {
+    params.ui.setConfirmDeleteId(null)
+  }
   return {
     projectId: params.projectId,
     project,
