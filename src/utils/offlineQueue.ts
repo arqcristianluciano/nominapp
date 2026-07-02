@@ -132,9 +132,10 @@ export class OfflineQueueProcessor {
       let processed = 0
       let failed = 0
       for (const item of items) {
-        // Descartar items que ya agotaron su presupuesto de reintentos.
+        // Tras agotar los reintentos NO se borra el cambio (eso perdía datos en
+        // silencio): se deja de reintentar pero permanece en la cola, visible en
+        // el contador de pendientes, para no perder el registro del trabajador.
         if (item.retry_count >= MAX_RETRIES) {
-          await offlineQueue.remove(item.id)
           failed += 1
           continue
         }
@@ -156,7 +157,29 @@ export class OfflineQueueProcessor {
   }
 }
 
-// Helper: detectar offline.
+// Helper: detectar offline. Ante la duda (navigator o navigator.onLine no
+// disponibles) se asume que SÍ hay conexión: es más seguro intentar la
+// operación real que encolarla por error.
 export function isOnline(): boolean {
-  return typeof navigator === 'undefined' || navigator.onLine
+  if (typeof navigator === 'undefined') return true
+  return navigator.onLine !== false
+}
+
+/**
+ * Ejecuta una operación si hay internet; si no, la guarda en la cola para
+ * enviarla sola cuando vuelva la conexión. Devuelve 'saved' (se hizo ya) o
+ * 'queued' (quedó pendiente). El `payload` debe ser exactamente el que espera
+ * el handler registrado para ese `kind` en useOfflineQueue.
+ */
+export async function saveOrQueue<TPayload>(
+  kind: MutationKind,
+  payload: TPayload,
+  run: () => Promise<unknown>,
+): Promise<'saved' | 'queued'> {
+  if (isOnline()) {
+    await run()
+    return 'saved'
+  }
+  await offlineQueue.enqueue(kind, payload)
+  return 'queued'
 }

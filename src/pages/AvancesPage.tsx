@@ -9,6 +9,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { useProjectStore } from '@/stores/projectStore'
 import { useToast } from '@/components/ui/Toast'
 import { todayISO } from '@/utils/dateLocal'
+import { saveOrQueue } from '@/utils/offlineQueue'
 import { AvancesFormSection, type AvancesFormState } from '@/components/features/avances/AvancesFormSection'
 import { AvancesHistoryTable } from '@/components/features/avances/AvancesHistoryTable'
 
@@ -87,7 +88,7 @@ export default function AvancesPage() {
     }
     setSaving(true)
     try {
-      await partidaProgressService.addProgress({
+      const payload = {
         project_id: projectId,
         budget_category_id: form.budget_category_id || null,
         budget_item_id: form.budget_item_id || null,
@@ -96,11 +97,20 @@ export default function AvancesPage() {
         executed_percent: form.executed_percent ? parseFloat(form.executed_percent) : null,
         notes: form.notes.trim() || null,
         responsible: user?.displayName ?? null,
-      })
+      }
+      // Sin internet, el avance se guarda en el dispositivo y se envía solo al
+      // volver la conexión.
+      const result = await saveOrQueue('partida_progress.add', payload, () =>
+        partidaProgressService.addProgress(payload),
+      )
       setForm(EMPTY)
       setShowForm(false)
-      success('Avance registrado')
-      await load()
+      if (result === 'queued') {
+        success('Guardado sin conexión. Se enviará solo cuando vuelva el internet.')
+      } else {
+        success('Avance registrado')
+        await load()
+      }
     } catch (e) {
       error((e as Error).message ?? 'No se pudo registrar el avance')
     } finally {

@@ -8,6 +8,7 @@ import {
   type InventoryMovement,
 } from '@/services/inventoryService'
 import { getErrorMessage } from '@/utils/errors'
+import { saveOrQueue } from '@/utils/offlineQueue'
 import { lotService, type InventoryLotWithItem } from '@/services/lotService'
 import { useToast } from '@/components/ui/Toast'
 import { useAuthStore } from '@/stores/authStore'
@@ -87,8 +88,8 @@ export default function InventarioPage() {
     }
   }
 
-  async function performAddMovement(override?: { motivo: string }) {
-    await inventoryService.addMovement({
+  async function performAddMovement(override?: { motivo: string }): Promise<'saved' | 'queued'> {
+    const payload = {
       item_id: movForm.item_id,
       project_id: projectId!,
       type: movForm.type,
@@ -102,18 +103,25 @@ export default function InventarioPage() {
       unit_cost: movForm.unit_cost ?? null,
       created_by: user?.displayName ?? null,
       override: override ? { motivo: override.motivo, actor: user?.displayName ?? 'desconocido' } : null,
-    })
+    }
+    // Sin internet, el movimiento se guarda en el dispositivo y se envía al
+    // volver la conexión (el override de stock solo aplica estando en línea).
+    return saveOrQueue('inventory_movement.add', payload, () => inventoryService.addMovement(payload))
   }
 
   async function handleAddMovement() {
     if (!movForm.item_id) return
     setSaving(true)
     try {
-      await performAddMovement()
+      const result = await performAddMovement()
       setShowMovForm(false)
       setMovForm(EMPTY_MOVEMENT_FORM)
-      success('Movimiento registrado')
-      await loadAll()
+      if (result === 'queued') {
+        success('Guardado sin conexión. Se enviará solo cuando vuelva el internet.')
+      } else {
+        success('Movimiento registrado')
+        await loadAll()
+      }
     } catch (e) {
       if (e instanceof InventoryError) {
         if (e.code === 'INSUFFICIENT_STOCK' && roles.canOverrideStock) {
@@ -132,12 +140,16 @@ export default function InventarioPage() {
   async function handleConfirmOverride(motivo: string) {
     setSaving(true)
     try {
-      await performAddMovement({ motivo })
+      const result = await performAddMovement({ motivo })
       setShowMovForm(false)
       setOverrideOpen(false)
       setMovForm(EMPTY_MOVEMENT_FORM)
-      success('Salida registrada con override del Director')
-      await loadAll()
+      if (result === 'queued') {
+        success('Guardado sin conexión. Se enviará solo cuando vuelva el internet.')
+      } else {
+        success('Salida registrada con override del Director')
+        await loadAll()
+      }
     } finally {
       setSaving(false)
     }
