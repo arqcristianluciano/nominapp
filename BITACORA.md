@@ -136,6 +136,26 @@ nuevas, cada una probada y subida:
 - **Sin conexión:** un solo aviso (antes salían dos y uno tapaba la pantalla).
 - **Cronograma:** borrar una tarea pide confirmación una sola vez (antes dos).
 
+### Detalles finos adicionales (después de publicar)
+
+Ya con todo publicado y funcionando, se pulieron tres detalles chicos que
+le quitaban utilidad a algunas pantallas. Todo probado (pruebas y
+construcción en verde):
+
+- **El Excel del tablero del Director ahora trae números de verdad.** Antes
+  las columnas de presupuesto, ejecutado, desviación y cuentas por pagar
+  salían como texto, así que en Excel no se podían sumar ni ordenar. Ahora
+  son números y se pueden sumar, promediar y ordenar como uno espera.
+- **En "Avances por partida" el historial ya muestra el nombre de cada
+  partida.** Antes casi todas las filas decían "—" porque la lista de
+  partidas solo se cargaba al abrir el formulario. Ahora se cargan todas al
+  entrar, así que siempre se ve a qué partida corresponde cada avance.
+- **Se quitó el botón "Importar asistencia" que no servía.** Abría una
+  ventana con plantilla de Excel, pero al final solo decía "pronto
+  disponible" y pedía datos (hora de entrada y salida) que la app ni
+  guarda. Se ocultó para no prometer algo que no funciona; volverá cuando
+  la carga esté lista de verdad.
+
 ## 2026-06-12 — Avisos al celular, recibos, estado de cuenta e intereses
 
 Cristian preguntó qué más se podía hacer y eligió cuatro mejoras del
