@@ -46,6 +46,35 @@ automática de la lista quedó a medias por un límite de uso del servicio;
 los temas sin reconfirmar están marcados como «por reconfirmar» en el
 reporte, aunque están bien fundamentados.
 
+### Arreglos ya hechos (misma sesión, probados)
+
+Cristian pidió arreglar los errores y la seguridad. Se hicieron y se
+probaron (todas las pruebas automáticas y la construcción en verde):
+
+1. **El dinero ya no se cuenta dos veces.** Cuando compras a crédito y
+   luego pagas esa factura, ese pago ya no se suma otra vez como gasto.
+   Se corrigió en el Control Financiero, el flujo de caja y el panel; el
+   panel ahora sí baja las cuentas por pagar cuando pagas, y las gráficas
+   de gasto ya no cuentan los depósitos como gasto.
+2. **Los descuentos ahora sí bajan del pago.** Las deducciones de
+   préstamo y la retención de garantía se restan de lo que se puede
+   repartir en pagos (antes se mostraban pero no se descontaban), y los
+   adelantos ya no se pueden cobrar dos veces al contratista.
+3. **Los números se leen bien.** "0,125" ya no se convierte en 125, y al
+   importar de Excel "1,500" ya es mil quinientos (antes 1.5).
+4. **Seguridad del servidor (lista para aplicar).** Se preparó el
+   arreglo para que dos operaciones internas (mover almacén y sumar
+   pagos) ya no las pueda usar cualquiera sin permiso, y para que nadie
+   borre/renombre las unidades de medida compartidas. Falta aplicarlo a
+   la base real (requiere tu visto bueno).
+5. **Compras:** una solicitud con varios materiales ahora revisa el
+   excedente de presupuesto en todas las líneas, no solo en la primera.
+
+**Falta (siguiente sesión):** el resto de temas medios y bajos del
+reporte, y dos decisiones tuyas (ver más abajo): cómo escribes las
+cantidades tipo "2,375" y si aplico ya el arreglo de seguridad a la base
+real.
+
 ## 2026-06-12 — Avisos al celular, recibos, estado de cuenta e intereses
 
 Cristian preguntó qué más se podía hacer y eligió cuatro mejoras del
