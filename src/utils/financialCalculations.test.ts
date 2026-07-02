@@ -76,6 +76,35 @@ describe('financialCalculations', () => {
     it('sin movimientos = 0', () => {
       expect(calcCashDisponible([])).toBe(0)
     })
+
+    it('una compra a crédito sin pagar no reduce el efectivo disponible', () => {
+      const list = [
+        deposit(100000),
+        expense(40000, { payment_condition: 'Credito por Factura', invoice_number: 'F-1', supplier_id: 's1' }),
+      ]
+      // El dinero aún no sale de la cuenta al comprar a crédito.
+      expect(calcCashDisponible(list)).toBe(100000)
+    })
+
+    it('un cheque emitido sin cobrar no reduce el efectivo disponible', () => {
+      const list = [deposit(100000), expense(10000, { payment_condition: 'Pago Cheque', cashed_date: null })]
+      expect(calcCashDisponible(list)).toBe(100000)
+    })
+
+    it('pagar una factura a crédito con cheque cobrado sí reduce el efectivo', () => {
+      const list = [
+        deposit(100000),
+        expense(40000, { payment_condition: 'Credito por Factura', invoice_number: 'F-1', supplier_id: 's1' }),
+        expense(40000, {
+          payment_condition: 'Pago Cheque',
+          invoice_number: 'F-1',
+          supplier_id: 's1',
+          cashed_date: '2026-01-20',
+        }),
+      ]
+      // Solo el pago (dinero real que salió) reduce el efectivo, no la compra a crédito.
+      expect(calcCashDisponible(list)).toBe(60000)
+    })
   })
 
   describe('calcTotalCxP', () => {
@@ -121,6 +150,15 @@ describe('financialCalculations', () => {
       const list = [deposit(100000), expense(30000), expense(20500)]
       expect(calcTotalIncurrido(list)).toBe(50500)
     })
+
+    it('no cuenta dos veces la compra a crédito y su pago posterior', () => {
+      const list = [
+        expense(40000, { payment_condition: 'Credito por Factura', invoice_number: 'F-1', supplier_id: 's1' }),
+        expense(40000, { payment_condition: 'Pago Cheque', invoice_number: 'F-1', supplier_id: 's1' }),
+      ]
+      // El gasto real es 40.000, no 80.000: el pago solo salda la deuda.
+      expect(calcTotalIncurrido(list)).toBe(40000)
+    })
   })
 
   describe('calcBudgetSpent', () => {
@@ -132,6 +170,42 @@ describe('financialCalculations', () => {
       ]
       expect(calcBudgetSpent(list, 'cat-A')).toBe(3000)
       expect(calcBudgetSpent(list, 'cat-B')).toBe(500)
+    })
+
+    it('no infla el gastado al pagar una factura a crédito de la misma categoría', () => {
+      const list = [
+        expense(40000, {
+          budget_category_id: 'cat-A',
+          payment_condition: 'Credito por Factura',
+          invoice_number: 'F-1',
+          supplier_id: 's1',
+        }),
+        expense(40000, {
+          budget_category_id: 'cat-A',
+          payment_condition: 'Pago Cheque',
+          invoice_number: 'F-1',
+          supplier_id: 's1',
+        }),
+      ]
+      expect(calcBudgetSpent(list, 'cat-A')).toBe(40000)
+    })
+  })
+
+  describe('escenario completo: compra a crédito + cheque en tránsito', () => {
+    it('el disponible neto no descuenta dos veces las deudas', () => {
+      const list = [
+        deposit(100000),
+        expense(40000, { payment_condition: 'Credito por Factura', invoice_number: 'F-1', supplier_id: 's1' }),
+        expense(10000, { payment_condition: 'Pago Cheque', cashed_date: null }),
+      ]
+      const cash = calcCashDisponible(list) // 100000 (nada ha salido aún)
+      const cxp = calcTotalCxP(list) // 40000
+      const transitos = calcTransitos(list) // 10000
+      expect(cash).toBe(100000)
+      expect(cxp).toBe(40000)
+      expect(transitos).toBe(10000)
+      // Después de pagar todo quedarían 50.000, no 0.
+      expect(calcDisponibleNeto(cash, cxp, transitos)).toBe(50000)
     })
   })
 

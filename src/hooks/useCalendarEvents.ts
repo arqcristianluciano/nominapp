@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { parseDateLocal, todayISO } from '@/utils/dateLocal'
+import { round2 } from '@/utils/money'
 
 export interface CalendarEvent {
   id: string
@@ -25,6 +26,8 @@ interface CalendarTransaction {
   date: string
   project_id: string
   payment_condition: string | null
+  invoice_number: string | null
+  supplier_id: string | null
   supplier?: { name?: string | null } | null
 }
 
@@ -78,12 +81,16 @@ export function useCalendarEvents(options: UseCalendarEventsOptions = {}) {
       try {
         const todayStr = todayISO()
 
-        let txnQuery = supabase
+        // No se filtra por fecha en la consulta: para saber si una factura a
+        // crédito ya se pagó hay que ver también su pago (que puede tener otra
+        // fecha). El filtro por rango se aplica después, al armar los eventos.
+        const txnQuery = supabase
           .from('transactions')
-          .select('id, description, total, date, project_id, payment_condition, supplier:suppliers(name)')
-        if (startDate) txnQuery = txnQuery.gte('date', startDate)
-        if (endDate) txnQuery = txnQuery.lte('date', endDate)
-        txnQuery = txnQuery.limit(300)
+          .select(
+            'id, description, total, date, project_id, payment_condition, invoice_number, supplier_id, supplier:suppliers(name)',
+          )
+          .order('date', { ascending: false })
+          .limit(5000)
 
         let corteQuery = supabase
           .from('contract_cortes')
@@ -123,15 +130,36 @@ export function useCalendarEvents(options: UseCalendarEventsOptions = {}) {
           paidByLoan.set(deduction.loan_id, paid + (deduction.amount ?? 0))
         }
 
+        const txns = (txnRes.data ?? []) as CalendarTransaction[]
+
+        // Suma de pagos por factura (transacciones NO a crédito con el mismo
+        // número de factura + proveedor): sirve para descontar de la deuda y no
+        // mostrar en el calendario facturas a crédito que ya se pagaron.
+        const paidByInvoice = new Map<string, number>()
+        for (const t of txns) {
+          if (isCreditCondition(t.payment_condition)) continue
+          if (!t.invoice_number) continue
+          const key = `${t.invoice_number}|${t.supplier_id ?? ''}`
+          paidByInvoice.set(key, (paidByInvoice.get(key) ?? 0) + Math.abs(t.total))
+        }
+
         const allEvents: CalendarEvent[] = []
-        for (const txn of (txnRes.data ?? []) as CalendarTransaction[]) {
+        for (const txn of txns) {
           if (!isCreditCondition(txn.payment_condition)) continue
+          // Descontar lo ya pagado; si la factura está saldada, no es deuda.
+          const key = `${txn.invoice_number ?? ''}|${txn.supplier_id ?? ''}`
+          const paid = txn.invoice_number ? (paidByInvoice.get(key) ?? 0) : 0
+          const pending = round2(txn.total - paid)
+          if (pending <= 0) continue
+          // Filtro por rango del calendario (antes se hacía en la consulta).
+          if (startDate && txn.date < startDate) continue
+          if (endDate && txn.date > endDate) continue
           const project = projectMap[txn.project_id]
           allEvents.push({
             id: `cxp-${txn.id}`,
             date: txn.date,
             title: txn.supplier?.name ?? txn.description,
-            amount: txn.total,
+            amount: pending,
             type: 'cxp',
             projectName: project?.name ?? 'Proyecto',
             link: `/proyectos/${txn.project_id}/control`,

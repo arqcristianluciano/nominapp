@@ -4,6 +4,7 @@ import { adelantoService } from '@/services/cubicationService'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { useToast } from '@/components/ui/Toast'
 import { formatRD } from '@/utils/currency'
+import { formatDateDMY } from '@/utils/dateLocal'
 import { parseDecimalInput } from '@/utils/decimalInput'
 import type { ContractAdelanto } from '@/types/database'
 
@@ -153,7 +154,7 @@ export function AdelantoSection({ contractId, adelantos, onRefresh }: Props) {
           <tbody className="divide-y divide-app-border">
             {adelantos.map((a) => (
               <tr key={a.id} className="hover:bg-app-hover">
-                <td className="py-2.5 text-app-text">{new Date(a.advance_date).toLocaleDateString('es-DO')}</td>
+                <td className="py-2.5 text-app-text">{formatDateDMY(a.advance_date)}</td>
                 <td className="py-2.5 text-app-muted">{a.description || '—'}</td>
                 <td className="py-2.5 text-right font-medium text-amber-700">{formatRD(a.amount)}</td>
                 <td className="py-2.5">

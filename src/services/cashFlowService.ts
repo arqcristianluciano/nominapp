@@ -1,8 +1,17 @@
 import { supabase } from '@/lib/supabase'
 import { COMMITTED_PAYROLL_STATUSES } from '@/services/payrollService'
 import { round2 } from '@/utils/money'
+import { isCreditInvoicePayment, type FinancialTransaction } from '@/utils/financialCalculations'
 
-const DEPOSIT_CODE = '19 - DEPOSITOS'
+/**
+ * Reconoce un ingreso (depósito) de forma tolerante: ignora mayúsculas, acentos
+ * y separadores, igual que en el Control Financiero. Así "19 - DEPOSITOS",
+ * "19-Depositos" o "DEPOSITO" cuentan como ingreso y no como gasto.
+ */
+function isDepositCode(code: string | null | undefined): boolean {
+  if (!code) return false
+  return code.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().includes('DEPOSITO')
+}
 
 export interface ExpectedInflow {
   id: string
@@ -114,21 +123,20 @@ export const cashFlowService = {
     // 3) Real - transactions (libro diario).
     const { data: transactions } = await supabase
       .from('transactions')
-      .select('total, date, budget_category:budget_categories(code)')
+      .select('total, date, payment_condition, invoice_number, supplier_id, budget_category:budget_categories(code)')
       .eq('project_id', projectId)
-    for (const t of (transactions ?? []) as Array<{
-      total: number | null
-      date: string | null
-      budget_category?: { code?: string | null } | null
-    }>) {
+    const txList = (transactions ?? []) as Array<FinancialTransaction & { date: string | null; total: number | null }>
+    for (const t of txList) {
       const key = monthKey(t.date)
       if (!key) continue
-      const isDeposit = t.budget_category?.code === DEPOSIT_CODE
-      if (isDeposit) {
+      if (isDepositCode(t.budget_category?.code)) {
         ensureRow(map, key).actual_inflow += Number(t.total ?? 0)
-      } else {
-        ensureRow(map, key).actual_outflow += Number(t.total ?? 0)
+        continue
       }
+      // El pago de una factura a crédito no es un gasto nuevo: la compra a
+      // crédito ya se contó como egreso. Contarlo otra vez duplica el gasto.
+      if (isCreditInvoicePayment(t, txList)) continue
+      ensureRow(map, key).actual_outflow += Number(t.total ?? 0)
     }
 
     // 4) Planificado - ingresos esperados.

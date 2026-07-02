@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Database, Download, FileSpreadsheet, Loader2 } from 'lucide-react'
+import { Database, Download, FileSpreadsheet, Loader2, RotateCcw, ShieldCheck } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import { EXPORTABLE_ENTITIES, exportAllToZip, triggerBackup, type ExportSummary } from '@/services/exportService'
 import { exportBackupToExcel, type BackupSummary } from '@/services/excelBackupService'
@@ -181,6 +181,38 @@ export function ExportSection() {
             {backupRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
             Backup BD
           </button>
+        </div>
+      </div>
+
+      {/* ── Restaurar un respaldo ─────────────────────────────────────────── */}
+      <div className="bg-app-surface rounded-xl border border-app-border p-6 space-y-3">
+        <div className="flex items-center gap-2">
+          <RotateCcw className="w-4 h-4 text-app-muted" />
+          <h2 className="font-medium text-app-text">Restaurar un respaldo</h2>
+        </div>
+        <div className="rounded-lg bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 p-3 flex items-start gap-2">
+          <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+          <p className="text-sm text-emerald-800 dark:text-emerald-200">
+            <strong>Tus datos ya se respaldan solos, todos los días, en el servidor.</strong> Si algún día hiciera falta
+            volver a como estaba todo en una fecha anterior, se puede hacer de forma segura desde el servidor.
+          </p>
+        </div>
+        <div className="text-sm text-app-muted space-y-2">
+          <p>
+            Para restaurar a un punto anterior, escríbenos (o a tu administrador) diciendo{' '}
+            <strong>a qué día y hora</strong> quieres volver. La restauración se hace desde el panel del servidor
+            (Supabase), que guarda copias automáticas y permite regresar a un momento exacto sin descuadrar cuentas.
+          </p>
+          <p>
+            <strong>¿Por qué no hay un botón para “subir” un respaldo aquí?</strong> Porque volver a cargar un archivo
+            viejo dentro de la base de datos duplicaría o pisaría datos buenos y dejaría las cuentas descuadradas, y
+            sería muy difícil de deshacer. Por eso la restauración segura se hace desde el servidor, no subiendo un
+            archivo.
+          </p>
+          <p className="text-app-subtle">
+            Los respaldos en CSV y Excel de arriba son para tener una copia a mano, consultar o auditar; no para
+            recargarlos dentro de la app.
+          </p>
         </div>
       </div>
 

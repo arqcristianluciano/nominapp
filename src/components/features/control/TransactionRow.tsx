@@ -6,6 +6,7 @@ import { budgetItemService } from '@/services/budgetItemService'
 import { PAYMENT_CONDITIONS } from '@/constants/indirectCosts'
 import { DOMINICAN_BANKS } from '@/constants/banks'
 import { formatRD } from '@/utils/currency'
+import { formatDateDMY } from '@/utils/dateLocal'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 
 function TransactionRowComponent({
@@ -303,9 +304,7 @@ function TransactionRowComponent({
   return (
     <>
       <tr className={`${rowBg} hover:bg-app-hover border-b border-app-border`}>
-        <td className="px-2 py-2 text-xs text-app-muted whitespace-nowrap">
-          {new Date(transaction.date).toLocaleDateString('es-DO')}
-        </td>
+        <td className="px-2 py-2 text-xs text-app-muted whitespace-nowrap">{formatDateDMY(transaction.date)}</td>
         <td className="px-2 py-2 text-xs text-app-muted whitespace-nowrap">
           {transaction.budget_category?.code?.split(' - ')[0] || ''}
         </td>
@@ -326,7 +325,7 @@ function TransactionRowComponent({
         <td className="px-2 py-2 text-xs text-app-muted">{transaction.check_number || ''}</td>
         <td className="px-2 py-2 text-xs text-app-muted hidden lg:table-cell">{transaction.bank || ''}</td>
         <td className="px-2 py-2 text-xs text-app-muted hidden lg:table-cell">
-          {transaction.cashed_date ? new Date(transaction.cashed_date).toLocaleDateString('es-DO') : ''}
+          {formatDateDMY(transaction.cashed_date)}
         </td>
         <td className="px-2 py-2">
           <div className="flex items-center gap-1">

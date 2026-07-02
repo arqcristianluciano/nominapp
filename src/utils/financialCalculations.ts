@@ -37,14 +37,46 @@ export interface FinancialTransaction {
   supplier?: { name?: string | null } | null
 }
 
+/** Cheque emitido que el banco aún no ha cobrado: el dinero sigue en la cuenta. */
+function isUncashedCheck(t: FinancialTransaction): boolean {
+  return !!t.payment_condition?.includes('Cheque') && !t.cashed_date
+}
+
+/**
+ * Un "pago de factura a crédito" es una transacción que NO es a crédito pero
+ * salda una compra a crédito previa (mismo número de factura y proveedor).
+ * Estas transacciones mueven dinero (bajan el saldo del banco) pero NO son un
+ * gasto nuevo: el gasto ya se contó cuando se registró la compra a crédito.
+ * Contarlas de nuevo infla el "incurrido" y el "gastado" del presupuesto.
+ */
+export function isCreditInvoicePayment(t: FinancialTransaction, all: FinancialTransaction[]): boolean {
+  if (isCreditCondition(t.payment_condition)) return false
+  if (!t.invoice_number) return false
+  return all.some(
+    (c) =>
+      isCreditCondition(c.payment_condition) &&
+      c.invoice_number === t.invoice_number &&
+      c.supplier_id === t.supplier_id,
+  )
+}
+
 export function calcTransitos(transactions: FinancialTransaction[]): number {
-  const transitos = transactions.filter((t) => t.payment_condition?.includes('Cheque') && !t.cashed_date)
+  const transitos = transactions.filter((t) => isUncashedCheck(t))
   return round2(sumBy(transitos, (t) => t.total))
 }
 
+/**
+ * Dinero disponible ahora en las cuentas: depósitos menos las salidas de dinero
+ * que YA ocurrieron. NO descuenta las compras a crédito sin pagar (todavía no
+ * sale dinero) ni los cheques emitidos que el banco aún no cobró (el dinero
+ * sigue en la cuenta); esos compromisos se descuentan en el "Disponible neto".
+ */
 export function calcCashDisponible(transactions: FinancialTransaction[]): number {
   const deposits = transactions.filter((t) => isDepositCategory(t.budget_category?.code))
-  const egresses = transactions.filter((t) => !isDepositCategory(t.budget_category?.code))
+  const egresses = transactions.filter(
+    (t) =>
+      !isDepositCategory(t.budget_category?.code) && !isCreditCondition(t.payment_condition) && !isUncashedCheck(t),
+  )
   return round2(
     sub(
       sumBy(deposits, (t) => t.total),
@@ -83,12 +115,16 @@ export function calcDisponibleNeto(cash: number, cxp: number, transitos: number)
 }
 
 export function calcTotalIncurrido(transactions: FinancialTransaction[]): number {
-  const egresses = transactions.filter((t) => !isDepositCategory(t.budget_category?.code))
+  const egresses = transactions.filter(
+    (t) => !isDepositCategory(t.budget_category?.code) && !isCreditInvoicePayment(t, transactions),
+  )
   return round2(sumBy(egresses, (t) => t.total))
 }
 
 export function calcBudgetSpent(transactions: FinancialTransaction[], categoryId: string): number {
-  const subset = transactions.filter((t) => t.budget_category_id === categoryId)
+  const subset = transactions.filter(
+    (t) => t.budget_category_id === categoryId && !isCreditInvoicePayment(t, transactions),
+  )
   return round2(sumBy(subset, (t) => t.total))
 }
 

@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react'
 import { ScrollText, ExternalLink } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { payrollService } from '@/services/payrollService'
-import { corteService } from '@/services/cubicationService'
+import { corteService, adelantoService } from '@/services/cubicationService'
 import { formatRD } from '@/utils/currency'
+import { round2 } from '@/utils/money'
 import { useToast } from '@/components/ui/Toast'
 import type { ContractCorte, ContractPartida, PayrollPeriod } from '@/types/database'
 
@@ -48,6 +49,36 @@ export function LinkToPayrollModal({ open, onClose, projectId, contractorId, cor
         sort_order: 99,
         notes: `Corte del ${new Date(corte.cut_date).toLocaleDateString('es-DO')}. Retención: ${formatRD(corte.retention_amount)}`,
       })
+
+      // Descontar los adelantos pendientes del contrato (antes no se hacía desde
+      // esta pantalla, así que el contratista quedaba cobrando de más). Se aplica
+      // a cada adelanto exactamente su saldo, del más antiguo al más nuevo.
+      const adelantos = await adelantoService.getByContract(corte.contract_id)
+      const pendientes = adelantos
+        .map((a) => ({ id: a.id, saldo: round2(a.amount - (a.deducted_amount ?? 0)) }))
+        .filter((a) => a.saldo > 0)
+      const totalAdelantos = round2(pendientes.reduce((s, a) => s + a.saldo, 0))
+      if (totalAdelantos > 0) {
+        await payrollService.addLaborItem({
+          payroll_period_id: selectedId,
+          contractor_id: contractorId,
+          description: `DEDUCCIÓN ADELANTOS — Corte #${corte.cut_number}`,
+          quantity: 1,
+          unit: 'global',
+          unit_price: -totalAdelantos,
+          is_advance_deduction: true,
+          sort_order: 100,
+        })
+        let remaining = totalAdelantos
+        for (const a of pendientes) {
+          if (remaining <= 0) break
+          const apply = round2(Math.min(remaining, a.saldo))
+          if (apply <= 0) continue
+          await adelantoService.addDeductedAmount(a.id, apply)
+          remaining = round2(remaining - apply)
+        }
+      }
+
       await corteService.linkToPayroll(corte.id, selectedId)
       await payrollService.recalculateTotals(selectedId)
       onLinked()

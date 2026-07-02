@@ -19,13 +19,21 @@ import {
   ChevronRight,
   RefreshCw,
   CalendarDays,
+  Lock,
+  LockOpen,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { payrollService } from '@/services/payrollService'
 import { projectService } from '@/services/projectService'
 import { transactionService } from '@/services/transactionService'
+import { monthCloseService } from '@/services/monthCloseService'
 import { calcCxPDetails } from '@/utils/financialCalculations'
 import { formatRD } from '@/utils/currency'
+import { getErrorMessage } from '@/utils/errors'
+import { useAppRoles } from '@/hooks/useAppRoles'
+import { useAuthStore } from '@/stores/authStore'
+import { useToast } from '@/components/ui/Toast'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import type { PayrollPeriod, Project } from '@/types/database'
 
 // ─── tipos internos ─────────────────────────────────────────────────────────
@@ -104,11 +112,63 @@ async function fetchOverdueInstallments(): Promise<
 // ─── componente principal ─────────────────────────────────────────────────────
 
 export default function CierreMes() {
+  const { isDirector, canWriteLedger } = useAppRoles()
+  const currentUser = useAuthStore((s) => s.user)
+  const { success: toastSuccess, error: toastError } = useToast()
   const [yearMonth, setYearMonth] = useState(defaultMonthValue)
   const [projects, setProjects] = useState<Project[]>([])
   const [allPeriods, setAllPeriods] = useState<PayrollPeriod[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // Meses cerrados: conjunto de claves "projectId|YYYY-MM".
+  const [closedSet, setClosedSet] = useState<Set<string>>(new Set())
+  const [pendingClose, setPendingClose] = useState<Project | null>(null)
+  const [pendingReopen, setPendingReopen] = useState<Project | null>(null)
+  const [savingClose, setSavingClose] = useState(false)
+
+  const isClosed = (projectId: string) => closedSet.has(`${projectId}|${yearMonth}`)
+
+  const reloadClosed = async (projectIds: string[]) => {
+    try {
+      const rows = await monthCloseService.listByProjects(projectIds)
+      setClosedSet(new Set(rows.map((r) => `${r.project_id}|${r.year_month}`)))
+    } catch (err) {
+      toastError(`No se pudo cargar el estado de meses cerrados: ${getErrorMessage(err)}`)
+    }
+  }
+
+  const handleClose = async (project: Project) => {
+    setSavingClose(true)
+    try {
+      await monthCloseService.close(project.id, yearMonth, currentUser?.displayName ?? undefined)
+      setClosedSet((prev) => new Set(prev).add(`${project.id}|${yearMonth}`))
+      toastSuccess(`Mes cerrado para ${project.name}. Sus movimientos quedaron protegidos.`)
+    } catch (err) {
+      toastError(`No se pudo cerrar el mes: ${getErrorMessage(err)}`)
+    } finally {
+      setSavingClose(false)
+      setPendingClose(null)
+    }
+  }
+
+  const handleReopen = async (project: Project) => {
+    setSavingClose(true)
+    try {
+      await monthCloseService.reopen(project.id, yearMonth)
+      setClosedSet((prev) => {
+        const next = new Set(prev)
+        next.delete(`${project.id}|${yearMonth}`)
+        return next
+      })
+      toastSuccess(`Mes reabierto para ${project.name}. Ya se puede editar de nuevo.`)
+    } catch (err) {
+      toastError(`No se pudo reabrir el mes: ${getErrorMessage(err)}`)
+    } finally {
+      setSavingClose(false)
+      setPendingReopen(null)
+    }
+  }
 
   // datos extra
   const [distributions, setDistributions] = useState<
@@ -136,8 +196,10 @@ export default function CierreMes() {
           payrollService.getAllPeriods(),
         ])
         if (cancelled) return
-        setProjects(loadedProjects.filter((p) => p.status === 'active'))
+        const activeProjects = loadedProjects.filter((p) => p.status === 'active')
+        setProjects(activeProjects)
         setAllPeriods(loadedPeriods)
+        void reloadClosed(activeProjects.map((p) => p.id))
 
         // Distribuciones: traer por todos los period ids
         const periodIds = loadedPeriods.map((p) => p.id)
@@ -199,6 +261,8 @@ export default function CierreMes() {
     return () => {
       cancelled = true
     }
+    // Carga única al montar; reloadClosed es estable para este propósito.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // ── checklist por proyecto ─────────────────────────────────────────────────
@@ -397,6 +461,11 @@ export default function CierreMes() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
+                    {isClosed(project.id) && (
+                      <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 inline-flex items-center gap-1">
+                        <Lock className="w-3 h-3" /> Cerrado
+                      </span>
+                    )}
                     {allOk ? (
                       <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
                         Al día
@@ -420,6 +489,45 @@ export default function CierreMes() {
                     {items.map((item) => (
                       <ChecklistRow key={item.id} item={item} />
                     ))}
+                    {/* Cerrar / reabrir mes */}
+                    <div className="px-5 py-3 bg-app-bg/40">
+                      {isClosed(project.id) ? (
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="text-xs text-app-muted inline-flex items-center gap-1.5">
+                            <Lock className="w-3.5 h-3.5 text-slate-500" />
+                            Mes cerrado: sus movimientos de dinero están protegidos.
+                          </p>
+                          {isDirector ? (
+                            <button
+                              onClick={() => setPendingReopen(project)}
+                              className="text-xs font-semibold text-amber-700 dark:text-amber-400 hover:underline inline-flex items-center gap-1 shrink-0"
+                            >
+                              <LockOpen className="w-3.5 h-3.5" /> Reabrir
+                            </button>
+                          ) : (
+                            <span className="text-xs text-app-subtle shrink-0">Solo el director puede reabrir</span>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="text-xs text-app-muted">
+                            {allOk
+                              ? 'Todo al día. Puedes cerrar este mes para proteger sus movimientos.'
+                              : 'Aún hay pendientes; puedes cerrar igual, pero se recomienda dejarlos en verde primero.'}
+                          </p>
+                          {canWriteLedger ? (
+                            <button
+                              onClick={() => setPendingClose(project)}
+                              className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-800 text-white hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 inline-flex items-center gap-1.5 shrink-0"
+                            >
+                              <Lock className="w-3.5 h-3.5" /> Cerrar mes
+                            </button>
+                          ) : (
+                            <span className="text-xs text-app-subtle shrink-0">Sin permiso para cerrar</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -434,6 +542,37 @@ export default function CierreMes() {
           Los datos se calculan en el momento. Recarga la página para ver la situación más actualizada.
         </p>
       )}
+
+      <ConfirmModal
+        open={pendingClose !== null}
+        title="Cerrar el mes"
+        message={
+          pendingClose
+            ? `¿Cerrar ${monthLabel} para "${pendingClose.name}"? A partir de ahora nadie podrá crear, editar ni borrar movimientos de dinero (libro diario) de ese mes en este proyecto, hasta que un director lo reabra.`
+            : ''
+        }
+        confirmLabel={savingClose ? 'Cerrando…' : 'Cerrar mes'}
+        onConfirm={() => {
+          if (pendingClose) void handleClose(pendingClose)
+        }}
+        onCancel={() => setPendingClose(null)}
+      />
+
+      <ConfirmModal
+        open={pendingReopen !== null}
+        title="Reabrir el mes"
+        variant="danger"
+        message={
+          pendingReopen
+            ? `¿Reabrir ${monthLabel} para "${pendingReopen.name}"? Se podrán volver a editar los movimientos de dinero de ese mes. Ciérralo de nuevo cuando termines.`
+            : ''
+        }
+        confirmLabel={savingClose ? 'Reabriendo…' : 'Reabrir'}
+        onConfirm={() => {
+          if (pendingReopen) void handleReopen(pendingReopen)
+        }}
+        onCancel={() => setPendingReopen(null)}
+      />
     </div>
   )
 }

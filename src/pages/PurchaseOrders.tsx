@@ -7,6 +7,7 @@ import { Modal } from '@/components/ui/Modal'
 import { RequisitionForm } from '@/components/features/purchase-orders/RequisitionForm'
 import { useToast } from '@/components/ui/Toast'
 import { getErrorMessage } from '@/utils/errors'
+import { saveOrQueue } from '@/utils/offlineQueue'
 import { SkeletonTable } from '@/components/ui/Skeleton'
 import { PURCHASE_ORDER_STATUS_OPTIONS } from '@/components/features/purchase-orders/purchaseOrdersConfig'
 import {
@@ -48,10 +49,19 @@ export default function PurchaseOrders() {
     async (payload: Parameters<typeof requisitionService.create>[0]) => {
       setSaving(true)
       try {
-        const req = await requisitionService.create(payload)
+        // Sin internet, la solicitud se guarda en el dispositivo y se envía sola
+        // al volver la conexión.
+        let created: Awaited<ReturnType<typeof requisitionService.create>> | null = null
+        const result = await saveOrQueue('requisition.create', payload, async () => {
+          created = await requisitionService.create(payload)
+        })
         setShowForm(false)
-        setRequisitions((prev) => [req, ...prev])
-        success('Solicitud de compra creada')
+        if (result === 'queued') {
+          success('Guardado sin conexión. La solicitud se enviará cuando vuelva el internet.')
+        } else {
+          if (created) setRequisitions((prev) => [created!, ...prev])
+          success('Solicitud de compra creada')
+        }
       } catch (err) {
         error(getErrorMessage(err) || 'No se pudo crear la solicitud')
       } finally {

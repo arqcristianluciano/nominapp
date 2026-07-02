@@ -1,3 +1,5 @@
+import { parseDecimalInput } from './decimalInput'
+
 export async function readExcelRowsFromFile(file: File): Promise<unknown[][]> {
   const MAX_BYTES = 20 * 1024 * 1024
   if (file.size > MAX_BYTES) throw new Error('Archivo demasiado grande (max 20 MB)')
@@ -40,8 +42,10 @@ export function parseExcelNumber(raw: string | number | null | undefined): numbe
   let s = String(raw).trim()
   // Si la celda viene como formula tipo "=123" o "=-123", ignorar el "=" y leer el resto.
   if (s.startsWith('=')) s = s.slice(1)
-  const n = parseFloat(s.replace(/,/g, '.'))
-  return n
+  // Usar el lector robusto (US/RD) en vez de reemplazar toda coma por punto:
+  // "1,500" es mil quinientos, no 1.5, y "1.234,56" es 1234.56.
+  const parsed = parseDecimalInput(s)
+  return parsed === null ? NaN : parsed
 }
 
 export function rowToCells(row: unknown[], columns = 5): string[] {

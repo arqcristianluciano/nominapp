@@ -1,5 +1,6 @@
 import { CreditCard } from 'lucide-react'
 import { formatRD } from '@/utils/currency'
+import { formatDateDMY } from '@/utils/dateLocal'
 import type { CxPProjectGroup } from '@/hooks/useCxPConsolidadoTodos'
 
 export function CxPConsolidadoSummary({
@@ -77,7 +78,7 @@ export function CxPConsolidadoGroups({ groups }: { groups: CxPProjectGroup[] }) 
                     <div className="mt-2 grid grid-cols-3 gap-2 text-[11px]">
                       <div>
                         <p className="text-app-muted uppercase tracking-wide text-[9px]">Fecha</p>
-                        <p className="text-app-text">{new Date(item.date).toLocaleDateString('es-DO')}</p>
+                        <p className="text-app-text">{formatDateDMY(item.date)}</p>
                       </div>
                       <div>
                         <p className="text-app-muted uppercase tracking-wide text-[9px]">Factura</p>
@@ -120,7 +121,7 @@ export function CxPConsolidadoGroups({ groups }: { groups: CxPProjectGroup[] }) 
                     return (
                       <tr key={rowKey} className="border-b border-app-border hover:bg-app-hover">
                         <td className="px-4 py-2 text-xs text-app-muted whitespace-nowrap">
-                          {new Date(item.date).toLocaleDateString('es-DO')}
+                          {formatDateDMY(item.date)}
                         </td>
                         <td className="px-4 py-2 text-xs text-app-muted">{item.invoiceNumber || '—'}</td>
                         <td className="px-4 py-2 text-xs text-app-text font-medium">{item.supplierName}</td>

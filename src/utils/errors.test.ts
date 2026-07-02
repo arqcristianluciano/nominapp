@@ -35,4 +35,12 @@ describe('getErrorMessage', () => {
   it('traduce "permission denied" a un mensaje claro de permisos', () => {
     expect(getErrorMessage(new Error('permission denied for table contractor_loans'))).toContain('no tiene permiso')
   })
+
+  it('quita el prefijo técnico de un error de negocio (MONTH_CLOSED)', () => {
+    const msg = getErrorMessage(
+      new Error('MONTH_CLOSED: El mes 2026-07 de este proyecto está cerrado. Reábrelo para modificar sus movimientos.'),
+    )
+    expect(msg).toBe('El mes 2026-07 de este proyecto está cerrado. Reábrelo para modificar sus movimientos.')
+    expect(msg).not.toContain('MONTH_CLOSED')
+  })
 })

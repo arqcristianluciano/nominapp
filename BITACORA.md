@@ -2,6 +2,140 @@
 
 Diario en lenguaje sencillo de lo que se va haciendo en la app.
 
+## 2026-07-02 — Revisión completa de toda la app (auditoría)
+
+Cristian pidió revisar TODA la aplicación buscando errores, lógica que
+falta, cosas mal conectadas entre módulos y mejoras posibles.
+
+**Cómo se hizo:** se repartió la app en 16 partes y se revisó cada una a
+fondo, siguiendo el rastro del dinero de punta a punta. Además se
+comprobaron a mano, sobre la base de datos real, los puntos más graves.
+Las pruebas automáticas de la app **pasan todas** (667) y la app
+construye sin errores; los problemas encontrados son de lógica y de
+integración, no de que la app "se caiga".
+
+**Qué se encontró (resumen):** 138 temas en total — 9 críticos, 47
+altos, 60 medios y 22 bajos. El detalle completo, en lenguaje sencillo y
+ordenado por gravedad, quedó en el archivo **`AUDITORIA_2026-07-02.md`**.
+
+Los patrones que más se repiten:
+
+1. **El dinero se cuenta dos veces** cuando se compra a crédito y luego
+   se paga esa factura (afecta "disponible", "gastado" del presupuesto,
+   flujo de caja y el panel).
+2. **Cadenas de dinero desconectadas**: pagar nómina, cobrar cuotas o
+   recibir compras a crédito no siempre mueve el saldo de las cuentas ni
+   las cuentas por pagar.
+3. **Descuentos que no descuentan**: deducciones de préstamo y retención
+   de garantía se muestran pero no se restan del pago; los adelantos se
+   pueden cobrar dos veces.
+4. **Candados solo en la pantalla, no en el servidor**: aprobaciones y
+   límites que se revisan en el navegador pero el servidor deja pasar.
+5. **Cosas prometidas que no están conectadas**: el "modo sin internet",
+   el historial de versiones del presupuesto y "importar asistencia"
+   tienen botón pero por dentro no hacen nada.
+
+**Qué cambió para Cristian (por ahora):** todavía nada en la app; esto es
+un diagnóstico. El siguiente paso es que Cristian elija por dónde empezar
+a arreglar (la recomendación es atacar primero el doble conteo del dinero
+y los descuentos que no descuentan, porque afectan plata real todos los
+días).
+
+**Pendiente:** decidir el orden de los arreglos. La segunda verificación
+automática de la lista quedó a medias por un límite de uso del servicio;
+los temas sin reconfirmar están marcados como «por reconfirmar» en el
+reporte, aunque están bien fundamentados.
+
+### Arreglos ya hechos (misma sesión, probados)
+
+Cristian pidió arreglar los errores y la seguridad. Se hicieron y se
+probaron (todas las pruebas automáticas y la construcción en verde):
+
+1. **El dinero ya no se cuenta dos veces.** Cuando compras a crédito y
+   luego pagas esa factura, ese pago ya no se suma otra vez como gasto.
+   Se corrigió en el Control Financiero, el flujo de caja y el panel; el
+   panel ahora sí baja las cuentas por pagar cuando pagas, y las gráficas
+   de gasto ya no cuentan los depósitos como gasto.
+2. **Los descuentos ahora sí bajan del pago.** Las deducciones de
+   préstamo y la retención de garantía se restan de lo que se puede
+   repartir en pagos (antes se mostraban pero no se descontaban), y los
+   adelantos ya no se pueden cobrar dos veces al contratista.
+3. **Los números se leen bien.** "0,125" ya no se convierte en 125, y al
+   importar de Excel "1,500" ya es mil quinientos (antes 1.5).
+4. **Seguridad del servidor (APLICADO a la base real).** Cristian dio el
+   visto bueno y se aplicó: dos operaciones internas (mover almacén y
+   sumar pagos) ya NO las puede usar nadie sin sesión ni sin permiso
+   (antes cualquiera podía, incluso sin entrar). Y las unidades de medida
+   compartidas ya no se pueden borrar/renombrar salvo director o gestor de
+   catálogo (añadir sigue abierto). Verificado: el rol "anónimo" quedó
+   fuera de esas funciones.
+5. **Compras:** una solicitud con varios materiales ahora revisa el
+   excedente de presupuesto en todas las líneas, no solo en la primera.
+6. **Respaldo (Exportar todo a CSV):** ya no se corta a 1000 filas por
+   tabla (antes el respaldo salía incompleto sin avisar); se protege
+   contra fórmulas peligrosas de Excel; y abre con acentos y ñ correctos.
+7. **Calendario de pagos:** ya no muestra facturas que ya pagaste (antes
+   se quedaban ahí para siempre); muestra el monto que de verdad falta y
+   lee más movimientos ordenados por fecha.
+8. **Sin registros duplicados:** en asistencia, bitácora y control de
+   calidad, un doble clic en Guardar ya no crea el registro dos veces.
+9. **Control de calidad:** si borras el resultado de un ensayo, ya no
+   queda marcado "Aprobado" en falso.
+
+**Decisiones de Cristian en esta sesión:**
+
+- Números con coma = **miles** (2,375 = 2375, estilo internacional). El
+  arreglo respeta eso; solo se corrigió el caso imposible "0,125" (que
+  nunca puede ser miles) para que sea 0.125.
+- Aplicar la seguridad ya: **sí**, hecho.
+
+10. **Fechas que ya no se corren un día** en todo el sistema (cronograma,
+    transacciones, cheques, cuentas por pagar, cortes, adelantos,
+    préstamos y reportes).
+11. **Aviso antes de perder datos:** al borrar una subpartida con gasto o
+    avances, ahora avisa en rojo cuánto se perdería antes de confirmar.
+
+### Funciones nuevas (Cristian pidió "hagamos todo")
+
+Cristian eligió el orden: primero el cierre de mes. Hecho y probado:
+
+- **Cierre de mes de verdad (APLICADO a la base real):** en la pantalla
+  "Cierre de Mes" hay un botón para **cerrar** un mes de un proyecto. Al
+  cerrarlo, nadie puede crear, editar ni borrar movimientos de dinero
+  (libro diario) de ese mes, hasta que un **director** lo **reabra**. El
+  candado está puesto en el servidor (de verdad, no solo en la pantalla).
+  Cerrar lo puede hacer quien lleva el libro diario o un director;
+  reabrir, solo el director. Mientras no cierres ningún mes, nada cambia.
+
+Después Cristian pidió "hazlo todo": se construyeron las cuatro funciones
+nuevas, cada una probada y subida:
+
+- **Cierre de mes de verdad (aplicado):** cerrar/reabrir un mes; los
+  movimientos de dinero de un mes cerrado no se pueden tocar hasta que un
+  director lo reabra. Candado en el servidor.
+- **Modo sin internet de verdad:** en obra sin señal se pueden registrar
+  solicitudes de compra, avances y movimientos de almacén; quedan
+  guardados en el dispositivo y se envían solos al volver el internet.
+  Además se corrigió que la cola ya no borra cambios en silencio.
+- **Historial del presupuesto:** botón "Historial" en el presupuesto que
+  lista las versiones y permite guardar una copia; y se guarda una copia
+  automática antes de importar de Excel sobre un presupuesto con datos.
+- **Restaurar un respaldo (forma segura):** el respaldo ahora incluye
+  TODAS las tablas (antes omitía módulos), y en Configuración se explica
+  cómo restaurar de forma segura desde el servidor. NO se hizo el botón de
+  "subir un CSV a la base" porque duplicaría o pisaría datos buenos; esa es
+  una acción destructiva que no se hace sin tu confirmación expresa.
+
+### Más arreglos finos (misma sesión)
+
+- **Historial de Precios:** ya no mezcla materiales distintos de un mismo
+  proveedor; cada fila es un material de un proveedor.
+- **Avance del proyecto (gráfica):** ya no cuenta doble el avance (antes
+  sumaba la tarea grande y sus subtareas).
+- **Saldo de cuentas:** se calcula con precisión de centavos.
+- **Sin conexión:** un solo aviso (antes salían dos y uno tapaba la pantalla).
+- **Cronograma:** borrar una tarea pide confirmación una sola vez (antes dos).
+
 ## 2026-06-12 — Avisos al celular, recibos, estado de cuenta e intereses
 
 Cristian preguntó qué más se podía hacer y eligió cuatro mejoras del

@@ -40,9 +40,14 @@ export function useOfflineQueue() {
     const handleOffline = () => setOnline(false)
     window.addEventListener('online', handleOnline)
     window.addEventListener('offline', handleOffline)
-    // refreshCount es async; el setState ocurre dentro del .then, no en el body del effect.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void refreshCount()
+    // Al abrir la app: si hay internet, intentar enviar lo que quedó pendiente
+    // de una sesión anterior; si no, solo actualizar el contador.
+    void (async () => {
+      if (isOnline()) {
+        await processor.flush()
+      }
+      await refreshCount()
+    })()
     return () => {
       window.removeEventListener('online', handleOnline)
       window.removeEventListener('offline', handleOffline)

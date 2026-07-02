@@ -88,6 +88,10 @@ export function parseDecimalInput(s: string): number | null {
     const parts = body.split(',')
     if (parts.length === 2 && /^\d+$/.test(parts[0]) && /^\d{1,2}$/.test(parts[1])) {
       normalized = `${parts[0]}.${parts[1]}`
+    } else if (parts.length === 2 && parts[0] === '0' && /^\d+$/.test(parts[1])) {
+      // "0,125" nunca es una agrupación de miles válida (ningún número de miles
+      // empieza en "0"): es un decimal (0.125). Evita multiplicar por mil.
+      normalized = `0.${parts[1]}`
     } else {
       normalized = stripThousands(body, ',')
     }
@@ -97,6 +101,9 @@ export function parseDecimalInput(s: string): number | null {
     // thousands grouping ("1.234" / "1.234.567"); anything else is malformed.
     const parts = body.split('.')
     if (parts.length === 2 && /^\d+$/.test(parts[0]) && /^\d{1,2}$/.test(parts[1])) {
+      normalized = body
+    } else if (parts.length === 2 && parts[0] === '0' && /^\d+$/.test(parts[1])) {
+      // "0.125" nunca es una agrupación de miles válida: es un decimal (0.125).
       normalized = body
     } else {
       normalized = stripThousands(body, '.')

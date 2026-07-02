@@ -38,6 +38,10 @@ function buildScheduleProgress(tasks: ScheduleTask[], months: number): ScheduleM
   const now = new Date()
   const result: ScheduleMonthlyProgress[] = []
 
+  // Tareas que son "padre" de otras: se excluyen para no contar doble el avance
+  // (antes se sumaba la tarea padre Y sus subtareas). Solo cuentan las hojas.
+  const parentIds = new Set(tasks.map((t) => t.parent_task_id).filter(Boolean) as string[])
+
   for (let i = months - 1; i >= 0; i--) {
     const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0) // último día del mes
     const ym = `${monthEnd.getFullYear()}-${String(monthEnd.getMonth() + 1).padStart(2, '0')}`
@@ -45,8 +49,8 @@ function buildScheduleProgress(tasks: ScheduleTask[], months: number): ScheduleM
     // Solo calcular para meses que ya pasaron o el actual
     const monthEndStr = monthEnd.toISOString().split('T')[0]
 
-    // Tareas activas en o antes de este mes (ya empezadas)
-    const activeTasks = tasks.filter((t) => t.start_date <= monthEndStr && !t.is_milestone)
+    // Tareas hoja activas en o antes de este mes (ya empezadas, sin subtareas)
+    const activeTasks = tasks.filter((t) => t.start_date <= monthEndStr && !t.is_milestone && !parentIds.has(t.id))
     if (activeTasks.length === 0) {
       result.push({ month: ym, progress: 0 })
       continue

@@ -2,7 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import * as Sentry from '@sentry/react'
 import { Plus, Download } from 'lucide-react'
 import { paymentDistributionService, type Beneficiary } from '@/services/paymentDistributionService'
+import { payrollService } from '@/services/payrollService'
 import { bankAccountService } from '@/services/bankAccountService'
+import { round2 } from '@/utils/money'
 import { DistributionForm, type DistributionFormValues } from './DistributionForm'
 import { DistributionsTable } from './DistributionsTable'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
@@ -23,6 +25,13 @@ export function PaymentDistributionsSection({ periodId, grandTotal }: Props) {
   const [distributions, setDistributions] = useState<PaymentDistribution[]>([])
   const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([])
   const [sourceAccounts, setSourceAccounts] = useState<BankAccount[]>([])
+  // Deducciones que se retienen del pago (préstamos + retención de garantía):
+  // reducen el tope que se puede repartir para no pagar de más al beneficiario.
+  const [deductions, setDeductions] = useState<{ loanDeductions: number; retention: number; total: number }>({
+    loanDeductions: 0,
+    retention: 0,
+    total: 0,
+  })
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
   const [toDelete, setToDelete] = useState<PaymentDistribution | null>(null)
@@ -33,16 +42,26 @@ export function PaymentDistributionsSection({ periodId, grandTotal }: Props) {
   const { success: toastSuccess, error: toastError } = useToast()
 
   const load = useCallback(async () => {
-    const data = await paymentDistributionService.getByPeriod(periodId).catch((err) => {
-      console.error('[PaymentDistributionsSection] cargar distribuciones fallo', err)
-      Sentry.captureException(err, { tags: { area: 'PaymentDistributionsSection' } })
-      toastError(`No se pudieron cargar las distribuciones de pago: ${getErrorMessage(err)}`)
-      return [] as PaymentDistribution[]
-    })
+    const [data, ded] = await Promise.all([
+      paymentDistributionService.getByPeriod(periodId).catch((err) => {
+        console.error('[PaymentDistributionsSection] cargar distribuciones fallo', err)
+        Sentry.captureException(err, { tags: { area: 'PaymentDistributionsSection' } })
+        toastError(`No se pudieron cargar las distribuciones de pago: ${getErrorMessage(err)}`)
+        return [] as PaymentDistribution[]
+      }),
+      payrollService.getPayrollDeductions(periodId).catch((err) => {
+        console.error('[PaymentDistributionsSection] cargar deducciones fallo', err)
+        Sentry.captureException(err, { tags: { area: 'PaymentDistributionsSection' } })
+        return { loanDeductions: 0, retention: 0, total: 0 }
+      }),
+    ])
     setDistributions(data)
+    setDeductions(ded)
   }, [periodId, toastError])
 
   useEffect(() => {
+    // grandTotal en las dependencias: al vincular/desvincular cortes o cambiar
+    // el total, se recargan las deducciones para recalcular el neto a repartir.
     load()
     paymentDistributionService
       .getBeneficiaries()
@@ -59,11 +78,14 @@ export function PaymentDistributionsSection({ periodId, grandTotal }: Props) {
         console.error('[PaymentDistributionsSection] cargar cuentas internas fallo', err)
         Sentry.captureException(err, { tags: { area: 'PaymentDistributionsSection' } })
       })
-  }, [load, periodId, toastError])
+  }, [load, periodId, grandTotal, toastError])
 
+  // El neto a repartir es el total del reporte menos lo que se retiene
+  // (préstamos + retención de garantía): nunca se debe poder pagar de más.
+  const netToPay = round2(Math.max(0, grandTotal - deductions.total))
   // A7: exclude cancelled distributions so "falta distribuir" is accurate
   const totalDistributed = distributions.filter((d) => d.status !== 'cancelled').reduce((sum, d) => sum + d.amount, 0)
-  const pendiente = grandTotal - totalDistributed
+  const pendiente = round2(netToPay - totalDistributed)
 
   const sourceAccountMap = useMemo(
     () => new Map(sourceAccounts.map((a) => [a.id, `${a.bank_name} — ${a.account_number}`])),
@@ -91,7 +113,7 @@ export function PaymentDistributionsSection({ periodId, grandTotal }: Props) {
           instructions: null,
           completed_at: null,
         },
-        grandTotal,
+        netToPay,
       )
       setShowForm(false)
       await load()
@@ -123,8 +145,8 @@ export function PaymentDistributionsSection({ periodId, grandTotal }: Props) {
     const { values, existing } = consolidatePrompt
     setSaving(true)
     try {
-      // A8: pass grandTotal so addAmount can enforce the period cap
-      await paymentDistributionService.addAmount(existing.id, values.amount, grandTotal)
+      // A8: pass el neto para que addAmount respete el tope (ya sin lo retenido)
+      await paymentDistributionService.addAmount(existing.id, values.amount, netToPay)
       toastSuccess(`Pago sumado al de ${existing.beneficiary || 'el beneficiario'}.`)
       setConsolidatePrompt(null)
       setShowForm(false)
@@ -190,6 +212,16 @@ export function PaymentDistributionsSection({ periodId, grandTotal }: Props) {
       <div className="flex items-center justify-between mb-3 gap-2">
         <div>
           <h2 className="text-lg font-medium text-app-text">Distribución de pagos</h2>
+          {deductions.total > 0 && (
+            <p className="text-xs text-app-muted mt-0.5">
+              Neto a pagar: {formatRD(netToPay)}{' '}
+              <span className="text-app-subtle">
+                (se retiene{deductions.loanDeductions > 0 && ` ${formatRD(deductions.loanDeductions)} de préstamos`}
+                {deductions.loanDeductions > 0 && deductions.retention > 0 && ' y'}
+                {deductions.retention > 0 && ` ${formatRD(deductions.retention)} de garantía`})
+              </span>
+            </p>
+          )}
           {pendiente > 0.01 && <p className="text-xs text-amber-600 mt-0.5">Falta distribuir: {formatRD(pendiente)}</p>}
           {pendiente <= 0 && distributions.length > 0 && (
             <p className="text-xs text-green-600 mt-0.5">Total distribuido completo</p>

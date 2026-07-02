@@ -25,6 +25,16 @@ describe('parseDecimalInput', () => {
       expect(parseDecimalInput('12,5')).toBe(12.5)
       expect(parseDecimalInput('12.5')).toBe(12.5)
     })
+
+    it('lee "0,125" y "0.125" como decimales, no como 125 (nunca son miles)', () => {
+      expect(parseDecimalInput('0,125')).toBe(0.125)
+      expect(parseDecimalInput('0.125')).toBe(0.125)
+    })
+
+    it('lee "0,5" pequeños correctamente', () => {
+      expect(parseDecimalInput('0,5')).toBe(0.5)
+      expect(parseDecimalInput('0.5')).toBe(0.5)
+    })
   })
 
   describe('US format ("1,234.56")', () => {

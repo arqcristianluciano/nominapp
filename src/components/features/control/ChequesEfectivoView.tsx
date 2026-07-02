@@ -1,6 +1,7 @@
 import { TrendingDown, Wallet } from 'lucide-react'
 import type { TransactionWithRelations } from '@/services/transactionService'
 import { formatRD } from '@/utils/currency'
+import { formatDateDMY } from '@/utils/dateLocal'
 
 const DEPOSIT_CODE = '19 - DEPOSITOS'
 
@@ -74,14 +75,12 @@ export function ChequesEfectivoView({
                     key={t.id}
                     className={`border-b border-app-border hover:bg-app-hover ${isUncashed ? 'bg-amber-50 dark:bg-amber-950/20' : ''}`}
                   >
-                    <td className="px-3 py-2.5 text-xs text-app-muted">
-                      {new Date(t.date).toLocaleDateString('es-DO')}
-                    </td>
+                    <td className="px-3 py-2.5 text-xs text-app-muted">{formatDateDMY(t.date)}</td>
                     <td className="px-3 py-2.5 text-xs text-app-muted">{t.check_number || '—'}</td>
                     <td className="px-3 py-2.5 text-xs text-app-muted">{t.bank || '—'}</td>
                     <td className="px-3 py-2.5 text-xs text-app-muted">
                       {t.cashed_date ? (
-                        new Date(t.cashed_date).toLocaleDateString('es-DO')
+                        formatDateDMY(t.cashed_date)
                       ) : t.check_number ? (
                         <span className="text-amber-600 dark:text-amber-400 font-medium">Pendiente</span>
                       ) : (
@@ -109,7 +108,7 @@ export function ChequesEfectivoView({
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="text-sm text-app-text font-medium break-words">{t.description}</p>
-                      <p className="text-xs text-app-subtle mt-0.5">{new Date(t.date).toLocaleDateString('es-DO')}</p>
+                      <p className="text-xs text-app-subtle mt-0.5">{formatDateDMY(t.date)}</p>
                     </div>
                     <p
                       className={`text-sm font-semibold whitespace-nowrap text-right ${isDeposit ? 'text-green-700 dark:text-green-400' : 'text-app-text'}`}
@@ -132,7 +131,7 @@ export function ChequesEfectivoView({
                     <p>
                       Fecha Canje:{' '}
                       {t.cashed_date ? (
-                        <span className="text-app-muted">{new Date(t.cashed_date).toLocaleDateString('es-DO')}</span>
+                        <span className="text-app-muted">{formatDateDMY(t.cashed_date)}</span>
                       ) : t.check_number ? (
                         <span className="text-amber-600 dark:text-amber-400 font-medium">Pendiente</span>
                       ) : (

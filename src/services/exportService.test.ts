@@ -21,12 +21,15 @@ interface SupabaseResponse {
 }
 
 /**
- * Construye un builder cuya cadena .select('*') resuelve a {data, error}.
- * El service sólo usa: supabase.from(table).select('*').
+ * Construye un builder cuya cadena .select('*').range(...) resuelve a {data, error}.
+ * El service pagina: supabase.from(table).select('*').range(from, to).
  */
 function buildBuilder(response: SupabaseResponse) {
+  const thenable = {
+    range: vi.fn().mockResolvedValue(response),
+  }
   return {
-    select: vi.fn().mockResolvedValue(response),
+    select: vi.fn().mockReturnValue(thenable),
   }
 }
 
@@ -91,6 +94,18 @@ describe('rowsToCsv', () => {
     expect(csv).toContain('Asunción')
     // El carácter "ñ" sigue siendo "ñ" (no Mojibake).
     expect(csv.includes('ñ')).toBe(true)
+  })
+
+  it('neutraliza fórmulas de Excel en texto (=,+,-,@) anteponiendo apóstrofe', () => {
+    const csv = rowsToCsv([{ a: '=1+2', b: '+cmd', c: '-8+3', d: '@x', e: 'normal' }])
+    const line = csv.split('\r\n')[1]
+    // Cada celda peligrosa queda con apóstrofe delante; la normal intacta.
+    expect(line).toBe("'=1+2,'+cmd,'-8+3,'@x,normal")
+  })
+
+  it('no toca los números negativos reales (vienen como number, no texto)', () => {
+    const csv = rowsToCsv([{ saldo: -5, nombre: 'X' }])
+    expect(csv).toBe('saldo,nombre\r\n-5,X\r\n')
   })
 
   it('mapea null/undefined a celda vacía y serializa objetos/arrays/Date', () => {
@@ -218,7 +233,11 @@ describe('exportAllToZip', () => {
       // Debe contener el CSV de la entidad + el README.
       expect(Object.keys(unzipped).sort()).toEqual(['README.txt', 'companies.csv'])
 
-      const csv = strFromU8(unzipped['companies.csv'])
+      // Los bytes del archivo empiezan con el BOM UTF-8 (EF BB BF) para que Excel
+      // muestre bien los acentos. El decodificador UTF-8 lo consume al leer.
+      const bytes = unzipped['companies.csv']
+      expect([bytes[0], bytes[1], bytes[2]]).toEqual([0xef, 0xbb, 0xbf])
+      const csv = strFromU8(bytes)
       expect(csv.startsWith('id,nombre,monto\r\n')).toBe(true)
       // UTF-8 round-trip a través del ZIP.
       expect(csv).toContain('Niño SA')
