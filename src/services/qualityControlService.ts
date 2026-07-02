@@ -34,19 +34,29 @@ export const qualityControlService = {
   },
 
   async update(id: string, updates: QCUpdate): Promise<QualityControl> {
-    // El estado (aprobado/fallido) solo se recalcula cuando la actualizacion trae
-    // ambas resistencias; asi una edicion parcial (p.ej. solo la fecha o las notas)
-    // no borra por error el estado ya guardado.
+    // El estado (aprobado/fallido) se recalcula cuando la actualización TOCA
+    // cualquiera de las dos resistencias (aunque sea para borrarla). Una edición
+    // parcial que no las toca (p.ej. solo la fecha o las notas) conserva el
+    // estado. Si se toca solo una, se combina con el valor actual de la otra.
     const payload: QCUpdate & { status?: 'passed' | 'failed' | null } = { ...updates }
-    if (updates.actual_resistance != null && updates.expected_resistance != null) {
-      payload.status = computeStatus(updates.actual_resistance, updates.expected_resistance)
+    const touchesResistances = 'actual_resistance' in updates || 'expected_resistance' in updates
+    if (touchesResistances) {
+      let actual = updates.actual_resistance
+      let expected = updates.expected_resistance
+      // Si falta una de las dos en el payload, se lee la actual de la BD para no
+      // dejar un estado "aprobado" viejo cuando se borró/cambió el resultado.
+      if (!('actual_resistance' in updates) || !('expected_resistance' in updates)) {
+        const { data: current } = await supabase
+          .from('quality_control')
+          .select('actual_resistance, expected_resistance')
+          .eq('id', id)
+          .single()
+        if (!('actual_resistance' in updates)) actual = current?.actual_resistance ?? null
+        if (!('expected_resistance' in updates)) expected = current?.expected_resistance ?? null
+      }
+      payload.status = computeStatus(actual, expected)
     }
-    const { data, error } = await supabase
-      .from('quality_control')
-      .update(payload)
-      .eq('id', id)
-      .select()
-      .single()
+    const { data, error } = await supabase.from('quality_control').update(payload).eq('id', id).select().single()
     if (error) throw error
     return data as QualityControl
   },
