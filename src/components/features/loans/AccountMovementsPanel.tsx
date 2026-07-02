@@ -8,6 +8,7 @@ import { Modal } from '@/components/ui/Modal'
 import { SkeletonTable } from '@/components/ui/Skeleton'
 import { useToast } from '@/components/ui/Toast'
 import { formatRD } from '@/utils/currency'
+import { todayISO } from '@/utils/dateLocal'
 import { getErrorMessage } from '@/utils/errors'
 import { exportToExcel } from '@/utils/excelExport'
 import type { AccountMovement, AccountMovementTipo, BankAccount } from '@/types/database'
@@ -202,7 +203,7 @@ function ManualMovementForm({
 }) {
   const [tipo, setTipo] = useState<AccountMovementTipo>(initial?.tipo ?? 'credito')
   const [monto, setMonto] = useState(initial ? String(initial.monto) : '')
-  const [fecha, setFecha] = useState(initial?.fecha ?? new Date().toISOString().slice(0, 10))
+  const [fecha, setFecha] = useState(initial?.fecha ?? todayISO())
   const [concepto, setConcepto] = useState(initial?.concepto ?? '')
 
   const montoParsed = parseFloat(monto)

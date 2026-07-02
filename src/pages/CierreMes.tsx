@@ -10,6 +10,7 @@
  *  - projects               → lista activa               (projectService.getAll)
  */
 import { useEffect, useMemo, useState } from 'react'
+import { todayISO } from '@/utils/dateLocal'
 import { Link } from 'react-router-dom'
 import {
   CheckCircle2,
@@ -99,7 +100,7 @@ async function fetchDistributions(
 async function fetchOverdueInstallments(): Promise<
   Array<{ id: string; loan_id: string; fecha_pago_programada: string; monto: number }>
 > {
-  const todayStr = new Date().toISOString().split('T')[0]
+  const todayStr = todayISO()
   const { data, error } = await supabase
     .from('loan_installments')
     .select('id, loan_id, fecha_pago_programada, monto')

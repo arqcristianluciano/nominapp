@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/react'
+import { todayISO } from '@/utils/dateLocal'
 import { supabase } from '@/lib/supabase'
 import type {
   PayrollPeriod,
@@ -320,7 +321,7 @@ export const payrollService = {
     const newPeriod = await this.createPeriod({
       project_id: projectId,
       period_number: nextNum,
-      report_date: new Date().toISOString().split('T')[0],
+      report_date: todayISO(),
     })
 
     if (laborItems.length > 0) {

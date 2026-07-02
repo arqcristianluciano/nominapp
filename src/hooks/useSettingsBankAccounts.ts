@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { todayISO } from '@/utils/dateLocal'
 import { accountMovementService } from '@/services/accountMovementService'
 import { bankAccountService } from '@/services/bankAccountService'
 import type { BankAccount } from '@/types/database'
@@ -69,7 +70,7 @@ function useBankAccountSave(loadAccounts: () => Promise<void>, closeForm: () => 
             try {
               await accountMovementService.create({
                 account_id: created.id,
-                fecha: new Date().toISOString().slice(0, 10),
+                fecha: todayISO(),
                 tipo: 'credito',
                 monto: saldoInicial,
                 concepto: 'Saldo inicial',

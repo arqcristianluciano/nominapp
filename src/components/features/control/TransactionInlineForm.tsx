@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { todayISO } from '@/utils/dateLocal'
 import { Plus } from 'lucide-react'
 import type { BudgetCategory, BudgetItem, Supplier } from '@/types/database'
 import { SupplierSelect } from '@/components/features/suppliers/SupplierSelect'
@@ -21,7 +22,7 @@ export function TransactionInlineForm({
   onSubmit: (data: Omit<Transaction, 'id' | 'created_at'>) => void
   saving: boolean
 }) {
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
+  const [date, setDate] = useState(todayISO())
   const [budgetCategoryId, setBudgetCategoryId] = useState('')
   const [budgetItemId, setBudgetItemId] = useState('')
   const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([])
