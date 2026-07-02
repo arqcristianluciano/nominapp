@@ -24,35 +24,66 @@ export interface ExportableEntity {
 }
 
 export const EXPORTABLE_ENTITIES: ExportableEntity[] = [
+  // Maestros y estructura
   { table: 'companies', filename: 'companies.csv' },
   { table: 'projects', filename: 'projects.csv' },
+  { table: 'project_members', filename: 'project_members.csv' },
   { table: 'contractors', filename: 'contractors.csv' },
   { table: 'suppliers', filename: 'suppliers.csv' },
   { table: 'bank_accounts', filename: 'bank_accounts.csv' },
+  { table: 'materials_catalog', filename: 'materials_catalog.csv' },
+  { table: 'measure_units', filename: 'measure_units.csv' },
+  // Presupuesto
   { table: 'budget_categories', filename: 'budget_categories.csv' },
   { table: 'budget_items', filename: 'budget_items.csv' },
+  { table: 'budget_versions', filename: 'budget_versions.csv' },
   { table: 'price_list_items', filename: 'price_list_items.csv' },
+  { table: 'partida_progress', filename: 'partida_progress.csv' },
+  { table: 'mercado_budgets', filename: 'mercado_budgets.csv' },
+  { table: 'mercado_budget_lines', filename: 'mercado_budget_lines.csv' },
+  // Nómina
   { table: 'payroll_periods', filename: 'payroll_periods.csv' },
   { table: 'labor_line_items', filename: 'labor_line_items.csv' },
   { table: 'material_invoices', filename: 'material_invoices.csv' },
+  { table: 'material_invoice_items', filename: 'material_invoice_items.csv' },
   { table: 'indirect_costs', filename: 'indirect_costs.csv' },
   { table: 'payment_distributions', filename: 'payment_distributions.csv' },
+  // Finanzas
   { table: 'transactions', filename: 'transactions.csv' },
-  { table: 'quality_control', filename: 'quality_control.csv' },
+  { table: 'account_movements', filename: 'account_movements.csv' },
+  { table: 'expected_cash_inflows', filename: 'expected_cash_inflows.csv' },
+  { table: 'closed_months', filename: 'closed_months.csv' },
+  // Cubicaciones / contratistas
   { table: 'adjustment_contracts', filename: 'adjustment_contracts.csv' },
   { table: 'contract_partidas', filename: 'contract_partidas.csv' },
   { table: 'contract_cortes', filename: 'contract_cortes.csv' },
   { table: 'contract_adelantos', filename: 'contract_adelantos.csv' },
+  { table: 'contract_cubications', filename: 'contract_cubications.csv' },
   { table: 'contractor_loans', filename: 'contractor_loans.csv' },
+  { table: 'loan_installments', filename: 'loan_installments.csv' },
   { table: 'loan_deductions', filename: 'loan_deductions.csv' },
-  { table: 'attendance_records', filename: 'attendance_records.csv' },
-  { table: 'inventory_items', filename: 'inventory_items.csv' },
-  { table: 'inventory_movements', filename: 'inventory_movements.csv' },
+  { table: 'contractor_documents', filename: 'contractor_documents.csv' },
+  // Compras
   { table: 'purchase_requisitions', filename: 'purchase_requisitions.csv' },
+  { table: 'purchase_requisition_items', filename: 'purchase_requisition_items.csv' },
   { table: 'purchase_quotes', filename: 'purchase_quotes.csv' },
-  { table: 'materials_catalog', filename: 'materials_catalog.csv' },
+  { table: 'purchase_quote_items', filename: 'purchase_quote_items.csv' },
+  { table: 'purchase_orders', filename: 'purchase_orders.csv' },
+  { table: 'purchase_order_items', filename: 'purchase_order_items.csv' },
+  // Almacén
+  { table: 'inventory_items', filename: 'inventory_items.csv' },
+  { table: 'inventory_lots', filename: 'inventory_lots.csv' },
+  { table: 'inventory_movements', filename: 'inventory_movements.csv' },
+  // Obra
+  { table: 'attendance_records', filename: 'attendance_records.csv' },
+  { table: 'quality_control', filename: 'quality_control.csv' },
   { table: 'schedule_tasks', filename: 'schedule_tasks.csv' },
   { table: 'bitacora_entries', filename: 'bitacora_entries.csv' },
+  { table: 'bitacora_photos', filename: 'bitacora_photos.csv' },
+  // Documentos y auditoría
+  { table: 'project_documents', filename: 'project_documents.csv' },
+  { table: 'user_documents', filename: 'user_documents.csv' },
+  { table: 'approvals', filename: 'approvals.csv' },
 ]
 
 export interface ExportEntityResult {
