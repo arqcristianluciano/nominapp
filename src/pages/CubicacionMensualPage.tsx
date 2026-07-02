@@ -11,6 +11,7 @@ import { exportToExcel } from '@/utils/excelExport'
 import { useToast } from '@/components/ui/Toast'
 import { useProjectStore } from '@/stores/projectStore'
 import { formatRD } from '@/utils/currency'
+import { round2 } from '@/utils/money'
 import { getErrorMessage } from '@/utils/errors'
 
 type ViewMode = 'mensual' | 'partida'
@@ -60,10 +61,11 @@ export default function CubicacionMensualPage() {
               Mes: r.month,
               Capítulo: r.category_code ?? '—',
               Nombre: r.category_name ?? '—',
-              'Cubicado (DOP)': r.cubicado.toFixed(2),
-              'Costo real (DOP)': r.costo_real.toFixed(2),
-              'Desviación (DOP)': r.desviacion.toFixed(2),
-              'Desviación %': `${r.cubicado > 0 ? ((r.desviacion / r.cubicado) * 100).toFixed(1) : '0.0'}%`,
+              // Montos como números reales para poder sumar/ordenar en Excel.
+              'Cubicado (DOP)': round2(r.cubicado),
+              'Costo real (DOP)': round2(r.costo_real),
+              'Desviación (DOP)': round2(r.desviacion),
+              'Desviación %': r.cubicado > 0 ? round2((r.desviacion / r.cubicado) * 100) : 0,
             })),
           },
         ])
@@ -75,10 +77,11 @@ export default function CubicacionMensualPage() {
               Capítulo: r.category_code ?? '—',
               Partida: r.item_code ?? '—',
               Descripción: r.item_description,
-              'Presupuesto (DOP)': r.presupuesto.toFixed(2),
-              'Costo real (DOP)': r.costo_real.toFixed(2),
-              'Desviación (DOP)': r.desviacion.toFixed(2),
-              'Desviación %': `${r.presupuesto > 0 ? ((r.desviacion / r.presupuesto) * 100).toFixed(1) : '0.0'}%`,
+              // Montos como números reales para poder sumar/ordenar en Excel.
+              'Presupuesto (DOP)': round2(r.presupuesto),
+              'Costo real (DOP)': round2(r.costo_real),
+              'Desviación (DOP)': round2(r.desviacion),
+              'Desviación %': r.presupuesto > 0 ? round2((r.desviacion / r.presupuesto) * 100) : 0,
             })),
           },
         ])
