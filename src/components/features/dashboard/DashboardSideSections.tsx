@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import { Scissors, TrendingUp } from 'lucide-react'
 import { formatRD } from '@/utils/currency'
+import { formatDateDMY } from '@/utils/dateLocal'
 import type { DashboardActivity, PendingCorteItem } from '@/hooks/useDashboardData'
 
 function formatTimeAgo(nowMs: number, dateStr: string, t: TFunction): string {
@@ -42,9 +43,7 @@ export function DashboardPendingCortesSection({ pendingCortes }: { pendingCortes
                   contractor: corte.contract?.contractor?.name ?? '',
                 })}
               </p>
-              <p className="mt-0.5 text-[11px] text-app-muted">
-                {new Date(corte.cut_date).toLocaleDateString('es-DO')}
-              </p>
+              <p className="mt-0.5 text-[11px] text-app-muted">{formatDateDMY(corte.cut_date)}</p>
             </div>
             <span className="ml-2 shrink-0 text-xs font-semibold text-amber-700 dark:text-amber-400">
               {formatRD(corte.amount - corte.retention_amount)}

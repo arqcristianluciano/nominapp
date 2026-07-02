@@ -4,6 +4,7 @@ import { corteService } from '@/services/cubicationService'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { useToast } from '@/components/ui/Toast'
 import { formatRD } from '@/utils/currency'
+import { formatDateDMY } from '@/utils/dateLocal'
 import { parseDecimalInput } from '@/utils/decimalInput'
 import { getErrorMessage } from '@/utils/errors'
 import { CorteApprovalModal } from './CorteApprovalModal'
@@ -235,9 +236,7 @@ export function CorteSection({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-xs font-semibold text-app-text">#{c.cut_number}</span>
-                        <span className="text-xs text-app-muted">
-                          {new Date(c.cut_date).toLocaleDateString('es-DO')}
-                        </span>
+                        <span className="text-xs text-app-muted">{formatDateDMY(c.cut_date)}</span>
                       </div>
                       <div className="flex items-center gap-1 text-sm text-app-text">
                         {c.photo_url && (
@@ -345,7 +344,7 @@ export function CorteSection({
                   return (
                     <tr key={c.id} className="hover:bg-app-hover">
                       <td className="py-2.5 text-app-muted">{c.cut_number}</td>
-                      <td className="py-2.5 text-app-text">{new Date(c.cut_date).toLocaleDateString('es-DO')}</td>
+                      <td className="py-2.5 text-app-text">{formatDateDMY(c.cut_date)}</td>
                       <td className="py-2.5 text-app-muted">
                         <div className="flex items-center gap-1">
                           {c.photo_url && (

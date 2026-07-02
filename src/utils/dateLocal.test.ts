@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { todayISO, parseDateLocal } from './dateLocal'
+import { todayISO, parseDateLocal, formatDateDMY } from './dateLocal'
 
 describe('todayISO', () => {
   beforeEach(() => {
@@ -81,6 +81,32 @@ describe('parseDateLocal', () => {
   it('string con formato distinto retorna Invalid Date', () => {
     const d = parseDateLocal('21/05/2026')
     expect(Number.isNaN(d.getTime())).toBe(true)
+  })
+})
+
+describe('formatDateDMY', () => {
+  it('vacío/nulo devuelve string vacío', () => {
+    expect(formatDateDMY(null)).toBe('')
+    expect(formatDateDMY(undefined)).toBe('')
+    expect(formatDateDMY('')).toBe('')
+  })
+
+  it('una fecha sola (YYYY-MM-DD) muestra ese mismo día (no el anterior)', () => {
+    // Con formato numérico estable, el día debe ser 21 (no 20 por zona horaria).
+    const out = formatDateDMY('2026-05-21', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    expect(out).toContain('21')
+    expect(out).toContain('2026')
+    // No debe aparecer el día 20 (corrimiento hacia atrás).
+    expect(out).not.toContain('20/')
+  })
+
+  it('acepta una marca de tiempo completa', () => {
+    const out = formatDateDMY('2026-05-21T15:30:00Z', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    expect(out).toContain('2026')
+  })
+
+  it('fecha inválida devuelve string vacío', () => {
+    expect(formatDateDMY('no-es-fecha')).toBe('')
   })
 })
 

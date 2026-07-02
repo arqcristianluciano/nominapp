@@ -3,6 +3,7 @@ import { Calendar, ChevronDown, Copy, Trash2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import type { PayrollPeriod } from '@/types/database'
 import { formatRD } from '@/utils/currency'
+import { formatDateDMY } from '@/utils/dateLocal'
 import { useProjectRoles } from '@/hooks/useProjectRoles'
 
 interface Props {
@@ -85,7 +86,7 @@ export function ProjectPayrollSection({
                       <p className="font-medium text-app-text truncate">Reporte No. {period.period_number}</p>
                       <p className="text-xs text-app-muted flex items-center gap-1 mt-0.5">
                         <Calendar className="w-3 h-3 shrink-0" />
-                        {new Date(period.report_date).toLocaleDateString('es-DO')}
+                        {formatDateDMY(period.report_date)}
                       </p>
                     </div>
                   </div>

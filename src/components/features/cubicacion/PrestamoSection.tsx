@@ -4,6 +4,7 @@ import { loanService, calcInstallmentAmount } from '@/services/loanService'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { useToast } from '@/components/ui/Toast'
 import { formatRD } from '@/utils/currency'
+import { formatDateDMY } from '@/utils/dateLocal'
 import { parseDecimalInput } from '@/utils/decimalInput'
 import type { ContractorLoan } from '@/types/database'
 
@@ -252,7 +253,7 @@ export function PrestamoSection({ contractorId }: Props) {
               const balance = Math.max(0, loan.installment_amount * loan.installments - paid)
               return (
                 <tr key={loan.id} className="hover:bg-app-hover group">
-                  <td className="py-2.5 text-app-muted">{new Date(loan.disbursed_date).toLocaleDateString('es-DO')}</td>
+                  <td className="py-2.5 text-app-muted">{formatDateDMY(loan.disbursed_date)}</td>
                   <td className="py-2.5 text-right text-app-text">{formatRD(loan.principal)}</td>
                   <td className="py-2.5 text-right font-medium text-app-text">{formatRD(loan.installment_amount)}</td>
                   <td className="py-2.5 text-right text-emerald-600 dark:text-emerald-400">{formatRD(paid)}</td>

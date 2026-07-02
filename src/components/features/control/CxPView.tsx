@@ -1,7 +1,7 @@
 import type { TransactionWithRelations } from '@/services/transactionService'
 import { calcCxPDetails } from '@/utils/financialCalculations'
 import { formatRD } from '@/utils/currency'
-import { parseDateLocal } from '@/utils/dateLocal'
+import { parseDateLocal, formatDateDMY } from '@/utils/dateLocal'
 import { MessageCircle } from 'lucide-react'
 
 function buildWhatsAppLink(supplierName: string, amount: number, invoiceNo: string | null, days: number): string {
@@ -90,7 +90,7 @@ export function CxPView({ transactions }: { transactions: TransactionWithRelatio
                   <div className="mt-3 grid grid-cols-2 gap-2 text-[11px]">
                     <div>
                       <p className="text-app-muted uppercase tracking-wide text-[9px]">Fecha</p>
-                      <p className="text-app-text">{new Date(item.date).toLocaleDateString('es-DO')}</p>
+                      <p className="text-app-text">{formatDateDMY(item.date)}</p>
                     </div>
                     <div>
                       <p className="text-app-muted uppercase tracking-wide text-[9px]">Días</p>
@@ -160,7 +160,7 @@ export function CxPView({ transactions }: { transactions: TransactionWithRelatio
                     return (
                       <tr key={idx} className="border-b border-app-border hover:bg-app-hover">
                         <td className="px-3 py-2.5 text-xs text-app-muted whitespace-nowrap">
-                          {new Date(item.date).toLocaleDateString('es-DO')}
+                          {formatDateDMY(item.date)}
                         </td>
                         <td className="px-3 py-2.5 text-xs text-app-muted">{days}d</td>
                         <td className="px-3 py-2.5">

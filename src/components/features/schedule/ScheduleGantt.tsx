@@ -154,11 +154,14 @@ export function ScheduleGantt({
 
             const barStyle = getBarStyle(displayStart, displayEnd, ganttInfo)
             const isDelayed = displayEnd < today && displayProgress < 100
-            const start = new Date(displayStart).toLocaleDateString('es-DO', {
+            // "T12:00:00" fija el mediodía local para que la fecha no retroceda un
+            // día en zonas horarias detrás de UTC (RD es UTC-4). Sin esto,
+            // new Date("2026-05-21") es medianoche UTC y se muestra como el día 20.
+            const start = new Date(displayStart + 'T12:00:00').toLocaleDateString('es-DO', {
               day: '2-digit',
               month: 'short',
             })
-            const end = new Date(displayEnd).toLocaleDateString('es-DO', {
+            const end = new Date(displayEnd + 'T12:00:00').toLocaleDateString('es-DO', {
               day: '2-digit',
               month: 'short',
             })
