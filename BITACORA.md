@@ -205,6 +205,24 @@ Todo probado (pruebas y construcción en verde):
   la fecha de mañana. Ahora **toda la app usa la hora de República Dominicana**,
   así que "hoy" siempre es hoy, sin importar la hora.
 
+### Código de aprobación: ya no se muestra y se puede cambiar
+
+Cristian eligió mejorar el código de aprobación de forma sencilla (y dejar
+las finanzas centralizadas como estaban). Hecho y probado:
+
+- **Ya no se muestra el código "1234" en pantalla.** Antes, al aprobar una
+  orden de compra o un corte, la app mostraba escrito "el código es: 1234"
+  para cualquiera. Ese texto ahora solo aparece en la versión de práctica
+  (demo); en la app de verdad ya no se revela.
+- **Ahora puedes poner tu propio código.** En Configuración → Sistema hay una
+  tarjeta nueva "Código de aprobación" para cambiar el código por el que tú
+  quieras (se pide dos veces para no equivocarte). Nota importante: este
+  candado es una comodidad para no aprobar por error, no una seguridad de
+  banco; se guarda en cada dispositivo, así que si usas otro teléfono o
+  computadora hay que ponerlo también allí.
+- **Finanzas por empresa:** se dejó **centralizado** como estaba (quien lleva
+  las finanzas ve todas las empresas), según tu elección.
+
 ## 2026-06-12 — Avisos al celular, recibos, estado de cuenta e intereses
 
 Cristian preguntó qué más se podía hacer y eligió cuatro mejoras del

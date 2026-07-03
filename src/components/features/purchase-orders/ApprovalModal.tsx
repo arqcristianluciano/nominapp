@@ -3,6 +3,7 @@ import { CheckCircle, XCircle, RotateCcw, ShieldCheck } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { SignatureCanvas } from './SignatureCanvas'
 import { approvalCode } from '@/utils/approvalCode'
+import { isDemoMode } from '@/lib/supabase'
 import type { PurchaseQuote } from '@/types/purchaseOrder'
 import { getErrorMessage } from '@/utils/errors'
 import { formatRD } from '@/utils/currency'
@@ -199,7 +200,7 @@ export function ApprovalModal({ open, onClose, quotes, onApprove, onReturn, onRe
                 placeholder="Su código personal"
                 className="w-full border border-app-border rounded-lg px-3 py-2.5 text-sm min-h-11"
               />
-              <p className="text-[10px] text-app-subtle mt-1">En modo demo el código es: 1234</p>
+              {isDemoMode && <p className="text-[10px] text-app-subtle mt-1">En modo demo el código es: 1234</p>}
             </div>
 
             <div>
