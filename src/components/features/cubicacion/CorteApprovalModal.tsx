@@ -3,6 +3,7 @@ import { CheckCircle, ShieldCheck } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { SignatureCanvas } from '@/components/features/purchase-orders/SignatureCanvas'
 import { approvalCode } from '@/utils/approvalCode'
+import { isDemoMode } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import { getErrorMessage } from '@/utils/errors'
 import { formatRD } from '@/utils/currency'
@@ -76,7 +77,7 @@ export function CorteApprovalModal({ open, onClose, corteNum, amount, onApprove 
             placeholder="Su código personal"
             className="w-full border border-app-border rounded-lg px-3 py-2 text-sm bg-app-input-bg text-app-text"
           />
-          <p className="text-[10px] text-app-subtle mt-1">En modo demo el código es: 1234</p>
+          {isDemoMode && <p className="text-[10px] text-app-subtle mt-1">En modo demo el código es: 1234</p>}
         </div>
 
         <div>
