@@ -53,10 +53,13 @@ export default function AvancesPage() {
       // Traer las partidas de todos los capítulos para el historial.
       const projItems = await budgetItemService.getByProjectCategories(cats.map((c) => c.id))
       setAllItems(projItems)
+    } catch (e) {
+      // Antes, si fallaba la carga, la pantalla quedaba vacía sin avisar.
+      error((e as Error).message || 'No se pudieron cargar los avances')
     } finally {
       setLoading(false)
     }
-  }, [projectId])
+  }, [projectId, error])
 
   useEffect(() => {
     void load()
