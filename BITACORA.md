@@ -245,6 +245,18 @@ Todo probado (pruebas y construcción en verde):
   segundos los proyectos del usuario anterior en el buscador. Ahora cada quien
   arranca limpio.
 
+### La auditoría de aprobaciones ya se exporta COMPLETA
+
+Todo probado (pruebas y construcción en verde):
+
+- **El Excel de "Aprobaciones y auditoría" ahora incluye todo el historial.**
+  Antes la pantalla cargaba solo los 200 movimientos más recientes y el botón
+  "Exportar" guardaba únicamente esos 200; si un día necesitabas entregar la
+  auditoría completa o revisar algo de hace meses, el archivo salía incompleto
+  sin avisar. Ahora la exportación trae **todo** el historial (respetando los
+  filtros que tengas puestos), y en pantalla se avisa que la tabla muestra solo
+  lo más reciente pero el Excel guarda todo.
+
 ## 2026-06-12 — Avisos al celular, recibos, estado de cuenta e intereses
 
 Cristian preguntó qué más se podía hacer y eligió cuatro mejoras del

@@ -103,4 +103,28 @@ export const approvalsService = {
     if (error) throw error
     return (data ?? []) as ApprovalRecord[]
   },
+
+  /**
+   * Trae TODO el historial de aprobaciones por páginas (Supabase limita cada
+   * consulta a ~1000 filas). Se usa para la exportación de auditoría, que debe
+   * ser completa aunque la pantalla solo muestre lo más reciente.
+   */
+  async getAll(): Promise<ApprovalRecord[]> {
+    const PAGE = 1000
+    const all: ApprovalRecord[] = []
+    let from = 0
+    for (;;) {
+      const { data, error } = await supabase
+        .from('approvals')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(from, from + PAGE - 1)
+      if (error) throw error
+      const batch = (data ?? []) as ApprovalRecord[]
+      all.push(...batch)
+      if (batch.length < PAGE) break
+      from += PAGE
+    }
+    return all
+  },
 }

@@ -55,12 +55,18 @@ export default function AprobacionesPage() {
   const [filterMine, setFilterMine] = useState(false)
   const [filterAction, setFilterAction] = useState<ApprovalAction | 'all'>('all')
   const [offset, setOffset] = useState(0)
+  const [exporting, setExporting] = useState(false)
   const { success, error } = useToast()
+
+  // La pantalla carga solo lo más reciente por rapidez; si llegamos al tope,
+  // probablemente hay más historial (la exportación sí lo trae completo).
+  const RECENT_LIMIT = 200
+  const maybeMore = records.length >= RECENT_LIMIT
 
   useEffect(() => {
     let cancelled = false
     approvalsService
-      .getRecent(200)
+      .getRecent(RECENT_LIMIT)
       .then((data) => {
         if (!cancelled) setRecords(data)
       })
@@ -103,11 +109,21 @@ export default function AprobacionesPage() {
   const showPagination = filtered.length > PAGE_SIZE
 
   async function handleExport() {
+    if (exporting) return
+    setExporting(true)
     try {
+      // La exportación trae TODO el historial (no solo lo que está en pantalla),
+      // aplicando los mismos filtros activos, para que la auditoría sea completa.
+      const all = await approvalsService.getAll()
+      const rowsToExport = all.filter((r) => {
+        if (filterMine && r.actor_display_name !== user?.displayName) return false
+        if (filterAction !== 'all' && r.action !== filterAction) return false
+        return true
+      })
       await exportToExcel('auditoria_aprobaciones', [
         {
           name: 'Aprobaciones',
-          rows: filtered.map((r) => ({
+          rows: rowsToExport.map((r) => ({
             Fecha: new Date(r.created_at).toLocaleString('es-DO'),
             Entidad: ENTITY_LABEL[r.entity_type] ?? r.entity_type,
             Acción: ACTION_LABEL[r.action] ?? r.action,
@@ -118,9 +134,11 @@ export default function AprobacionesPage() {
           })),
         },
       ])
-      success('Exportado')
+      success(`Exportado (${rowsToExport.length} registros)`)
     } catch (err) {
       error(getErrorMessage(err) || 'No se pudo exportar')
+    } finally {
+      setExporting(false)
     }
   }
 
@@ -138,9 +156,10 @@ export default function AprobacionesPage() {
         </div>
         <button
           onClick={handleExport}
-          className="flex items-center gap-2 px-3 py-2 border border-app-border text-app-muted rounded-lg text-sm hover:bg-app-hover"
+          disabled={exporting}
+          className="flex items-center gap-2 px-3 py-2 border border-app-border text-app-muted rounded-lg text-sm hover:bg-app-hover disabled:opacity-50"
         >
-          <Download className="w-4 h-4" /> Exportar
+          <Download className="w-4 h-4" /> {exporting ? 'Exportando…' : 'Exportar'}
         </button>
       </div>
 
@@ -170,6 +189,13 @@ export default function AprobacionesPage() {
           {filtered.length} de {records.length} registros
         </span>
       </div>
+
+      {maybeMore && (
+        <p className="text-xs text-app-subtle">
+          En pantalla se muestran los {RECENT_LIMIT} movimientos más recientes. El botón{' '}
+          <span className="font-medium">Exportar</span> guarda el historial completo.
+        </p>
+      )}
 
       {hasActiveFilters && (
         <div className="flex flex-wrap items-center gap-2">
