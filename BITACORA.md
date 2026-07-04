@@ -268,6 +268,18 @@ Todo probado (pruebas y construcción en verde):
   salía vacío o con errores, sin explicación. Ahora, si la sesión se vence, la
   app te lleva sola a la pantalla de entrada para que vuelvas a iniciar sesión.
 
+### Una etiqueta que avisa cuando la app está en "modo demo"
+
+Todo probado (pruebas y construcción en verde):
+
+- **Etiqueta "MODO DEMO" cuando la app usa datos de ejemplo.** La app tiene un
+  modo de prueba con datos inventados que se enciende solo si falta la
+  configuración de la base de datos al publicar. Si algún día esa
+  configuración se borrara por error, la app real mostraría datos falsos sin
+  que nadie se diera cuenta. Ahora, siempre que la app esté en ese modo, se ve
+  una etiqueta chica abajo a la izquierda que dice "Modo demo · datos de
+  ejemplo". En la app real (con su base de datos) no aparece nada.
+
 ## 2026-06-12 — Avisos al celular, recibos, estado de cuenta e intereses
 
 Cristian preguntó qué más se podía hacer y eligió cuatro mejoras del
