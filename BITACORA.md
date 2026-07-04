@@ -257,6 +257,17 @@ Todo probado (pruebas y construcción en verde):
   filtros que tengas puestos), y en pantalla se avisa que la tabla muestra solo
   lo más reciente pero el Excel guarda todo.
 
+### Si la sesión se vence, te lleva solo a la pantalla de entrada
+
+Todo probado (pruebas y construcción en verde):
+
+- **Se acabó la "app rota" cuando la sesión caduca.** La app te recuerda en el
+  navegador, pero la sesión real con el servidor puede vencerse (por ejemplo,
+  tras semanas sin abrir la app, o si un administrador cambia una contraseña).
+  Antes, cuando eso pasaba, la app seguía mostrándote "conectado" pero todo
+  salía vacío o con errores, sin explicación. Ahora, si la sesión se vence, la
+  app te lleva sola a la pantalla de entrada para que vuelvas a iniciar sesión.
+
 ## 2026-06-12 — Avisos al celular, recibos, estado de cuenta e intereses
 
 Cristian preguntó qué más se podía hacer y eligió cuatro mejoras del
