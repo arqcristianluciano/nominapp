@@ -235,6 +235,16 @@ Todo probado (pruebas y construcción en verde):
 - **Avances por partida:** igual, si falla la carga ahora avisa en vez de
   mostrar una pantalla vacía en silencio.
 
+### Al cerrar sesión, el aparato queda limpio para el siguiente
+
+Todo probado (pruebas y construcción en verde):
+
+- **Cerrar sesión ahora borra de la memoria los datos del usuario anterior**
+  (la lista de proyectos y de nóminas). Antes, en un aparato compartido, si
+  otra persona entraba sin recargar la página, podía ver de reojo por unos
+  segundos los proyectos del usuario anterior en el buscador. Ahora cada quien
+  arranca limpio.
+
 ## 2026-06-12 — Avisos al celular, recibos, estado de cuenta e intereses
 
 Cristian preguntó qué más se podía hacer y eligió cuatro mejoras del

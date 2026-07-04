@@ -72,6 +72,7 @@ export const usePayrollStore = create<PayrollStore>((set) => ({
 
   reset: () =>
     set({
+      periods: [],
       currentPeriod: null,
       laborItems: [],
       materialInvoices: [],

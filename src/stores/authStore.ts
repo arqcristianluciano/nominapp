@@ -2,6 +2,8 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import * as Sentry from '@sentry/react'
 import { authenticate, signOut, getCurrentAuthUser, type AuthUser } from '@/services/authService'
+import { useProjectStore } from '@/stores/projectStore'
+import { usePayrollStore } from '@/stores/payrollStore'
 
 interface AuthState {
   user: AuthUser | null
@@ -31,6 +33,11 @@ export const useAuthStore = create<AuthState>()(
         Sentry.setUser(null)
         await signOut()
         set({ user: null })
+        // Vaciar los datos en memoria del usuario anterior (proyectos y
+        // nóminas) para que el siguiente que entre en el mismo aparato arranque
+        // limpio y no vea de reojo lo del anterior.
+        useProjectStore.getState().reset()
+        usePayrollStore.getState().reset()
       },
       setUser: (user) => set({ user }),
       refreshUser: async () => {

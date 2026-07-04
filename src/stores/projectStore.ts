@@ -9,6 +9,9 @@ interface ProjectStore {
   error: string | null
   fetchProjects: () => Promise<void>
   selectProject: (project: Project | null) => void
+  /** Vacía los datos en memoria (al cerrar sesión) para que el siguiente
+   *  usuario del mismo aparato no vea los proyectos del anterior. */
+  reset: () => void
 }
 
 export const useProjectStore = create<ProjectStore>((set) => ({
@@ -19,10 +22,7 @@ export const useProjectStore = create<ProjectStore>((set) => ({
 
   fetchProjects: async () => {
     set({ loading: true, error: null })
-    const { data, error } = await supabase
-      .from('projects')
-      .select('*, company:companies(*)')
-      .order('name')
+    const { data, error } = await supabase.from('projects').select('*, company:companies(*)').order('name')
 
     if (error) {
       set({ error: error.message, loading: false })
@@ -32,4 +32,6 @@ export const useProjectStore = create<ProjectStore>((set) => ({
   },
 
   selectProject: (project) => set({ selectedProject: project }),
+
+  reset: () => set({ projects: [], selectedProject: null, loading: false, error: null }),
 }))
