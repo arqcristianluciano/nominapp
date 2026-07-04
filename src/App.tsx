@@ -3,6 +3,7 @@ import { router } from '@/lib/router'
 import { ToastProvider } from '@/components/ui/Toast'
 import InstallPrompt from '@/components/pwa/InstallPrompt'
 import UpdatePrompt from '@/components/pwa/UpdatePrompt'
+import { DemoModeBadge } from '@/components/DemoModeBadge'
 
 // Nota: el aviso "Sin conexión" (y el contador de cambios pendientes) lo
 // muestra AppLayout de forma informativa. Antes había además un banner rojo
@@ -14,6 +15,7 @@ export default function App() {
       <RouterProvider router={router} />
       <InstallPrompt />
       <UpdatePrompt />
+      <DemoModeBadge />
     </ToastProvider>
   )
 }
