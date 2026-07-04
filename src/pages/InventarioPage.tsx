@@ -38,6 +38,7 @@ export default function InventarioPage() {
   const [movements, setMovements] = useState<InventoryMovement[]>([])
   const [lots, setLots] = useState<InventoryLotWithItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [tab, setTab] = useState<InventoryTab>('stock')
   const [showItemForm, setShowItemForm] = useState(false)
   const [showMovForm, setShowMovForm] = useState(false)
@@ -49,6 +50,7 @@ export default function InventarioPage() {
 
   const loadAll = useCallback(async () => {
     setLoading(true)
+    setLoadError(null)
     try {
       const [its, movs, lts] = await Promise.all([
         inventoryService.getItems(projectId!),
@@ -58,6 +60,13 @@ export default function InventarioPage() {
       setItems(its)
       setMovements(movs)
       setLots(lts)
+    } catch (e) {
+      // Antes, si fallaba la carga, la página quedaba vacía como si no hubiera
+      // inventario. Ahora avisa, para que el almacenista no crea que se borró.
+      setLoadError(getErrorMessage(e) || 'No se pudo cargar el inventario.')
+      setItems([])
+      setMovements([])
+      setLots([])
     } finally {
       setLoading(false)
     }
@@ -83,6 +92,10 @@ export default function InventarioPage() {
       setShowItemForm(false)
       setItemForm(EMPTY_ITEM_FORM)
       await loadAll()
+    } catch (e) {
+      // Antes, si fallaba al crear el material, no salía ningún aviso y el
+      // formulario quedaba abierto sin explicación.
+      toastError(getErrorMessage(e) || 'No se pudo guardar el material')
     } finally {
       setSaving(false)
     }
@@ -189,6 +202,21 @@ export default function InventarioPage() {
       />
 
       <InventoryLowStockAlert items={lowStock} />
+
+      {loadError && !loading && (
+        <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <p className="text-sm text-red-700 dark:text-red-300">
+            No se pudo cargar el inventario. Los datos de abajo pueden estar incompletos.{' '}
+            <span className="text-xs text-red-600 dark:text-red-400">({loadError})</span>
+          </p>
+          <button
+            onClick={() => void loadAll()}
+            className="shrink-0 px-3 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium"
+          >
+            Reintentar
+          </button>
+        </div>
+      )}
 
       <InventoryActionFormsSection
         showItemForm={showItemForm}

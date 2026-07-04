@@ -223,6 +223,18 @@ las finanzas centralizadas como estaban). Hecho y probado:
 - **Finanzas por empresa:** se dejó **centralizado** como estaba (quien lleva
   las finanzas ve todas las empresas), según tu elección.
 
+### Avisos cuando algo falla (antes fallaba en silencio)
+
+Todo probado (pruebas y construcción en verde):
+
+- **Inventario:** si falla la carga de materiales/movimientos (por internet o
+  permisos), antes la página quedaba vacía como si no hubiera nada — el
+  almacenista podía creer que se borró todo. Ahora sale un aviso rojo con un
+  botón "Reintentar". Y si falla al guardar un material nuevo, ahora avisa en
+  vez de dejar el formulario abierto sin explicación.
+- **Avances por partida:** igual, si falla la carga ahora avisa en vez de
+  mostrar una pantalla vacía en silencio.
+
 ## 2026-06-12 — Avisos al celular, recibos, estado de cuenta e intereses
 
 Cristian preguntó qué más se podía hacer y eligió cuatro mejoras del
