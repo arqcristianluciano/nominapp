@@ -4,6 +4,7 @@ import * as Sentry from '@sentry/react'
 import { authenticate, signOut, getCurrentAuthUser, type AuthUser } from '@/services/authService'
 import { useProjectStore } from '@/stores/projectStore'
 import { usePayrollStore } from '@/stores/payrollStore'
+import { supabase, isDemoMode } from '@/lib/supabase'
 
 interface AuthState {
   user: AuthUser | null
@@ -54,3 +55,26 @@ export const useAuthStore = create<AuthState>()(
     },
   ),
 )
+
+/**
+ * Vigila la sesión real con el servidor. La app recuerda al usuario en el
+ * navegador por su cuenta; si la sesión real muere (por ejemplo, tras semanas
+ * sin abrir la app, o si un administrador cambia la contraseña), antes la app
+ * seguía "conectada" pero todas las consultas fallaban y se veían pantallas
+ * vacías, sin avisar. Ahora, al morir la sesión, se borra el usuario guardado
+ * y RequireAuth lo lleva solo a la pantalla de entrada.
+ *
+ * En modo demo no hay sesión real (mockSupabase no tiene `auth`), así que no se
+ * suscribe nada.
+ */
+if (!isDemoMode) {
+  supabase.auth.onAuthStateChange((event) => {
+    if (event !== 'SIGNED_OUT') return
+    const { user } = useAuthStore.getState()
+    if (!user) return
+    Sentry.setUser(null)
+    useAuthStore.setState({ user: null })
+    useProjectStore.getState().reset()
+    usePayrollStore.getState().reset()
+  })
+}
